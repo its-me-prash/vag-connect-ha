@@ -1,7 +1,13 @@
-"""VAG Connect — Home Assistant integration for all VAG brands.
+"""
+VAG Connect — Home Assistant integration for all VAG brands.
 
 Supports: Audi · VW (EU) · VW (US/CA) · Škoda · SEAT · CUPRA
 Engine:   CarConnectivity by Till Steinbach (MIT)
+
+Architecture:
+  - CarConnectivity runs its own background thread (polls VAG API)
+  - Observer pattern: CC fires VALUE_CHANGED -> HA updates immediately
+  - No double-polling, no race conditions
 """
 from __future__ import annotations
 
@@ -34,7 +40,6 @@ SERVICE_VIN_SCHEMA = vol.Schema({vol.Required("vin"): cv.string})
 
 
 def _get_coordinator(hass: HomeAssistant, vin: str) -> VagConnectCoordinator | None:
-    """Find the coordinator that owns a given VIN across all config entries."""
     for coordinator in hass.data.get(DOMAIN, {}).values():
         if vin in coordinator.vehicles:
             return coordinator
@@ -45,25 +50,30 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up VAG Connect from a config entry."""
     coordinator = VagConnectCoordinator(hass, entry)
 
-    try:
-        await coordinator.async_config_entry_first_refresh()
-    except Exception as err:  # noqa: BLE001
-        raise ConfigEntryNotReady(f"Could not connect to VAG API: {err}") from err
+    # Startet CC Background-Thread + erster Fetch + Observer-Registrierung
+    ok = await coordinator.async_setup()
+    if not ok or not coordinator.vehicles:
+        raise ConfigEntryNotReady(
+            "VAG Connect: Keine Fahrzeuge gefunden oder Verbindung fehlgeschlagen. "
+            "Zugangsdaten und Netzwerk prüfen."
+        )
 
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = coordinator
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     entry.async_on_unload(entry.add_update_listener(_async_update_listener))
 
-    # Register services only once (first entry)
     if not hass.services.has_service(DOMAIN, "lock"):
         _register_services(hass)
 
-    _LOGGER.info("VAG Connect: %d vehicle(s) found", len(coordinator.vehicles))
+    _LOGGER.info(
+        "VAG Connect bereit: %d Fahrzeug(e), reaktive Updates via CC-Observer",
+        len(coordinator.vehicles),
+    )
     return True
 
 
 def _register_services(hass: HomeAssistant) -> None:
-    """Register all VAG Connect HA service calls."""
+    """Registriert alle VAG Connect HA-Services."""
 
     async def _handle_lock(call: ServiceCall) -> None:
         if c := _get_coordinator(hass, call.data["vin"]):
@@ -99,30 +109,36 @@ def _register_services(hass: HomeAssistant) -> None:
 
     for name, handler, schema in [
         ("lock",                _handle_lock,         SERVICE_VIN_SCHEMA),
-        ("unlock",              _handle_unlock,       SERVICE_VIN_SCHEMA),
-        ("start_climatisation", _handle_start_clim,   SERVICE_VIN_SCHEMA),
-        ("stop_climatisation",  _handle_stop_clim,    SERVICE_VIN_SCHEMA),
-        ("start_charging",      _handle_start_charge, SERVICE_VIN_SCHEMA),
-        ("stop_charging",       _handle_stop_charge,  SERVICE_VIN_SCHEMA),
-        ("flash_lights",        _handle_flash,        SERVICE_VIN_SCHEMA),
-        ("refresh_vehicle",     _handle_refresh,      vol.Schema({})),
+        ("unlock",              _handle_unlock,        SERVICE_VIN_SCHEMA),
+        ("start_climatisation", _handle_start_clim,    SERVICE_VIN_SCHEMA),
+        ("stop_climatisation",  _handle_stop_clim,     SERVICE_VIN_SCHEMA),
+        ("start_charging",      _handle_start_charge,  SERVICE_VIN_SCHEMA),
+        ("stop_charging",       _handle_stop_charge,   SERVICE_VIN_SCHEMA),
+        ("flash_lights",        _handle_flash,         SERVICE_VIN_SCHEMA),
+        ("refresh_vehicle",     _handle_refresh,       vol.Schema({})),
     ]:
         hass.services.async_register(DOMAIN, name, handler, schema)
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    """Unload a config entry."""
+    """Unload entry — stoppt CC Background-Thread sauber."""
+    coordinator: VagConnectCoordinator = hass.data[DOMAIN].get(entry.entry_id)
+
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+
     if unload_ok:
+        if coordinator:
+            await coordinator.async_shutdown()
         hass.data[DOMAIN].pop(entry.entry_id, None)
-    # Remove services when last entry is gone
+
     if not hass.data.get(DOMAIN):
-        for svc in ["lock","unlock","start_climatisation","stop_climatisation",
-                    "start_charging","stop_charging","flash_lights","refresh_vehicle"]:
+        for svc in ["lock", "unlock", "start_climatisation", "stop_climatisation",
+                    "start_charging", "stop_charging", "flash_lights", "refresh_vehicle"]:
             hass.services.async_remove(DOMAIN, svc)
+
     return unload_ok
 
 
 async def _async_update_listener(hass: HomeAssistant, entry: ConfigEntry) -> None:
-    """Reload on options change (scan interval, S-PIN)."""
+    """Reload bei Optionsänderung (Intervall, S-PIN)."""
     await hass.config_entries.async_reload(entry.entry_id)
