@@ -261,6 +261,51 @@ Jede Version folgt diesem Ablauf:
 
 
 
+
+## [0.4.1] - 2026-04-11
+
+### Sprachbereinigung — Umlaute, Terminologie, Ton
+
+#### README.md
+- Alle ae/oe/ue-Substitute durch echte Umlaute ersetzt: Türen, Außentemperatur,
+  Tankfüllstand, Verfügbarkeit, fällig, Ölstand, Ölservice, Unterstützte, usw.
+- Feature-Tabellen auf aktuellen Stand 0.4.0 gebracht
+- Ton: sachlich, direkt, für normale Nutzer verständlich
+  **Autor:** @Prash1407
+
+#### Sensor-Namen
+- `Batterieladestand` → `Akkustand` (wie es Nutzer kennen — z.B. Handy-Akku)
+- `Ladziel` → `Ladeziel` (Tippfehler behoben)
+- `Tankfüllstand` → `Tankstand` (kürzer, genauso klar)
+- `Ladestatus` → `Ladevorgang` (beschreibt was es ist)
+- `Steckerstatus` → `Ladestecker` (konkreter)
+- `Klimatisierungsstatus` → `Klimatisierung` (kein überflüssiges -status)
+- `Fahrzeugstatus` → `Fahrzeugzustand` (präziser)
+- `Verbindungsstatus` → `Verbindung` (kürzer)
+- `Inspektion fällig in` → `Nächste Inspektion`
+- `Ölservice fällig in` → `Nächster Ölwechsel`
+- `Ölservicedatum` → `Ölwechseldatum`
+- `Parkadresse` → `Standort` (natürlicher)
+- `Firmware` → `Firmware-Version`
+  **Autor:** @Prash1407
+
+#### Binary Sensor Namen
+- `Fährt` → `In Fahrt` (natürlicheres Deutsch)
+- `Ladekabel verbunden` → `Ladekabel steckt`
+- `Klimatisierung aktiv` → `Klimatisierung läuft`
+- `Online` → `Erreichbar` (was es für den Nutzer bedeutet)
+  **Autor:** @Prash1407
+
+#### Switch-Namen
+- `Stecker Auto-Entsperren` → `Stecker nach Laden entsperren`
+- `Fensterheizung` → `Scheibenheizung` (automotive Standard-Begriff)
+  **Autor:** @Prash1407
+
+#### Translations de.json + en.json
+- Vollständig aktualisiert auf alle 0.4.0-Features (31 neue Entity-Keys)
+- Repair-Issues: natürlicheres Deutsch, klare Handlungsanweisungen
+- en.json: automotive Standard-Englisch (Battery Level statt State of Charge)
+  **Autor:** @Prash1407
 ## [0.4.0] - 2026-04-11
 
 Features die kein anderes VAG Home Assistant Plugin hat.

@@ -74,7 +74,7 @@ _NEW_BINARY: tuple[VagBinarySensorDescription, ...] = (
     VagBinarySensorDescription(
         key="is_driving",
         data_key="is_driving",
-        name="Fährt",
+        name="In Fahrt",
         device_class=BinarySensorDeviceClass.MOTION,
         icon="mdi:car-speed-limiter",
     ),

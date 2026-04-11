@@ -167,7 +167,7 @@ class VagSeatHeatingSwitch(VagConnectEntity, SwitchEntity):
 class VagAutoUnlockSwitch(VagConnectEntity, SwitchEntity):
     """Stecker nach Ladeende automatisch entsperren (Auto-Unlock)."""
 
-    _attr_name = "Stecker Auto-Entsperren"
+    _attr_name = "Stecker nach Laden entsperren"
     _attr_icon = "mdi:ev-plug-ccs2"
 
     def __init__(self, coordinator, vin):

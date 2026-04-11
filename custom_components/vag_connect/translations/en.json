@@ -3,29 +3,31 @@
     "step": {
       "user": {
         "title": "Set up VAG Connect",
-        "description": "Connect your vehicle to Home Assistant. Choose your brand and enter your app credentials.",
+        "description": "Connect your vehicle to Home Assistant. Select your brand and enter the login credentials from the corresponding app.",
         "data": {
-          "brand": "Vehicle Brand",
-          "username": "Email Address",
+          "brand": "Vehicle brand",
+          "username": "Email address",
           "password": "Password",
-          "spin": "S-PIN (optional, required for locking)",
-          "scan_interval": "Update Interval (minutes)"
+          "spin": "S-PIN (optional, required for door locking)",
+          "scan_interval": "Update interval (minutes)",
+          "force_enable_access": "Force door access (for older models)"
         },
         "data_description": {
-          "spin": "Required for actions like door locking. Can be left empty.",
-          "scan_interval": "Minimum 5 minutes — too frequent polling may cause account suspension."
+          "spin": "Required for door locking and some other actions. Can be left empty.",
+          "scan_interval": "Minimum 5 minutes — too frequent requests may result in account suspension.",
+          "force_enable_access": "Enable if door and window status is not shown, even though it's visible in the app."
         }
       }
     },
     "error": {
-      "cannot_connect": "Connection failed. Please check your credentials.",
+      "cannot_connect": "Connection failed. Check credentials and internet connection.",
       "missing_library": "CarConnectivity library not found. Please restart Home Assistant.",
-      "unknown": "Unknown error.",
-      "terms_and_conditions": "Terms and conditions need to be accepted. Open the app and sign in there.",
-      "marketing_consent": "New privacy consent required in app: Profile → Consents.",
-      "two_factor_required": "2FA required. Sign in manually in the app once and confirm the code.",
-      "too_many_requests": "Account temporarily blocked (too many requests). Wait 15 minutes.",
-      "invalid_credentials": "Email or password incorrect."
+      "unknown": "Unknown error. Please check the logs.",
+      "terms_and_conditions": "Terms and conditions need to be accepted. Sign in to the app once and confirm.",
+      "marketing_consent": "New privacy consent required. Open app: Profile → Consents.",
+      "two_factor_required": "Two-factor authentication required. Sign in manually in the app and confirm the email code.",
+      "too_many_requests": "Account temporarily suspended (too many login attempts). Please wait 15 minutes.",
+      "invalid_credentials": "Email address or password incorrect."
     },
     "abort": {
       "already_configured": "This account is already configured."
@@ -34,9 +36,9 @@
   "options": {
     "step": {
       "init": {
-        "title": "VAG Connect Options",
+        "title": "VAG Connect — Settings",
         "data": {
-          "scan_interval": "Update Interval (minutes)",
+          "scan_interval": "Update interval (minutes)",
           "spin": "S-PIN"
         }
       }
@@ -44,121 +46,94 @@
   },
   "entity": {
     "sensor": {
-      "fuel_level": {
-        "name": "Fuel Level"
-      },
-      "battery_soc": {
-        "name": "Battery State of Charge"
-      },
-      "range_km": {
-        "name": "Range"
-      },
-      "odometer_km": {
-        "name": "Odometer"
-      },
-      "charging_state": {
-        "name": "Charging State"
-      },
-      "plug_state": {
-        "name": "Plug State"
-      },
-      "target_soc": {
-        "name": "Charge Target"
-      },
-      "climatisation_state": {
-        "name": "Climatisation"
-      },
-      "outside_temp": {
-        "name": "Outside Temperature"
-      },
-      "oil_level": {
-        "name": "Oil Level"
-      },
-      "service_days": {
-        "name": "Service Due (Days)"
-      },
-      "service_km": {
-        "name": "Service Due (km)"
-      }
+      "fuel_level":               { "name": "Fuel Level" },
+      "battery_soc":              { "name": "Battery Level" },
+      "range_km":                 { "name": "Range" },
+      "odometer_km":              { "name": "Odometer" },
+      "charging_state":           { "name": "Charging" },
+      "plug_state":               { "name": "Plug" },
+      "target_soc":               { "name": "Charge Target" },
+      "charging_power_kw":        { "name": "Charging Power" },
+      "charging_rate_kmh":        { "name": "Charging Speed" },
+      "charge_complete_eta":      { "name": "Charge Complete" },
+      "charging_type":            { "name": "Charge Type" },
+      "charging_station_name":    { "name": "Charging Station" },
+      "charging_station_address": { "name": "Charging Station Address" },
+      "charging_station_kw":      { "name": "Charging Station Power" },
+      "charging_station_operator":{ "name": "Charging Station Operator" },
+      "climatisation_state":      { "name": "Climatisation" },
+      "target_temperature":       { "name": "Target Temperature" },
+      "outside_temp":             { "name": "Outside Temperature" },
+      "service_km":               { "name": "Next Service" },
+      "service_due_at":           { "name": "Service Date" },
+      "oil_service_km":           { "name": "Next Oil Change" },
+      "oil_service_at":           { "name": "Oil Change Date" },
+      "vehicle_state":            { "name": "Vehicle State" },
+      "connection_state":         { "name": "Connection" },
+      "parking_address":          { "name": "Location" },
+      "parking_city":             { "name": "City" },
+      "heading":                  { "name": "Heading" },
+      "battery_temp":             { "name": "Battery Temperature" },
+      "battery_cap_kwh":          { "name": "Battery Capacity" },
+      "firmware_version":         { "name": "Firmware Version" },
+      "license_plate":            { "name": "License Plate" }
     },
     "binary_sensor": {
-      "doors_locked": {
-        "name": "Doors Locked"
-      },
-      "doors_open": {
-        "name": "Doors Open"
-      },
-      "windows_open": {
-        "name": "Windows Open"
-      },
-      "plug_connected": {
-        "name": "Charging Cable Connected"
-      },
-      "is_charging": {
-        "name": "Charging"
-      }
+      "doors_locked":         { "name": "Doors Locked" },
+      "doors_open":           { "name": "Doors Open" },
+      "windows_open":         { "name": "Windows Open" },
+      "plug_connected":       { "name": "Charging Cable Connected" },
+      "is_charging":          { "name": "Charging" },
+      "climatisation_active": { "name": "Climatisation Active" },
+      "is_driving":           { "name": "Driving" },
+      "is_online":            { "name": "Reachable" },
+      "connector_locked":     { "name": "Charging Plug Locked" }
     },
     "switch": {
-      "lock_switch": {
-        "name": "Door Lock"
-      },
-      "climatisation_switch": {
-        "name": "Climatisation"
-      },
-      "charging_switch": {
-        "name": "Charging"
-      }
+      "lock_switch":           { "name": "Door Lock" },
+      "climatisation_switch":  { "name": "Climatisation" },
+      "charging_switch":       { "name": "Charging" },
+      "window_heating_switch": { "name": "Window Heating" },
+      "seat_heating_switch":   { "name": "Seat Heating" },
+      "auto_unlock_switch":    { "name": "Unlock Plug After Charging" }
+    },
+    "number": {
+      "target_soc_number":    { "name": "Charge Target" },
+      "climate_temp_number":  { "name": "Climate Temperature" },
+      "max_charge_current":   { "name": "Max. Charging Current" }
     },
     "button": {
-      "flash_button": {
-        "name": "Flash Lights"
-      },
-      "refresh_button": {
-        "name": "Refresh Data"
-      }
+      "flash_button":   { "name": "Flash Lights" },
+      "refresh_button": { "name": "Refresh Data" },
+      "wake_button":    { "name": "Wake Up Vehicle" }
     },
     "climate": {
-      "climate": {
-        "name": "Pre-Conditioning"
-      }
+      "climate": { "name": "Pre-Conditioning" }
     },
     "device_tracker": {
-      "position": {
-        "name": "Position"
-      }
-    }
-  },
-  "selector": {
-    "brand": {
-      "options": {
-        "audi": "Audi (myAudi)",
-        "volkswagen": "Volkswagen / VW (WeConnect EU)",
-        "volkswagen_na": "Volkswagen / VW (WeConnect US/CA)",
-        "skoda": "Škoda (MySkoda)",
-        "seatcupra": "SEAT / CUPRA (MyCupra)"
-      }
+      "position": { "name": "Location" }
     }
   },
   "issues": {
     "two_factor_required": {
-      "title": "2FA confirmation required — {brand}",
-      "description": "Your {brand} account ({username}) requires two-factor authentication.\n\n**One-time workaround:**\n1. Open the **{brand} app** on your phone\n2. Sign in manually once\n3. Confirm the 2FA code sent via email\n4. Restart Home Assistant\n\nTokens will be stored locally after this — no re-auth needed."
+      "title": "Two-factor authentication required — {brand}",
+      "description": "Your {brand} account ({username}) requires an email verification code.\n\n**One-time fix:**\n1. Open the **{brand} app** on your phone\n2. Sign in manually\n3. Confirm the code sent by email\n4. Restart Home Assistant\n\nAfter this one-time step, the integration stores the login token — you won't need to repeat this."
     },
     "terms_and_conditions": {
       "title": "Accept terms and conditions — {brand}",
-      "description": "New terms and conditions for {brand} ({username}) need to be accepted.\n\n1. Open the **{brand} app**\n2. Sign in and accept the terms\n3. Restart the integration"
+      "description": "There are new terms and conditions for {brand} ({username}).\n\n1. Open the {brand} app\n2. Sign in and accept the terms\n3. Restart Home Assistant"
     },
     "marketing_consent": {
       "title": "Consent required — {brand}",
-      "description": "New privacy consent for {brand} ({username}) required.\n\nApp → Profile → Consents → confirm → restart HA."
+      "description": "A new privacy consent is required for {brand} ({username}).\n\nOpen app → Profile → Consents → confirm → restart HA."
     },
     "too_many_requests": {
-      "title": "Account temporarily blocked — {brand}",
-      "description": "{brand} account ({username}) is temporarily blocked (too many requests).\n\nPlease **wait 15 minutes** and restart Home Assistant.\nIncrease the poll interval to at least 15 minutes."
+      "title": "Account temporarily suspended — {brand}",
+      "description": "The {brand} account ({username}) is temporarily suspended due to too many requests.\n\nPlease **wait 15 minutes** and restart Home Assistant.\nTip: Increase the update interval to at least 15 minutes."
     },
     "auth_failed": {
       "title": "Authentication failed — {brand}",
-      "description": "Connection to {brand} ({username}) failed.\n\nPlease check credentials under Settings → Devices & Services → VAG Connect → ⋮ → Reconfigure."
+      "description": "Connection to {brand} ({username}) failed.\n\nSettings → Devices & Services → VAG Connect → ⋮ → Reconfigure."
     }
   }
 }
