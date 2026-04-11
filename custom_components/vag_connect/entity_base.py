@@ -26,8 +26,8 @@ class VagConnectEntity(CoordinatorEntity[VagConnectCoordinator]):
 
     @property
     def _vehicle(self) -> dict:
-        """Current vehicle data dict."""
-        return self.coordinator.data.get(self._vin, {})
+        """Current vehicle data dict. Safe against None coordinator.data at startup."""
+        return (self.coordinator.data or {}).get(self._vin, {})
 
     @property
     def device_info(self) -> DeviceInfo:

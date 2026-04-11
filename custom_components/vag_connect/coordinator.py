@@ -1,21 +1,29 @@
 """
-VagConnectCoordinator — reaktiver Ansatz mit CarConnectivity Observer-Pattern.
+VagConnectCoordinator — reaktiv via CarConnectivity Observer-Pattern.
 
-Architektur:
-  - cc.startup() startet den CC Background-Thread (pollt VAG-API autonom)
-  - Wir registrieren Observer auf der Garage: VALUE_CHANGED, on_transaction_end=True
-  - Observer-Callback brückt von CC-Thread zu HA asyncio-Loop via run_coroutine_threadsafe
-  - HA update_interval = None (kein eigenes Polling)
-  - Manuelles Refresh via Button oder Service bleibt möglich
-  - Korrekte Shutdown-Sequenz: cc.shutdown() stoppt CC-Background-Thread sauber
+Datenfluss:
+  1. cc.startup()  → CC Background-Thread startet (pollt VAG-API)
+  2. Observer      → VALUE_CHANGED auf Garage, on_transaction_end=True
+  3. CC-Thread     → aktualisiert Objekte, feuert Observer-Callback
+  4. Callback      → _sync_vehicles() + asyncio.run_coroutine_threadsafe
+  5. HA-Loop       → async_set_updated_data() → async_update_listeners()
+  6. Entities      → async_write_ha_state()
 
-Minimum-Intervall Audi-Connector: 180 Sekunden (3 Minuten)
-Empfohlen: 300 Sekunden (5 Minuten) → konfigurierbar in HA-Optionen
+Thread-Safety:
+  - self._vehicles_lock  (threading.Lock) schützt self.vehicles
+  - self.vehicles wird nur in _sync_vehicles() (CC-Thread) geschrieben
+  - self.vehicles wird in _async_push_update() (HA-Loop) gelesen
+  - Lock + dict-copy verhindert Race Conditions
+
+Confirmed HA behavior:
+  - async_set_updated_data() ruft async_update_listeners() → Entities update sofort
+  - update_interval=None → kein eigenes HA-Polling, rein reaktiv
 """
 from __future__ import annotations
 
 import asyncio
 import logging
+import threading
 from typing import Any
 
 from homeassistant.core import HomeAssistant
@@ -33,27 +41,25 @@ from .const import (
 
 _LOGGER = logging.getLogger(__name__)
 
-# Minimum interval enforced by Audi connector (seconds)
+# Minimum interval enforced by Audi/VW connector (Sekunden)
 _CC_MIN_INTERVAL_S = 180
 
 
 class VagConnectCoordinator(DataUpdateCoordinator):
-    """
-    Koordiniert alle Fahrzeugdaten.
-
-    Nutzt CarConnectivitys eigenen Background-Thread + Observer-Pattern.
-    HA erhält Push-Updates sobald CC neue Daten hat — kein eigenes Polling.
-    """
+    """Koordiniert Fahrzeugdaten via CarConnectivity Observer-Push."""
 
     def __init__(self, hass: HomeAssistant, entry) -> None:
         self.entry = entry
         self._cc = None
         self._started = False
         self._observer_registered = False
-        self.vehicles: dict[str, Any] = {}
 
-        # update_interval=None: HA pollt nicht mehr selbst.
-        # Updates kommen reaktiv via _on_cc_update().
+        # Thread-safe dict für Fahrzeugdaten
+        self.vehicles: dict[str, Any] = {}
+        self._vehicles_lock = threading.Lock()
+
+        # update_interval=None: kein eigenes HA-Polling
+        # Updates kommen reaktiv via _on_cc_update → async_set_updated_data
         super().__init__(
             hass,
             _LOGGER,
@@ -61,35 +67,36 @@ class VagConnectCoordinator(DataUpdateCoordinator):
             update_interval=None,
         )
 
-    # ------------------------------------------------------------------
-    # HA lifecycle
-    # ------------------------------------------------------------------
+    # ──────────────────────────────────────────────────────────────────
+    # Lifecycle
+    # ──────────────────────────────────────────────────────────────────
 
     async def async_setup(self) -> bool:
         """
-        Startet CarConnectivity + registriert Observer.
-        Wird einmal beim Setup der Integration aufgerufen.
+        Startet CarConnectivity + erster Fetch + Observer.
+        Wird einmal in async_setup_entry aufgerufen.
+        Gibt True zurück wenn mindestens ein Fahrzeug gefunden wurde.
         """
         try:
             await self.hass.async_add_executor_job(self._start_cc)
-            return True
+            with self._vehicles_lock:
+                found = len(self.vehicles)
+            _LOGGER.info("VAG Connect: Setup OK — %d Fahrzeug(e)", found)
+            return found > 0
         except Exception as err:  # noqa: BLE001
-            _LOGGER.error("VAG Connect setup failed: %s", err)
+            _LOGGER.error("VAG Connect Setup fehlgeschlagen: %s", err)
             return False
 
     async def async_shutdown(self) -> None:
-        """Stoppt CC sauber beim Unload."""
+        """Stoppt CC Background-Thread sauber beim Unload."""
         await self.hass.async_add_executor_job(self._stop_cc)
 
-    # ------------------------------------------------------------------
-    # CarConnectivity init + observer registration
-    # ------------------------------------------------------------------
+    # ──────────────────────────────────────────────────────────────────
+    # CarConnectivity Start/Stop (blocking, im Executor)
+    # ──────────────────────────────────────────────────────────────────
 
     def _start_cc(self) -> None:
-        """
-        Blocking: Initialisiert CarConnectivity, startet Background-Thread,
-        macht einen ersten Fetch und registriert Observer.
-        """
+        """Blocking: CC initialisieren, Background-Thread starten, Observer registrieren."""
         from carconnectivity.carconnectivity import CarConnectivity  # noqa: PLC0415
         from carconnectivity.observable import Observable             # noqa: PLC0415
 
@@ -98,9 +105,11 @@ class VagConnectCoordinator(DataUpdateCoordinator):
         password = self.entry.data[CONF_PASSWORD]
         spin     = self.entry.data.get(CONF_SPIN) or None
 
-        # Intervall: User-Wert in Sekunden, mindestens CC-Minimum
-        interval_min = self.entry.data.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
-        interval_s   = max(interval_min * 60, _CC_MIN_INTERVAL_S)
+        # Intervall: User-Minuten → Sekunden, mindestens CC-Minimum
+        interval_s = max(
+            self.entry.data.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL) * 60,
+            _CC_MIN_INTERVAL_S,
+        )
 
         connector_cfg: dict[str, Any] = {
             "username": username,
@@ -116,15 +125,16 @@ class VagConnectCoordinator(DataUpdateCoordinator):
             }
         })
 
-        # Erster Fetch (blocking, im Executor)
+        # startup() startet CC Background-Thread (pollt autonom)
         cc.startup()
+        # fetch_all() holt sofort erste Daten (blocking)
         cc.fetch_all()
         self._cc = cc
         self._started = True
 
-        # Observer auf Garage registrieren.
-        # on_transaction_end=True: feuert einmal nach einem kompletten Update-Batch,
-        # nicht für jede einzelne Attributänderung.
+        # Observer auf Garage registrieren
+        # on_transaction_end=True: feuert einmal nach vollständigem Update-Batch,
+        # nicht für jede einzelne Attributänderung (effizienter)
         garage = cc.get_garage()
         if garage is not None:
             garage.add_observer(
@@ -136,18 +146,18 @@ class VagConnectCoordinator(DataUpdateCoordinator):
             _LOGGER.debug("VAG Connect: Observer auf Garage registriert")
 
         # Initiale Daten extrahieren
-        self._sync_vehicles()
+        self._sync_vehicles_unlocked(cc)
         _LOGGER.info(
-            "VAG Connect gestartet: Brand=%s, Intervall=%ds, %d Fahrzeug(e)",
-            brand, interval_s, len(self.vehicles)
+            "VAG Connect: Brand=%s, Intervall=%ds, Fahrzeuge=%d",
+            brand, interval_s, len(self.vehicles),
         )
 
     def _stop_cc(self) -> None:
-        """Blocking: Fährt CC Background-Thread sauber herunter."""
+        """Blocking: CC sauber herunterfahren."""
         try:
             if self._cc and self._started:
                 self._cc.shutdown()
-                _LOGGER.debug("VAG Connect: CC sauber heruntergefahren")
+                _LOGGER.debug("VAG Connect: CC heruntergefahren")
         except Exception as err:  # noqa: BLE001
             _LOGGER.warning("VAG Connect shutdown warning: %s", err)
         finally:
@@ -155,60 +165,58 @@ class VagConnectCoordinator(DataUpdateCoordinator):
             self._started = False
             self._observer_registered = False
 
-    # ------------------------------------------------------------------
-    # Observer Callback — Herz des reaktiven Systems
-    # ------------------------------------------------------------------
+    # ──────────────────────────────────────────────────────────────────
+    # Observer Callback
+    # ──────────────────────────────────────────────────────────────────
 
     def _on_cc_update(self, element, flags) -> None:
         """
-        Wird von CCs Background-Thread aufgerufen wenn sich Fahrzeugdaten ändern.
+        Wird von CCs Background-Thread aufgerufen wenn Daten geändert wurden.
         Brückt vom CC-Thread in HAs asyncio-Event-Loop.
-
-        element: Das Observable das sich geändert hat (Garage oder ein Vehicle-Attribut)
-        flags:   ObserverEvent-Flags (VALUE_CHANGED etc.)
         """
         if not self._started or self._cc is None:
             return
 
-        _LOGGER.debug("VAG Connect: Observer-Event empfangen (flags=%s)", flags)
+        _LOGGER.debug("VAG Connect: Observer-Event (flags=%s)", flags)
 
         try:
-            # Neue Daten aus CC-Objekten extrahieren (blocking, im CC-Thread)
-            self._sync_vehicles()
+            # Daten im CC-Thread extrahieren (Lock halten)
+            with self._vehicles_lock:
+                self._sync_vehicles_unlocked(self._cc)
+                fresh_data = dict(self.vehicles)
 
-            # HA asyncio-Loop von außen aufrufen
+            # HA asyncio-Loop benachrichtigen
             loop = self.hass.loop
             if loop and loop.is_running():
                 asyncio.run_coroutine_threadsafe(
-                    self._async_push_update(),
+                    self._async_push_update(fresh_data),
                     loop,
                 )
         except Exception as err:  # noqa: BLE001
-            _LOGGER.error("VAG Connect Observer-Callback Fehler: %s", err)
+            _LOGGER.error("VAG Connect Observer-Fehler: %s", err)
 
-    async def _async_push_update(self) -> None:
+    async def _async_push_update(self, data: dict[str, Any]) -> None:
         """
-        Pusht die bereits extrahierten Fahrzeugdaten sofort zu HA.
-        Läuft im HA asyncio-Loop (nicht im CC-Thread).
-        """
-        self.async_set_updated_data(self.vehicles)
-        _LOGGER.debug(
-            "VAG Connect: Push-Update zu HA (%d Fahrzeug(e))",
-            len(self.vehicles)
-        )
+        Pusht frische Fahrzeugdaten zu HA.
+        Läuft im HA asyncio-Loop.
 
-    # ------------------------------------------------------------------
+        async_set_updated_data() setzt coordinator.data UND ruft
+        async_update_listeners() auf → alle Entities schreiben sofort ihren State.
+        Funktioniert auch mit update_interval=None (bestätigt in HA-Source).
+        """
+        self.async_set_updated_data(data)
+        _LOGGER.debug("VAG Connect: Push zu HA — %d Fahrzeug(e)", len(data))
+
+    # ──────────────────────────────────────────────────────────────────
     # Daten-Extraktion
-    # ------------------------------------------------------------------
+    # ──────────────────────────────────────────────────────────────────
 
-    def _sync_vehicles(self) -> None:
+    def _sync_vehicles_unlocked(self, cc) -> None:
         """
-        Liest alle aktuellen Daten aus CC-Objekten und speichert sie in self.vehicles.
-        Blocking — muss im Executor oder CC-Thread laufen.
+        Liest CC-Objekte → self.vehicles.
+        MUSS unter _vehicles_lock laufen (oder beim Start vor dem Observer).
         """
-        if self._cc is None:
-            return
-        garage = self._cc.get_garage()
+        garage = cc.get_garage()
         if garage is None:
             return
 
@@ -221,7 +229,7 @@ class VagConnectCoordinator(DataUpdateCoordinator):
         self.vehicles = result
 
     def _extract(self, vehicle) -> dict[str, Any]:  # noqa: PLR0912, PLR0915
-        """Extrahiert alle CarConnectivity-Attribute in ein HA-freundliches Dict."""
+        """Extrahiert alle CarConnectivity-Attribute in ein HA-Dict."""
         from carconnectivity.drive import GenericDrive          # noqa: PLC0415
         from carconnectivity.doors import Doors                  # noqa: PLC0415
         from carconnectivity.windows import Windows              # noqa: PLC0415
@@ -250,12 +258,11 @@ class VagConnectCoordinator(DataUpdateCoordinator):
         except Exception:  # noqa: BLE001
             data["odometer_km"] = None
 
-        # Drives
+        # Drives (Verbrenner / Elektro / Hybrid)
         data["fuel_level"]  = None
         data["battery_soc"] = None
         data["range_km"]    = None
         data["is_electric"] = False
-
         try:
             electric_types = {GenericDrive.Type.ELECTRIC}
             fuel_types = {
@@ -266,7 +273,6 @@ class VagConnectCoordinator(DataUpdateCoordinator):
             total = _val(vehicle.drives.total_range)
             if total is not None:
                 data["range_km"] = total
-
             for drive in vehicle.drives.drives.values():
                 dtype = drive.type.value
                 level = _val(drive.level)
@@ -274,17 +280,15 @@ class VagConnectCoordinator(DataUpdateCoordinator):
                 if dtype in electric_types:
                     data["is_electric"] = True
                     data["battery_soc"] = level
-                    if data["range_km"] is None:
-                        data["range_km"] = rng
+                    data["range_km"]    = data["range_km"] or rng
                 elif dtype in fuel_types:
                     data["fuel_level"] = level
-                    if data["range_km"] is None:
-                        data["range_km"] = rng
+                    data["range_km"]   = data["range_km"] or rng
                 else:
-                    data["fuel_level"]  = data["fuel_level"]  or level
-                    data["range_km"]    = data["range_km"]    or rng
+                    data["fuel_level"] = data["fuel_level"] or level
+                    data["range_km"]   = data["range_km"]   or rng
         except Exception as exc:  # noqa: BLE001
-            _LOGGER.debug("Drive-Daten Fehler: %s", exc)
+            _LOGGER.debug("Drive-Daten Fehler (VIN=%s): %s", data.get("vin"), exc)
 
         # Position
         try:
@@ -293,23 +297,23 @@ class VagConnectCoordinator(DataUpdateCoordinator):
         except Exception:  # noqa: BLE001
             data["latitude"] = data["longitude"] = None
 
-        # Doors
+        # Türen
         try:
-            lock = vehicle.doors.lock_state.value
-            data["doors_locked"] = (lock == Doors.LockState.LOCKED) if lock else None
-            open_s = vehicle.doors.open_state.value
-            data["doors_open"]   = (open_s == Doors.OpenState.OPEN) if open_s else None
+            lock  = vehicle.doors.lock_state.value
+            opens = vehicle.doors.open_state.value
+            data["doors_locked"] = (lock  == Doors.LockState.LOCKED)  if lock  else None
+            data["doors_open"]   = (opens == Doors.OpenState.OPEN)    if opens else None
         except Exception:  # noqa: BLE001
             data["doors_locked"] = data["doors_open"] = None
 
-        # Windows
+        # Fenster
         try:
             ws = vehicle.windows.open_state.value
             data["windows_open"] = (ws == Windows.OpenState.OPEN) if ws else None
         except Exception:  # noqa: BLE001
             data["windows_open"] = None
 
-        # Climatisation
+        # Klimatisierung
         try:
             cs = vehicle.climatization.state.value
             data["climatisation_state"]  = cs.name if cs else None
@@ -324,16 +328,18 @@ class VagConnectCoordinator(DataUpdateCoordinator):
             data["climatisation_active"] = False
             data["target_temperature"]   = None
 
-        # Charging
+        # Laden
         try:
             charge = vehicle.charging.state.value
+            plug   = vehicle.charging.connector.connection_state.value
             data["charging_state"]  = charge.name if charge else None
             data["is_charging"]     = charge in (
                 Charging.ChargingState.CHARGING,
                 Charging.ChargingState.CONSERVATION,
             )
-            plug = vehicle.charging.connector.connection_state.value
-            data["plug_connected"]  = plug is not None and plug.name not in ("DISCONNECTED", "UNKNOWN", "INVALID")
+            data["plug_connected"]  = plug is not None and plug.name not in (
+                "DISCONNECTED", "UNKNOWN", "INVALID"
+            )
             data["plug_state"]      = plug.name if plug else None
             data["target_soc"]      = _val(vehicle.charging.settings.target_level)
         except Exception:  # noqa: BLE001
@@ -343,7 +349,7 @@ class VagConnectCoordinator(DataUpdateCoordinator):
             data["plug_state"]     = None
             data["target_soc"]     = None
 
-        # Maintenance
+        # Wartung
         try:
             data["service_due_at"] = _val(vehicle.maintenance.inspection_due_at)
             data["service_km"]     = _val(vehicle.maintenance.inspection_due_after)
@@ -353,44 +359,49 @@ class VagConnectCoordinator(DataUpdateCoordinator):
             data["service_due_at"] = data["service_km"] = None
             data["oil_service_at"] = data["oil_service_km"] = None
 
-        # Outside temperature
+        # Außentemperatur
         try:
             data["outside_temp"] = _val(vehicle.outside_temperature)
         except Exception:  # noqa: BLE001
             data["outside_temp"] = None
 
-        # Raw object für Actions
+        # Raw CC-Objekt für Actions (nicht serialisiert, nicht geloggt)
         data["_vehicle"] = vehicle
         return data
 
-    # ------------------------------------------------------------------
-    # HA DataUpdateCoordinator override
-    # ------------------------------------------------------------------
+    # ──────────────────────────────────────────────────────────────────
+    # HA DataUpdateCoordinator
+    # ──────────────────────────────────────────────────────────────────
 
     async def _async_update_data(self) -> dict[str, Any]:
         """
-        Wird nur noch bei manuellem Refresh aufgerufen (Button / Service).
-        Normaler Betrieb läuft reaktiv über _on_cc_update().
+        Wird nur bei manuellem Refresh aufgerufen (Refresh-Button, Service).
+        Normale Updates kommen reaktiv via Observer → async_set_updated_data().
+
+        Macht einen echten CC-Fetch und gibt die frischen Daten zurück.
         """
         if self._cc is None or not self._started:
-            return self.vehicles
+            with self._vehicles_lock:
+                return dict(self.vehicles)
 
         def _force_fetch():
             self._cc.fetch_all()
-            self._sync_vehicles()
-            return self.vehicles
+            with self._vehicles_lock:
+                self._sync_vehicles_unlocked(self._cc)
+                return dict(self.vehicles)
 
         try:
             result = await self.hass.async_add_executor_job(_force_fetch)
-            _LOGGER.debug("VAG Connect: Manueller Refresh abgeschlossen")
+            _LOGGER.debug("VAG Connect: Manueller Refresh OK")
             return result
         except Exception as err:  # noqa: BLE001
             _LOGGER.error("VAG Connect: Manueller Refresh fehlgeschlagen: %s", err)
-            return self.vehicles
+            with self._vehicles_lock:
+                return dict(self.vehicles)
 
-    # ------------------------------------------------------------------
-    # Vehicle Actions
-    # ------------------------------------------------------------------
+    # ──────────────────────────────────────────────────────────────────
+    # Actions
+    # ──────────────────────────────────────────────────────────────────
 
     async def async_lock(self, vin: str) -> None:
         await self._run_command(vin, "doors", "lock-unlock", "lock")
@@ -415,7 +426,8 @@ class VagConnectCoordinator(DataUpdateCoordinator):
 
     async def async_set_target_soc(self, vin: str, target: int) -> None:
         def _do():
-            v = self.vehicles.get(vin, {}).get("_vehicle")
+            with self._vehicles_lock:
+                v = self.vehicles.get(vin, {}).get("_vehicle")
             if v is None:
                 raise RuntimeError(f"Fahrzeug {vin} nicht gefunden")
             v.charging.settings.target_level.value = target
@@ -423,7 +435,8 @@ class VagConnectCoordinator(DataUpdateCoordinator):
 
     async def async_set_climatisation_temperature(self, vin: str, temp_c: float) -> None:
         def _do():
-            v = self.vehicles.get(vin, {}).get("_vehicle")
+            with self._vehicles_lock:
+                v = self.vehicles.get(vin, {}).get("_vehicle")
             if v is None:
                 raise RuntimeError(f"Fahrzeug {vin} nicht gefunden")
             v.climatization.settings.target_temperature.value = temp_c
@@ -432,19 +445,20 @@ class VagConnectCoordinator(DataUpdateCoordinator):
     async def _run_command(
         self, vin: str, subsystem: str, command_name: str, value: str
     ) -> None:
-        """Führt ein CarConnectivity-Command aus und wartet auf Observer-Update."""
+        """Führt ein CarConnectivity-Command aus."""
         def _do():
-            vehicle = self.vehicles.get(vin, {}).get("_vehicle")
+            with self._vehicles_lock:
+                vehicle = self.vehicles.get(vin, {}).get("_vehicle")
             if vehicle is None:
                 raise RuntimeError(f"Fahrzeug {vin} nicht gefunden")
 
-            subsystem_map = {
+            sub_map = {
                 "doors":         vehicle.doors,
                 "charging":      vehicle.charging,
                 "climatization": vehicle.climatization,
                 "lights":        vehicle.lights,
             }
-            sub = subsystem_map.get(subsystem)
+            sub = sub_map.get(subsystem)
             if sub is None:
                 raise RuntimeError(f"Unbekanntes Subsystem: {subsystem}")
 
@@ -452,11 +466,14 @@ class VagConnectCoordinator(DataUpdateCoordinator):
             if not cmds.contains_command(command_name):
                 raise RuntimeError(
                     f"Command '{command_name}' nicht verfügbar für {vin} "
-                    f"(subsystem={subsystem}). S-PIN gesetzt?"
+                    f"(subsystem={subsystem}). S-PIN gesetzt? Fahrzeug-Capabilities prüfen."
                 )
             cmds.commands[command_name].value = value
-            _LOGGER.info("VAG Command: %s / %s / %s -> %s", vin, subsystem, command_name, value)
+            _LOGGER.info(
+                "VAG Command ausgeführt: VIN=%s | %s/%s → %s",
+                vin, subsystem, command_name, value,
+            )
 
         await self.hass.async_add_executor_job(_do)
-        # Nach einem Command sofort Daten neu holen
-        await self._async_update_data()
+        # Nach Command sofort manuellen Refresh anstossen
+        await self.async_request_refresh()

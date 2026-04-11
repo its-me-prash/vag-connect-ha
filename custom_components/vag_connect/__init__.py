@@ -52,11 +52,16 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     # Startet CC Background-Thread + erster Fetch + Observer-Registrierung
     ok = await coordinator.async_setup()
-    if not ok or not coordinator.vehicles:
+    if not ok:
         raise ConfigEntryNotReady(
             "VAG Connect: Keine Fahrzeuge gefunden oder Verbindung fehlgeschlagen. "
             "Zugangsdaten und Netzwerk prüfen."
         )
+
+    # coordinator.data MUSS vor async_forward_entry_setups befüllt sein,
+    # sonst bekommen Entities beim Start None → AttributeError.
+    # async_set_updated_data() setzt data UND ruft async_update_listeners() auf.
+    coordinator.async_set_updated_data(dict(coordinator.vehicles))
 
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = coordinator
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
