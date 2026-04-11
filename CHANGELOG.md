@@ -256,6 +256,43 @@ Jede Version folgt diesem Ablauf:
 ```
 
 
+
+## [0.3.1] - 2026-04-11
+
+### Behoben
+
+#### Ladegeschwindigkeit-Sensor falsch benannt
+- **Vorher:** Name "Ladegeschwindigkeit", Einheit "km/h" → klang nach Fahrzeuggeschwindigkeit
+- **Nachher:** Name "Lade-Reichweite pro Stunde", Einheit "km/h"
+  Bedeutung: Wie viele km Reichweite werden pro Stunde geladen (z.B. 120 km/h = nach 1h Laden hat man 120 km mehr)
+  Kein `SensorDeviceClass.SPEED` — das wäre falsch (Fahrzeuggeschwindigkeit)
+  **Autor:** @Prash1407
+
+### Hinzugefügt
+
+#### HA Repair-Issues für Auth-Fehler (2FA, T&C, gesperrter Account)
+Statt stiller Fehler im Log erscheint jetzt eine sichtbare Meldung im HA UI
+unter **Einstellungen → System → Reparaturen** mit konkreter Handlungsanweisung.
+
+| Fehler | Reparatur-Anleitung |
+|---|---|
+| `two_factor_required` | App öffnen, einmalig 2FA bestätigen, HA neu starten |
+| `terms_and_conditions` | App öffnen, T&C akzeptieren |
+| `marketing_consent` | App → Profil → Zustimmungen |
+| `too_many_requests` | 15 Minuten warten, Intervall erhöhen |
+| `auth_failed` | Zugangsdaten prüfen, neu konfigurieren |
+
+Nach erfolgreichem Login werden alle alten Repair-Issues automatisch gelöscht.
+  **Autor:** @Prash1407
+  **Referenz Issue:** #7 (2FA upstream), myskoda#976, myskoda#934
+
+#### Warum 2FA nicht vollständig automatisierbar ist
+Der CarConnectivity-Connector hat keinen OTP-Eingabe-Schritt im Auth-Flow.
+VW/Audi sendet den Code per E-Mail — das kann HA nicht abfangen.
+Der **Token-Persistenz-Workaround** (seit v0.2.0) funktioniert so:
+1. Einmal manuell in der App 2FA bestätigen
+2. Tokens werden in `.storage/vag_connect_tokens_*.json` gespeichert
+3. Bei HA-Neustarts werden gespeicherte Tokens wiederverwendet → kein Re-Auth
 ## [0.3.0] - 2026-04-11
 
 Schließt Issues #1, #2, #3, #4, #6 aus der Ökosystem-Analyse.

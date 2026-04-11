@@ -138,5 +138,27 @@
         "seatcupra": "SEAT / CUPRA (MyCupra)"
       }
     }
+  },
+  "issues": {
+    "two_factor_required": {
+      "title": "2FA-Bestätigung erforderlich — {brand}",
+      "description": "Dein {brand}-Konto ({username}) verlangt eine Zwei-Faktor-Bestätigung.\n\n**Workaround (einmalig):**\n1. Öffne die **{brand}-App** auf deinem Smartphone\n2. Melde dich dort **einmal manuell** an\n3. Bestätige den 2FA-Code der per E-Mail kommt\n4. Starte Home Assistant neu\n\nDanach werden Tokens lokal gespeichert — kein Re-Auth mehr nötig."
+    },
+    "terms_and_conditions": {
+      "title": "Nutzungsbedingungen akzeptieren — {brand}",
+      "description": "Du musst neue Nutzungsbedingungen für {brand} ({username}) akzeptieren.\n\n1. Öffne die **{brand}-App**\n2. Melde dich an und akzeptiere die Bedingungen\n3. Komme zurück und starte die Integration neu"
+    },
+    "marketing_consent": {
+      "title": "Zustimmung erforderlich — {brand}",
+      "description": "Neue Datenschutzzustimmung für {brand} ({username}) erforderlich.\n\nApp öffnen → Profil → Zustimmungen → bestätigen → HA neu starten."
+    },
+    "too_many_requests": {
+      "title": "Account temporär gesperrt — {brand}",
+      "description": "{brand}-Account ({username}) ist temporär gesperrt (zu viele Anfragen).\n\nBitte **15 Minuten warten** und dann Home Assistant neu starten.\nReduziere das Abfrageintervall auf mindestens 15 Minuten."
+    },
+    "auth_failed": {
+      "title": "Anmeldung fehlgeschlagen — {brand}",
+      "description": "Die Verbindung zu {brand} ({username}) ist fehlgeschlagen.\n\nBitte prüfe die Zugangsdaten unter Einstellungen → Geräte & Dienste → VAG Connect → ⋮ → Neu konfigurieren."
+    }
   }
 }

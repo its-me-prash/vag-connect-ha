@@ -76,7 +76,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     try:
         ok = await coordinator.async_setup()
     except ValueError as err:
-        msg = _ERROR_MAP.get(str(err), f"Setup-Fehler: {err}")
+        reason = str(err)
+        msg = _ERROR_MAP.get(reason, f"Setup-Fehler: {err}")
+        # HA Repair-Issue erstellen — sichtbar unter Einstellungen → Reparaturen
+        from .repairs import raise_issue_auth_required  # noqa: PLC0415
+        raise_issue_auth_required(hass, entry.entry_id, reason)
         raise ConfigEntryNotReady(msg) from err
     except Exception as err:  # noqa: BLE001
         raise ConfigEntryNotReady(f"Verbindungsfehler: {err}") from err
@@ -85,6 +89,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         raise ConfigEntryNotReady(
             "Keine Fahrzeuge gefunden. Zugangsdaten und Netzwerk prüfen."
         )
+
+    # Auth erfolgreich — alle alten Auth-Issues löschen
+    from .repairs import clear_auth_issues  # noqa: PLC0415
+    clear_auth_issues(hass, entry.entry_id)
 
     # coordinator.data MUSS vor async_forward_entry_setups befüllt sein,
     # sonst bekommen Entities beim Start None → AttributeError.

@@ -138,5 +138,27 @@
         "seatcupra": "SEAT / CUPRA (MyCupra)"
       }
     }
+  },
+  "issues": {
+    "two_factor_required": {
+      "title": "2FA confirmation required — {brand}",
+      "description": "Your {brand} account ({username}) requires two-factor authentication.\n\n**One-time workaround:**\n1. Open the **{brand} app** on your phone\n2. Sign in manually once\n3. Confirm the 2FA code sent via email\n4. Restart Home Assistant\n\nTokens will be stored locally after this — no re-auth needed."
+    },
+    "terms_and_conditions": {
+      "title": "Accept terms and conditions — {brand}",
+      "description": "New terms and conditions for {brand} ({username}) need to be accepted.\n\n1. Open the **{brand} app**\n2. Sign in and accept the terms\n3. Restart the integration"
+    },
+    "marketing_consent": {
+      "title": "Consent required — {brand}",
+      "description": "New privacy consent for {brand} ({username}) required.\n\nApp → Profile → Consents → confirm → restart HA."
+    },
+    "too_many_requests": {
+      "title": "Account temporarily blocked — {brand}",
+      "description": "{brand} account ({username}) is temporarily blocked (too many requests).\n\nPlease **wait 15 minutes** and restart Home Assistant.\nIncrease the poll interval to at least 15 minutes."
+    },
+    "auth_failed": {
+      "title": "Authentication failed — {brand}",
+      "description": "Connection to {brand} ({username}) failed.\n\nPlease check credentials under Settings → Devices & Services → VAG Connect → ⋮ → Reconfigure."
+    }
   }
 }

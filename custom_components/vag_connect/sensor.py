@@ -212,10 +212,12 @@ SENSOR_DESCRIPTIONS = SENSOR_DESCRIPTIONS + (
     VagSensorDescription(
         key="charging_rate_kmh",
         data_key="charging_rate_kmh",
-        name="Ladegeschwindigkeit",
+        # km/h = km Reichweite die pro Stunde geladen wird
+        # KEIN SensorDeviceClass.SPEED — das waere Fahrzeuggeschwindigkeit
+        name="Lade-Reichweite pro Stunde",
         native_unit_of_measurement="km/h",
         state_class=SensorStateClass.MEASUREMENT,
-        icon="mdi:speedometer",
+        icon="mdi:battery-charging-outline",
         condition="electric",
     ),
 )
