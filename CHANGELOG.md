@@ -254,3 +254,51 @@ Jede Version folgt diesem Ablauf:
    - git push origin vX.Y.Z
    → GitHub Actions release.yml erstellt automatisch ZIP + Release
 ```
+
+
+## [0.3.0] - 2026-04-11
+
+Schließt Issues #1, #2, #3, #4, #6 aus der Ökosystem-Analyse.
+
+### Hinzugefügt
+
+#### Ladeleistung + Ladegeschwindigkeit (Issue #2)
+- `sensor.*_ladeleistung` — aktuelle Ladeleistung in kW
+- `sensor.*_ladegeschwindigkeit` — Ladegeschwindigkeit in km/h
+- Datenquelle: `vehicle.charging.power.value` + `vehicle.charging.rate.value`
+  **Autor:** @Prash1407
+  **Quell-Issue:** #2
+
+#### Individuelle Tür-Sensoren (Issue #3)
+- Dynamische `binary_sensor.*_tur_vorne_links/rechts/hinten_links/rechts` etc.
+- `binary_sensor.*_kofferraum` + `binary_sensor.*_motorhaube`
+- Werden automatisch angelegt basierend auf `vehicle.doors.doors`-Dict
+- Deutsch: frontLeft, frontRight, rearLeft, rearRight, trunk, bonnet
+  **Autor:** @Prash1407
+  **Quell-Issue:** #3
+
+#### Sitzheizung Switch (Issue #6)
+- `switch.*_sitzheizung` — Sitzheizung Ein/Aus
+- Nutzt `vehicle.climatization.settings.seat_heating`
+  **Autor:** @Prash1407
+  **Quell-Issue:** #6
+
+#### force_enable_access Option (Issue #1)
+- Neues optionales Feld im Config-Flow: "Türen erzwingen"
+- Für ältere VW/Audi-Modelle die keine 'access' Capability melden
+- Wird als `force_enable_access: true` an den CC-Connector weitergegeben
+  **Autor:** @Prash1407
+  **Quell-Issue:** #1
+  **Referenz:** CarConnectivity-connector-volkswagen force_enable_access Option
+
+### Behoben
+
+#### Stale Data bei VAG-Server-Fehler (Issue #4)
+- Wenn der VAG-Server nicht erreichbar ist oder einen Fehler zurückgibt,
+  werden Entities jetzt als `unavailable` markiert statt veraltete Werte zu zeigen
+- `_on_cc_update` übergibt `success=False` bei Exception
+- `_async_push_update(data, success=False)` setzt `last_update_success=False`
+  und ruft `async_update_listeners()` auf — HA rendert Entities als unavailable
+  **Autor:** @Prash1407
+  **Quell-Issue:** #4
+  **Referenz:** myskoda#731 Wrong/old sensor info when server unavailable

@@ -66,3 +66,5 @@ ICON_CHARGE     = "mdi:ev-plug-type2"
 ICON_SERVICE    = "mdi:wrench-clock"
 ICON_OIL        = "mdi:oil"
 ICON_TEMP       = "mdi:thermometer"
+
+CONF_FORCE_ACCESS = "force_enable_access"  # VW/Audi ohne access-Capability

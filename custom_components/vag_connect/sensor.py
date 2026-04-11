@@ -195,3 +195,27 @@ class VagConnectSensor(VagConnectEntity, SensorEntity):
     @property
     def native_value(self) -> Any:
         return self._vehicle.get(self.entity_description.data_key)
+
+
+# ── Issue #2: Ladeleistung + Ladegeschwindigkeit ──────────────────────────────
+SENSOR_DESCRIPTIONS = SENSOR_DESCRIPTIONS + (
+    VagSensorDescription(
+        key="charging_power_kw",
+        data_key="charging_power_kw",
+        name="Ladeleistung",
+        native_unit_of_measurement="kW",
+        device_class=SensorDeviceClass.POWER,
+        state_class=SensorStateClass.MEASUREMENT,
+        icon="mdi:ev-plug-type2",
+        condition="electric",
+    ),
+    VagSensorDescription(
+        key="charging_rate_kmh",
+        data_key="charging_rate_kmh",
+        name="Ladegeschwindigkeit",
+        native_unit_of_measurement="km/h",
+        state_class=SensorStateClass.MEASUREMENT,
+        icon="mdi:speedometer",
+        condition="electric",
+    ),
+)

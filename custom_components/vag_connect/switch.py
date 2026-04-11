@@ -23,6 +23,7 @@ async def async_setup_entry(
         entities.append(VagLockSwitch(coordinator, vin))
         entities.append(VagClimatisationSwitch(coordinator, vin))
         entities.append(VagWindowHeatingSwitch(coordinator, vin))
+        entities.append(VagSeatHeatingSwitch(coordinator, vin))
         if vehicle.get("is_electric"):
             entities.append(VagChargingSwitch(coordinator, vin))
 
@@ -124,3 +125,40 @@ class VagWindowHeatingSwitch(VagConnectEntity, SwitchEntity):
 
     async def async_turn_off(self, **kwargs) -> None:
         await self.coordinator.async_stop_window_heating(self._vin)
+
+
+class VagSeatHeatingSwitch(VagConnectEntity, SwitchEntity):
+    """Sitzheizung Ein/Aus — Issue #6."""
+
+    _attr_name = "Sitzheizung"
+    _attr_icon = "mdi:car-seat-heater"
+
+    def __init__(self, coordinator, vin):
+        super().__init__(coordinator, vin, "seat_heating_switch")
+
+    @property
+    def is_on(self) -> bool | None:
+        try:
+            v = self._vehicle.get("_vehicle")
+            if v is None:
+                return None
+            val = v.climatization.settings.seat_heating.value
+            return bool(val) if val is not None else None
+        except Exception:  # noqa: BLE001
+            return None
+
+    async def async_turn_on(self, **kwargs) -> None:
+        async def _set():
+            v = self._vehicle.get("_vehicle")
+            if v:
+                v.climatization.settings.seat_heating.value = True
+        await self.coordinator.hass.async_add_executor_job(_set)
+        await self.coordinator.async_request_refresh()
+
+    async def async_turn_off(self, **kwargs) -> None:
+        async def _set():
+            v = self._vehicle.get("_vehicle")
+            if v:
+                v.climatization.settings.seat_heating.value = False
+        await self.coordinator.hass.async_add_executor_job(_set)
+        await self.coordinator.async_request_refresh()

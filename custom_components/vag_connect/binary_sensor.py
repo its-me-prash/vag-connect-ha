@@ -86,6 +86,10 @@ async def async_setup_entry(
                 continue
             entities.append(VagConnectBinarySensor(coordinator, vin, desc))
 
+    # Issue #3: Individuelle Tür-Sensoren
+    for vin, vehicle in coordinator.vehicles.items():
+        await _async_setup_door_sensors(coordinator, vin, vehicle, entities)
+
     async_add_entities(entities)
 
 
@@ -102,3 +106,49 @@ class VagConnectBinarySensor(VagConnectEntity, BinarySensorEntity):
         if val is None:
             return None
         return bool(val)
+
+
+# ── Issue #3: Individuelle Tür-Sensoren ─────────────────────────────────────
+
+_DOOR_NAMES = {
+    "frontLeft":  "Tür vorne links",
+    "frontRight": "Tür vorne rechts",
+    "rearLeft":   "Tür hinten links",
+    "rearRight":  "Tür hinten rechts",
+    "trunk":      "Kofferraum",
+    "bonnet":     "Motorhaube",
+}
+
+
+class VagDoorSensor(VagConnectEntity, BinarySensorEntity):
+    """Binary Sensor für eine einzelne Tür/Kofferraum/Motorhaube."""
+
+    _attr_device_class = BinarySensorDeviceClass.DOOR
+
+    def __init__(
+        self,
+        coordinator: VagConnectCoordinator,
+        vin: str,
+        door_id: str,
+    ) -> None:
+        super().__init__(coordinator, vin, f"door_{door_id}")
+        self._door_id = door_id
+        self._attr_name = _DOOR_NAMES.get(door_id, door_id)
+        self._attr_icon = "mdi:car-door" if "door" in door_id.lower() or "rear" in door_id.lower() or "front" in door_id.lower() else "mdi:car-door-lock"
+
+    @property
+    def is_on(self) -> bool | None:
+        doors = self._vehicle.get("doors_individual", {})
+        return doors.get(self._door_id)
+
+
+async def _async_setup_door_sensors(
+    coordinator: VagConnectCoordinator,
+    vin: str,
+    vehicle: dict,
+    entities: list,
+) -> None:
+    """Legt individuelle Tür-Sensoren an basierend auf Fahrzeug-Doors-Dict."""
+    doors = vehicle.get("doors_individual", {})
+    for door_id in doors:
+        entities.append(VagDoorSensor(coordinator, vin, door_id))

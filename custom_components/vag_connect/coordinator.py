@@ -141,6 +141,10 @@ class VagConnectCoordinator(DataUpdateCoordinator):
         }
         if spin:
             connector_cfg["spin"] = spin
+        # Issue #1: force_enable_access für ältere VW/Audi-Modelle ohne 'access' Capability
+        if self.entry.data.get("force_enable_access", False):
+            connector_cfg["force_enable_access"] = True
+            _LOGGER.info("VAG Connect: force_enable_access aktiviert")
 
         cc = CarConnectivity(
             config={
@@ -207,32 +211,39 @@ class VagConnectCoordinator(DataUpdateCoordinator):
         _LOGGER.debug("VAG Connect: Observer-Event (flags=%s)", flags)
 
         try:
-            # Daten im CC-Thread extrahieren (Lock halten)
             with self._vehicles_lock:
                 self._sync_vehicles_unlocked(self._cc)
                 fresh_data = dict(self.vehicles)
 
-            # HA asyncio-Loop benachrichtigen
             loop = self.hass.loop
             if loop and loop.is_running():
                 asyncio.run_coroutine_threadsafe(
-                    self._async_push_update(fresh_data),
+                    self._async_push_update(fresh_data, success=True),
                     loop,
                 )
         except Exception as err:  # noqa: BLE001
             _LOGGER.error("VAG Connect Observer-Fehler: %s", err)
+            # Entities auf unavailable setzen (Fix Issue #4: Stale Data)
+            loop = self.hass.loop
+            if loop and loop.is_running():
+                asyncio.run_coroutine_threadsafe(
+                    self._async_push_update({}, success=False),
+                    loop,
+                )
 
-    async def _async_push_update(self, data: dict[str, Any]) -> None:
+    async def _async_push_update(self, data: dict, success: bool = True) -> None:
         """
-        Pusht frische Fahrzeugdaten zu HA.
-        Läuft im HA asyncio-Loop.
-
-        async_set_updated_data() setzt coordinator.data UND ruft
-        async_update_listeners() auf → alle Entities schreiben sofort ihren State.
-        Funktioniert auch mit update_interval=None (bestätigt in HA-Source).
+        Pusht Fahrzeugdaten zu HA.
+        success=False: setzt last_update_success=False → Entities zeigen 'unavailable'.
         """
-        self.async_set_updated_data(data)
-        _LOGGER.debug("VAG Connect: Push zu HA — %d Fahrzeug(e)", len(data))
+        if success:
+            self.async_set_updated_data(data)
+            _LOGGER.debug("VAG Connect: Push zu HA — %d Fahrzeug(e)", len(data))
+        else:
+            # Entities unavailable machen ohne die gespeicherten Daten zu überschreiben
+            self.last_update_success = False
+            self.async_update_listeners()
+            _LOGGER.warning("VAG Connect: Fehler-Push — Entities auf unavailable gesetzt")
 
     # ──────────────────────────────────────────────────────────────────
     # Daten-Extraktion
@@ -324,14 +335,24 @@ class VagConnectCoordinator(DataUpdateCoordinator):
         except Exception:  # noqa: BLE001
             data["latitude"] = data["longitude"] = None
 
-        # Türen
+        # Türen — global + individuell (Issue #3)
         try:
             lock  = vehicle.doors.lock_state.value
             opens = vehicle.doors.open_state.value
-            data["doors_locked"] = (lock  == Doors.LockState.LOCKED)  if lock  else None
-            data["doors_open"]   = (opens == Doors.OpenState.OPEN)    if opens else None
+            data["doors_locked"] = (lock  == Doors.LockState.LOCKED) if lock  else None
+            data["doors_open"]   = (opens == Doors.OpenState.OPEN)   if opens else None
+            # Individuelle Türen: dict keyed by door_id
+            individual: dict = {}
+            for door_id, door in vehicle.doors.doors.items():
+                try:
+                    ds = door.open_state.value
+                    individual[door_id] = (ds == Doors.OpenState.OPEN) if ds else None
+                except Exception:  # noqa: BLE001
+                    individual[door_id] = None
+            data["doors_individual"] = individual  # z.B. {"frontLeft": False, "trunk": True}
         except Exception:  # noqa: BLE001
             data["doors_locked"] = data["doors_open"] = None
+            data["doors_individual"] = {}
 
         # Fenster
         try:
@@ -368,10 +389,14 @@ class VagConnectCoordinator(DataUpdateCoordinator):
                 "DISCONNECTED", "UNKNOWN", "INVALID"
             )
             data["plug_state"]      = plug.name if plug else None
-            data["target_soc"]      = _val(vehicle.charging.settings.target_level)
+            data["target_soc"]        = _val(vehicle.charging.settings.target_level)
+            data["charging_power_kw"] = _val(vehicle.charging.power)
+            data["charging_rate_kmh"] = _val(vehicle.charging.rate)
         except Exception:  # noqa: BLE001
-            data["charging_state"] = None
-            data["is_charging"]    = False
+            data["charging_state"]    = None
+            data["is_charging"]       = False
+            data["charging_power_kw"] = None
+            data["charging_rate_kmh"] = None
             data["plug_connected"] = None
             data["plug_state"]     = None
             data["target_soc"]     = None
