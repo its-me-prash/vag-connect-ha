@@ -27,6 +27,20 @@ Geplant für 0.2.0:
 - Abfahrtstimer (Departure Timer) für EVs
 
 
+
+## [0.2.1] - 2026-04-11
+
+Hotfix: fehlende Service-Registrierungen nach Cross-Check entdeckt.
+
+### Behoben
+
+#### Services für Fensterheizung und Wake fehlten
+- `vag_connect.start_window_heating` nicht in _register_services() registriert
+- `vag_connect.stop_window_heating` nicht registriert
+- `vag_connect.wake_vehicle` nicht registriert
+- services.yaml fehlten die drei neuen Einträge
+  **Entdeckt durch:** automatisierten Cross-Check (Coordinator-Actions vs. Services)
+  **Autor:** @Prash1407
 ## [0.2.0] - 2026-04-11
 
 Features aus Issue-Analyse des gesamten VAG-HA-Ökosystems.

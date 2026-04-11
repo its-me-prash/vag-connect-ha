@@ -132,6 +132,18 @@ def _register_services(hass: HomeAssistant) -> None:
         if c := _get_coordinator(hass, call.data["vin"]):
             await c.async_stop_charging(call.data["vin"])
 
+    async def _handle_start_window(call: ServiceCall) -> None:
+        if c := _get_coordinator(hass, call.data["vin"]):
+            await c.async_start_window_heating(call.data["vin"])
+
+    async def _handle_stop_window(call: ServiceCall) -> None:
+        if c := _get_coordinator(hass, call.data["vin"]):
+            await c.async_stop_window_heating(call.data["vin"])
+
+    async def _handle_wake(call: ServiceCall) -> None:
+        if c := _get_coordinator(hass, call.data["vin"]):
+            await c.async_wake_vehicle(call.data["vin"])
+
     async def _handle_flash(call: ServiceCall) -> None:
         if c := _get_coordinator(hass, call.data["vin"]):
             await c.async_flash_lights(call.data["vin"])
@@ -141,14 +153,17 @@ def _register_services(hass: HomeAssistant) -> None:
             await coordinator.async_request_refresh()
 
     for name, handler, schema in [
-        ("lock",                _handle_lock,         SERVICE_VIN_SCHEMA),
-        ("unlock",              _handle_unlock,        SERVICE_VIN_SCHEMA),
-        ("start_climatisation", _handle_start_clim,    SERVICE_VIN_SCHEMA),
-        ("stop_climatisation",  _handle_stop_clim,     SERVICE_VIN_SCHEMA),
-        ("start_charging",      _handle_start_charge,  SERVICE_VIN_SCHEMA),
-        ("stop_charging",       _handle_stop_charge,   SERVICE_VIN_SCHEMA),
-        ("flash_lights",        _handle_flash,         SERVICE_VIN_SCHEMA),
-        ("refresh_vehicle",     _handle_refresh,       vol.Schema({})),
+        ("lock",                  _handle_lock,           SERVICE_VIN_SCHEMA),
+        ("unlock",                _handle_unlock,          SERVICE_VIN_SCHEMA),
+        ("start_climatisation",   _handle_start_clim,      SERVICE_VIN_SCHEMA),
+        ("stop_climatisation",    _handle_stop_clim,       SERVICE_VIN_SCHEMA),
+        ("start_charging",        _handle_start_charge,    SERVICE_VIN_SCHEMA),
+        ("stop_charging",         _handle_stop_charge,     SERVICE_VIN_SCHEMA),
+        ("start_window_heating",  _handle_start_window,    SERVICE_VIN_SCHEMA),
+        ("stop_window_heating",   _handle_stop_window,     SERVICE_VIN_SCHEMA),
+        ("wake_vehicle",          _handle_wake,            SERVICE_VIN_SCHEMA),
+        ("flash_lights",          _handle_flash,           SERVICE_VIN_SCHEMA),
+        ("refresh_vehicle",       _handle_refresh,         vol.Schema({})),
     ]:
         hass.services.async_register(DOMAIN, name, handler, schema)
 
@@ -166,7 +181,9 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     if not hass.data.get(DOMAIN):
         for svc in ["lock", "unlock", "start_climatisation", "stop_climatisation",
-                    "start_charging", "stop_charging", "flash_lights", "refresh_vehicle"]:
+                    "start_charging", "stop_charging", "start_window_heating",
+                    "stop_window_heating", "wake_vehicle",
+                    "flash_lights", "refresh_vehicle"]:
             hass.services.async_remove(DOMAIN, svc)
 
     return unload_ok

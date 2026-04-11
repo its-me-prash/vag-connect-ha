@@ -76,3 +76,33 @@ flash_lights:
       required: true
       selector:
         text:
+
+start_window_heating:
+  name: Fensterheizung starten
+  description: Startet die Fensterheizung des Fahrzeugs.
+  fields:
+    vin:
+      name: VIN
+      required: true
+      selector:
+        text:
+
+stop_window_heating:
+  name: Fensterheizung stoppen
+  description: Stoppt die Fensterheizung des Fahrzeugs.
+  fields:
+    vin:
+      name: VIN
+      required: true
+      selector:
+        text:
+
+wake_vehicle:
+  name: Fahrzeug aufwecken
+  description: Weckt das Fahrzeug auf und erzwingt eine Status-Aktualisierung.
+  fields:
+    vin:
+      name: VIN
+      required: true
+      selector:
+        text:
