@@ -329,6 +329,10 @@ class VagConnectCoordinator(DataUpdateCoordinator):
             if total is not None:
                 data["range_km"] = total
 
+            data["range_estimated_full_km"] = None
+            data["range_wltp_km"]           = None
+            data["battery_available_kwh"]   = None
+
             for drive in vehicle.drives.drives.values():
                 dtype = drive.type.value
                 level = _val(drive.level)
@@ -337,6 +341,18 @@ class VagConnectCoordinator(DataUpdateCoordinator):
                     data["has_battery"] = True
                     data["battery_soc"] = level
                     data["range_km"]    = data["range_km"] or rng
+                    # Extrafelder aus ElectricDrive
+                    if data["range_estimated_full_km"] is None:
+                        data["range_estimated_full_km"] = _val(drive.range_estimated_full)
+                    if data["range_wltp_km"] is None:
+                        data["range_wltp_km"] = _val(drive.range_wltp)
+                    # Verfügbare Akku-Energie (kWh)
+                    try:
+                        avail = _val(drive.battery.available_capacity)
+                        if avail is not None:
+                            data["battery_available_kwh"] = round(avail, 1)
+                    except Exception:  # noqa: BLE001
+                        pass
                 elif dtype in fuel_types:
                     data["has_combustion"] = True
                     data["fuel_level"] = level
@@ -546,6 +562,10 @@ class VagConnectCoordinator(DataUpdateCoordinator):
                     data[key_enabled] = data[key_time] = None
             except Exception:  # noqa: BLE001
                 data[key_enabled] = data[key_time] = None
+
+        # Zeitstempel: wann hat das Fahrzeug zuletzt Daten gesendet
+        from datetime import datetime, timezone  # noqa: PLC0415
+        data["last_updated_at"] = datetime.now(tz=timezone.utc)
 
         # Raw CC-Objekt für Actions (nicht serialisiert, nicht geloggt)
         data["_vehicle"] = vehicle

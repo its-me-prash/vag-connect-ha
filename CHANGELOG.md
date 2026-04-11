@@ -20,11 +20,47 @@ ci:       CI/CD-Änderungen
 
 ## [Unreleased]
 
-Geplant für 0.6.0:
+Geplant für 0.7.0:
 - Porsche-Support (Issue #9) — wartet auf `carconnectivity-connector-porsche` auf PyPI
 - HACS offizieller Antrag (Issue #10) — benötigt mehr Tester
 
 ---
+
+## [0.6.0] - 2026-04-12
+
+### Hinzugefügt
+
+#### EntityCategory.DIAGNOSTIC — saubere Entity-Struktur
+Technische Sensoren die nicht täglich gebraucht werden, erscheinen jetzt nur noch unter **Gerätediagnose** statt im Haupt-Dashboard:
+
+- `firmware_version`, `license_plate`, `connection_state` → DIAGNOSTIC
+- `battery_temp`, `battery_cap_kwh` → DIAGNOSTIC  
+- `charging_type`, `charging_station_address/kw/operator` → DIAGNOSTIC
+- `heading`, `parking_city`, `service_due_at`, `oil_service_at` → DIAGNOSTIC
+- `is_online`, `connector_locked` (binary) → DIAGNOSTIC
+- Number-Sliders (Ladeziel, Klimatemp, Ladestrom) → CONFIG
+
+#### Neue Sensoren
+- `sensor.{fahrzeug}_reichweite_bei_100_prozent` — geschätzte Reichweite bei vollem Akku (aus drive.range_estimated_full)
+- `sensor.{fahrzeug}_wltp_reichweite` — WLTP-Normreichweite (DIAGNOSTIC)
+- `sensor.{fahrzeug}_akkuenergie_verfugbar` — verfügbare Akkuenergie in kWh
+- `sensor.{fahrzeug}_zuletzt_aktualisiert` — Timestamp letztes Fahrzeug-Update (DIAGNOSTIC)
+
+#### Fixes
+- Typo `Ladziel` → `Ladeziel` in number.py behoben
+- `Max Ladestrom` → `Max. Ladestrom` (korrekte Abkürzung)
+
+#### UX / Infrastruktur
+- Config Flow: Hinweis auf separaten App-Account (schützt vor API-Sperren)
+- `hacs.json`: `iot_class` ergänzt für HACS Analytics-Tracking
+- `docs/lovelace-example.yaml`: Fertiges Beispiel-Dashboard (mushroom + mini-graph-card)
+- README: Analytics-Badge, Account-Empfehlung, Dashboard-Link, alle 8 Sprachen
+- Alle 8 Übersetzungen auf 99/99 Keys synchronisiert
+- 6 neue Tests → **69/69 grün**
+
+_Autor: @Prash1407_
+
+
 
 ## [0.5.0] - 2026-04-12
 

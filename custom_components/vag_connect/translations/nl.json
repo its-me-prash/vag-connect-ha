@@ -147,6 +147,18 @@
       },
       "departure_timer_3_time": {
         "name": "Vertrektimer 3"
+      },
+      "range_estimated_full_km": {
+        "name": "Bereik bij 100%"
+      },
+      "range_wltp_km": {
+        "name": "WLTP-bereik"
+      },
+      "battery_available_kwh": {
+        "name": "Beschikbare accuenergie"
+      },
+      "last_updated_at": {
+        "name": "Laatste update"
       }
     },
     "binary_sensor": {
@@ -216,6 +228,12 @@
       },
       "max_charge_current": {
         "name": "Max. laadstroom"
+      },
+      "target_soc": {
+        "name": "Laaddoel"
+      },
+      "target_temperature": {
+        "name": "Klimaattemperatuur"
       }
     },
     "button": {

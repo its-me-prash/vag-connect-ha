@@ -1,0 +1,135 @@
+# VAG Connect — Beispiel Lovelace Dashboard
+# ──────────────────────────────────────────
+# Ersetzt AUDI_Q4_E_TRON mit deinem Fahrzeugnamen (z.B. volkswagen_id_4, skoda_enyaq_iv)
+# Benötigt: mushroom-cards (HACS), mini-graph-card (HACS), card-mod (HACS)
+#
+# Installation: HACS → Frontend → "Mushroom" + "mini-graph-card" suchen
+
+# ── Haupt-Karte: Fahrzeugübersicht ──────────────────────────────────────────
+type: custom:mushroom-template-card
+primary: Audi Q4 e-tron
+secondary: >
+  {{ states('sensor.audi_q4_e_tron_akkustand') }}% · 
+  {{ states('sensor.audi_q4_e_tron_reichweite') }} km
+  {% if is_state('binary_sensor.audi_q4_e_tron_ladt', 'on') %}· ⚡ Lädt{% endif %}
+  {% if is_state('binary_sensor.audi_q4_e_tron_turen_offen', 'on') %}· 🚪 Offen{% endif %}
+icon: mdi:car-electric
+icon_color: >
+  {% set soc = states('sensor.audi_q4_e_tron_akkustand') | int(0) %}
+  {% if soc > 60 %}green
+  {% elif soc > 25 %}orange
+  {% else %}red{% endif %}
+tap_action:
+  action: navigate
+  navigation_path: /lovelace/fahrzeug
+
+---
+# ── Akkustand mit History ────────────────────────────────────────────────────
+type: custom:mini-graph-card
+entities:
+  - entity: sensor.audi_q4_e_tron_akkustand
+    name: Akkustand
+  - entity: sensor.audi_q4_e_tron_reichweite
+    name: Reichweite
+    y_axis: secondary
+hours_to_show: 24
+points_per_hour: 4
+line_color: "#4CAF50"
+fill: true
+show:
+  labels: true
+  points: false
+
+---
+# ── Lade-Karte (nur relevant wenn angesteckt) ────────────────────────────────
+type: conditional
+conditions:
+  - condition: state
+    entity: binary_sensor.audi_q4_e_tron_ladekabel_verbunden
+    state: "on"
+card:
+  type: vertical-stack
+  cards:
+    - type: custom:mushroom-entity-card
+      entity: sensor.audi_q4_e_tron_ladevorgang
+      name: Ladevorgang
+      icon: mdi:ev-plug-type2
+    - type: custom:mushroom-entity-card
+      entity: sensor.audi_q4_e_tron_ladeleistung
+      name: Leistung
+      icon: mdi:flash
+    - type: custom:mushroom-entity-card
+      entity: sensor.audi_q4_e_tron_ladeende
+      name: Fertig um
+      icon: mdi:clock-end
+    - type: custom:mushroom-entity-card
+      entity: sensor.audi_q4_e_tron_ladesaule
+      name: Ladesäule
+      icon: mdi:ev-station
+
+---
+# ── Steuerung ────────────────────────────────────────────────────────────────
+type: horizontal-stack
+cards:
+  - type: custom:mushroom-template-card
+    primary: Türen
+    secondary: >
+      {{ 'Verriegelt' if is_state('binary_sensor.audi_q4_e_tron_turen_verriegelt', 'on') else 'Offen' }}
+    icon: >
+      {{ 'mdi:car-door-lock' if is_state('binary_sensor.audi_q4_e_tron_turen_verriegelt', 'on') else 'mdi:car-door' }}
+    icon_color: >
+      {{ 'green' if is_state('binary_sensor.audi_q4_e_tron_turen_verriegelt', 'on') else 'red' }}
+    tap_action:
+      action: call-service
+      service: vag_connect.lock
+      service_data:
+        vin: WAUZZZ4G7EN123456
+  - type: custom:mushroom-template-card
+    primary: Klima
+    secondary: >
+      {{ states('sensor.audi_q4_e_tron_klimatisierung') }}
+      ({{ states('sensor.audi_q4_e_tron_zieltemperatur') }}°C)
+    icon: mdi:thermometer
+    icon_color: >
+      {{ 'blue' if is_state('binary_sensor.audi_q4_e_tron_klimatisierung_aktiv', 'on') else 'grey' }}
+    tap_action:
+      action: toggle
+      entity: switch.audi_q4_e_tron_klimatisierung
+  - type: custom:mushroom-template-card
+    primary: Laden
+    secondary: >
+      Ziel: {{ states('sensor.audi_q4_e_tron_ladeziel') }}%
+    icon: mdi:battery-charging-high
+    icon_color: >
+      {{ 'green' if is_state('binary_sensor.audi_q4_e_tron_ladt', 'on') else 'grey' }}
+    tap_action:
+      action: toggle
+      entity: switch.audi_q4_e_tron_laden
+
+---
+# ── GPS-Karte ────────────────────────────────────────────────────────────────
+type: map
+entities:
+  - entity: device_tracker.audi_q4_e_tron_position
+    name: Audi Q4
+hours_to_show: 0
+aspect_ratio: "16:9"
+
+---
+# ── Diagnose (zusammenklappbar) ──────────────────────────────────────────────
+type: entities
+title: Fahrzeugdiagnose
+show_header_toggle: false
+entities:
+  - entity: sensor.audi_q4_e_tron_zuletzt_aktualisiert
+    name: Letztes Update
+  - entity: sensor.audi_q4_e_tron_firmware_version
+    name: Firmware
+  - entity: sensor.audi_q4_e_tron_akkutemperatur
+    name: Akkutemperatur
+  - entity: sensor.audi_q4_e_tron_akkukapazitat_gesamt
+    name: Akkukapazität
+  - entity: sensor.audi_q4_e_tron_wltp_reichweite
+    name: WLTP-Reichweite
+  - entity: sensor.audi_q4_e_tron_nachste_inspektion
+    name: Nächste Inspektion

@@ -147,6 +147,18 @@
       },
       "departure_timer_3_time": {
         "name": "Avgångstimer 3"
+      },
+      "range_estimated_full_km": {
+        "name": "Räckvidd vid 100%"
+      },
+      "range_wltp_km": {
+        "name": "WLTP-räckvidd"
+      },
+      "battery_available_kwh": {
+        "name": "Tillgänglig batterienergi"
+      },
+      "last_updated_at": {
+        "name": "Senast uppdaterad"
       }
     },
     "binary_sensor": {
@@ -215,7 +227,13 @@
         "name": "Klimattemperatur"
       },
       "max_charge_current": {
-        "name": "Max laddström"
+        "name": "Max. laddström"
+      },
+      "target_soc": {
+        "name": "Laddningsmål"
+      },
+      "target_temperature": {
+        "name": "Klimatiseringstemperatur"
       }
     },
     "button": {

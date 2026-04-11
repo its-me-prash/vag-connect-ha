@@ -121,6 +121,13 @@ class VagConnectConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     vol.Optional("force_enable_access", default=False): bool,
                 }
             ),
+            description_placeholders={
+                "separate_account_hint": (
+                    "💡 Tipp: Empfehlenswert ist ein separater App-Account "
+                    "für Home Assistant (Fahrzeug teilen via Hersteller-App). "
+                    "Das schützt vor API-Sperren wenn beide Geräte gleichzeitig zugreifen."
+                )
+            },
             errors=errors,
         )
 

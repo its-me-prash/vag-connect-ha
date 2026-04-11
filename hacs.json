@@ -1,8 +1,8 @@
 {
   "name": "VAG Connect",
   "content_in_root": false,
-  "filename": "vag_connect.zip",
   "hide_default_branch": true,
   "homeassistant": "2024.1.0",
-  "render_readme": true
+  "render_readme": true,
+  "iot_class": "cloud_push"
 }

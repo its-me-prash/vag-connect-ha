@@ -9,7 +9,7 @@ from homeassistant.components.number import (
     NumberMode,
 )
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import PERCENTAGE, UnitOfTemperature
+from homeassistant.const import PERCENTAGE, EntityCategory, UnitOfTemperature
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
@@ -28,7 +28,7 @@ NUMBER_DESCRIPTIONS: tuple[VagNumberDescription, ...] = (
     VagNumberDescription(
         key="target_soc",
         data_key="target_soc",
-        name="Ladziel",
+        name="Ladeziel",
         native_unit_of_measurement=PERCENTAGE,
         device_class=NumberDeviceClass.BATTERY,
         native_min_value=10,
@@ -36,6 +36,7 @@ NUMBER_DESCRIPTIONS: tuple[VagNumberDescription, ...] = (
         native_step=5,
         mode=NumberMode.SLIDER,
         icon="mdi:battery-charging-high",
+        entity_category=EntityCategory.CONFIG,
         condition="electric",
     ),
     VagNumberDescription(
@@ -49,18 +50,19 @@ NUMBER_DESCRIPTIONS: tuple[VagNumberDescription, ...] = (
         native_step=0.5,
         mode=NumberMode.SLIDER,
         icon="mdi:thermometer",
+        entity_category=EntityCategory.CONFIG,
     ),
-
     VagNumberDescription(
         key="max_charge_current",
         data_key="max_charge_current",
-        name="Max Ladestrom",
+        name="Max. Ladestrom",
         native_unit_of_measurement="A",
         native_min_value=6,
         native_max_value=32,
         native_step=1,
-        mode="slider",
+        mode=NumberMode.SLIDER,
         icon="mdi:current-ac",
+        entity_category=EntityCategory.CONFIG,
         condition="electric",
     ),
 )

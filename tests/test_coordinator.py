@@ -834,3 +834,62 @@ class TestDepartureTimers:
         data = self.coord._extract(v)
         assert data["departure_timer_1_enabled"] is None
         assert data["departure_timer_1_time"] is None
+
+
+# ── Neue Felder v0.6.0 ─────────────────────────────────────────────────────
+
+class TestV060Fields:
+    """Tests für range_estimated_full, range_wltp, battery_available_kwh, last_updated_at."""
+
+    def setup_method(self):
+        from unittest.mock import MagicMock
+        from custom_components.vag_connect.coordinator import VagConnectCoordinator
+        hass = MagicMock()
+        hass.loop = __import__("asyncio").new_event_loop()
+        entry = MagicMock()
+        entry.data = {"brand": "audi", "username": "t@t.com", "password": "x", "spin": "", "update_interval": 300}
+        entry.entry_id = "test_v060"
+        self.coord = VagConnectCoordinator(hass, entry)
+
+    def test_range_estimated_full_extracted(self):
+        """range_estimated_full_km wird aus drive.range_estimated_full gelesen."""
+        v = _make_vehicle(is_electric=True)
+        v.drives.drives["electric"].range_estimated_full.value = 480.0
+        data = self.coord._extract(v)
+        assert data["range_estimated_full_km"] == 480.0
+
+    def test_range_wltp_extracted(self):
+        """range_wltp_km wird aus drive.range_wltp gelesen."""
+        v = _make_vehicle(is_electric=True)
+        v.drives.drives["electric"].range_wltp.value = 520.0
+        data = self.coord._extract(v)
+        assert data["range_wltp_km"] == 520.0
+
+    def test_battery_available_kwh_extracted(self):
+        """battery_available_kwh wird aus drive.battery.available_capacity gelesen."""
+        v = _make_vehicle(is_electric=True)
+        v.drives.drives["electric"].battery.available_capacity.value = 68.3
+        data = self.coord._extract(v)
+        assert data["battery_available_kwh"] == 68.3
+
+    def test_last_updated_at_is_datetime(self):
+        """last_updated_at ist ein UTC-datetime und immer gesetzt."""
+        from datetime import datetime, timezone
+        v = _make_vehicle(is_electric=True)
+        data = self.coord._extract(v)
+        assert data["last_updated_at"] is not None
+        assert isinstance(data["last_updated_at"], datetime)
+        assert data["last_updated_at"].tzinfo == timezone.utc
+
+    def test_range_estimated_full_none_if_missing(self):
+        """Kein range_estimated_full in Daten → None, kein Crash."""
+        v = _make_vehicle(is_electric=True)
+        v.drives.drives["electric"].range_estimated_full.value = None
+        data = self.coord._extract(v)
+        assert data["range_estimated_full_km"] is None
+
+    def test_battery_available_kwh_none_if_no_battery(self):
+        """Kein battery-Objekt → None, kein Crash."""
+        v = _make_vehicle(is_electric=False, fuel_level=60)
+        data = self.coord._extract(v)
+        assert data["battery_available_kwh"] is None

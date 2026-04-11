@@ -147,6 +147,18 @@
       },
       "departure_timer_3_time": {
         "name": "Timer odjazdu 3"
+      },
+      "range_estimated_full_km": {
+        "name": "Zasięg przy 100%"
+      },
+      "range_wltp_km": {
+        "name": "Zasięg WLTP"
+      },
+      "battery_available_kwh": {
+        "name": "Dostępna energia baterii"
+      },
+      "last_updated_at": {
+        "name": "Ostatnia aktualizacja"
       }
     },
     "binary_sensor": {
@@ -216,6 +228,12 @@
       },
       "max_charge_current": {
         "name": "Maks. prąd ładowania"
+      },
+      "target_soc": {
+        "name": "Cel ładowania"
+      },
+      "target_temperature": {
+        "name": "Temperatura klimatyzacji"
       }
     },
     "button": {

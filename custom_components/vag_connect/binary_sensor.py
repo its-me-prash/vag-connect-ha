@@ -8,6 +8,7 @@ from homeassistant.components.binary_sensor import (
     BinarySensorEntityDescription,
 )
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
@@ -84,6 +85,7 @@ _NEW_BINARY: tuple[VagBinarySensorDescription, ...] = (
         name="Online",
         device_class=BinarySensorDeviceClass.CONNECTIVITY,
         icon="mdi:car-wireless",
+        entity_category=EntityCategory.DIAGNOSTIC,
     ),
     VagBinarySensorDescription(
         key="connector_locked",
@@ -91,6 +93,7 @@ _NEW_BINARY: tuple[VagBinarySensorDescription, ...] = (
         name="Stecker verriegelt",
         device_class=BinarySensorDeviceClass.LOCK,
         icon="mdi:ev-plug-ccs2",
+        entity_category=EntityCategory.DIAGNOSTIC,
         condition="electric",
     ),
 )

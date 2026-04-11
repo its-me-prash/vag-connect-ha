@@ -147,6 +147,18 @@
       },
       "departure_timer_3_time": {
         "name": "Departure Timer 3"
+      },
+      "range_estimated_full_km": {
+        "name": "Range at 100%"
+      },
+      "range_wltp_km": {
+        "name": "WLTP Range"
+      },
+      "battery_available_kwh": {
+        "name": "Battery Energy Available"
+      },
+      "last_updated_at": {
+        "name": "Last Updated"
       }
     },
     "binary_sensor": {
@@ -215,7 +227,13 @@
         "name": "Climate Temperature"
       },
       "max_charge_current": {
-        "name": "Max. Charging Current"
+        "name": "Max. Charge Current"
+      },
+      "target_soc": {
+        "name": "Charge Target"
+      },
+      "target_temperature": {
+        "name": "Climatisation Temperature"
       }
     },
     "button": {

@@ -14,6 +14,7 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/Lizenz-MIT-yellow.svg?style=for-the-badge" alt="Lizenz"></a>
   <a href="https://www.home-assistant.io"><img src="https://img.shields.io/badge/Home%20Assistant-2024.1%2B-blue?style=for-the-badge" alt="Home Assistant"></a>
   <a href="tests/"><img src="https://img.shields.io/badge/Tests-63%2F63-brightgreen?style=for-the-badge" alt="Tests"></a>
+  <a href="https://analytics.home-assistant.io/custom_integrations.json"><img src="https://img.shields.io/badge/dynamic/json?color=41BDF5&logo=home-assistant&label=Installs&suffix=%20aktiv&cacheSeconds=15600&url=https://analytics.home-assistant.io/custom_integrations.json&query=$.vag_connect.total&style=for-the-badge" alt="Installs"></a>
 </p>
 
 <p align="center">
@@ -101,6 +102,12 @@ sensor  |  binary_sensor  |  device_tracker  |  switch  |  button  |  climate  |
 
 ---
 
+## ⚠️ Empfehlung: Separater App-Account
+
+> Leg einen **eigenen App-Account** (z.B. zweite E-Mail-Adresse) für Home Assistant an und teile das Fahrzeug darüber. Die offiziellen Hersteller-Apps erlauben das unter "Fahrzeug teilen" / "Berechtigungen".
+>
+> **Warum?** Wenn HA und du gleichzeitig aus der App zugreifst, kann die API den Account vorübergehend sperren. Mit einem eigenen HA-Account passiert das nicht.
+
 ## Installation
 
 ### Via HACS (empfohlen)
@@ -186,6 +193,16 @@ Nach einer Änderung der Nutzungsbedingungen erscheint unter **Einstellungen →
 | `vag_connect.set_target_soc` | Ladezielprozent setzen |
 | `vag_connect.set_climatisation_temperature` | Klimatemperatur setzen |
 | `vag_connect.set_departure_timer` | Abfahrtstimer setzen (neu in v0.5.0) |
+## Beispiel-Dashboard
+
+Eine fertige Lovelace-Konfiguration (mushroom-cards + mini-graph-card) liegt in [`docs/lovelace-example.yaml`](docs/lovelace-example.yaml).
+
+Benötigt aus HACS → Frontend:
+- [Mushroom Cards](https://github.com/piitaya/lovelace-mushroom)
+- [mini-graph-card](https://github.com/kalkih/mini-graph-card)
+
+---
+
 ## Danksagungen
 
 Diese Integration wäre ohne folgende Open-Source-Projekte nicht möglich:

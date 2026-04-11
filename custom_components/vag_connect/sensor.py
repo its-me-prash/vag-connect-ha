@@ -5,9 +5,14 @@ Conditions:
   "combustion"  → nur bei Fahrzeugen mit Verbrenner (Verbrenner + PHEV)
   None          → alle Fahrzeuge
 
+EntityCategory:
+  DIAGNOSTIC    → erscheint nur unter Gerätediagnose, nicht im Haupt-Dashboard
+  CONFIG        → Einstellungswerte (z.B. Ladeziel)
+  None (default)→ Haupt-Entities die Nutzer täglich sehen
+
 Ladegeschwindigkeit:
   charging.rate = SpeedAttribute (km/h) = km Reichweite die pro Stunde geladen werden.
-  Kein SensorDeviceClass.SPEED — das wäre für Fahrgeschwindigkeit.
+  device_class=SPEED → HA rechnet automatisch km/h → mph bei imperialem System um.
 """
 from dataclasses import dataclass
 from typing import Any
@@ -21,6 +26,8 @@ from homeassistant.components.sensor import (
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
     PERCENTAGE,
+    EntityCategory,
+    UnitOfEnergy,
     UnitOfLength,
     UnitOfPower,
     UnitOfSpeed,
@@ -72,6 +79,27 @@ SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
         state_class=SensorStateClass.MEASUREMENT,
         icon="mdi:map-marker-distance",
     ),
+    VagSensorDescription(
+        key="range_estimated_full_km",
+        data_key="range_estimated_full_km",
+        name="Reichweite bei 100%",
+        native_unit_of_measurement=UnitOfLength.KILOMETERS,
+        device_class=SensorDeviceClass.DISTANCE,
+        state_class=SensorStateClass.MEASUREMENT,
+        icon="mdi:map-marker-distance",
+        condition="electric",
+    ),
+    VagSensorDescription(
+        key="range_wltp_km",
+        data_key="range_wltp_km",
+        name="WLTP-Reichweite",
+        native_unit_of_measurement=UnitOfLength.KILOMETERS,
+        device_class=SensorDeviceClass.DISTANCE,
+        state_class=SensorStateClass.MEASUREMENT,
+        icon="mdi:map-marker-check",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        condition="electric",
+    ),
 
     # ── Kilometerstand ───────────────────────────────────────────────────────
     VagSensorDescription(
@@ -122,9 +150,7 @@ SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
         key="charging_rate_kmh",
         data_key="charging_rate_kmh",
         name="Ladegeschwindigkeit",
-        # km/h = km Reichweite die pro Stunde geladen werden.
-        # device_class=SPEED damit HA automatisch km/h → mph umrechnet
-        # wenn Nutzer imperiales Einheitensystem gewählt hat.
+        # km/h = km Reichweite pro Stunde → device_class=SPEED → HA rechnet km/h ↔ mph
         native_unit_of_measurement=UnitOfSpeed.KILOMETERS_PER_HOUR,
         device_class=SensorDeviceClass.SPEED,
         state_class=SensorStateClass.MEASUREMENT,
@@ -144,6 +170,7 @@ SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
         data_key="charging_type",
         name="Ladetyp",
         icon="mdi:ev-plug-type2",
+        entity_category=EntityCategory.DIAGNOSTIC,
         condition="electric",
     ),
 
@@ -160,16 +187,18 @@ SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
         data_key="charging_station_address",
         name="Ladesäule Adresse",
         icon="mdi:map-marker-outline",
+        entity_category=EntityCategory.DIAGNOSTIC,
         condition="electric",
     ),
     VagSensorDescription(
         key="charging_station_kw",
         data_key="charging_station_kw",
-        name="Ladesäule Leistung",
+        name="Ladesäule Max-Leistung",
         native_unit_of_measurement=UnitOfPower.KILO_WATT,
         device_class=SensorDeviceClass.POWER,
         state_class=SensorStateClass.MEASUREMENT,
         icon="mdi:lightning-bolt",
+        entity_category=EntityCategory.DIAGNOSTIC,
         condition="electric",
     ),
     VagSensorDescription(
@@ -177,6 +206,7 @@ SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
         data_key="charging_station_operator",
         name="Ladesäule Betreiber",
         icon="mdi:domain",
+        entity_category=EntityCategory.DIAGNOSTIC,
         condition="electric",
     ),
 
@@ -224,6 +254,7 @@ SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
         name="Inspektionsdatum",
         device_class=SensorDeviceClass.DATE,
         icon="mdi:calendar-clock",
+        entity_category=EntityCategory.DIAGNOSTIC,
     ),
     VagSensorDescription(
         key="oil_service_km",
@@ -241,6 +272,7 @@ SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
         name="Ölwechseldatum",
         device_class=SensorDeviceClass.DATE,
         icon="mdi:oil",
+        entity_category=EntityCategory.DIAGNOSTIC,
         condition="combustion",
     ),
 
@@ -256,6 +288,7 @@ SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
         data_key="connection_state",
         name="Verbindung",
         icon="mdi:car-wireless",
+        entity_category=EntityCategory.DIAGNOSTIC,
     ),
 
     # ── Position ─────────────────────────────────────────────────────────────
@@ -270,6 +303,7 @@ SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
         data_key="parking_city",
         name="Standort Stadt",
         icon="mdi:city",
+        entity_category=EntityCategory.DIAGNOSTIC,
     ),
     VagSensorDescription(
         key="heading",
@@ -278,6 +312,7 @@ SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
         native_unit_of_measurement="°",
         state_class=SensorStateClass.MEASUREMENT,
         icon="mdi:compass",
+        entity_category=EntityCategory.DIAGNOSTIC,
     ),
 
     # ── Akku-Details (EV + PHEV) ─────────────────────────────────────────────
@@ -289,31 +324,53 @@ SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
         icon="mdi:thermometer",
+        entity_category=EntityCategory.DIAGNOSTIC,
         condition="electric",
     ),
     VagSensorDescription(
         key="battery_cap_kwh",
         data_key="battery_cap_kwh",
-        name="Akkukapazität",
-        native_unit_of_measurement="kWh",
+        name="Akkukapazität (gesamt)",
+        native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
         device_class=SensorDeviceClass.ENERGY_STORAGE,
         state_class=SensorStateClass.MEASUREMENT,
         icon="mdi:battery",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        condition="electric",
+    ),
+    VagSensorDescription(
+        key="battery_available_kwh",
+        data_key="battery_available_kwh",
+        name="Akkuenergie verfügbar",
+        native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
+        device_class=SensorDeviceClass.ENERGY_STORAGE,
+        state_class=SensorStateClass.MEASUREMENT,
+        icon="mdi:battery-charging",
         condition="electric",
     ),
 
-    # ── Fahrzeugdaten ────────────────────────────────────────────────────────
+    # ── Fahrzeugdaten (DIAGNOSTIC) ───────────────────────────────────────────
     VagSensorDescription(
         key="firmware_version",
         data_key="firmware_version",
         name="Firmware-Version",
         icon="mdi:update",
+        entity_category=EntityCategory.DIAGNOSTIC,
     ),
     VagSensorDescription(
         key="license_plate",
         data_key="license_plate",
         name="Kennzeichen",
         icon="mdi:card-text",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    VagSensorDescription(
+        key="last_updated_at",
+        data_key="last_updated_at",
+        name="Zuletzt aktualisiert",
+        device_class=SensorDeviceClass.TIMESTAMP,
+        icon="mdi:clock-check-outline",
+        entity_category=EntityCategory.DIAGNOSTIC,
     ),
 
     # ── Abfahrtstimer ────────────────────────────────────────────────────────

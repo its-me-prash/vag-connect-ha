@@ -147,6 +147,18 @@
       },
       "departure_timer_3_time": {
         "name": "Časovač odjezdu 3"
+      },
+      "range_estimated_full_km": {
+        "name": "Dojezd při 100%"
+      },
+      "range_wltp_km": {
+        "name": "Dojezd WLTP"
+      },
+      "battery_available_kwh": {
+        "name": "Dostupná energie baterie"
+      },
+      "last_updated_at": {
+        "name": "Naposledy aktualizováno"
       }
     },
     "binary_sensor": {
@@ -216,6 +228,12 @@
       },
       "max_charge_current": {
         "name": "Max. nabíjecí proud"
+      },
+      "target_soc": {
+        "name": "Cíl nabíjení"
+      },
+      "target_temperature": {
+        "name": "Teplota klimatizace"
       }
     },
     "button": {

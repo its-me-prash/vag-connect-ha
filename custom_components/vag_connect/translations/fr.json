@@ -147,6 +147,18 @@
       },
       "departure_timer_3_time": {
         "name": "Minuterie de départ 3"
+      },
+      "range_estimated_full_km": {
+        "name": "Autonomie à 100%"
+      },
+      "range_wltp_km": {
+        "name": "Autonomie WLTP"
+      },
+      "battery_available_kwh": {
+        "name": "Énergie batterie disponible"
+      },
+      "last_updated_at": {
+        "name": "Dernière mise à jour"
       }
     },
     "binary_sensor": {
@@ -216,6 +228,12 @@
       },
       "max_charge_current": {
         "name": "Courant de charge max."
+      },
+      "target_soc": {
+        "name": "Objectif de charge"
+      },
+      "target_temperature": {
+        "name": "Température de climatisation"
       }
     },
     "button": {
