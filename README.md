@@ -1,8 +1,19 @@
-# VAG Connect — Home Assistant
+```
+ _   _  ___  _____   _____                             _
+| | | |/ _ \|  __ \ /  __ \                           | |
+| | | / /_\ \ |  \/ | /  \/ ___  _ __  _ __   ___  ___| |_
+| | | |  _  | | __  | |    / _ \| '_ \| '_ \ / _ \/ __| __|
+\ \_/ / | | | |_\ \ | \__/\ (_) | | | | | | |  __/ (__| |_
+ \___/\_| |_/\____/  \____/\___/|_| |_|_| |_|\___|\___|\__|
 
-[![HACS Badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://hacs.xyz)
-[![Lizenz: MIT](https://img.shields.io/badge/Lizenz-MIT-yellow.svg)](LICENSE)
-[![HA Version](https://img.shields.io/badge/Home%20Assistant-2024.1%2B-blue)](https://www.home-assistant.io)
+  Home Assistant Integration  |  Audi . VW . Skoda . SEAT . CUPRA
+```
+
+[![HACS](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://hacs.xyz)
+[![Version](https://img.shields.io/github/v/release/Prash1407/vag-connect-ha)](https://github.com/Prash1407/vag-connect-ha/releases)
+[![Lizenz](https://img.shields.io/badge/Lizenz-MIT-yellow.svg)](LICENSE)
+[![HA](https://img.shields.io/badge/Home%20Assistant-2024.1%2B-blue)](https://www.home-assistant.io)
+[![Tests](https://img.shields.io/badge/Tests-18%2F18-brightgreen)](tests/)
 
 **[English](README.en.md) · [Français](README.fr.md) · [Nederlands](README.nl.md) · [Español](README.es.md) · [Polski](README.pl.md) · [Čeština](README.cs.md) · [Svenska](README.sv.md)**
 
@@ -16,70 +27,91 @@ Die technische Arbeit dahinter hat vor allem Till Steinbach mit seinem [CarConne
 
 ---
 
-## Was funktioniert
+## Unterstuetzte Plattformen
 
-| Funktion | Audi | VW | Skoda | SEAT/CUPRA |
+```
+sensor  |  binary_sensor  |  device_tracker  |  switch  |  button  |  climate  |  number
+```
+
+---
+
+## Features
+
+### Alle Marken
+
+| Feature | Audi | VW EU | VW US/CA | Skoda | SEAT/CUPRA |
+|---|:---:|:---:|:---:|:---:|:---:|
+| Tankfuellstand / Ladestand | + | + | + | + | + |
+| Reichweite | + | + | + | + | + |
+| Kilometerstand | + | + | + | + | + |
+| Position (GPS-Karte) | + | + | + | + | + |
+| Tueren Status | + | + | + | + | + |
+| Fenster Status | + | + | + | + | + |
+| Aussentemperatur | + | + | + | + | + |
+| Klimatisierung Status | + | + | + | + | + |
+| Verriegeln / Entriegeln | + | + | + | + | + |
+| Klimatisierung starten/stoppen | + | + | + | + | + |
+| Lichtsignal (Honk & Flash) | + | + | + | + | + |
+
+### Elektro- und Hybridfahrzeuge
+
+| Feature | Audi e-tron | VW ID | Skoda Enyaq | CUPRA Born |
 |---|:---:|:---:|:---:|:---:|
-| Tankfüllstand / Ladestand | ✅ | ✅ | ✅ | ✅ |
-| Reichweite | ✅ | ✅ | ✅ | ✅ |
-| Kilometerstand | ✅ | ✅ | ✅ | ✅ |
-| Position auf der Karte | ✅ | ✅ | ✅ | ✅ |
-| Türen & Fenster Status | ✅ | ✅ | ✅ | ✅ |
-| Verriegeln / Entriegeln | ✅ | ✅ | ✅ | ✅ |
-| Klimatisierung starten | ✅ | ✅ | ✅ | ✅ |
-| Laden starten / stoppen | ✅ | ✅ | ✅ | ✅ |
-| Ladziel setzen (Slider) | ✅ | ✅ | ✅ | ✅ |
-| Ölstand, Inspektion | ✅ | ✅ | – | – |
-| Außentemperatur | ✅ | ✅ | ✅ | ✅ |
-| Lichtsignal | ✅ | ✅ | ✅ | ✅ |
+| Ladestand (%) | + | + | + | + |
+| Laden starten / stoppen | + | + | + | + |
+| Ladziel setzen (Slider) | + | + | + | + |
+| Ladestatus | + | + | + | + |
+| Stecker verbunden | + | + | + | + |
 
-Nicht alle Funktionen sind bei jedem Modell verfügbar — das hängt vom Fahrzeug und den gebuchten Connected-Services ab. Was in der App nicht geht, geht hier auch nicht.
+### Nur Verbrenner
+
+| Feature | Verfuegbarkeit |
+|---|---|
+| Oelstand | Audi, VW |
+| Inspektion faellig (km) | Audi, VW, Skoda |
+| Inspektionsdatum | Audi, VW, Skoda |
+| Oelservice faellig (km) | Audi, VW |
 
 ---
 
 ## Installation
 
-### Über HACS (empfohlen)
+### Via HACS (empfohlen)
 
-1. HACS öffnen → Integrationen → ⋮ → Benutzerdefinierte Repositories
-2. URL: `https://github.com/Prash1407/vag-connect-ha`, Kategorie: Integration
+1. HACS oeffnen -> Integrationen -> ... -> Benutzerdefinierte Repositories
+2. URL: `https://github.com/Prash1407/vag-connect-ha` , Kategorie: Integration
 3. Nach **VAG Connect** suchen, installieren, HA neu starten
 
 ### Manuell
 
-Den Ordner `custom_components/vag_connect/` aus diesem Repository in dein `config/custom_components/`-Verzeichnis kopieren, dann Home Assistant neu starten.
+Den Ordner `custom_components/vag_connect/` in dein `config/custom_components/`-Verzeichnis kopieren, dann Home Assistant neu starten.
 
 ---
 
 ## Einrichtung
 
-**Einstellungen → Geräte & Dienste → + Integration → "VAG Connect"**
+**Einstellungen -> Geraete & Dienste -> + Integration -> "VAG Connect"**
 
-Du wirst nach vier Dingen gefragt:
-
-- **Marke** — Audi, VW (EU), VW (US/CA), Skoda oder SEAT/CUPRA
-- **E-Mail** — dieselbe wie in der App
-- **Passwort** — dasselbe wie in der App
-- **S-PIN** — optional, aber ohne die geht Verriegeln nicht
-
-Das war's. Nach dem ersten Laden erscheint dein Auto als Gerät mit allen verfügbaren Sensoren.
+| Feld | Beschreibung | Pflicht |
+|---|---|:---:|
+| Marke | Audi / VW EU / VW US-CA / Skoda / SEAT-CUPRA | ja |
+| E-Mail | Zugangsdaten aus der App | ja |
+| Passwort | Zugangsdaten aus der App | ja |
+| S-PIN | Benoetigt fuer Verriegelung | nein |
+| Intervall | Abfrageintervall in Minuten (min. 5) | ja |
 
 ---
 
 ## Abfrageintervall
 
-Standard sind 15 Minuten. Du kannst das unter **Einstellungen → Geräte & Dienste → VAG Connect → Konfigurieren** ändern.
-
-Geh nicht unter 5 Minuten. Die Hersteller-APIs werden nicht öffentlich betrieben und zu viele Anfragen können deinen Account temporär sperren. Das steht auch in den Nutzungsbedingungen von Audi Connect und WeConnect.
+Standard: 15 Minuten. Nicht unter 5 Minuten gehen. Die Hersteller-APIs sind nicht fuer hohe Abfragerate ausgelegt und koennen bei Missbrauch den Account temporaer sperren.
 
 ---
 
-## Automationen
-
-Alle wichtigen Aktionen stehen auch als HA-Services bereit:
+## Services (Automationen)
 
 ```yaml
-# Verriegeln
+# Tuer verriegeln
 service: vag_connect.lock
 data:
   vin: "WAUZZZ4G7EN123456"
@@ -89,19 +121,28 @@ service: vag_connect.start_climatisation
 data:
   vin: "WAUZZZ4G7EN123456"
 
+# Laden starten
+service: vag_connect.start_charging
+data:
+  vin: "WAUZZZ4G7EN123456"
+
 # Laden stoppen
 service: vag_connect.stop_charging
 data:
   vin: "WAUZZZ4G7EN123456"
-```
 
-Die VIN steht in der App unter Fahrzeugdetails, oder du schaust kurz in die Entities — sie taucht als Geräte-ID auf.
+# Lichtsignal
+service: vag_connect.flash_lights
+data:
+  vin: "WAUZZZ4G7EN123456"
+
+# Daten sofort aktualisieren (kein VIN-Parameter)
+service: vag_connect.refresh_vehicle
+```
 
 ---
 
-## Fehlermeldungen & Debugging
-
-Wenn etwas nicht funktioniert, aktivier zuerst Debug-Logging:
+## Debugging
 
 ```yaml
 # configuration.yaml
@@ -110,30 +151,59 @@ logger:
     custom_components.vag_connect: debug
 ```
 
-Dann HA neu starten und das Log anschauen. Die meisten Probleme sind entweder falsche Zugangsdaten oder eine geänderte API auf Herstellerseite.
+Fuer Bug-Reports: Einstellungen -> Geraete & Dienste -> VAG Connect -> ... -> Diagnose herunterladen. Die Datei enthaelt keine Passwoerter und keine GPS-Koordinaten.
 
-Wenn du einen Bug meldest, lad bitte die **Diagnose-Datei** herunter (Einstellungen → Geräte & Dienste → VAG Connect → ⋮ → Diagnose). Die enthält keine Passwörter oder GPS-Daten, hilft aber enorm.
+---
+
+## Versioning
+
+Dieses Projekt nutzt [Semantic Versioning 2.0.0](https://semver.org/lang/de/).
+
+```
+MAJOR.MINOR.PATCH
+
+MAJOR  Breaking changes (Entities umbenennen, Plattform entfernen)
+MINOR  Neue Features (neue Marke, neue Sensoren, neue Sprache)
+PATCH  Bugfixes, Uebersetzungskorrekturen, Abhaengigkeitsupdates
+```
+
+Aktuell: `0.x.y` (pre-stable). Version `1.0.0` erscheint wenn Audi, VW und Skoda stabil getestet sind.
 
 ---
 
 ## Mitmachen
 
-PRs und Issues sind willkommen. Was besonders fehlt:
+PRs und Issues sind willkommen. Besonders gesucht:
 
-- Jemand mit **Porsche** zum Testen (nutzt dieselbe CARIAD-API wie Audi)
-- Jemand mit einem **chinesischen VAG-Account** (CN-Region hat andere Endpoints)
-- Weitere Übersetzungen — eine neue Sprachdatei ist in 20 Minuten gemacht, see [CONTRIBUTING.md](CONTRIBUTING.md)
+- Tester mit **Porsche** (nutzt dieselbe CARIAD-API wie Audi)
+- Tester mit **chinesischem VAG-Account** (CN-Region, andere Endpoints)
+- Weitere Uebersetzungen -- eine neue Sprachdatei ist in 20 Minuten fertig, siehe [CONTRIBUTING.md](CONTRIBUTING.md)
+
+---
+
+## Danksagungen
+
+Dieses Projekt steht auf den Schultern von:
+
+| Projekt | Autor | Beitrag |
+|---|---|---|
+| [CarConnectivity](https://github.com/tillsteinbach/CarConnectivity) | @tillsteinbach | API-Engine fuer alle VAG-Marken |
+| [CarConnectivity-connector-audi](https://github.com/acfischer42/CarConnectivity-connector-audi) | @acfischer42 | Audi CARIAD-Connector |
+| [CarConnectivity-connector-volkswagen](https://github.com/tillsteinbach/CarConnectivity-connector-volkswagen) | @tillsteinbach | VW WeConnect-Connector |
+| [CarConnectivity-connector-skoda](https://github.com/tillsteinbach/CarConnectivity-connector-skoda) | @tillsteinbach | Skoda MySkoda-Connector |
+| [CarConnectivity-connector-seatcupra](https://github.com/tillsteinbach/CarConnectivity-connector-seatcupra) | @tillsteinbach | SEAT/CUPRA MyCupra-Connector |
+| [audi_connect_ha](https://github.com/audiconnect/audi_connect_ha) | @audiconnect | Inspiration und HA-Integrationspattern |
+| [homeassistant-myskoda](https://github.com/skodaconnect/homeassistant-myskoda) | @skodaconnect | MQTT-Architektur-Referenz |
+| [ioBroker.vw-connect](https://github.com/TA2k/ioBroker.vw-connect) | @TA2k | API-Endpoint-Recherche |
 
 ---
 
 ## Rechtliches
 
-Diese Integration nutzt inoffizielle APIs — dieselben, die die offiziellen Apps nutzen. Sie ist weder von Audi AG, Volkswagen AG, CARIAD, Škoda Auto, SEAT S.A. noch von Nabu Casa autorisiert oder unterstützt.
+Diese Integration nutzt inoffizielle APIs -- dieselben, die die offiziellen Apps nutzen. Sie ist weder von Audi AG, Volkswagen AG, CARIAD, Skoda Auto, SEAT S.A. noch von Nabu Casa autorisiert oder unterstuetzt.
 
-Audi, myAudi, Volkswagen, WeConnect, Škoda, MySkoda, SEAT, CUPRA und alle weiteren Markennamen sind Warenzeichen ihrer jeweiligen Inhaber.
-
-Alle genutzten Bibliotheken stehen unter MIT-Lizenz. Details und Attributionen in [NOTICE.md](NOTICE.md).
+Alle Markennamen sind Warenzeichen ihrer jeweiligen Inhaber. Lizenzen und Attributionen: [NOTICE.md](NOTICE.md).
 
 ---
 
-*Gebaut von [prash1407](https://github.com/Prash1407) · MIT Lizenz · 2026*
+*Gebaut von [prash1407](https://github.com/Prash1407) -- MIT Lizenz -- 2026*
