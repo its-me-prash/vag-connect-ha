@@ -46,72 +46,198 @@
   },
   "entity": {
     "sensor": {
-      "fuel_level":               { "name": "Tankstand" },
-      "battery_soc":              { "name": "Akkustand" },
-      "range_km":                 { "name": "Reichweite" },
-      "odometer_km":              { "name": "Kilometerstand" },
-      "charging_state":           { "name": "Ladevorgang" },
-      "plug_state":               { "name": "Ladestecker" },
-      "target_soc":               { "name": "Ladeziel" },
-      "charging_power_kw":        { "name": "Ladeleistung" },
-      "charging_rate_kmh":        { "name": "Ladegeschwindigkeit" },
-      "charge_complete_eta":      { "name": "Ladeende" },
-      "charging_type":            { "name": "Ladetyp" },
-      "charging_station_name":    { "name": "Ladesäule" },
-      "charging_station_address": { "name": "Ladesäule Adresse" },
-      "charging_station_kw":      { "name": "Ladesäule Leistung" },
-      "charging_station_operator":{ "name": "Ladesäule Betreiber" },
-      "climatisation_state":      { "name": "Klimatisierung" },
-      "target_temperature":       { "name": "Zieltemperatur" },
-      "outside_temp":             { "name": "Außentemperatur" },
-      "service_km":               { "name": "Nächste Inspektion" },
-      "service_due_at":           { "name": "Inspektionsdatum" },
-      "oil_service_km":           { "name": "Nächster Ölwechsel" },
-      "oil_service_at":           { "name": "Ölwechseldatum" },
-      "vehicle_state":            { "name": "Fahrzeugzustand" },
-      "connection_state":         { "name": "Verbindung" },
-      "parking_address":          { "name": "Standort" },
-      "parking_city":             { "name": "Standort Stadt" },
-      "heading":                  { "name": "Fahrtrichtung" },
-      "battery_temp":             { "name": "Akkutemperatur" },
-      "battery_cap_kwh":          { "name": "Akkukapazität" },
-      "firmware_version":         { "name": "Firmware-Version" },
-      "license_plate":            { "name": "Kennzeichen" }
+      "fuel_level": {
+        "name": "Tankstand"
+      },
+      "battery_soc": {
+        "name": "Akkustand"
+      },
+      "range_km": {
+        "name": "Reichweite"
+      },
+      "odometer_km": {
+        "name": "Kilometerstand"
+      },
+      "charging_state": {
+        "name": "Ladevorgang"
+      },
+      "plug_state": {
+        "name": "Ladestecker"
+      },
+      "target_soc": {
+        "name": "Ladeziel"
+      },
+      "charging_power_kw": {
+        "name": "Ladeleistung"
+      },
+      "charging_rate_kmh": {
+        "name": "Ladegeschwindigkeit"
+      },
+      "charge_complete_eta": {
+        "name": "Ladeende"
+      },
+      "charging_type": {
+        "name": "Ladetyp"
+      },
+      "charging_station_name": {
+        "name": "Ladesäule"
+      },
+      "charging_station_address": {
+        "name": "Ladesäule Adresse"
+      },
+      "charging_station_kw": {
+        "name": "Ladesäule Leistung"
+      },
+      "charging_station_operator": {
+        "name": "Ladesäule Betreiber"
+      },
+      "climatisation_state": {
+        "name": "Klimatisierung"
+      },
+      "target_temperature": {
+        "name": "Zieltemperatur"
+      },
+      "outside_temp": {
+        "name": "Außentemperatur"
+      },
+      "service_km": {
+        "name": "Nächste Inspektion"
+      },
+      "service_due_at": {
+        "name": "Inspektionsdatum"
+      },
+      "oil_service_km": {
+        "name": "Nächster Ölwechsel"
+      },
+      "oil_service_at": {
+        "name": "Ölwechseldatum"
+      },
+      "vehicle_state": {
+        "name": "Fahrzeugzustand"
+      },
+      "connection_state": {
+        "name": "Verbindung"
+      },
+      "parking_address": {
+        "name": "Standort"
+      },
+      "parking_city": {
+        "name": "Standort Stadt"
+      },
+      "heading": {
+        "name": "Fahrtrichtung"
+      },
+      "battery_temp": {
+        "name": "Akkutemperatur"
+      },
+      "battery_cap_kwh": {
+        "name": "Akkukapazität"
+      },
+      "firmware_version": {
+        "name": "Firmware-Version"
+      },
+      "license_plate": {
+        "name": "Kennzeichen"
+      },
+      "departure_timer_1_time": {
+        "name": "Abfahrtstimer 1"
+      },
+      "departure_timer_2_time": {
+        "name": "Abfahrtstimer 2"
+      },
+      "departure_timer_3_time": {
+        "name": "Abfahrtstimer 3"
+      }
     },
     "binary_sensor": {
-      "doors_locked":      { "name": "Türen verriegelt" },
-      "doors_open":        { "name": "Türen offen" },
-      "windows_open":      { "name": "Fenster offen" },
-      "plug_connected":    { "name": "Ladekabel steckt" },
-      "is_charging":       { "name": "Lädt" },
-      "climatisation_active": { "name": "Klimatisierung läuft" },
-      "is_driving":        { "name": "In Fahrt" },
-      "is_online":         { "name": "Erreichbar" },
-      "connector_locked":  { "name": "Ladestecker gesperrt" }
+      "doors_locked": {
+        "name": "Türen verriegelt"
+      },
+      "doors_open": {
+        "name": "Türen offen"
+      },
+      "windows_open": {
+        "name": "Fenster offen"
+      },
+      "plug_connected": {
+        "name": "Ladekabel steckt"
+      },
+      "is_charging": {
+        "name": "Lädt"
+      },
+      "climatisation_active": {
+        "name": "Klimatisierung läuft"
+      },
+      "is_driving": {
+        "name": "In Fahrt"
+      },
+      "is_online": {
+        "name": "Erreichbar"
+      },
+      "connector_locked": {
+        "name": "Ladestecker gesperrt"
+      }
     },
     "switch": {
-      "lock_switch":             { "name": "Türverriegelung" },
-      "climatisation_switch":    { "name": "Klimatisierung" },
-      "charging_switch":         { "name": "Laden" },
-      "window_heating_switch":   { "name": "Scheibenheizung" },
-      "seat_heating_switch":     { "name": "Sitzheizung" },
-      "auto_unlock_switch":      { "name": "Stecker nach Laden entsperren" }
+      "lock_switch": {
+        "name": "Türverriegelung"
+      },
+      "climatisation_switch": {
+        "name": "Klimatisierung"
+      },
+      "charging_switch": {
+        "name": "Laden"
+      },
+      "window_heating_switch": {
+        "name": "Scheibenheizung"
+      },
+      "seat_heating_switch": {
+        "name": "Sitzheizung"
+      },
+      "auto_unlock_switch": {
+        "name": "Stecker nach Laden entsperren"
+      },
+      "departure_timer_1_switch": {
+        "name": "Abfahrtstimer 1"
+      },
+      "departure_timer_2_switch": {
+        "name": "Abfahrtstimer 2"
+      },
+      "departure_timer_3_switch": {
+        "name": "Abfahrtstimer 3"
+      }
     },
     "number": {
-      "target_soc_number":       { "name": "Ladeziel" },
-      "climate_temp_number":     { "name": "Klimaanlage Temperatur" },
-      "max_charge_current":      { "name": "Max. Ladestrom" }
+      "target_soc_number": {
+        "name": "Ladeziel"
+      },
+      "climate_temp_number": {
+        "name": "Klimaanlage Temperatur"
+      },
+      "max_charge_current": {
+        "name": "Max. Ladestrom"
+      }
     },
     "button": {
-      "flash_button":    { "name": "Lichtsignal" },
-      "refresh_button":  { "name": "Daten aktualisieren" },
-      "wake_button":     { "name": "Fahrzeug aufwecken" }
+      "flash_button": {
+        "name": "Lichtsignal"
+      },
+      "refresh_button": {
+        "name": "Daten aktualisieren"
+      },
+      "wake_button": {
+        "name": "Fahrzeug aufwecken"
+      }
     },
     "climate": {
-      "climate": { "name": "Vorklimatisierung" }
+      "climate": {
+        "name": "Vorklimatisierung"
+      }
     },
     "device_tracker": {
-      "position": { "name": "Position" }
+      "position": {
+        "name": "Position"
+      }
     }
   },
   "issues": {

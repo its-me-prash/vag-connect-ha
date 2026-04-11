@@ -753,3 +753,84 @@ class TestNewFeatures:
         v.software.version.value = "3.2.1-build.42"
         data = self.coord._extract(v)
         assert data["firmware_version"] == "3.2.1-build.42"
+
+
+# ── Abfahrtstimer Tests ────────────────────────────────────────────────────────
+
+class TestDepartureTimers:
+    """Tests für Departure Timer Extraction und Action."""
+
+    def setup_method(self):
+        from unittest.mock import MagicMock, AsyncMock
+        from custom_components.vag_connect.coordinator import VagConnectCoordinator
+        hass = MagicMock()
+        hass.loop = __import__("asyncio").new_event_loop()
+        entry = MagicMock()
+        entry.data = {"brand": "audi", "username": "test@test.com", "password": "x", "spin": "", "update_interval": 300}
+        entry.entry_id = "test_departure"
+        self.coord = VagConnectCoordinator(hass, entry)
+
+    def _make_timer(self, timer_id, enabled, target_dt=None):
+        """Baut ein Mock-Timer-Objekt wie AudiClimatization.Timers es erstellt."""
+        from unittest.mock import MagicMock
+        timer = MagicMock()
+        timer.enabled.value = enabled
+        timer.target_datetime.value = target_dt
+        timer.start_datetime.value = None
+        return timer
+
+    def test_timer_enabled_extracted(self):
+        """Aktivierter Timer → departure_timer_1_enabled = True."""
+        v = _make_vehicle(is_electric=True)
+        timer = self._make_timer(1, enabled=True)
+        v.climatization.timers.timer_1 = timer
+        data = self.coord._extract(v)
+        assert data["departure_timer_1_enabled"] is True
+
+    def test_timer_disabled_extracted(self):
+        """Deaktivierter Timer → departure_timer_1_enabled = False."""
+        v = _make_vehicle(is_electric=True)
+        timer = self._make_timer(1, enabled=False)
+        v.climatization.timers.timer_1 = timer
+        data = self.coord._extract(v)
+        assert data["departure_timer_1_enabled"] is False
+
+    def test_timer_target_datetime_extracted(self):
+        """Zieldatum wird korrekt extrahiert."""
+        from datetime import datetime
+        v = _make_vehicle(is_electric=True)
+        dt = datetime(2026, 4, 15, 7, 30, 0)
+        timer = self._make_timer(1, enabled=True, target_dt=dt)
+        v.climatization.timers.timer_1 = timer
+        data = self.coord._extract(v)
+        assert data["departure_timer_1_time"] == dt
+
+    def test_timer_not_present_returns_none(self):
+        """Kein timer_2 im Objekt → beide Keys = None."""
+        v = _make_vehicle(is_electric=True)
+        # timer_2 nicht gesetzt → getattr liefert None via MagicMock
+        # Wir löschen es explizit damit getattr None zurückgibt
+        del v.climatization.timers.timer_2
+        data = self.coord._extract(v)
+        assert data["departure_timer_2_enabled"] is None
+        assert data["departure_timer_2_time"] is None
+
+    def test_all_three_timers_extracted(self):
+        """Alle 3 Timer werden unabhängig extrahiert."""
+        from datetime import datetime
+        v = _make_vehicle(is_electric=True)
+        for idx in (1, 2, 3):
+            timer = self._make_timer(idx, enabled=(idx % 2 == 1))
+            setattr(v.climatization.timers, f"timer_{idx}", timer)
+        data = self.coord._extract(v)
+        assert data["departure_timer_1_enabled"] is True
+        assert data["departure_timer_2_enabled"] is False
+        assert data["departure_timer_3_enabled"] is True
+
+    def test_timer_extraction_survives_exception(self):
+        """Exception in timer-Extraktion → Keys = None, kein Crash."""
+        v = _make_vehicle(is_electric=True)
+        v.climatization.timers = None  # zwingt Exception
+        data = self.coord._extract(v)
+        assert data["departure_timer_1_enabled"] is None
+        assert data["departure_timer_1_time"] is None

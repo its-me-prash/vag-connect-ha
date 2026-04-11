@@ -315,6 +315,32 @@ SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
         name="Kennzeichen",
         icon="mdi:card-text",
     ),
+
+    # ── Abfahrtstimer ────────────────────────────────────────────────────────
+    VagSensorDescription(
+        key="departure_timer_1_time",
+        data_key="departure_timer_1_time",
+        name="Abfahrtstimer 1",
+        device_class=SensorDeviceClass.TIMESTAMP,
+        icon="mdi:clock-time-eight-outline",
+        condition="electric",
+    ),
+    VagSensorDescription(
+        key="departure_timer_2_time",
+        data_key="departure_timer_2_time",
+        name="Abfahrtstimer 2",
+        device_class=SensorDeviceClass.TIMESTAMP,
+        icon="mdi:clock-time-eight-outline",
+        condition="electric",
+    ),
+    VagSensorDescription(
+        key="departure_timer_3_time",
+        data_key="departure_timer_3_time",
+        name="Abfahrtstimer 3",
+        device_class=SensorDeviceClass.TIMESTAMP,
+        icon="mdi:clock-time-eight-outline",
+        condition="electric",
+    ),
 )
 
 

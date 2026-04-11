@@ -138,6 +138,15 @@
       },
       "license_plate": {
         "name": "Kenteken"
+      },
+      "departure_timer_1_time": {
+        "name": "Vertrektimer 1"
+      },
+      "departure_timer_2_time": {
+        "name": "Vertrektimer 2"
+      },
+      "departure_timer_3_time": {
+        "name": "Vertrektimer 3"
       }
     },
     "binary_sensor": {
@@ -187,6 +196,15 @@
       },
       "auto_unlock_switch": {
         "name": "Stekker na laden ontgrendelen"
+      },
+      "departure_timer_1_switch": {
+        "name": "Vertrektimer 1"
+      },
+      "departure_timer_2_switch": {
+        "name": "Vertrektimer 2"
+      },
+      "departure_timer_3_switch": {
+        "name": "Vertrektimer 3"
       }
     },
     "number": {

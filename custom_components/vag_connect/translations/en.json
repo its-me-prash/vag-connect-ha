@@ -46,72 +46,198 @@
   },
   "entity": {
     "sensor": {
-      "fuel_level":               { "name": "Fuel Level" },
-      "battery_soc":              { "name": "Battery Level" },
-      "range_km":                 { "name": "Range" },
-      "odometer_km":              { "name": "Odometer" },
-      "charging_state":           { "name": "Charging" },
-      "plug_state":               { "name": "Plug" },
-      "target_soc":               { "name": "Charge Target" },
-      "charging_power_kw":        { "name": "Charging Power" },
-      "charging_rate_kmh":        { "name": "Charging Speed" },
-      "charge_complete_eta":      { "name": "Charge Complete" },
-      "charging_type":            { "name": "Charge Type" },
-      "charging_station_name":    { "name": "Charging Station" },
-      "charging_station_address": { "name": "Charging Station Address" },
-      "charging_station_kw":      { "name": "Charging Station Power" },
-      "charging_station_operator":{ "name": "Charging Station Operator" },
-      "climatisation_state":      { "name": "Climatisation" },
-      "target_temperature":       { "name": "Target Temperature" },
-      "outside_temp":             { "name": "Outside Temperature" },
-      "service_km":               { "name": "Next Service" },
-      "service_due_at":           { "name": "Service Date" },
-      "oil_service_km":           { "name": "Next Oil Change" },
-      "oil_service_at":           { "name": "Oil Change Date" },
-      "vehicle_state":            { "name": "Vehicle State" },
-      "connection_state":         { "name": "Connection" },
-      "parking_address":          { "name": "Location" },
-      "parking_city":             { "name": "City" },
-      "heading":                  { "name": "Heading" },
-      "battery_temp":             { "name": "Battery Temperature" },
-      "battery_cap_kwh":          { "name": "Battery Capacity" },
-      "firmware_version":         { "name": "Firmware Version" },
-      "license_plate":            { "name": "License Plate" }
+      "fuel_level": {
+        "name": "Fuel Level"
+      },
+      "battery_soc": {
+        "name": "Battery Level"
+      },
+      "range_km": {
+        "name": "Range"
+      },
+      "odometer_km": {
+        "name": "Odometer"
+      },
+      "charging_state": {
+        "name": "Charging"
+      },
+      "plug_state": {
+        "name": "Plug"
+      },
+      "target_soc": {
+        "name": "Charge Target"
+      },
+      "charging_power_kw": {
+        "name": "Charging Power"
+      },
+      "charging_rate_kmh": {
+        "name": "Charging Speed"
+      },
+      "charge_complete_eta": {
+        "name": "Charge Complete"
+      },
+      "charging_type": {
+        "name": "Charge Type"
+      },
+      "charging_station_name": {
+        "name": "Charging Station"
+      },
+      "charging_station_address": {
+        "name": "Charging Station Address"
+      },
+      "charging_station_kw": {
+        "name": "Charging Station Power"
+      },
+      "charging_station_operator": {
+        "name": "Charging Station Operator"
+      },
+      "climatisation_state": {
+        "name": "Climatisation"
+      },
+      "target_temperature": {
+        "name": "Target Temperature"
+      },
+      "outside_temp": {
+        "name": "Outside Temperature"
+      },
+      "service_km": {
+        "name": "Next Service"
+      },
+      "service_due_at": {
+        "name": "Service Date"
+      },
+      "oil_service_km": {
+        "name": "Next Oil Change"
+      },
+      "oil_service_at": {
+        "name": "Oil Change Date"
+      },
+      "vehicle_state": {
+        "name": "Vehicle State"
+      },
+      "connection_state": {
+        "name": "Connection"
+      },
+      "parking_address": {
+        "name": "Location"
+      },
+      "parking_city": {
+        "name": "City"
+      },
+      "heading": {
+        "name": "Heading"
+      },
+      "battery_temp": {
+        "name": "Battery Temperature"
+      },
+      "battery_cap_kwh": {
+        "name": "Battery Capacity"
+      },
+      "firmware_version": {
+        "name": "Firmware Version"
+      },
+      "license_plate": {
+        "name": "License Plate"
+      },
+      "departure_timer_1_time": {
+        "name": "Departure Timer 1"
+      },
+      "departure_timer_2_time": {
+        "name": "Departure Timer 2"
+      },
+      "departure_timer_3_time": {
+        "name": "Departure Timer 3"
+      }
     },
     "binary_sensor": {
-      "doors_locked":         { "name": "Doors Locked" },
-      "doors_open":           { "name": "Doors Open" },
-      "windows_open":         { "name": "Windows Open" },
-      "plug_connected":       { "name": "Charging Cable Connected" },
-      "is_charging":          { "name": "Charging" },
-      "climatisation_active": { "name": "Climatisation Active" },
-      "is_driving":           { "name": "Driving" },
-      "is_online":            { "name": "Reachable" },
-      "connector_locked":     { "name": "Charging Plug Locked" }
+      "doors_locked": {
+        "name": "Doors Locked"
+      },
+      "doors_open": {
+        "name": "Doors Open"
+      },
+      "windows_open": {
+        "name": "Windows Open"
+      },
+      "plug_connected": {
+        "name": "Charging Cable Connected"
+      },
+      "is_charging": {
+        "name": "Charging"
+      },
+      "climatisation_active": {
+        "name": "Climatisation Active"
+      },
+      "is_driving": {
+        "name": "Driving"
+      },
+      "is_online": {
+        "name": "Reachable"
+      },
+      "connector_locked": {
+        "name": "Charging Plug Locked"
+      }
     },
     "switch": {
-      "lock_switch":           { "name": "Door Lock" },
-      "climatisation_switch":  { "name": "Climatisation" },
-      "charging_switch":       { "name": "Charging" },
-      "window_heating_switch": { "name": "Window Heating" },
-      "seat_heating_switch":   { "name": "Seat Heating" },
-      "auto_unlock_switch":    { "name": "Unlock Plug After Charging" }
+      "lock_switch": {
+        "name": "Door Lock"
+      },
+      "climatisation_switch": {
+        "name": "Climatisation"
+      },
+      "charging_switch": {
+        "name": "Charging"
+      },
+      "window_heating_switch": {
+        "name": "Window Heating"
+      },
+      "seat_heating_switch": {
+        "name": "Seat Heating"
+      },
+      "auto_unlock_switch": {
+        "name": "Unlock Plug After Charging"
+      },
+      "departure_timer_1_switch": {
+        "name": "Departure Timer 1"
+      },
+      "departure_timer_2_switch": {
+        "name": "Departure Timer 2"
+      },
+      "departure_timer_3_switch": {
+        "name": "Departure Timer 3"
+      }
     },
     "number": {
-      "target_soc_number":    { "name": "Charge Target" },
-      "climate_temp_number":  { "name": "Climate Temperature" },
-      "max_charge_current":   { "name": "Max. Charging Current" }
+      "target_soc_number": {
+        "name": "Charge Target"
+      },
+      "climate_temp_number": {
+        "name": "Climate Temperature"
+      },
+      "max_charge_current": {
+        "name": "Max. Charging Current"
+      }
     },
     "button": {
-      "flash_button":   { "name": "Flash Lights" },
-      "refresh_button": { "name": "Refresh Data" },
-      "wake_button":    { "name": "Wake Up Vehicle" }
+      "flash_button": {
+        "name": "Flash Lights"
+      },
+      "refresh_button": {
+        "name": "Refresh Data"
+      },
+      "wake_button": {
+        "name": "Wake Up Vehicle"
+      }
     },
     "climate": {
-      "climate": { "name": "Pre-Conditioning" }
+      "climate": {
+        "name": "Pre-Conditioning"
+      }
     },
     "device_tracker": {
-      "position": { "name": "Location" }
+      "position": {
+        "name": "Location"
+      }
     }
   },
   "issues": {

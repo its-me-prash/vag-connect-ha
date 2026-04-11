@@ -20,13 +20,44 @@ ci:       CI/CD-Änderungen
 
 ## [Unreleased]
 
-Geplant für 0.2.0:
-- Porsche Connector (CARIAD-API, identisch zu Audi)
-- Chinesische Region (CN-Endpoints)
-- Fensterheizung als eigener Switch
-- Abfahrtstimer (Departure Timer) für EVs
+Geplant für 0.6.0:
+- Porsche-Support (Issue #9) — wartet auf `carconnectivity-connector-porsche` auf PyPI
+- HACS offizieller Antrag (Issue #10) — benötigt mehr Tester
 
+---
 
+## [0.5.0] - 2026-04-12
+
+### Hinzugefügt
+
+#### Abfahrtstimer (Departure Timer) — Issue #5
+EVs und PHEVs mit CARIAD-Backend (Audi, VW, Škoda, SEAT/CUPRA) unterstützen jetzt Abfahrtstimer.
+
+**Neue Entities (nur bei `has_battery`):**
+- `sensor.{fahrzeug}_abfahrtstimer_1/2/3` — Timestamp-Sensor mit der geplanten Abfahrtszeit
+- `switch.{fahrzeug}_abfahrtstimer_1/2/3` — Timer aktivieren / deaktivieren
+
+**Neuer Service `vag_connect.set_departure_timer`:**
+```yaml
+service: vag_connect.set_departure_timer
+data:
+  vin: "WAUZZZ4G7EN123456"
+  timer_id: 1          # 1, 2 oder 3
+  enabled: true
+  departure_time: "07:30"  # optional: "HH:MM" oder ISO-Datetime
+```
+
+**Technischer Hintergrund:**
+- `AudiClimatization.Timers` (CC-Connector-Audi ≥0.3.0) war bereits vorhanden, aber nicht im HA-Layer exponiert.
+- `_extract()` liest jetzt `vehicle.climatization.timers.timer_1/2/3` (enabled + target_datetime).
+- `async_set_departure_timer()` setzt enabled-Flag und optionale Zielzeit direkt auf dem CC-Objekt.
+- Bei fehlendem Timer-Objekt (API hat noch keinen Timer zurückgegeben) → alle Keys = `None`, kein Crash.
+
+**Übersetzungen:** alle 8 Sprachen (DE/EN/FR/NL/ES/PL/CS/SV) — 93/93 Keys synchron.
+
+**Tests:** 6 neue Unit-Tests → 63/63 bestanden.
+
+_Autor: @Prash1407_
 
 
 ## [0.2.2] - 2026-04-11

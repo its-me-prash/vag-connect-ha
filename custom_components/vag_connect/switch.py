@@ -26,6 +26,8 @@ async def async_setup_entry(
         if vehicle.get("has_battery"):  # EV + PHEV
             entities.append(VagAutoUnlockSwitch(coordinator, vin))
             entities.append(VagChargingSwitch(coordinator, vin))
+            for timer_id in (1, 2, 3):
+                entities.append(VagDepartureTimerSwitch(coordinator, vin, timer_id))
 
     async_add_entities(entities)
 
@@ -190,3 +192,28 @@ class VagAutoUnlockSwitch(VagConnectEntity, SwitchEntity):
                 v.charging.settings.auto_unlock.value = value
         await self.coordinator.hass.async_add_executor_job(_do)
         await self.coordinator.async_request_refresh()
+
+
+class VagDepartureTimerSwitch(VagConnectEntity, SwitchEntity):
+    """Abfahrtstimer aktivieren / deaktivieren (1–3)."""
+
+    _attr_icon = "mdi:clock-time-eight-outline"
+
+    def __init__(self, coordinator, vin, timer_id: int):
+        super().__init__(coordinator, vin, f"departure_timer_{timer_id}_switch")
+        self._timer_id = timer_id
+        self._attr_name = f"Abfahrtstimer {timer_id}"
+
+    @property
+    def is_on(self) -> bool | None:
+        return self._vehicle.get(f"departure_timer_{self._timer_id}_enabled")
+
+    async def async_turn_on(self, **kwargs) -> None:
+        await self.coordinator.async_set_departure_timer(
+            self._vin, self._timer_id, enabled=True, departure_time=None
+        )
+
+    async def async_turn_off(self, **kwargs) -> None:
+        await self.coordinator.async_set_departure_timer(
+            self._vin, self._timer_id, enabled=False, departure_time=None
+        )

@@ -138,6 +138,15 @@
       },
       "license_plate": {
         "name": "Registrační značka"
+      },
+      "departure_timer_1_time": {
+        "name": "Časovač odjezdu 1"
+      },
+      "departure_timer_2_time": {
+        "name": "Časovač odjezdu 2"
+      },
+      "departure_timer_3_time": {
+        "name": "Časovač odjezdu 3"
       }
     },
     "binary_sensor": {
@@ -187,6 +196,15 @@
       },
       "auto_unlock_switch": {
         "name": "Odemknout konektor po nabití"
+      },
+      "departure_timer_1_switch": {
+        "name": "Časovač odjezdu 1"
+      },
+      "departure_timer_2_switch": {
+        "name": "Časovač odjezdu 2"
+      },
+      "departure_timer_3_switch": {
+        "name": "Časovač odjezdu 3"
       }
     },
     "number": {

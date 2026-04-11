@@ -138,6 +138,15 @@
       },
       "license_plate": {
         "name": "Matrícula"
+      },
+      "departure_timer_1_time": {
+        "name": "Temporizador de salida 1"
+      },
+      "departure_timer_2_time": {
+        "name": "Temporizador de salida 2"
+      },
+      "departure_timer_3_time": {
+        "name": "Temporizador de salida 3"
       }
     },
     "binary_sensor": {
@@ -187,6 +196,15 @@
       },
       "auto_unlock_switch": {
         "name": "Desbloquear enchufe tras carga"
+      },
+      "departure_timer_1_switch": {
+        "name": "Temporizador de salida 1"
+      },
+      "departure_timer_2_switch": {
+        "name": "Temporizador de salida 2"
+      },
+      "departure_timer_3_switch": {
+        "name": "Temporizador de salida 3"
       }
     },
     "number": {

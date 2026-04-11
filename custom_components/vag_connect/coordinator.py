@@ -528,6 +528,25 @@ class VagConnectCoordinator(DataUpdateCoordinator):
         except Exception:  # noqa: BLE001
             data["license_plate"] = data["firmware_version"] = None
 
+        # Abfahrtstimer (Departure Timers) — Audi: climatization.timers.timer_1/2/3
+        for idx in (1, 2, 3):
+            key_enabled  = f"departure_timer_{idx}_enabled"
+            key_time     = f"departure_timer_{idx}_time"
+            try:
+                timers_obj = vehicle.climatization.timers
+                timer_obj  = getattr(timers_obj, f"timer_{idx}", None)
+                if timer_obj is not None:
+                    data[key_enabled] = _val(timer_obj.enabled)
+                    # target_datetime bevorzugen, Fallback start_datetime
+                    dt = _val(getattr(timer_obj, "target_datetime", None))
+                    if dt is None:
+                        dt = _val(getattr(timer_obj, "start_datetime", None))
+                    data[key_time] = dt
+                else:
+                    data[key_enabled] = data[key_time] = None
+            except Exception:  # noqa: BLE001
+                data[key_enabled] = data[key_time] = None
+
         # Raw CC-Objekt für Actions (nicht serialisiert, nicht geloggt)
         data["_vehicle"] = vehicle
         return data
@@ -604,6 +623,68 @@ class VagConnectCoordinator(DataUpdateCoordinator):
                 raise RuntimeError(f"Fahrzeug {vin} nicht gefunden")
             v.climatization.settings.target_temperature.value = temp_c
         await self.hass.async_add_executor_job(_do)
+
+    async def async_set_departure_timer(
+        self,
+        vin: str,
+        timer_id: int,
+        enabled: bool,
+        departure_time: str | None,
+    ) -> None:
+        """Abfahrtstimer setzen (Audi CARIAD).
+
+        timer_id:       1, 2 oder 3
+        enabled:        True/False
+        departure_time: "HH:MM" oder ISO-Datetime-String, None = nur enabled toggeln
+        """
+        def _do():
+            with self._vehicles_lock:
+                v = self.vehicles.get(vin, {}).get("_vehicle")
+            if v is None:
+                raise RuntimeError(f"Fahrzeug {vin} nicht gefunden")
+
+            timers_obj = getattr(getattr(v, "climatization", None), "timers", None)
+            if timers_obj is None:
+                raise RuntimeError(
+                    f"Fahrzeug {vin} unterstützt keine Abfahrtstimer "
+                    "(climatization.timers nicht verfügbar)"
+                )
+
+            timer_attr = f"timer_{timer_id}"
+            timer_obj = getattr(timers_obj, timer_attr, None)
+            if timer_obj is None:
+                raise RuntimeError(
+                    f"Timer {timer_id} für {vin} nicht verfügbar "
+                    "(noch kein Timer in API-Antwort)"
+                )
+
+            # Enable / disable
+            if hasattr(timer_obj, "enabled") and timer_obj.enabled is not None:
+                timer_obj.enabled.value = enabled
+
+            # Zeit setzen wenn angegeben
+            if departure_time is not None:
+                from datetime import datetime  # noqa: PLC0415
+                # "HH:MM" → datetime mit heutigem Datum; ISO-String direkt parsen
+                if len(departure_time) <= 5:
+                    now = datetime.now()
+                    h, m = map(int, departure_time.split(":"))
+                    dt = now.replace(hour=h, minute=m, second=0, microsecond=0)
+                else:
+                    dt = datetime.fromisoformat(departure_time)
+
+                if hasattr(timer_obj, "target_datetime") and timer_obj.target_datetime is not None:
+                    timer_obj.target_datetime._set_value(value=dt, measured=datetime.now())
+                elif hasattr(timer_obj, "start_datetime") and timer_obj.start_datetime is not None:
+                    timer_obj.start_datetime._set_value(value=dt, measured=datetime.now())
+
+            _LOGGER.info(
+                "VAG Abfahrtstimer: VIN=%s | timer=%d | enabled=%s | time=%s",
+                vin, timer_id, enabled, departure_time,
+            )
+
+        await self.hass.async_add_executor_job(_do)
+        await self.async_request_refresh()
 
     async def _run_command(
         self, vin: str, subsystem: str, command_name: str, value: str

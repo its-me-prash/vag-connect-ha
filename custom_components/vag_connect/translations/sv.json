@@ -138,6 +138,15 @@
       },
       "license_plate": {
         "name": "Registreringsnummer"
+      },
+      "departure_timer_1_time": {
+        "name": "Avgångstimer 1"
+      },
+      "departure_timer_2_time": {
+        "name": "Avgångstimer 2"
+      },
+      "departure_timer_3_time": {
+        "name": "Avgångstimer 3"
       }
     },
     "binary_sensor": {
@@ -187,6 +196,15 @@
       },
       "auto_unlock_switch": {
         "name": "Lås upp kontakt efter laddning"
+      },
+      "departure_timer_1_switch": {
+        "name": "Avgångstimer 1"
+      },
+      "departure_timer_2_switch": {
+        "name": "Avgångstimer 2"
+      },
+      "departure_timer_3_switch": {
+        "name": "Avgångstimer 3"
       }
     },
     "number": {

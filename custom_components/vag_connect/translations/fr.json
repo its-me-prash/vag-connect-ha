@@ -138,6 +138,15 @@
       },
       "license_plate": {
         "name": "Immatriculation"
+      },
+      "departure_timer_1_time": {
+        "name": "Minuterie de départ 1"
+      },
+      "departure_timer_2_time": {
+        "name": "Minuterie de départ 2"
+      },
+      "departure_timer_3_time": {
+        "name": "Minuterie de départ 3"
       }
     },
     "binary_sensor": {
@@ -187,6 +196,15 @@
       },
       "auto_unlock_switch": {
         "name": "Déverrouiller prise après charge"
+      },
+      "departure_timer_1_switch": {
+        "name": "Minuterie de départ 1"
+      },
+      "departure_timer_2_switch": {
+        "name": "Minuterie de départ 2"
+      },
+      "departure_timer_3_switch": {
+        "name": "Minuterie de départ 3"
       }
     },
     "number": {
