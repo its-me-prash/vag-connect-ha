@@ -21,6 +21,7 @@ async def async_setup_entry(
     for vin in coordinator.vehicles:
         entities.append(VagFlashButton(coordinator, vin))
         entities.append(VagRefreshButton(coordinator, vin))
+        entities.append(VagWakeButton(coordinator, vin))
     async_add_entities(entities)
 
 
@@ -48,3 +49,16 @@ class VagRefreshButton(VagConnectEntity, ButtonEntity):
 
     async def async_press(self) -> None:
         await self.coordinator.async_request_refresh()
+
+
+class VagWakeButton(VagConnectEntity, ButtonEntity):
+    """Fahrzeug aufwecken (wake-sleep)."""
+
+    _attr_name = "Fahrzeug aufwecken"
+    _attr_icon = "mdi:car-connected"
+
+    def __init__(self, coordinator, vin):
+        super().__init__(coordinator, vin, "wake_button")
+
+    async def async_press(self) -> None:
+        await self.coordinator.async_wake_vehicle(self._vin)

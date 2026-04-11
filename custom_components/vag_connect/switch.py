@@ -22,6 +22,7 @@ async def async_setup_entry(
     for vin, vehicle in coordinator.vehicles.items():
         entities.append(VagLockSwitch(coordinator, vin))
         entities.append(VagClimatisationSwitch(coordinator, vin))
+        entities.append(VagWindowHeatingSwitch(coordinator, vin))
         if vehicle.get("is_electric"):
             entities.append(VagChargingSwitch(coordinator, vin))
 
@@ -92,3 +93,34 @@ class VagChargingSwitch(VagConnectEntity, SwitchEntity):
 
     async def async_turn_off(self, **kwargs) -> None:
         await self.coordinator.async_stop_charging(self._vin)
+
+
+class VagWindowHeatingSwitch(VagConnectEntity, SwitchEntity):
+    """Fensterheizung Ein/Aus."""
+
+    _attr_name = "Fensterheizung"
+    _attr_icon = "mdi:car-windshield"
+
+    def __init__(self, coordinator, vin):
+        super().__init__(coordinator, vin, "window_heating_switch")
+
+    @property
+    def is_on(self) -> bool | None:
+        from carconnectivity.window_heating import WindowHeatings  # noqa: PLC0415
+        try:
+            state = self._vehicle.get("_vehicle").window_heatings.heating_state.value
+            if state is None:
+                return None
+            return state not in (
+                WindowHeatings.HeatingState.OFF,
+                WindowHeatings.HeatingState.UNKNOWN,
+                None,
+            )
+        except Exception:  # noqa: BLE001
+            return None
+
+    async def async_turn_on(self, **kwargs) -> None:
+        await self.coordinator.async_start_window_heating(self._vin)
+
+    async def async_turn_off(self, **kwargs) -> None:
+        await self.coordinator.async_stop_window_heating(self._vin)

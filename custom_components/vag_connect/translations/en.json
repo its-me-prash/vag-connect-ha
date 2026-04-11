@@ -20,7 +20,12 @@
     "error": {
       "cannot_connect": "Connection failed. Please check your credentials.",
       "missing_library": "CarConnectivity library not found. Please restart Home Assistant.",
-      "unknown": "Unknown error."
+      "unknown": "Unknown error.",
+      "terms_and_conditions": "Terms and conditions need to be accepted. Open the app and sign in there.",
+      "marketing_consent": "New privacy consent required in app: Profile → Consents.",
+      "two_factor_required": "2FA required. Sign in manually in the app once and confirm the code.",
+      "too_many_requests": "Account temporarily blocked (too many requests). Wait 15 minutes.",
+      "invalid_credentials": "Email or password incorrect."
     },
     "abort": {
       "already_configured": "This account is already configured."
@@ -39,50 +44,98 @@
   },
   "entity": {
     "sensor": {
-      "fuel_level":          { "name": "Fuel Level" },
-      "battery_soc":         { "name": "Battery State of Charge" },
-      "range_km":            { "name": "Range" },
-      "odometer_km":         { "name": "Odometer" },
-      "charging_state":      { "name": "Charging State" },
-      "plug_state":          { "name": "Plug State" },
-      "target_soc":          { "name": "Charge Target" },
-      "climatisation_state": { "name": "Climatisation" },
-      "outside_temp":        { "name": "Outside Temperature" },
-      "oil_level":           { "name": "Oil Level" },
-      "service_days":        { "name": "Service Due (Days)" },
-      "service_km":          { "name": "Service Due (km)" }
+      "fuel_level": {
+        "name": "Fuel Level"
+      },
+      "battery_soc": {
+        "name": "Battery State of Charge"
+      },
+      "range_km": {
+        "name": "Range"
+      },
+      "odometer_km": {
+        "name": "Odometer"
+      },
+      "charging_state": {
+        "name": "Charging State"
+      },
+      "plug_state": {
+        "name": "Plug State"
+      },
+      "target_soc": {
+        "name": "Charge Target"
+      },
+      "climatisation_state": {
+        "name": "Climatisation"
+      },
+      "outside_temp": {
+        "name": "Outside Temperature"
+      },
+      "oil_level": {
+        "name": "Oil Level"
+      },
+      "service_days": {
+        "name": "Service Due (Days)"
+      },
+      "service_km": {
+        "name": "Service Due (km)"
+      }
     },
     "binary_sensor": {
-      "doors_locked":   { "name": "Doors Locked" },
-      "doors_open":     { "name": "Doors Open" },
-      "windows_open":   { "name": "Windows Open" },
-      "plug_connected": { "name": "Charging Cable Connected" },
-      "is_charging":    { "name": "Charging" }
+      "doors_locked": {
+        "name": "Doors Locked"
+      },
+      "doors_open": {
+        "name": "Doors Open"
+      },
+      "windows_open": {
+        "name": "Windows Open"
+      },
+      "plug_connected": {
+        "name": "Charging Cable Connected"
+      },
+      "is_charging": {
+        "name": "Charging"
+      }
     },
     "switch": {
-      "lock_switch":           { "name": "Door Lock" },
-      "climatisation_switch":  { "name": "Climatisation" },
-      "charging_switch":       { "name": "Charging" }
+      "lock_switch": {
+        "name": "Door Lock"
+      },
+      "climatisation_switch": {
+        "name": "Climatisation"
+      },
+      "charging_switch": {
+        "name": "Charging"
+      }
     },
     "button": {
-      "flash_button":   { "name": "Flash Lights" },
-      "refresh_button": { "name": "Refresh Data" }
+      "flash_button": {
+        "name": "Flash Lights"
+      },
+      "refresh_button": {
+        "name": "Refresh Data"
+      }
     },
     "climate": {
-      "climate": { "name": "Pre-Conditioning" }
+      "climate": {
+        "name": "Pre-Conditioning"
+      }
     },
     "device_tracker": {
-      "position": { "name": "Position" }
+      "position": {
+        "name": "Position"
+      }
     }
   },
   "selector": {
     "brand": {
       "options": {
-        "audi":          "Audi (myAudi)",
-        "volkswagen":    "Volkswagen / VW (WeConnect EU)",
+        "audi": "Audi (myAudi)",
+        "volkswagen": "Volkswagen / VW (WeConnect EU)",
         "volkswagen_na": "Volkswagen / VW (WeConnect US/CA)",
-        "skoda":         "Škoda (MySkoda)",
-        "seatcupra":     "SEAT / CUPRA (MyCupra)"
+        "skoda": "Škoda (MySkoda)",
+        "seatcupra": "SEAT / CUPRA (MyCupra)"
       }
     }
   }

@@ -20,7 +20,12 @@
     "error": {
       "cannot_connect": "Verbindung fehlgeschlagen. Zugangsdaten prüfen.",
       "missing_library": "CarConnectivity-Bibliothek fehlt. HA neu starten.",
-      "unknown": "Unbekannter Fehler."
+      "unknown": "Unbekannter Fehler.",
+      "terms_and_conditions": "Nutzungsbedingungen müssen akzeptiert werden. App öffnen und dort anmelden.",
+      "marketing_consent": "Neue Datenschutzzustimmung in der App erforderlich: Profil → Zustimmungen.",
+      "two_factor_required": "2FA erforderlich. Einmal manuell in der App anmelden und Code bestätigen.",
+      "too_many_requests": "Account temporär gesperrt. 15 Minuten warten und erneut versuchen.",
+      "invalid_credentials": "E-Mail oder Passwort falsch."
     },
     "abort": {
       "already_configured": "Dieses Konto ist bereits eingerichtet."

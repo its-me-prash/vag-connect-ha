@@ -26,6 +26,55 @@ Geplant für 0.2.0:
 - Fensterheizung als eigener Switch
 - Abfahrtstimer (Departure Timer) für EVs
 
+
+## [0.2.0] - 2026-04-11
+
+Features aus Issue-Analyse des gesamten VAG-HA-Ökosystems.
+Quellen: audiconnect/audi_connect_ha Issues, homeassistant-myskoda Issues,
+CarConnectivity Issues, ioBroker VW-Connect Forum.
+
+### Hinzugefügt
+
+#### Fensterheizung Switch
+- Neuer `switch.vag_*_fensterheizung` für alle Fahrzeuge mit Fensterheizfunktion.
+  Nutzt `vehicle.window_heatings.commands`, Command `start-stop`.
+  **Autor:** @Prash1407
+  **Quelle:** [CarConnectivity WindowHeatingStartStopCommand](https://github.com/tillsteinbach/CarConnectivity)
+  **Referenz-Issue:** [myskoda #929](https://github.com/skodaconnect/homeassistant-myskoda/issues/929) — Heizung Stop nicht möglich
+
+#### Wake-Car Button
+- Neuer `button.vag_*_fahrzeug_aufwecken` — weckt schlafende Fahrzeuge auf.
+  Verbrenner-Fahrzeuge kommunizieren seltener; Wake erzwingt eine Status-Aktualisierung.
+  Nutzt `vehicle.commands`, Command `wake-sleep`.
+  **Autor:** @Prash1407
+  **Quelle:** [CarConnectivity WakeSleepCommand](https://github.com/tillsteinbach/CarConnectivity)
+  **Referenz-Issue:** [myskoda #762](https://github.com/skodaconnect/homeassistant-myskoda/issues/762) — Wake car Feature Request
+
+#### Token-Persistenz
+- CC-Tokens werden in `.storage/vag_connect_tokens_{entry_id}.json` gespeichert.
+  Bei HA-Neustart ist kein Re-Auth mehr nötig — Tokens werden wiederverwendet.
+  Reduziert Auth-Anfragen und Risiko von Account-Sperrungen.
+  **Autor:** @Prash1407
+  **Quelle:** [CarConnectivity tokenstore_file Parameter](https://github.com/tillsteinbach/CarConnectivity)
+
+#### Bessere Fehlerbehandlung bei Login
+Neue spezifische Fehlermeldungen statt generischem "cannot_connect":
+- `terms_and_conditions` — Nutzungsbedingungen müssen in der App akzeptiert werden
+- `marketing_consent` — Datenschutzzustimmung erforderlich (App → Profil → Zustimmungen)
+- `two_factor_required` — 2FA muss einmalig manuell in der App bestätigt werden
+- `too_many_requests` — Account temporär gesperrt, 15 Minuten warten
+- `invalid_credentials` — E-Mail oder Passwort falsch
+  **Autor:** @Prash1407
+  **Referenz:** [myskoda #976 MarketingConsentError](https://github.com/skodaconnect/homeassistant-myskoda/issues/976)
+  **Referenz:** [myskoda #934 CSRFError](https://github.com/skodaconnect/homeassistant-myskoda/issues/934)
+  **Referenz:** [Audi Connector T&C AuthenticationError](https://github.com/acfischer42/CarConnectivity-connector-audi)
+  **Referenz:** [VW Connector 2FA README](https://github.com/tillsteinbach/CarConnectivity-connector-volkswagen)
+
+### Bekannte Einschränkungen in 0.2.0
+- Porsche noch nicht unterstützt
+- CN-Region nicht getestet
+- `force_enable_access` für ältere VW-Modelle noch nicht in Config-Flow
+  Tracked: #5 (geplant für 0.2.1)
 ---
 
 ## [0.1.1] - 2026-04-11

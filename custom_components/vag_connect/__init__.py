@@ -50,12 +50,40 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up VAG Connect from a config entry."""
     coordinator = VagConnectCoordinator(hass, entry)
 
-    # Startet CC Background-Thread + erster Fetch + Observer-Registrierung
-    ok = await coordinator.async_setup()
+    # Fehlermeldungen für bekannte CC-Fehlertypen
+    _ERROR_MAP = {
+        "terms_and_conditions": (
+            "Nutzungsbedingungen müssen akzeptiert werden. "
+            "App öffnen, anmelden und Bedingungen bestätigen."
+        ),
+        "marketing_consent": (
+            "Neue Datenschutzzustimmung erforderlich. "
+            "App → Profil → Zustimmungen."
+        ),
+        "too_many_requests": (
+            "Account temporär gesperrt (zu viele Anfragen). "
+            "15 Minuten warten, dann HA neu starten."
+        ),
+        "two_factor_required": (
+            "2FA erforderlich. "
+            "Einmal manuell in der App anmelden und 2FA-Code bestätigen."
+        ),
+        "invalid_credentials": (
+            "Zugangsdaten falsch. E-Mail und Passwort aus der App prüfen."
+        ),
+    }
+
+    try:
+        ok = await coordinator.async_setup()
+    except ValueError as err:
+        msg = _ERROR_MAP.get(str(err), f"Setup-Fehler: {err}")
+        raise ConfigEntryNotReady(msg) from err
+    except Exception as err:  # noqa: BLE001
+        raise ConfigEntryNotReady(f"Verbindungsfehler: {err}") from err
+
     if not ok:
         raise ConfigEntryNotReady(
-            "VAG Connect: Keine Fahrzeuge gefunden oder Verbindung fehlgeschlagen. "
-            "Zugangsdaten und Netzwerk prüfen."
+            "Keine Fahrzeuge gefunden. Zugangsdaten und Netzwerk prüfen."
         )
 
     # coordinator.data MUSS vor async_forward_entry_setups befüllt sein,

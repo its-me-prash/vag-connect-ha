@@ -20,7 +20,12 @@
     "error": {
       "cannot_connect": "Verbindung fehlgeschlagen. Zugangsdaten prüfen.",
       "missing_library": "CarConnectivity-Bibliothek nicht gefunden. Bitte Home Assistant neu starten.",
-      "unknown": "Unbekannter Fehler."
+      "unknown": "Unbekannter Fehler.",
+      "terms_and_conditions": "Nutzungsbedingungen müssen akzeptiert werden. App öffnen und dort anmelden.",
+      "marketing_consent": "Neue Datenschutzzustimmung erforderlich: App → Profil → Zustimmungen.",
+      "two_factor_required": "2FA erforderlich. Einmal manuell in der App anmelden.",
+      "too_many_requests": "Account temporär gesperrt (zu viele Anfragen). 15 Minuten warten.",
+      "invalid_credentials": "E-Mail oder Passwort falsch."
     },
     "abort": {
       "already_configured": "Dieses Konto ist bereits eingerichtet."
@@ -39,50 +44,98 @@
   },
   "entity": {
     "sensor": {
-      "fuel_level":          { "name": "Tankfüllstand" },
-      "battery_soc":         { "name": "Batterieladestand" },
-      "range_km":            { "name": "Reichweite" },
-      "odometer_km":         { "name": "Kilometerstand" },
-      "charging_state":      { "name": "Ladestatus" },
-      "plug_state":          { "name": "Steckerstatus" },
-      "target_soc":          { "name": "Ladziel" },
-      "climatisation_state": { "name": "Klimatisierung" },
-      "outside_temp":        { "name": "Außentemperatur" },
-      "oil_level":           { "name": "Ölstand" },
-      "service_days":        { "name": "Inspektion fällig (Tage)" },
-      "service_km":          { "name": "Inspektion fällig (km)" }
+      "fuel_level": {
+        "name": "Tankfüllstand"
+      },
+      "battery_soc": {
+        "name": "Batterieladestand"
+      },
+      "range_km": {
+        "name": "Reichweite"
+      },
+      "odometer_km": {
+        "name": "Kilometerstand"
+      },
+      "charging_state": {
+        "name": "Ladestatus"
+      },
+      "plug_state": {
+        "name": "Steckerstatus"
+      },
+      "target_soc": {
+        "name": "Ladziel"
+      },
+      "climatisation_state": {
+        "name": "Klimatisierung"
+      },
+      "outside_temp": {
+        "name": "Außentemperatur"
+      },
+      "oil_level": {
+        "name": "Ölstand"
+      },
+      "service_days": {
+        "name": "Inspektion fällig (Tage)"
+      },
+      "service_km": {
+        "name": "Inspektion fällig (km)"
+      }
     },
     "binary_sensor": {
-      "doors_locked":   { "name": "Türen verriegelt" },
-      "doors_open":     { "name": "Türen offen" },
-      "windows_open":   { "name": "Fenster offen" },
-      "plug_connected": { "name": "Ladekabel verbunden" },
-      "is_charging":    { "name": "Lädt" }
+      "doors_locked": {
+        "name": "Türen verriegelt"
+      },
+      "doors_open": {
+        "name": "Türen offen"
+      },
+      "windows_open": {
+        "name": "Fenster offen"
+      },
+      "plug_connected": {
+        "name": "Ladekabel verbunden"
+      },
+      "is_charging": {
+        "name": "Lädt"
+      }
     },
     "switch": {
-      "lock_switch":           { "name": "Türverriegelung" },
-      "climatisation_switch":  { "name": "Klimatisierung" },
-      "charging_switch":       { "name": "Laden" }
+      "lock_switch": {
+        "name": "Türverriegelung"
+      },
+      "climatisation_switch": {
+        "name": "Klimatisierung"
+      },
+      "charging_switch": {
+        "name": "Laden"
+      }
     },
     "button": {
-      "flash_button":   { "name": "Lichtsignal" },
-      "refresh_button": { "name": "Daten aktualisieren" }
+      "flash_button": {
+        "name": "Lichtsignal"
+      },
+      "refresh_button": {
+        "name": "Daten aktualisieren"
+      }
     },
     "climate": {
-      "climate": { "name": "Vorklimatisierung" }
+      "climate": {
+        "name": "Vorklimatisierung"
+      }
     },
     "device_tracker": {
-      "position": { "name": "Position" }
+      "position": {
+        "name": "Position"
+      }
     }
   },
   "selector": {
     "brand": {
       "options": {
-        "audi":          "Audi (myAudi)",
-        "volkswagen":    "Volkswagen / VW (WeConnect EU)",
+        "audi": "Audi (myAudi)",
+        "volkswagen": "Volkswagen / VW (WeConnect EU)",
         "volkswagen_na": "Volkswagen / VW (WeConnect US/CA)",
-        "skoda":         "Škoda (MySkoda)",
-        "seatcupra":     "SEAT / CUPRA (MyCupra)"
+        "skoda": "Škoda (MySkoda)",
+        "seatcupra": "SEAT / CUPRA (MyCupra)"
       }
     }
   }

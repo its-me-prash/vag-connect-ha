@@ -84,12 +84,35 @@ class VagConnectCoordinator(DataUpdateCoordinator):
             _LOGGER.info("VAG Connect: Setup OK — %d Fahrzeug(e)", found)
             return found > 0
         except Exception as err:  # noqa: BLE001
+            err_str = str(err).lower()
+            if "terms and conditions" in err_str or "accept" in err_str and "condition" in err_str:
+                raise ValueError("terms_and_conditions") from err
+            if "too many requests" in err_str or "429" in err_str:
+                raise ValueError("too_many_requests") from err
+            if "marketing" in err_str or "consent" in err_str:
+                raise ValueError("marketing_consent") from err
+            if "password" in err_str or "credential" in err_str or "authentication" in err_str:
+                raise ValueError("invalid_credentials") from err
+            if "two_factor" in err_str or "2fa" in err_str or "otp" in err_str:
+                raise ValueError("two_factor_required") from err
             _LOGGER.error("VAG Connect Setup fehlgeschlagen: %s", err)
             return False
 
     async def async_shutdown(self) -> None:
         """Stoppt CC Background-Thread sauber beim Unload."""
         await self.hass.async_add_executor_job(self._stop_cc)
+
+    def _tokenstore_path(self) -> str:
+        """Pfad zur Token-Datei im HA-Config-Verzeichnis.
+        Tokens werden zwischen Neustarts gespeichert → kein Re-Auth nötig.
+        """
+        import os  # noqa: PLC0415
+        storage_dir = os.path.join(self.hass.config.config_dir, ".storage")
+        os.makedirs(storage_dir, exist_ok=True)
+        return os.path.join(
+            storage_dir,
+            f"vag_connect_tokens_{self.entry.entry_id}.json"
+        )
 
     # ──────────────────────────────────────────────────────────────────
     # CarConnectivity Start/Stop (blocking, im Executor)
@@ -119,11 +142,15 @@ class VagConnectCoordinator(DataUpdateCoordinator):
         if spin:
             connector_cfg["spin"] = spin
 
-        cc = CarConnectivity(config={
-            "carConnectivity": {
-                "connectors": [{"type": brand, "config": connector_cfg}]
-            }
-        })
+        cc = CarConnectivity(
+            config={
+                "carConnectivity": {
+                    "connectors": [{"type": brand, "config": connector_cfg}]
+                }
+            },
+            # Token-Persistenz: verhindert Re-Auth bei jedem HA-Neustart
+            tokenstore_file=self._tokenstore_path(),
+        )
 
         # startup() startet CC Background-Thread (pollt autonom)
         cc.startup()
@@ -476,4 +503,66 @@ class VagConnectCoordinator(DataUpdateCoordinator):
 
         await self.hass.async_add_executor_job(_do)
         # Nach Command sofort manuellen Refresh anstossen
+        await self.async_request_refresh()
+
+    # --- Neu: Fensterheizung & Auto aufwecken ---
+
+    async def async_start_window_heating(self, vin: str) -> None:
+        """Fensterheizung starten."""
+        await self._run_subsystem_command(vin, "window_heatings", "start-stop", "start")
+
+    async def async_stop_window_heating(self, vin: str) -> None:
+        """Fensterheizung stoppen."""
+        await self._run_subsystem_command(vin, "window_heatings", "start-stop", "stop")
+
+    async def async_wake_vehicle(self, vin: str) -> None:
+        """Fahrzeug aufwecken (wake-sleep Kommando auf Vehicle-Ebene)."""
+        def _do():
+            with self._vehicles_lock:
+                vehicle = self.vehicles.get(vin, {}).get("_vehicle")
+            if vehicle is None:
+                raise RuntimeError(f"Fahrzeug {vin} nicht gefunden")
+            cmds = vehicle.commands
+            if not cmds.contains_command("wake-sleep"):
+                raise RuntimeError(
+                    f"wake-sleep nicht verfügbar für {vin}. "
+                    "Vom Connector nicht unterstützt."
+                )
+            cmds.commands["wake-sleep"].value = "wake"
+            _LOGGER.info("VAG Command: %s / wake-sleep → wake", vin)
+
+        await self.hass.async_add_executor_job(_do)
+        await self.async_request_refresh()
+
+    async def _run_subsystem_command(
+        self, vin: str, subsystem: str, command_name: str, value: str
+    ) -> None:
+        """Wie _run_command aber für Subsysteme die nicht in sub_map stehen."""
+        def _do():
+            with self._vehicles_lock:
+                vehicle = self.vehicles.get(vin, {}).get("_vehicle")
+            if vehicle is None:
+                raise RuntimeError(f"Fahrzeug {vin} nicht gefunden")
+            sub_map = {
+                "doors":           vehicle.doors,
+                "charging":        vehicle.charging,
+                "climatization":   vehicle.climatization,
+                "lights":          vehicle.lights,
+                "window_heatings": vehicle.window_heatings,
+            }
+            sub = sub_map.get(subsystem)
+            if sub is None:
+                raise RuntimeError(f"Unbekanntes Subsystem: {subsystem}")
+            cmds = sub.commands
+            if not cmds.contains_command(command_name):
+                raise RuntimeError(
+                    f"Command '{command_name}' nicht verfügbar für {vin} "
+                    f"(subsystem={subsystem})."
+                )
+            cmds.commands[command_name].value = value
+            _LOGGER.info(
+                "VAG Command: VIN=%s | %s/%s → %s", vin, subsystem, command_name, value
+            )
+
+        await self.hass.async_add_executor_job(_do)
         await self.async_request_refresh()

@@ -83,7 +83,19 @@ class VagConnectConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     self.hass, brand, username, password
                 )
             except ValueError as err:
-                errors["base"] = str(err)
+                err_code = str(err)
+                if err_code == "terms_and_conditions":
+                    errors["base"] = "terms_and_conditions"
+                elif err_code == "marketing_consent":
+                    errors["base"] = "marketing_consent"
+                elif err_code == "two_factor_required":
+                    errors["base"] = "two_factor_required"
+                elif err_code == "too_many_requests":
+                    errors["base"] = "too_many_requests"
+                elif err_code in ("invalid_credentials", "missing_library", "cannot_connect"):
+                    errors["base"] = err_code
+                else:
+                    errors["base"] = "cannot_connect"
             else:
                 return self.async_create_entry(
                     title=f"{BRANDS[brand]} — {username}",
