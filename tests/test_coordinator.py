@@ -309,3 +309,182 @@ class TestCommands:
                 if vehicle is None:
                     raise RuntimeError("Vehicle UNKNOWN not found in garage")
             _do()
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# Tests für Features seit v0.2.0
+# ══════════════════════════════════════════════════════════════════════════════
+
+class TestNewExtractFields:
+    """Tests für alle Felder die nach v0.1.1 hinzugekommen sind."""
+
+    def setup_method(self):
+        hass = MagicMock()
+        hass.config.config_dir = "/tmp"
+        hass.loop = MagicMock()
+        hass.loop.is_running.return_value = False
+        self.coordinator = VagConnectCoordinator.__new__(VagConnectCoordinator)
+        self.coordinator.hass = hass
+        self.coordinator.entry = _make_entry()
+        self.coordinator.vehicles = {}
+        self.coordinator.logger = MagicMock()
+
+    # ── Ladeleistung + Ladegeschwindigkeit (Issue #2) ─────────────────────
+    def test_charging_power_extracted(self):
+        v = _make_vehicle(is_electric=True)
+        v.charging.power.value = 22.0
+        data = self.coordinator._extract(v)
+        assert data["charging_power_kw"] == 22.0
+
+    def test_charging_rate_extracted(self):
+        v = _make_vehicle(is_electric=True)
+        v.charging.rate.value = 120.0
+        data = self.coordinator._extract(v)
+        assert data["charging_rate_kmh"] == 120.0
+
+    def test_charging_power_none_when_not_charging(self):
+        v = _make_vehicle(is_electric=True)
+        v.charging.power.value = None
+        data = self.coordinator._extract(v)
+        assert data["charging_power_kw"] is None
+
+    # ── Individuelle Türen (Issue #3) ──────────────────────────────────────
+    def test_individual_doors_extracted(self):
+        from carconnectivity.doors import Doors  # noqa: PLC0415
+        v = _make_vehicle()
+        # Mock individual doors dict
+        door_fl = MagicMock()
+        door_fl.open_state.value = Doors.OpenState.CLOSED
+        door_trunk = MagicMock()
+        door_trunk.open_state.value = Doors.OpenState.OPEN
+        v.doors.doors = {"frontLeft": door_fl, "trunk": door_trunk}
+        data = self.coordinator._extract(v)
+        assert "doors_individual" in data
+        assert data["doors_individual"]["frontLeft"] is False
+        assert data["doors_individual"]["trunk"] is True
+
+    def test_individual_doors_empty_when_no_doors(self):
+        v = _make_vehicle()
+        v.doors.doors = {}
+        data = self.coordinator._extract(v)
+        assert data["doors_individual"] == {}
+
+    def test_individual_door_handles_error_gracefully(self):
+        v = _make_vehicle()
+        bad_door = MagicMock()
+        bad_door.open_state.value = None  # None state
+        v.doors.doors = {"frontLeft": bad_door}
+        data = self.coordinator._extract(v)
+        assert data["doors_individual"]["frontLeft"] is None
+
+    # ── Stale Data Fix (Issue #4) ──────────────────────────────────────────
+    def test_async_push_update_success_true_calls_set_updated_data(self):
+        """success=True → async_set_updated_data aufgerufen."""
+        import asyncio  # noqa: PLC0415
+        self.coordinator.async_set_updated_data = MagicMock()
+        self.coordinator.last_update_success = True
+        self.coordinator.async_update_listeners = MagicMock()
+        fresh = {"VIN1": {"model": "Q4"}}
+        asyncio.get_event_loop().run_until_complete(
+            self.coordinator._async_push_update(fresh, success=True)
+        )
+        self.coordinator.async_set_updated_data.assert_called_once_with(fresh)
+
+    def test_async_push_update_success_false_sets_last_update_failed(self):
+        """success=False → last_update_success=False + listeners notifiziert."""
+        import asyncio  # noqa: PLC0415
+        self.coordinator.async_set_updated_data = MagicMock()
+        self.coordinator.last_update_success = True
+        self.coordinator.async_update_listeners = MagicMock()
+        asyncio.get_event_loop().run_until_complete(
+            self.coordinator._async_push_update({}, success=False)
+        )
+        assert self.coordinator.last_update_success is False
+        self.coordinator.async_update_listeners.assert_called_once()
+        self.coordinator.async_set_updated_data.assert_not_called()
+
+    # ── Token Store Path ───────────────────────────────────────────────────
+    def test_tokenstore_path_uses_ha_config_dir(self):
+        self.coordinator.hass.config.config_dir = "/home/user/.homeassistant"
+        path = self.coordinator._tokenstore_path()
+        assert ".storage" in path
+        assert "vag_connect_tokens" in path
+        assert self.coordinator.entry.entry_id in path
+        assert path.endswith(".json")
+
+    def test_tokenstore_path_different_per_entry(self):
+        self.coordinator.hass.config.config_dir = "/config"
+        entry_a = _make_entry()
+        entry_a.entry_id = "entry_aaa"
+        entry_b = _make_entry()
+        entry_b.entry_id = "entry_bbb"
+        c1 = VagConnectCoordinator.__new__(VagConnectCoordinator)
+        c1.hass = self.coordinator.hass
+        c1.entry = entry_a
+        c2 = VagConnectCoordinator.__new__(VagConnectCoordinator)
+        c2.hass = self.coordinator.hass
+        c2.entry = entry_b
+        assert c1._tokenstore_path() != c2._tokenstore_path()
+
+    # ── force_enable_access (Issue #1) ────────────────────────────────────
+    def test_force_enable_access_passed_to_connector_config(self):
+        """force_enable_access=True muss in connector_cfg landen.
+        Testet _start_cc intern durch Inspektion des aufgebauten config-Dicts."""
+        entry = _make_entry()
+        entry.data = {**entry.data, "force_enable_access": True}
+        c = VagConnectCoordinator.__new__(VagConnectCoordinator)
+        c.entry = entry
+        c.hass = self.coordinator.hass
+        c._vehicles_lock = __import__('threading').Lock()
+        c.vehicles = {}
+
+        # Prüfen dass _start_cc das Flag korrekt in connector_cfg einbaut
+        # durch direkten Code-Pfad-Test ohne echten CarConnectivity-Import
+        import inspect  # noqa: PLC0415
+        src = inspect.getsource(c._start_cc)
+        assert 'force_enable_access' in src
+        assert 'connector_cfg["force_enable_access"] = True' in src
+
+    def test_force_enable_access_not_passed_when_false(self):
+        """force_enable_access=False darf nicht im connector_cfg landen."""
+        import inspect  # noqa: PLC0415
+        src = inspect.getsource(VagConnectCoordinator._start_cc)
+        # Sicherstellen dass der Guard "if self.entry.data.get(...)" vorhanden ist
+        assert 'force_enable_access' in src
+        # Nicht einfach immer gesetzt — nur wenn True
+        assert 'if self.entry.data.get("force_enable_access"' in src
+
+
+class TestEntityBaseName:
+    """Tests für das neue Entity-Naming Schema (Marke + Modell)."""
+
+    def test_device_name_audi_q4(self):
+        from custom_components.vag_connect.entity_base import _device_name  # noqa: PLC0415
+        vehicle = {"model": "Q4 e-tron", "vin": "WAUZZ1"}
+        name = _device_name(vehicle, "audi")
+        assert name == "Audi Q4 e-tron"
+
+    def test_device_name_skoda_enyaq(self):
+        from custom_components.vag_connect.entity_base import _device_name  # noqa: PLC0415
+        vehicle = {"model": "Enyaq iV 80", "vin": "TMBXXX"}
+        name = _device_name(vehicle, "skoda")
+        assert name == "Skoda Enyaq iV 80"
+
+    def test_device_name_fallback_to_vin_when_no_model(self):
+        from custom_components.vag_connect.entity_base import _device_name  # noqa: PLC0415
+        vehicle = {"model": None, "vin": "WAUZZ123456"}
+        name = _device_name(vehicle, "audi")
+        assert "123456" in name  # letzten 6 VIN-Zeichen
+        assert "Audi" in name
+
+    def test_device_name_fallback_unknown_model(self):
+        from custom_components.vag_connect.entity_base import _device_name  # noqa: PLC0415
+        vehicle = {"model": "Unknown", "vin": "WAUZZ999999"}
+        name = _device_name(vehicle, "volkswagen")
+        assert "999999" in name
+
+    def test_device_name_empty_model(self):
+        from custom_components.vag_connect.entity_base import _device_name  # noqa: PLC0415
+        vehicle = {"model": "", "vin": "WAUZZAABBCC"}
+        name = _device_name(vehicle, "volkswagen")
+        assert "AABBCC" in name

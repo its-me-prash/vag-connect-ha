@@ -257,6 +257,20 @@ Jede Version folgt diesem Ablauf:
 
 
 
+
+## [0.3.2] - 2026-04-11
+
+### Hinzugefügt
+
+#### Tests: 35 Unit-Tests (vorher 18)
+17 neue Tests für alle Features seit v0.2.0:
+- `charging_power_kw` + `charging_rate_kmh` Extraktion
+- `doors_individual` — individuelle Türen inkl. Edge-Cases
+- `_async_push_update(success=False)` — stale-data-Fix bestätigt
+- `_tokenstore_path()` — Pfad korrekt + eindeutig pro Entry
+- `force_enable_access` — Flag im coordinator-Code verifiziert
+- `_device_name()` — alle Naming-Cases (Marke+Modell, Fallback VIN)
+  **Autor:** @Prash1407
 ## [0.3.1] - 2026-04-11
 
 ### Behoben
