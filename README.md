@@ -127,7 +127,7 @@ sensor  |  binary_sensor  |  device_tracker  |  switch  |  button  |  climate  |
 
 ## Mehrere Fahrzeuge
 
-**Ein Konto, mehrere Fahrzeuge:** Alle Fahrzeuge des Kontos werden automatisch erkannt und als separate Geräte angelegt.
+**Ein Konto, mehrere Fahrzeuge:** Alle Fahrzeuge des Kontos werden automatisch erkannt und als separate Fahrzeuge angelegt.
 
 **Verschiedene Marken** (z.B. Audi + Škoda): Integration einfach ein zweites Mal hinzufügen — einmal für Audi, einmal für Škoda.
 

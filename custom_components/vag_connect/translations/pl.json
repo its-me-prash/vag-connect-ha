@@ -3,22 +3,245 @@
     "step": {
       "user": {
         "title": "Konfiguracja VAG Connect",
+        "description": "Połącz swój pojazd z Home Assistant. Wybierz markę i wprowadź dane logowania z aplikacji.",
         "data": {
           "brand": "Marka pojazdu",
           "username": "Adres e-mail",
           "password": "Hasło",
-          "spin": "S-PIN (opcjonalnie)",
-          "scan_interval": "Interwał aktualizacji (minuty)"
+          "spin": "S-PIN (opcjonalny, wymagany do blokowania drzwi)",
+          "scan_interval": "Interwał aktualizacji (minuty)",
+          "force_enable_access": "Wymusz dostęp do drzwi (starsze modele)"
+        },
+        "data_description": {
+          "spin": "Wymagany do blokowania drzwi. Można pozostawić puste.",
+          "scan_interval": "Minimum 5 minut — zbyt częste zapytania mogą zablokować konto.",
+          "force_enable_access": "Włącz jeśli stan drzwi nie jest wyświetlany mimo że jest widoczny w aplikacji."
         }
       }
     },
     "error": {
-      "cannot_connect": "Błąd połączenia. Sprawdź dane logowania.",
-      "missing_library": "Brak biblioteki CarConnectivity.",
-      "unknown": "Nieznany błąd."
+      "cannot_connect": "Połączenie nieudane. Sprawdź dane logowania i internet.",
+      "missing_library": "Biblioteka CarConnectivity nie znaleziona. Uruchom ponownie Home Assistant.",
+      "unknown": "Nieznany błąd. Sprawdź logi.",
+      "terms_and_conditions": "Warunki użytkowania muszą być zaakceptowane. Zaloguj się w aplikacji.",
+      "marketing_consent": "Wymagana nowa zgoda. Aplikacja → Profil → Zgody.",
+      "two_factor_required": "Wymagane uwierzytelnianie dwuskładnikowe. Zaloguj się ręcznie w aplikacji.",
+      "too_many_requests": "Konto tymczasowo zablokowane. Poczekaj 15 minut.",
+      "invalid_credentials": "Nieprawidłowy e-mail lub hasło."
     },
     "abort": {
       "already_configured": "To konto jest już skonfigurowane."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "VAG Connect — Ustawienia",
+        "data": {
+          "scan_interval": "Interwał aktualizacji (minuty)",
+          "spin": "S-PIN"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "fuel_level": {
+        "name": "Poziom paliwa"
+      },
+      "battery_soc": {
+        "name": "Poziom baterii"
+      },
+      "range_km": {
+        "name": "Zasięg"
+      },
+      "odometer_km": {
+        "name": "Przebieg"
+      },
+      "charging_state": {
+        "name": "Ładowanie"
+      },
+      "plug_state": {
+        "name": "Wtyczka ładowania"
+      },
+      "target_soc": {
+        "name": "Cel ładowania"
+      },
+      "charging_power_kw": {
+        "name": "Moc ładowania"
+      },
+      "charging_rate_kmh": {
+        "name": "Prędkość ładowania"
+      },
+      "charge_complete_eta": {
+        "name": "Koniec ładowania"
+      },
+      "charging_type": {
+        "name": "Typ ładowania"
+      },
+      "charging_station_name": {
+        "name": "Stacja ładowania"
+      },
+      "charging_station_address": {
+        "name": "Adres stacji"
+      },
+      "charging_station_kw": {
+        "name": "Moc stacji"
+      },
+      "charging_station_operator": {
+        "name": "Operator stacji"
+      },
+      "climatisation_state": {
+        "name": "Klimatyzacja"
+      },
+      "target_temperature": {
+        "name": "Temperatura docelowa"
+      },
+      "outside_temp": {
+        "name": "Temperatura zewnętrzna"
+      },
+      "service_km": {
+        "name": "Następny przegląd"
+      },
+      "service_due_at": {
+        "name": "Data przeglądu"
+      },
+      "oil_service_km": {
+        "name": "Następna wymiana oleju"
+      },
+      "oil_service_at": {
+        "name": "Data wymiany oleju"
+      },
+      "vehicle_state": {
+        "name": "Stan pojazdu"
+      },
+      "connection_state": {
+        "name": "Połączenie"
+      },
+      "parking_address": {
+        "name": "Lokalizacja"
+      },
+      "parking_city": {
+        "name": "Miasto"
+      },
+      "heading": {
+        "name": "Kierunek jazdy"
+      },
+      "battery_temp": {
+        "name": "Temperatura baterii"
+      },
+      "battery_cap_kwh": {
+        "name": "Pojemność baterii"
+      },
+      "firmware_version": {
+        "name": "Wersja oprogramowania"
+      },
+      "license_plate": {
+        "name": "Tablica rejestracyjna"
+      }
+    },
+    "binary_sensor": {
+      "doors_locked": {
+        "name": "Drzwi zablokowane"
+      },
+      "doors_open": {
+        "name": "Drzwi otwarte"
+      },
+      "windows_open": {
+        "name": "Okna otwarte"
+      },
+      "plug_connected": {
+        "name": "Kabel ładowania podłączony"
+      },
+      "is_charging": {
+        "name": "Ładuje się"
+      },
+      "climatisation_active": {
+        "name": "Klimatyzacja aktywna"
+      },
+      "is_driving": {
+        "name": "W ruchu"
+      },
+      "is_online": {
+        "name": "Dostępny"
+      },
+      "connector_locked": {
+        "name": "Wtyczka zablokowana"
+      }
+    },
+    "switch": {
+      "lock_switch": {
+        "name": "Blokada drzwi"
+      },
+      "climatisation_switch": {
+        "name": "Klimatyzacja"
+      },
+      "charging_switch": {
+        "name": "Ładowanie"
+      },
+      "window_heating_switch": {
+        "name": "Ogrzewanie szyb"
+      },
+      "seat_heating_switch": {
+        "name": "Ogrzewanie siedzeń"
+      },
+      "auto_unlock_switch": {
+        "name": "Odblokuj wtyczkę po naładowaniu"
+      }
+    },
+    "number": {
+      "target_soc_number": {
+        "name": "Cel ładowania"
+      },
+      "climate_temp_number": {
+        "name": "Temperatura klimatyzacji"
+      },
+      "max_charge_current": {
+        "name": "Maks. prąd ładowania"
+      }
+    },
+    "button": {
+      "flash_button": {
+        "name": "Sygnał świetlny"
+      },
+      "refresh_button": {
+        "name": "Odśwież dane"
+      },
+      "wake_button": {
+        "name": "Obudź pojazd"
+      }
+    },
+    "climate": {
+      "climate": {
+        "name": "Wstępne klimatyzowanie"
+      }
+    },
+    "device_tracker": {
+      "position": {
+        "name": "Pozycja"
+      }
+    }
+  },
+  "issues": {
+    "two_factor_required": {
+      "title": "Wymagane uwierzytelnianie dwuskładnikowe — {brand}",
+      "description": "1. Otwórz aplikację **{brand}**\n2. Zaloguj się ręcznie\n3. Potwierdź kod e-mail\n4. Uruchom ponownie Home Assistant"
+    },
+    "terms_and_conditions": {
+      "title": "Akceptacja warunków — {brand}",
+      "description": "1. Otwórz aplikację\n2. Zaakceptuj warunki\n3. Uruchom ponownie Home Assistant"
+    },
+    "marketing_consent": {
+      "title": "Wymagana zgoda — {brand}",
+      "description": "Aplikacja → Profil → Zgody → potwierdź → uruchom ponownie HA."
+    },
+    "too_many_requests": {
+      "title": "Konto tymczasowo zablokowane — {brand}",
+      "description": "**Poczekaj 15 minut** i uruchom ponownie Home Assistant."
+    },
+    "auth_failed": {
+      "title": "Logowanie nieudane — {brand}",
+      "description": "Ustawienia → Urządzenia i usługi → VAG Connect → ⋮ → Skonfiguruj ponownie."
     }
   }
 }

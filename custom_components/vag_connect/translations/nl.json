@@ -3,22 +3,245 @@
     "step": {
       "user": {
         "title": "VAG Connect instellen",
+        "description": "Verbind uw voertuig met Home Assistant. Kies uw merk en voer de inloggegevens van de app in.",
         "data": {
           "brand": "Voertuigmerk",
           "username": "E-mailadres",
           "password": "Wachtwoord",
-          "spin": "S-PIN (optioneel)",
-          "scan_interval": "Verversingsinterval (minuten)"
+          "spin": "S-PIN (optioneel, vereist voor vergrendeling)",
+          "scan_interval": "Bijwerkinterval (minuten)",
+          "force_enable_access": "Deurtoegang forceren (oudere modellen)"
+        },
+        "data_description": {
+          "spin": "Vereist voor deurvergrendeling. Kan leeg worden gelaten.",
+          "scan_interval": "Minimaal 5 minuten — te frequente verzoeken kunnen leiden tot blokkering.",
+          "force_enable_access": "Inschakelen als deurstatus ontbreekt maar zichtbaar is in de app."
         }
       }
     },
     "error": {
-      "cannot_connect": "Verbinding mislukt. Controleer uw gegevens.",
-      "missing_library": "CarConnectivity bibliotheek niet gevonden.",
-      "unknown": "Onbekende fout."
+      "cannot_connect": "Verbinding mislukt. Controleer inloggegevens en internetverbinding.",
+      "missing_library": "CarConnectivity-bibliotheek niet gevonden. Start Home Assistant opnieuw.",
+      "unknown": "Onbekende fout. Controleer de logboeken.",
+      "terms_and_conditions": "Gebruiksvoorwaarden moeten worden geaccepteerd. Log eenmaal in via de app.",
+      "marketing_consent": "Nieuwe privacytoestemming vereist. App → Profiel → Toestemmingen.",
+      "two_factor_required": "Tweestapsverificatie vereist. Log handmatig in via de app.",
+      "too_many_requests": "Account tijdelijk geblokkeerd. Wacht 15 minuten.",
+      "invalid_credentials": "E-mailadres of wachtwoord onjuist."
     },
     "abort": {
       "already_configured": "Dit account is al geconfigureerd."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "VAG Connect — Instellingen",
+        "data": {
+          "scan_interval": "Bijwerkinterval (minuten)",
+          "spin": "S-PIN"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "fuel_level": {
+        "name": "Brandstofniveau"
+      },
+      "battery_soc": {
+        "name": "Accuniveau"
+      },
+      "range_km": {
+        "name": "Actieradius"
+      },
+      "odometer_km": {
+        "name": "Kilometerstand"
+      },
+      "charging_state": {
+        "name": "Laadproces"
+      },
+      "plug_state": {
+        "name": "Laadstekker"
+      },
+      "target_soc": {
+        "name": "Laaddoel"
+      },
+      "charging_power_kw": {
+        "name": "Laadvermogen"
+      },
+      "charging_rate_kmh": {
+        "name": "Laadsnelheid"
+      },
+      "charge_complete_eta": {
+        "name": "Laden gereed"
+      },
+      "charging_type": {
+        "name": "Laadtype"
+      },
+      "charging_station_name": {
+        "name": "Laadpaal"
+      },
+      "charging_station_address": {
+        "name": "Laadpaal adres"
+      },
+      "charging_station_kw": {
+        "name": "Laadpaal vermogen"
+      },
+      "charging_station_operator": {
+        "name": "Laadpaal exploitant"
+      },
+      "climatisation_state": {
+        "name": "Klimaatregeling"
+      },
+      "target_temperature": {
+        "name": "Doeltemperatuur"
+      },
+      "outside_temp": {
+        "name": "Buitentemperatuur"
+      },
+      "service_km": {
+        "name": "Volgende service"
+      },
+      "service_due_at": {
+        "name": "Servicedatum"
+      },
+      "oil_service_km": {
+        "name": "Volgende olieverversing"
+      },
+      "oil_service_at": {
+        "name": "Datum olieverversing"
+      },
+      "vehicle_state": {
+        "name": "Voertuigstatus"
+      },
+      "connection_state": {
+        "name": "Verbinding"
+      },
+      "parking_address": {
+        "name": "Locatie"
+      },
+      "parking_city": {
+        "name": "Stad"
+      },
+      "heading": {
+        "name": "Rijrichting"
+      },
+      "battery_temp": {
+        "name": "Accu temperatuur"
+      },
+      "battery_cap_kwh": {
+        "name": "Accucapaciteit"
+      },
+      "firmware_version": {
+        "name": "Firmwareversie"
+      },
+      "license_plate": {
+        "name": "Kenteken"
+      }
+    },
+    "binary_sensor": {
+      "doors_locked": {
+        "name": "Deuren vergrendeld"
+      },
+      "doors_open": {
+        "name": "Deuren open"
+      },
+      "windows_open": {
+        "name": "Ramen open"
+      },
+      "plug_connected": {
+        "name": "Laadkabel aangesloten"
+      },
+      "is_charging": {
+        "name": "Aan het laden"
+      },
+      "climatisation_active": {
+        "name": "Klimaatregeling actief"
+      },
+      "is_driving": {
+        "name": "In gebruik"
+      },
+      "is_online": {
+        "name": "Bereikbaar"
+      },
+      "connector_locked": {
+        "name": "Laadstekker vergrendeld"
+      }
+    },
+    "switch": {
+      "lock_switch": {
+        "name": "Deurvergrendeling"
+      },
+      "climatisation_switch": {
+        "name": "Klimaatregeling"
+      },
+      "charging_switch": {
+        "name": "Laden"
+      },
+      "window_heating_switch": {
+        "name": "Ruitenverwarming"
+      },
+      "seat_heating_switch": {
+        "name": "Stoelverwarming"
+      },
+      "auto_unlock_switch": {
+        "name": "Stekker na laden ontgrendelen"
+      }
+    },
+    "number": {
+      "target_soc_number": {
+        "name": "Laaddoel"
+      },
+      "climate_temp_number": {
+        "name": "Klimaat temperatuur"
+      },
+      "max_charge_current": {
+        "name": "Max. laadstroom"
+      }
+    },
+    "button": {
+      "flash_button": {
+        "name": "Lichtsignaal"
+      },
+      "refresh_button": {
+        "name": "Gegevens vernieuwen"
+      },
+      "wake_button": {
+        "name": "Voertuig wekken"
+      }
+    },
+    "climate": {
+      "climate": {
+        "name": "Voorverwarming"
+      }
+    },
+    "device_tracker": {
+      "position": {
+        "name": "Locatie"
+      }
+    }
+  },
+  "issues": {
+    "two_factor_required": {
+      "title": "Tweestapsverificatie vereist — {brand}",
+      "description": "1. Open de **{brand}-app**\n2. Meld u handmatig aan\n3. Bevestig de e-mailcode\n4. Start Home Assistant opnieuw"
+    },
+    "terms_and_conditions": {
+      "title": "Gebruiksvoorwaarden accepteren — {brand}",
+      "description": "1. Open de {brand}-app\n2. Accepteer de voorwaarden\n3. Start Home Assistant opnieuw"
+    },
+    "marketing_consent": {
+      "title": "Toestemming vereist — {brand}",
+      "description": "App → Profiel → Toestemmingen → bevestigen → HA herstarten."
+    },
+    "too_many_requests": {
+      "title": "Account tijdelijk geblokkeerd — {brand}",
+      "description": "**Wacht 15 minuten** en start Home Assistant opnieuw."
+    },
+    "auth_failed": {
+      "title": "Aanmelden mislukt — {brand}",
+      "description": "Instellingen → Apparaten en diensten → VAG Connect → ⋮ → Opnieuw configureren."
     }
   }
 }

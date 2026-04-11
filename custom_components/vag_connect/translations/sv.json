@@ -3,22 +3,245 @@
     "step": {
       "user": {
         "title": "Konfigurera VAG Connect",
+        "description": "Anslut ditt fordon till Home Assistant. Välj ditt märke och ange inloggningsuppgifterna från appen.",
         "data": {
           "brand": "Fordonsvarumärke",
           "username": "E-postadress",
           "password": "Lösenord",
-          "spin": "S-PIN (valfritt)",
-          "scan_interval": "Uppdateringsintervall (minuter)"
+          "spin": "S-PIN (valfritt, krävs för dörrlåsning)",
+          "scan_interval": "Uppdateringsintervall (minuter)",
+          "force_enable_access": "Tvinga dörråtkomst (äldre modeller)"
+        },
+        "data_description": {
+          "spin": "Krävs för dörrlåsning. Kan lämnas tomt.",
+          "scan_interval": "Minst 5 minuter — för frekventa förfrågningar kan leda till kontosuspension.",
+          "force_enable_access": "Aktivera om dörrstatus inte visas trots att det syns i appen."
         }
       }
     },
     "error": {
-      "cannot_connect": "Anslutning misslyckades. Kontrollera dina uppgifter.",
-      "missing_library": "CarConnectivity-bibliotek saknas.",
-      "unknown": "Okänt fel."
+      "cannot_connect": "Anslutning misslyckades. Kontrollera inloggningsuppgifter och internet.",
+      "missing_library": "CarConnectivity-biblioteket hittades inte. Starta om Home Assistant.",
+      "unknown": "Okänt fel. Kontrollera loggarna.",
+      "terms_and_conditions": "Användarvillkor måste accepteras. Logga in i appen.",
+      "marketing_consent": "Nytt dataskyddssamtycke krävs. App → Profil → Samtycken.",
+      "two_factor_required": "Tvåfaktorsautentisering krävs. Logga in manuellt i appen.",
+      "too_many_requests": "Kontot är tillfälligt spärrat. Vänta 15 minuter.",
+      "invalid_credentials": "Felaktig e-postadress eller lösenord."
     },
     "abort": {
       "already_configured": "Det här kontot är redan konfigurerat."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "VAG Connect — Inställningar",
+        "data": {
+          "scan_interval": "Uppdateringsintervall (minuter)",
+          "spin": "S-PIN"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "fuel_level": {
+        "name": "Bränslenivå"
+      },
+      "battery_soc": {
+        "name": "Batterinivå"
+      },
+      "range_km": {
+        "name": "Räckvidd"
+      },
+      "odometer_km": {
+        "name": "Mätarställning"
+      },
+      "charging_state": {
+        "name": "Laddning"
+      },
+      "plug_state": {
+        "name": "Laddkontakt"
+      },
+      "target_soc": {
+        "name": "Laddningsmål"
+      },
+      "charging_power_kw": {
+        "name": "Laddeffekt"
+      },
+      "charging_rate_kmh": {
+        "name": "Laddningshastighet"
+      },
+      "charge_complete_eta": {
+        "name": "Laddning klar"
+      },
+      "charging_type": {
+        "name": "Laddningstyp"
+      },
+      "charging_station_name": {
+        "name": "Laddpunkt"
+      },
+      "charging_station_address": {
+        "name": "Laddpunktens adress"
+      },
+      "charging_station_kw": {
+        "name": "Laddpunktens effekt"
+      },
+      "charging_station_operator": {
+        "name": "Laddpunktens operatör"
+      },
+      "climatisation_state": {
+        "name": "Klimatisering"
+      },
+      "target_temperature": {
+        "name": "Måltemperatur"
+      },
+      "outside_temp": {
+        "name": "Utomhustemperatur"
+      },
+      "service_km": {
+        "name": "Nästa service"
+      },
+      "service_due_at": {
+        "name": "Servicedatum"
+      },
+      "oil_service_km": {
+        "name": "Nästa oljebyte"
+      },
+      "oil_service_at": {
+        "name": "Datum för oljebyte"
+      },
+      "vehicle_state": {
+        "name": "Fordonsstatus"
+      },
+      "connection_state": {
+        "name": "Anslutning"
+      },
+      "parking_address": {
+        "name": "Plats"
+      },
+      "parking_city": {
+        "name": "Stad"
+      },
+      "heading": {
+        "name": "Körriktning"
+      },
+      "battery_temp": {
+        "name": "Batteritemperatur"
+      },
+      "battery_cap_kwh": {
+        "name": "Batterikapacitet"
+      },
+      "firmware_version": {
+        "name": "Firmware-version"
+      },
+      "license_plate": {
+        "name": "Registreringsnummer"
+      }
+    },
+    "binary_sensor": {
+      "doors_locked": {
+        "name": "Dörrar låsta"
+      },
+      "doors_open": {
+        "name": "Dörrar öppna"
+      },
+      "windows_open": {
+        "name": "Fönster öppna"
+      },
+      "plug_connected": {
+        "name": "Laddkabel ansluten"
+      },
+      "is_charging": {
+        "name": "Laddar"
+      },
+      "climatisation_active": {
+        "name": "Klimatisering aktiv"
+      },
+      "is_driving": {
+        "name": "I rörelse"
+      },
+      "is_online": {
+        "name": "Nåbar"
+      },
+      "connector_locked": {
+        "name": "Laddkontakt låst"
+      }
+    },
+    "switch": {
+      "lock_switch": {
+        "name": "Dörrlås"
+      },
+      "climatisation_switch": {
+        "name": "Klimatisering"
+      },
+      "charging_switch": {
+        "name": "Laddning"
+      },
+      "window_heating_switch": {
+        "name": "Rutavfrostning"
+      },
+      "seat_heating_switch": {
+        "name": "Sätesvärme"
+      },
+      "auto_unlock_switch": {
+        "name": "Lås upp kontakt efter laddning"
+      }
+    },
+    "number": {
+      "target_soc_number": {
+        "name": "Laddningsmål"
+      },
+      "climate_temp_number": {
+        "name": "Klimattemperatur"
+      },
+      "max_charge_current": {
+        "name": "Max laddström"
+      }
+    },
+    "button": {
+      "flash_button": {
+        "name": "Ljussignal"
+      },
+      "refresh_button": {
+        "name": "Uppdatera data"
+      },
+      "wake_button": {
+        "name": "Väck fordonet"
+      }
+    },
+    "climate": {
+      "climate": {
+        "name": "Förklimatisering"
+      }
+    },
+    "device_tracker": {
+      "position": {
+        "name": "Position"
+      }
+    }
+  },
+  "issues": {
+    "two_factor_required": {
+      "title": "Tvåfaktorsautentisering krävs — {brand}",
+      "description": "1. Öppna **{brand}-appen**\n2. Logga in manuellt\n3. Bekräfta e-postkoden\n4. Starta om Home Assistant"
+    },
+    "terms_and_conditions": {
+      "title": "Acceptera villkor — {brand}",
+      "description": "1. Öppna appen\n2. Acceptera villkoren\n3. Starta om Home Assistant"
+    },
+    "marketing_consent": {
+      "title": "Samtycke krävs — {brand}",
+      "description": "App → Profil → Samtycken → bekräfta → starta om HA."
+    },
+    "too_many_requests": {
+      "title": "Kontot är tillfälligt spärrat — {brand}",
+      "description": "**Vänta 15 minuter** och starta om Home Assistant."
+    },
+    "auth_failed": {
+      "title": "Inloggning misslyckades — {brand}",
+      "description": "Inställningar → Enheter och tjänster → VAG Connect → ⋮ → Omkonfigurera."
     }
   }
 }

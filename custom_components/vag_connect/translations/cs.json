@@ -2,23 +2,246 @@
   "config": {
     "step": {
       "user": {
-        "title": "Nastavit VAG Connect",
+        "title": "Nastavení VAG Connect",
+        "description": "Připojte svůj vůz k Home Assistant. Vyberte značku a zadejte přihlašovací údaje z aplikace.",
         "data": {
           "brand": "Značka vozidla",
           "username": "E-mailová adresa",
           "password": "Heslo",
-          "spin": "S-PIN (volitelné)",
-          "scan_interval": "Interval aktualizace (minuty)"
+          "spin": "S-PIN (volitelné, nutné pro zamykání dveří)",
+          "scan_interval": "Interval aktualizace (minuty)",
+          "force_enable_access": "Vynutit přístup ke dveřím (starší modely)"
+        },
+        "data_description": {
+          "spin": "Nutné pro zamykání dveří. Lze ponechat prázdné.",
+          "scan_interval": "Minimum 5 minut — příliš časté dotazy mohou vést k zablokování účtu.",
+          "force_enable_access": "Zapněte pokud se stav dveří nezobrazuje, přestože je viditelný v aplikaci."
         }
       }
     },
     "error": {
-      "cannot_connect": "Připojení selhalo. Zkontrolujte přihlašovací údaje.",
-      "missing_library": "Chybí knihovna CarConnectivity.",
-      "unknown": "Neznámá chyba."
+      "cannot_connect": "Připojení selhalo. Zkontrolujte přihlašovací údaje a internet.",
+      "missing_library": "Knihovna CarConnectivity nenalezena. Restartujte Home Assistant.",
+      "unknown": "Neznámá chyba. Zkontrolujte protokoly.",
+      "terms_and_conditions": "Je nutné přijmout obchodní podmínky. Přihlaste se v aplikaci.",
+      "marketing_consent": "Vyžadován nový souhlas. Aplikace → Profil → Souhlasy.",
+      "two_factor_required": "Vyžadováno dvoufázové ověření. Přihlaste se ručně v aplikaci.",
+      "too_many_requests": "Účet dočasně zablokován. Počkejte 15 minut.",
+      "invalid_credentials": "Nesprávná e-mailová adresa nebo heslo."
     },
     "abort": {
       "already_configured": "Tento účet je již nastaven."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "VAG Connect — Nastavení",
+        "data": {
+          "scan_interval": "Interval aktualizace (minuty)",
+          "spin": "S-PIN"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "fuel_level": {
+        "name": "Hladina paliva"
+      },
+      "battery_soc": {
+        "name": "Stav baterie"
+      },
+      "range_km": {
+        "name": "Dojezd"
+      },
+      "odometer_km": {
+        "name": "Nájezd"
+      },
+      "charging_state": {
+        "name": "Nabíjení"
+      },
+      "plug_state": {
+        "name": "Nabíjecí konektor"
+      },
+      "target_soc": {
+        "name": "Cíl nabíjení"
+      },
+      "charging_power_kw": {
+        "name": "Výkon nabíjení"
+      },
+      "charging_rate_kmh": {
+        "name": "Rychlost nabíjení"
+      },
+      "charge_complete_eta": {
+        "name": "Konec nabíjení"
+      },
+      "charging_type": {
+        "name": "Typ nabíjení"
+      },
+      "charging_station_name": {
+        "name": "Nabíjecí stanice"
+      },
+      "charging_station_address": {
+        "name": "Adresa nabíjecí stanice"
+      },
+      "charging_station_kw": {
+        "name": "Výkon nabíjecí stanice"
+      },
+      "charging_station_operator": {
+        "name": "Provozovatel stanice"
+      },
+      "climatisation_state": {
+        "name": "Klimatizace"
+      },
+      "target_temperature": {
+        "name": "Cílová teplota"
+      },
+      "outside_temp": {
+        "name": "Venkovní teplota"
+      },
+      "service_km": {
+        "name": "Příští servisní prohlídka"
+      },
+      "service_due_at": {
+        "name": "Datum servisní prohlídky"
+      },
+      "oil_service_km": {
+        "name": "Příští výměna oleje"
+      },
+      "oil_service_at": {
+        "name": "Datum výměny oleje"
+      },
+      "vehicle_state": {
+        "name": "Stav vozidla"
+      },
+      "connection_state": {
+        "name": "Připojení"
+      },
+      "parking_address": {
+        "name": "Poloha"
+      },
+      "parking_city": {
+        "name": "Město"
+      },
+      "heading": {
+        "name": "Směr jízdy"
+      },
+      "battery_temp": {
+        "name": "Teplota baterie"
+      },
+      "battery_cap_kwh": {
+        "name": "Kapacita baterie"
+      },
+      "firmware_version": {
+        "name": "Verze firmwaru"
+      },
+      "license_plate": {
+        "name": "Registrační značka"
+      }
+    },
+    "binary_sensor": {
+      "doors_locked": {
+        "name": "Dveře zamčeny"
+      },
+      "doors_open": {
+        "name": "Dveře otevřeny"
+      },
+      "windows_open": {
+        "name": "Okna otevřena"
+      },
+      "plug_connected": {
+        "name": "Nabíjecí kabel připojen"
+      },
+      "is_charging": {
+        "name": "Nabíjí se"
+      },
+      "climatisation_active": {
+        "name": "Klimatizace aktivní"
+      },
+      "is_driving": {
+        "name": "V pohybu"
+      },
+      "is_online": {
+        "name": "Dostupné"
+      },
+      "connector_locked": {
+        "name": "Konektor uzamčen"
+      }
+    },
+    "switch": {
+      "lock_switch": {
+        "name": "Zámek dveří"
+      },
+      "climatisation_switch": {
+        "name": "Klimatizace"
+      },
+      "charging_switch": {
+        "name": "Nabíjení"
+      },
+      "window_heating_switch": {
+        "name": "Vyhřívání skel"
+      },
+      "seat_heating_switch": {
+        "name": "Vyhřívání sedadel"
+      },
+      "auto_unlock_switch": {
+        "name": "Odemknout konektor po nabití"
+      }
+    },
+    "number": {
+      "target_soc_number": {
+        "name": "Cíl nabíjení"
+      },
+      "climate_temp_number": {
+        "name": "Teplota klimatizace"
+      },
+      "max_charge_current": {
+        "name": "Max. nabíjecí proud"
+      }
+    },
+    "button": {
+      "flash_button": {
+        "name": "Světelný signál"
+      },
+      "refresh_button": {
+        "name": "Aktualizovat data"
+      },
+      "wake_button": {
+        "name": "Probudit vozidlo"
+      }
+    },
+    "climate": {
+      "climate": {
+        "name": "Předklimatizace"
+      }
+    },
+    "device_tracker": {
+      "position": {
+        "name": "Poloha"
+      }
+    }
+  },
+  "issues": {
+    "two_factor_required": {
+      "title": "Vyžadováno dvoufázové ověření — {brand}",
+      "description": "1. Otevřete aplikaci **{brand}**\n2. Přihlaste se ručně\n3. Potvrďte kód z e-mailu\n4. Restartujte Home Assistant"
+    },
+    "terms_and_conditions": {
+      "title": "Přijmout podmínky — {brand}",
+      "description": "1. Otevřete aplikaci\n2. Přijměte podmínky\n3. Restartujte Home Assistant"
+    },
+    "marketing_consent": {
+      "title": "Vyžadován souhlas — {brand}",
+      "description": "Aplikace → Profil → Souhlasy → potvrdit → restartovat HA."
+    },
+    "too_many_requests": {
+      "title": "Účet dočasně zablokován — {brand}",
+      "description": "**Počkejte 15 minut** a restartujte Home Assistant."
+    },
+    "auth_failed": {
+      "title": "Přihlášení selhalo — {brand}",
+      "description": "Nastavení → Zařízení a služby → VAG Connect → ⋮ → Znovu nakonfigurovat."
     }
   }
 }
