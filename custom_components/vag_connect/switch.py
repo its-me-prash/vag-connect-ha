@@ -24,6 +24,7 @@ async def async_setup_entry(
         entities.append(VagWindowHeatingSwitch(coordinator, vin))
         entities.append(VagSeatHeatingSwitch(coordinator, vin))
         if vehicle.get("has_battery"):  # EV + PHEV
+            entities.append(VagAutoUnlockSwitch(coordinator, vin))
             entities.append(VagChargingSwitch(coordinator, vin))
 
     async_add_entities(entities)
@@ -160,4 +161,32 @@ class VagSeatHeatingSwitch(VagConnectEntity, SwitchEntity):
             if v:
                 v.climatization.settings.seat_heating.value = False
         await self.coordinator.hass.async_add_executor_job(_set)
+        await self.coordinator.async_request_refresh()
+
+
+class VagAutoUnlockSwitch(VagConnectEntity, SwitchEntity):
+    """Stecker nach Ladeende automatisch entsperren (Auto-Unlock)."""
+
+    _attr_name = "Stecker Auto-Entsperren"
+    _attr_icon = "mdi:ev-plug-ccs2"
+
+    def __init__(self, coordinator, vin):
+        super().__init__(coordinator, vin, "auto_unlock_switch")
+
+    @property
+    def is_on(self) -> bool | None:
+        return self._vehicle.get("auto_unlock_charge")
+
+    async def async_turn_on(self, **kwargs) -> None:
+        await self._set_auto_unlock(True)
+
+    async def async_turn_off(self, **kwargs) -> None:
+        await self._set_auto_unlock(False)
+
+    async def _set_auto_unlock(self, value: bool) -> None:
+        def _do():
+            v = self._vehicle.get("_vehicle")
+            if v:
+                v.charging.settings.auto_unlock.value = value
+        await self.coordinator.hass.async_add_executor_job(_do)
         await self.coordinator.async_request_refresh()

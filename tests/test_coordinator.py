@@ -603,3 +603,153 @@ class TestDriveTypeLogic:
         assert data["is_electric"] is True   # abgeleitet aus Drives
         assert data["has_battery"] is True
         assert data["has_combustion"] is False
+
+
+class TestNewFeatures:
+    """Tests für Priorität-1 Features (v0.4.0)."""
+
+    def setup_method(self):
+        c = VagConnectCoordinator.__new__(VagConnectCoordinator)
+        hass = MagicMock()
+        hass.config.config_dir = "/tmp"
+        c.hass = hass
+        c.entry = _make_entry()
+        c.logger = MagicMock()
+        self.coord = c
+
+    # ── vehicle_state / is_driving ─────────────────────────────────────────
+    def test_vehicle_state_parked(self):
+        v = _make_vehicle()
+        state = MagicMock(); state.name = "PARKED"
+        v.state.value = state
+        conn = MagicMock(); conn.name = "ONLINE"
+        v.connection_state.value = conn
+        data = self.coord._extract(v)
+        assert data["vehicle_state"] == "PARKED"
+        assert data["is_driving"] is False
+        assert data["is_online"] is True
+
+    def test_vehicle_state_driving(self):
+        v = _make_vehicle()
+        state = MagicMock(); state.name = "DRIVING"
+        v.state.value = state
+        conn = MagicMock(); conn.name = "REACHABLE"
+        v.connection_state.value = conn
+        data = self.coord._extract(v)
+        assert data["is_driving"] is True
+        assert data["is_online"] is True
+
+    def test_vehicle_state_offline(self):
+        v = _make_vehicle()
+        state = MagicMock(); state.name = "OFFLINE"
+        v.state.value = state
+        conn = MagicMock(); conn.name = "OFFLINE"
+        v.connection_state.value = conn
+        data = self.coord._extract(v)
+        assert data["is_driving"] is False
+        assert data["is_online"] is False
+
+    # ── parking_address ────────────────────────────────────────────────────
+    def test_parking_address_extracted(self):
+        v = _make_vehicle()
+        v.position.location.display_name.value = "Maximilianstraße 1, München"
+        v.position.location.city.value = "München"
+        v.position.location.road.value = "Maximilianstraße"
+        data = self.coord._extract(v)
+        assert data["parking_address"] == "Maximilianstraße 1, München"
+        assert data["parking_city"] == "München"
+
+    def test_parking_address_fallback_road_city(self):
+        v = _make_vehicle()
+        v.position.location.display_name.value = None
+        v.position.location.city.value = "Berlin"
+        v.position.location.road.value = "Unter den Linden"
+        data = self.coord._extract(v)
+        assert data["parking_address"] == "Unter den Linden, Berlin"
+
+    # ── heading ───────────────────────────────────────────────────────────
+    def test_heading_extracted(self):
+        v = _make_vehicle()
+        v.position.heading.value = 270.0
+        data = self.coord._extract(v)
+        assert data["heading"] == 270.0
+
+    # ── battery_temperature ────────────────────────────────────────────────
+    def test_battery_temperature_extracted(self):
+        from carconnectivity.drive import GenericDrive  # noqa: PLC0415
+        v = _make_vehicle(is_electric=True)
+        elec_drive = MagicMock()
+        elec_drive.type.value = GenericDrive.Type.ELECTRIC
+        elec_drive.level.value = 80.0
+        elec_drive.range.value = 300.0
+        elec_drive.battery.temperature.value = 28.5
+        elec_drive.battery.temperature_min.value = 24.0
+        elec_drive.battery.temperature_max.value = 32.0
+        elec_drive.battery.total_capacity.value = 82.0
+        v.drives.drives = {"electric": elec_drive}
+        data = self.coord._extract(v)
+        assert data["battery_temp"] == 28.5
+        assert data["battery_temp_min"] == 24.0
+        assert data["battery_cap_kwh"] == 82.0
+
+    # ── charge_complete_eta ────────────────────────────────────────────────
+    def test_charge_complete_eta_extracted(self):
+        from datetime import datetime, timezone  # noqa: PLC0415
+        v = _make_vehicle(is_electric=True)
+        eta = datetime(2026, 4, 11, 22, 30, tzinfo=timezone.utc)
+        v.charging.estimated_date_reached.value = eta
+        data = self.coord._extract(v)
+        assert data["charge_complete_eta"] == eta
+
+    def test_charge_complete_eta_none_when_not_charging(self):
+        v = _make_vehicle(is_electric=True)
+        v.charging.estimated_date_reached.value = None
+        data = self.coord._extract(v)
+        assert data["charge_complete_eta"] is None
+
+    # ── charging_type AC/DC ────────────────────────────────────────────────
+    def test_charging_type_dc(self):
+        v = _make_vehicle(is_electric=True)
+        ct = MagicMock(); ct.name = "DC"
+        v.charging.type.value = ct
+        data = self.coord._extract(v)
+        assert data["charging_type"] == "DC"
+
+    # ── charging_station ───────────────────────────────────────────────────
+    def test_charging_station_data_extracted(self):
+        v = _make_vehicle(is_electric=True)
+        cs = v.charging.charging_station
+        cs.name.value = "IONITY A9"
+        cs.address.value = "A9, Ausfahrt 42"
+        cs.max_power.value = 350.0
+        cs.operator_name.value = "IONITY GmbH"
+        data = self.coord._extract(v)
+        assert data["charging_station_name"] == "IONITY A9"
+        assert data["charging_station_kw"] == 350.0
+        assert data["charging_station_operator"] == "IONITY GmbH"
+
+    # ── auto_unlock + max_current ──────────────────────────────────────────
+    def test_auto_unlock_extracted(self):
+        v = _make_vehicle(is_electric=True)
+        v.charging.settings.auto_unlock.value = True
+        data = self.coord._extract(v)
+        assert data["auto_unlock_charge"] is True
+
+    def test_max_charge_current_extracted(self):
+        v = _make_vehicle(is_electric=True)
+        v.charging.settings.maximum_current.value = 16.0
+        data = self.coord._extract(v)
+        assert data["max_charge_current"] == 16.0
+
+    # ── license_plate + firmware ───────────────────────────────────────────
+    def test_license_plate_extracted(self):
+        v = _make_vehicle()
+        v.license_plate.value = "M-AB 1234"
+        data = self.coord._extract(v)
+        assert data["license_plate"] == "M-AB 1234"
+
+    def test_firmware_version_extracted(self):
+        v = _make_vehicle()
+        v.software.version.value = "3.2.1-build.42"
+        data = self.coord._extract(v)
+        assert data["firmware_version"] == "3.2.1-build.42"

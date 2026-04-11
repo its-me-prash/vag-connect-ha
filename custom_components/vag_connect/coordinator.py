@@ -442,6 +442,92 @@ class VagConnectCoordinator(DataUpdateCoordinator):
         except Exception:  # noqa: BLE001
             data["outside_temp"] = None
 
+        # Fahrzeugstatus + Verbindung
+        try:
+            vs = vehicle.state.value
+            data["vehicle_state"]     = vs.name if vs and hasattr(vs,"name") else None
+            data["is_driving"]        = vs.name in ("DRIVING","IGNITION_ON") if vs and hasattr(vs,"name") else None
+            cs = vehicle.connection_state.value
+            data["connection_state"]  = cs.name if cs and hasattr(cs,"name") else None
+            data["is_online"]         = cs.name in ("ONLINE","REACHABLE") if cs and hasattr(cs,"name") else None
+        except Exception:  # noqa: BLE001
+            data["vehicle_state"] = data["connection_state"] = None
+            data["is_driving"] = data["is_online"] = None
+
+        # Parkadresse (kommt direkt von der API, kein Geocoding nötig)
+        try:
+            loc  = vehicle.position.location
+            name = _val(loc.display_name)
+            city = _val(loc.city)
+            road = _val(loc.road)
+            data["parking_address"] = name or (f"{road}, {city}" if road and city else city)
+            data["parking_city"]    = city
+        except Exception:  # noqa: BLE001
+            data["parking_address"] = data["parking_city"] = None
+
+        # Fahrtrichtung (0–360°)
+        try:
+            data["heading"] = _val(vehicle.position.heading)
+        except Exception:  # noqa: BLE001
+            data["heading"] = None
+
+        # Akkutemperatur (nur bei EVs / PHEVs)
+        try:
+            bat = None
+            for drive in vehicle.drives.drives.values():
+                if hasattr(drive, "battery"):
+                    bat = drive.battery
+                    break
+            if bat is not None:
+                data["battery_temp"]     = _val(bat.temperature)
+                data["battery_temp_min"] = _val(bat.temperature_min)
+                data["battery_temp_max"] = _val(bat.temperature_max)
+                data["battery_cap_kwh"]  = _val(bat.total_capacity)
+            else:
+                data["battery_temp"] = data["battery_temp_min"] = None
+                data["battery_temp_max"] = data["battery_cap_kwh"] = None
+        except Exception:  # noqa: BLE001
+            data["battery_temp"] = data["battery_temp_min"] = None
+            data["battery_temp_max"] = data["battery_cap_kwh"] = None
+
+        # Ladeende-ETA + Ladetyp AC/DC
+        try:
+            data["charge_complete_eta"] = _val(vehicle.charging.estimated_date_reached)
+            ct = vehicle.charging.type.value
+            data["charging_type"]       = ct.name if ct and hasattr(ct,"name") else None
+        except Exception:  # noqa: BLE001
+            data["charge_complete_eta"] = data["charging_type"] = None
+
+        # Ladesäule (Name, Adresse, Max-kW, Betreiber)
+        try:
+            cs_obj = vehicle.charging.charging_station
+            data["charging_station_name"]    = _val(cs_obj.name)
+            data["charging_station_address"] = _val(cs_obj.address)
+            data["charging_station_kw"]      = _val(cs_obj.max_power)
+            data["charging_station_operator"]= _val(cs_obj.operator_name)
+        except Exception:  # noqa: BLE001
+            data["charging_station_name"] = data["charging_station_address"] = None
+            data["charging_station_kw"]   = data["charging_station_operator"] = None
+
+        # Erweiterte Lade-Einstellungen
+        try:
+            data["auto_unlock_charge"]   = _val(vehicle.charging.settings.auto_unlock)
+            data["max_charge_current"]   = _val(vehicle.charging.settings.maximum_current)
+            data["connector_locked"]     = None  # ChargingConnectorLockState
+            lock = vehicle.charging.connector.lock_state.value
+            if lock is not None:
+                data["connector_locked"] = lock.name not in ("UNLOCKED","UNKNOWN","INVALID")
+        except Exception:  # noqa: BLE001
+            data["auto_unlock_charge"] = data["max_charge_current"] = None
+            data["connector_locked"]   = None
+
+        # Kennzeichen + Firmware-Version (nützlich für Gerätekarte)
+        try:
+            data["license_plate"]    = _val(vehicle.license_plate)
+            data["firmware_version"] = _val(vehicle.software.version)
+        except Exception:  # noqa: BLE001
+            data["license_plate"] = data["firmware_version"] = None
+
         # Raw CC-Objekt für Actions (nicht serialisiert, nicht geloggt)
         data["_vehicle"] = vehicle
         return data
@@ -551,6 +637,17 @@ class VagConnectCoordinator(DataUpdateCoordinator):
                 "VAG Command: VIN=%s | %s/%s → %s", vin, subsystem, command_name, value,
             )
 
+        await self.hass.async_add_executor_job(_do)
+        await self.async_request_refresh()
+
+    async def async_set_max_charge_current(self, vin: str, ampere: int) -> None:
+        """Max Ladestrom setzen."""
+        def _do():
+            with self._vehicles_lock:
+                v = self.vehicles.get(vin, {}).get("_vehicle")
+            if v is None:
+                raise RuntimeError(f"Fahrzeug {vin} nicht gefunden")
+            v.charging.settings.maximum_current.value = ampere
         await self.hass.async_add_executor_job(_do)
         await self.async_request_refresh()
 

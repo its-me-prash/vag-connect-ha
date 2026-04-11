@@ -50,6 +50,19 @@ NUMBER_DESCRIPTIONS: tuple[VagNumberDescription, ...] = (
         mode=NumberMode.SLIDER,
         icon="mdi:thermometer",
     ),
+
+    VagNumberDescription(
+        key="max_charge_current",
+        data_key="max_charge_current",
+        name="Max Ladestrom",
+        native_unit_of_measurement="A",
+        native_min_value=6,
+        native_max_value=32,
+        native_step=1,
+        mode="slider",
+        icon="mdi:current-ac",
+        condition="electric",
+    ),
 )
 
 

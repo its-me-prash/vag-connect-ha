@@ -237,3 +237,130 @@ class VagConnectSensor(VagConnectEntity, SensorEntity):
     @property
     def native_value(self) -> Any:
         return self._vehicle.get(self.entity_description.data_key)
+
+
+# ── Neue Sensoren — einzigartig in VAG Connect ───────────────────────────────
+_NEW_SENSORS: tuple[VagSensorDescription, ...] = (
+
+    # Fahrzeugstatus
+    VagSensorDescription(
+        key="vehicle_state",
+        data_key="vehicle_state",
+        name="Fahrzeugstatus",
+        icon="mdi:car-info",
+    ),
+    VagSensorDescription(
+        key="connection_state",
+        data_key="connection_state",
+        name="Verbindungsstatus",
+        icon="mdi:car-wireless",
+    ),
+
+    # Position
+    VagSensorDescription(
+        key="parking_address",
+        data_key="parking_address",
+        name="Parkadresse",
+        icon="mdi:map-marker",
+    ),
+    VagSensorDescription(
+        key="parking_city",
+        data_key="parking_city",
+        name="Parkstadt",
+        icon="mdi:city",
+    ),
+    VagSensorDescription(
+        key="heading",
+        data_key="heading",
+        name="Fahrtrichtung",
+        native_unit_of_measurement="°",
+        state_class=SensorStateClass.MEASUREMENT,
+        icon="mdi:compass",
+    ),
+
+    # Akku (nur EV + PHEV)
+    VagSensorDescription(
+        key="battery_temp",
+        data_key="battery_temp",
+        name="Akkutemperatur",
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        device_class=SensorDeviceClass.TEMPERATURE,
+        state_class=SensorStateClass.MEASUREMENT,
+        icon="mdi:thermometer",
+        condition="electric",
+    ),
+    VagSensorDescription(
+        key="battery_cap_kwh",
+        data_key="battery_cap_kwh",
+        name="Akkukapazität",
+        native_unit_of_measurement="kWh",
+        device_class=SensorDeviceClass.ENERGY_STORAGE,
+        state_class=SensorStateClass.MEASUREMENT,
+        icon="mdi:battery",
+        condition="electric",
+    ),
+
+    # Laden (EV + PHEV)
+    VagSensorDescription(
+        key="charge_complete_eta",
+        data_key="charge_complete_eta",
+        name="Ladeende",
+        device_class=SensorDeviceClass.TIMESTAMP,
+        icon="mdi:clock-end",
+        condition="electric",
+    ),
+    VagSensorDescription(
+        key="charging_type",
+        data_key="charging_type",
+        name="Ladetyp",
+        icon="mdi:ev-plug-type2",
+        condition="electric",
+    ),
+    VagSensorDescription(
+        key="charging_station_name",
+        data_key="charging_station_name",
+        name="Ladesäule",
+        icon="mdi:ev-station",
+        condition="electric",
+    ),
+    VagSensorDescription(
+        key="charging_station_address",
+        data_key="charging_station_address",
+        name="Ladesäule Adresse",
+        icon="mdi:map-marker-outline",
+        condition="electric",
+    ),
+    VagSensorDescription(
+        key="charging_station_kw",
+        data_key="charging_station_kw",
+        name="Ladesäule Max-Leistung",
+        native_unit_of_measurement=UnitOfPower.KILO_WATT,
+        device_class=SensorDeviceClass.POWER,
+        state_class=SensorStateClass.MEASUREMENT,
+        icon="mdi:lightning-bolt",
+        condition="electric",
+    ),
+    VagSensorDescription(
+        key="charging_station_operator",
+        data_key="charging_station_operator",
+        name="Ladesäule Betreiber",
+        icon="mdi:domain",
+        condition="electric",
+    ),
+
+    # Fahrzeugdaten
+    VagSensorDescription(
+        key="firmware_version",
+        data_key="firmware_version",
+        name="Firmware",
+        icon="mdi:update",
+    ),
+    VagSensorDescription(
+        key="license_plate",
+        data_key="license_plate",
+        name="Kennzeichen",
+        icon="mdi:card-text",
+    ),
+)
+
+SENSOR_DESCRIPTIONS = SENSOR_DESCRIPTIONS + _NEW_SENSORS

@@ -260,6 +260,80 @@ Jede Version folgt diesem Ablauf:
 
 
 
+
+## [0.4.0] - 2026-04-11
+
+Features die kein anderes VAG Home Assistant Plugin hat.
+
+### Hinzugefügt
+
+#### Fahrzeugstatus (vehicle.state + connection_state)
+- `sensor.*_fahrzeugstatus` — PARKED / DRIVING / IGNITION_ON / OFFLINE
+- `sensor.*_verbindungsstatus` — ONLINE / REACHABLE / OFFLINE
+- `binary_sensor.*_fahrt` — True wenn Fahrzeug fährt (DRIVING oder IGNITION_ON)
+- `binary_sensor.*_online` — True wenn Fahrzeug erreichbar
+  **Einzigartig:** Kein anderes VAG-HA-Plugin zeigt ob das Auto fährt.
+  Nutzbar für Automationen: *„Wenn Auto fährt → Heizung runterdrehen"*
+  **Autor:** @Prash1407
+
+#### Parkadresse als Text (position.location)
+- `sensor.*_parkadresse` — vollständige Adresse direkt von der API (kein Geocoding)
+- `sensor.*_parkstadt` — Stadt wo das Fahrzeug steht
+  **Einzigartig:** myskoda Issue #824 offen seit 2025, nie implementiert.
+  **Autor:** @Prash1407
+
+#### Fahrtrichtung (position.heading)
+- `sensor.*_fahrtrichtung` — 0–360°, Einheit °
+  Nutzbar für Karten-Dashboards mit Richtungspfeil.
+  **Autor:** @Prash1407
+
+#### Akkutemperatur + Kapazität (battery.temperature, total_capacity)
+- `sensor.*_akkutemperatur` — °C (erklärt Reichweitenverlust im Winter)
+- `sensor.*_akkukapazitat` — kWh (für Degradations-Monitoring)
+  **Einzigartig:** Tesla-Integration hat das — nie bei VAG gesehen.
+  **Autor:** @Prash1407
+
+#### Ladeende-ETA (charging.estimated_date_reached)
+- `sensor.*_ladeende` — Timestamp wann Akku voll (z.B. „heute 22:47 Uhr")
+  Nutzbar für: *„Benachrichtige mich wenn Auto voll geladen"*
+  **Einzigartig:** Alle anderen zeigen nur %-Stand, niemand den Zeitpunkt.
+  **Autor:** @Prash1407
+
+#### Ladetyp AC/DC (charging.type)
+- `sensor.*_ladetyp` — OFF / AC / DC
+  **Autor:** @Prash1407
+
+#### Ladesäulen-Info (charging.charging_station)
+- `sensor.*_ladestaule` — Name der Ladesäule (z.B. „IONITY A9")
+- `sensor.*_ladestaule_adresse` — Adresse
+- `sensor.*_ladestaule_max_leistung` — Max-kW
+- `sensor.*_ladestaule_betreiber` — Betreibername
+  **Einzigartig:** evcc zeigt das — kein HA-Plugin bisher.
+  **Autor:** @Prash1407
+
+#### Auto-Unlock Switch (charging.settings.auto_unlock)
+- `switch.*_stecker_auto_entsperren` — Stecker nach Ladeende automatisch öffnen
+  **Einzigartig:** VW-App kann das — kein HA-Plugin bisher.
+  **Autor:** @Prash1407
+
+#### Max Ladestrom Slider (charging.settings.maximum_current)
+- `number.*_max_ladestrom` — 6–32A, Slider in HA
+  Für schwache Hausinstallationen oder gesteuertes Laden.
+  **Einzigartig:** Kein anderes VAG-HA-Plugin.
+  **Autor:** @Prash1407
+
+#### Stecker-Verriegelung (charging.connector.lock_state)
+- `binary_sensor.*_stecker_verriegelt` — True wenn Kabel mechanisch gesperrt
+  **Autor:** @Prash1407
+
+#### Kennzeichen + Firmware (vehicle.license_plate, software.version)
+- `sensor.*_kennzeichen` — Kennzeichen
+- `sensor.*_firmware` — Firmware-Version für OTA-Tracking
+  **Autor:** @Prash1407
+
+### Tests
+- 57 Unit-Tests (vorher 42) — 15 neue Tests für alle Features
+  **Autor:** @Prash1407
 ## [0.3.4] - 2026-04-11
 
 ### Codebereinigung — kein Funktionsverlust

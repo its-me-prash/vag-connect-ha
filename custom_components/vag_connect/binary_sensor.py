@@ -69,6 +69,33 @@ BINARY_DESCRIPTIONS: tuple[VagBinarySensorDescription, ...] = (
     ),
 )
 
+# ── Neue Binary Sensors ───────────────────────────────────────────────────────
+_NEW_BINARY: tuple[VagBinarySensorDescription, ...] = (
+    VagBinarySensorDescription(
+        key="is_driving",
+        data_key="is_driving",
+        name="Fährt",
+        device_class=BinarySensorDeviceClass.MOTION,
+        icon="mdi:car-speed-limiter",
+    ),
+    VagBinarySensorDescription(
+        key="is_online",
+        data_key="is_online",
+        name="Online",
+        device_class=BinarySensorDeviceClass.CONNECTIVITY,
+        icon="mdi:car-wireless",
+    ),
+    VagBinarySensorDescription(
+        key="connector_locked",
+        data_key="connector_locked",
+        name="Stecker verriegelt",
+        device_class=BinarySensorDeviceClass.LOCK,
+        icon="mdi:ev-plug-ccs2",
+        condition="electric",
+    ),
+)
+BINARY_DESCRIPTIONS = BINARY_DESCRIPTIONS + _NEW_BINARY
+
 
 async def async_setup_entry(
     hass: HomeAssistant,
