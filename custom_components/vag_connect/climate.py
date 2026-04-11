@@ -1,5 +1,4 @@
 """Climate entity for VAG Connect — remote pre-conditioning."""
-from __future__ import annotations
 
 from homeassistant.components.climate import (
     ClimateEntity,

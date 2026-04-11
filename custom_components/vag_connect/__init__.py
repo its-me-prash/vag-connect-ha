@@ -9,7 +9,6 @@ Architecture:
   - Observer pattern: CC fires VALUE_CHANGED -> HA updates immediately
   - No double-polling, no race conditions
 """
-from __future__ import annotations
 
 import logging
 

@@ -19,7 +19,6 @@ Confirmed HA behavior:
   - async_set_updated_data() ruft async_update_listeners() → Entities update sofort
   - update_interval=None → kein eigenes HA-Polling, rein reaktiv
 """
-from __future__ import annotations
 
 import asyncio
 import logging
@@ -31,6 +30,7 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
 from .const import (
     CONF_BRAND,
+    CONF_FORCE_ACCESS,
     CONF_PASSWORD,
     CONF_SCAN_INTERVAL,
     CONF_SPIN,
@@ -142,7 +142,7 @@ class VagConnectCoordinator(DataUpdateCoordinator):
         if spin:
             connector_cfg["spin"] = spin
         # Issue #1: force_enable_access für ältere VW/Audi-Modelle ohne 'access' Capability
-        if self.entry.data.get("force_enable_access", False):
+        if self.entry.data.get(CONF_FORCE_ACCESS, False):
             connector_cfg["force_enable_access"] = True
             _LOGGER.info("VAG Connect: force_enable_access aktiviert")
 
@@ -285,7 +285,6 @@ class VagConnectCoordinator(DataUpdateCoordinator):
 
         # Identity
         data["vin"]          = _val(vehicle.vin)
-        data["nickname"]     = _val(vehicle.name) or _val(vehicle.vin)
         data["model"]        = _val(vehicle.model) or "VAG Vehicle"
         data["manufacturer"] = _val(vehicle.manufacturer) or self.entry.data[CONF_BRAND].title()
         data["model_year"]   = _val(vehicle.model_year)
@@ -523,7 +522,7 @@ class VagConnectCoordinator(DataUpdateCoordinator):
     async def _run_command(
         self, vin: str, subsystem: str, command_name: str, value: str
     ) -> None:
-        """Führt ein CarConnectivity-Command aus."""
+        """Führt ein CarConnectivity-Command auf einem beliebigen Subsystem aus."""
         def _do():
             with self._vehicles_lock:
                 vehicle = self.vehicles.get(vin, {}).get("_vehicle")
@@ -531,10 +530,11 @@ class VagConnectCoordinator(DataUpdateCoordinator):
                 raise RuntimeError(f"Fahrzeug {vin} nicht gefunden")
 
             sub_map = {
-                "doors":         vehicle.doors,
-                "charging":      vehicle.charging,
-                "climatization": vehicle.climatization,
-                "lights":        vehicle.lights,
+                "doors":           vehicle.doors,
+                "charging":        vehicle.charging,
+                "climatization":   vehicle.climatization,
+                "lights":          vehicle.lights,
+                "window_heatings": vehicle.window_heatings,
             }
             sub = sub_map.get(subsystem)
             if sub is None:
@@ -548,23 +548,21 @@ class VagConnectCoordinator(DataUpdateCoordinator):
                 )
             cmds.commands[command_name].value = value
             _LOGGER.info(
-                "VAG Command ausgeführt: VIN=%s | %s/%s → %s",
-                vin, subsystem, command_name, value,
+                "VAG Command: VIN=%s | %s/%s → %s", vin, subsystem, command_name, value,
             )
 
         await self.hass.async_add_executor_job(_do)
-        # Nach Command sofort manuellen Refresh anstossen
         await self.async_request_refresh()
 
     # --- Neu: Fensterheizung & Auto aufwecken ---
 
     async def async_start_window_heating(self, vin: str) -> None:
         """Fensterheizung starten."""
-        await self._run_subsystem_command(vin, "window_heatings", "start-stop", "start")
+        await self._run_command(vin, "window_heatings", "start-stop", "start")
 
     async def async_stop_window_heating(self, vin: str) -> None:
         """Fensterheizung stoppen."""
-        await self._run_subsystem_command(vin, "window_heatings", "start-stop", "stop")
+        await self._run_command(vin, "window_heatings", "start-stop", "stop")
 
     async def async_wake_vehicle(self, vin: str) -> None:
         """Fahrzeug aufwecken (wake-sleep Kommando auf Vehicle-Ebene)."""
@@ -585,35 +583,4 @@ class VagConnectCoordinator(DataUpdateCoordinator):
         await self.hass.async_add_executor_job(_do)
         await self.async_request_refresh()
 
-    async def _run_subsystem_command(
-        self, vin: str, subsystem: str, command_name: str, value: str
-    ) -> None:
-        """Wie _run_command aber für Subsysteme die nicht in sub_map stehen."""
-        def _do():
-            with self._vehicles_lock:
-                vehicle = self.vehicles.get(vin, {}).get("_vehicle")
-            if vehicle is None:
-                raise RuntimeError(f"Fahrzeug {vin} nicht gefunden")
-            sub_map = {
-                "doors":           vehicle.doors,
-                "charging":        vehicle.charging,
-                "climatization":   vehicle.climatization,
-                "lights":          vehicle.lights,
-                "window_heatings": vehicle.window_heatings,
-            }
-            sub = sub_map.get(subsystem)
-            if sub is None:
-                raise RuntimeError(f"Unbekanntes Subsystem: {subsystem}")
-            cmds = sub.commands
-            if not cmds.contains_command(command_name):
-                raise RuntimeError(
-                    f"Command '{command_name}' nicht verfügbar für {vin} "
-                    f"(subsystem={subsystem})."
-                )
-            cmds.commands[command_name].value = value
-            _LOGGER.info(
-                "VAG Command: VIN=%s | %s/%s → %s", vin, subsystem, command_name, value
-            )
 
-        await self.hass.async_add_executor_job(_do)
-        await self.async_request_refresh()

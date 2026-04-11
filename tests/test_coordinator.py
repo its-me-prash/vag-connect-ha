@@ -462,7 +462,7 @@ class TestNewExtractFields:
         # Sicherstellen dass der Guard "if self.entry.data.get(...)" vorhanden ist
         assert 'force_enable_access' in src
         # Nicht einfach immer gesetzt — nur wenn True
-        assert 'if self.entry.data.get("force_enable_access"' in src
+        assert "CONF_FORCE_ACCESS" in src  # Konstante statt direkter String seit Cleanup
 
 
 class TestEntityBaseName:

@@ -1,0 +1,34 @@
+name: Changelog Pflicht
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'custom_components/**'
+
+jobs:
+  check:
+    name: CHANGELOG.md aktualisiert?
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prüfen ob CHANGELOG.md geändert wurde
+        run: |
+          CHANGED=$(git diff --name-only origin/main...HEAD | grep -c "CHANGELOG.md" || true)
+          if [ "$CHANGED" -eq 0 ]; then
+            echo ""
+            echo "══════════════════════════════════════════"
+            echo "  CHANGELOG.md wurde nicht aktualisiert!"
+            echo "══════════════════════════════════════════"
+            echo ""
+            echo "Bitte trage deine Änderungen im Unreleased-Block ein:"
+            echo ""
+            echo "  ## [Unreleased]"
+            echo "  ### Hinzugefügt / Geändert / Behoben"
+            echo "  - Beschreibung der Änderung"
+            echo "    Autor: @dein-name"
+            echo ""
+            exit 1
+          fi
+          echo "CHANGELOG.md wurde aktualisiert — OK"

@@ -1,5 +1,4 @@
 """Switches for VAG Connect (lock/unlock, charging)."""
-from __future__ import annotations
 
 from homeassistant.components.switch import SwitchEntity
 from homeassistant.config_entries import ConfigEntry

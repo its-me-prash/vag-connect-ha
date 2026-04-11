@@ -1,5 +1,4 @@
 """Number entities for VAG Connect (target SOC, climatisation temperature)."""
-from __future__ import annotations
 
 from dataclasses import dataclass
 
@@ -63,9 +62,9 @@ async def async_setup_entry(
     entities: list[VagConnectNumber] = []
 
     for vin, vehicle in coordinator.vehicles.items():
-        is_electric = vehicle.get("is_electric", False)
+        has_battery = vehicle.get("has_battery", False)  # EV + PHEV
         for desc in NUMBER_DESCRIPTIONS:
-            if desc.condition == "electric" and not is_electric:
+            if desc.condition == "electric" and not has_battery:
                 continue
             entities.append(VagConnectNumber(coordinator, vin, desc))
 

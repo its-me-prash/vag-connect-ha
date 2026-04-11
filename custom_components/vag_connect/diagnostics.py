@@ -1,5 +1,4 @@
 """Diagnostics support for VAG Connect — helps users report bugs."""
-from __future__ import annotations
 
 from typing import Any
 

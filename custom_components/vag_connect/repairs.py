@@ -5,7 +5,6 @@ Wenn Login fehlschlägt (2FA, T&C, gesperrter Account) erscheint
 eine persistente Warnung im HA UI unter Einstellungen → System → Reparaturen.
 Der Nutzer kann direkt reagieren ohne in die Logs schauen zu müssen.
 """
-from __future__ import annotations
 
 import logging
 

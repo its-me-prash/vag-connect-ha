@@ -1,5 +1,4 @@
 """Binary sensors for VAG Connect — correct data keys from coordinator."""
-from __future__ import annotations
 
 from dataclasses import dataclass
 

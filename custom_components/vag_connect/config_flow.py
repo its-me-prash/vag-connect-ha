@@ -1,5 +1,4 @@
 """Config flow for VAG Connect integration."""
-from __future__ import annotations
 
 import logging
 from typing import Any
@@ -129,7 +128,7 @@ class VagConnectConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     @callback
     def async_get_options_flow(
         config_entry: config_entries.ConfigEntry,
-    ) -> VagConnectOptionsFlow:
+    ) -> "VagConnectOptionsFlow":  # noqa: F821
         """Return options flow."""
         return VagConnectOptionsFlow(config_entry)
 

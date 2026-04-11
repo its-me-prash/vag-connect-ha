@@ -1,5 +1,4 @@
 """Device tracker (GPS) for VAG Connect."""
-from __future__ import annotations
 
 from homeassistant.components.device_tracker import SourceType, TrackerEntity
 from homeassistant.config_entries import ConfigEntry

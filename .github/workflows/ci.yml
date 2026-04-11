@@ -1,0 +1,118 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint-and-validate:
+    name: Lint & Validierung
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Python 3.12 einrichten
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Abhängigkeiten installieren
+        run: |
+          pip install ruff \
+            carconnectivity>=0.11.8 \
+            carconnectivity-connector-audi>=0.3.0 \
+            carconnectivity-connector-volkswagen>=0.10.4 \
+            carconnectivity-connector-skoda>=0.12.4 \
+            carconnectivity-connector-seatcupra>=0.6.1
+
+      - name: Ruff Lint
+        run: ruff check custom_components/
+
+      - name: Python Syntax prüfen
+        run: python3 -m py_compile custom_components/vag_connect/*.py
+
+      - name: manifest.json validieren
+        run: |
+          python3 -c "
+          import json, sys
+          m = json.load(open('custom_components/vag_connect/manifest.json'))
+          required = ['domain', 'name', 'version', 'requirements', 'iot_class', 'config_flow']
+          missing = [k for k in required if k not in m]
+          if missing:
+              print('FEHLER: Fehlende Felder:', missing); sys.exit(1)
+          print('manifest.json OK — Version:', m['version'])
+          "
+
+      - name: Alle JSON-Dateien validieren
+        run: |
+          python3 -c "
+          import json, os, sys
+          errors = []
+          for root, _, files in os.walk('custom_components'):
+              for f in files:
+                  if f.endswith('.json'):
+                      p = os.path.join(root, f)
+                      try:
+                          json.load(open(p))
+                          print(f'OK: {p}')
+                      except Exception as e:
+                          errors.append(f'FEHLER {p}: {e}')
+          if errors:
+              for e in errors: print(e)
+              sys.exit(1)
+          "
+
+      - name: CHANGELOG.md enthält aktuelle Version
+        run: |
+          python3 -c "
+          import json, sys, re
+          version = json.load(open('custom_components/vag_connect/manifest.json'))['version']
+          changelog = open('CHANGELOG.md').read()
+          if f'[{version}]' not in changelog:
+              print(f'FEHLER: Version {version} nicht im CHANGELOG.md dokumentiert!')
+              print('Bitte CHANGELOG.md aktualisieren bevor du pushst.')
+              sys.exit(1)
+          print(f'CHANGELOG.md enthält Version {version} — OK')
+          "
+
+  tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Python 3.12 einrichten
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Test-Abhängigkeiten installieren
+        run: |
+          pip install pytest \
+            homeassistant \
+            carconnectivity>=0.11.8 \
+            carconnectivity-connector-audi>=0.3.0 \
+            carconnectivity-connector-skoda>=0.12.4
+
+      - name: Tests ausführen
+        run: python3 -m pytest tests/ -v --tb=short
+
+  hassfest:
+    name: HA Hassfest
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: "home-assistant/actions/hassfest@master"
+
+  hacs:
+    name: HACS Validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hacs/action@main
+        with:
+          category: integration

@@ -12,7 +12,6 @@ Ladegeschwindigkeit (charging_rate_kmh):
   Einheit km/h ist korrekt (≠ Fahrzeuggeschwindigkeit).
   Kein SensorDeviceClass.SPEED — das wäre semantisch falsch.
 """
-from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Any

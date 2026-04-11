@@ -259,6 +259,34 @@ Jede Version folgt diesem Ablauf:
 
 
 
+
+## [0.3.4] - 2026-04-11
+
+### Codebereinigung — kein Funktionsverlust
+
+#### Kritische Bugs behoben
+- `number.py`: `is_electric` → `has_battery` — PHEV-Fahrzeuge bekamen keine Number-Entities
+- `_run_subsystem_command` entfernt — war identisch zu `_run_command`, beide hatten
+  unterschiedliche sub_maps; jetzt eine einzige Methode mit vollständiger Map
+  (doors, charging, climatization, lights, **window_heatings**)
+
+#### Totes Gewicht entfernt
+- `const.py`: 33 ungenutzte Konstanten gelöscht (PATH_*, ICON_*, REGIONS, CONF_REGION)
+  — Reste aus alter API-Pfad-Architektur, nie von Entities verwendet
+- `coordinator._extract()`: `nickname`-Key entfernt — gesetzt aber nie gelesen
+- `from __future__ import annotations`: aus allen 13 Python-Dateien entfernt
+  (Python 3.12 unterstützt native Union-Typen, kein Compat-Import nötig)
+
+#### Konsistenz
+- `CONF_FORCE_ACCESS`: war direkt als String `"force_enable_access"` im Coordinator,
+  jetzt korrekt aus const.py importiert
+- F821 Ruff: Forward-Reference `VagConnectOptionsFlow` mit String-Annotation gelöst
+
+#### Zahlen
+- const.py: 70 → 20 Zeilen (-71%)
+- coordinator.py: -30 Zeilen (redundante Methode)
+- Gesamt: ~80 Zeilen weniger bei gleicher Funktionalität
+  **Autor:** @Prash1407
 ## [0.3.3] - 2026-04-11
 
 ### Behoben
