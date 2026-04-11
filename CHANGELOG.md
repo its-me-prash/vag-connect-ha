@@ -28,6 +28,35 @@ Geplant für 0.2.0:
 
 
 
+
+## [0.2.2] - 2026-04-11
+
+### Geändert
+
+#### Entity-ID Schema: Marke + Modell statt VIN/Nickname
+- **Vorher:** `sensor.wauzzz4g7en123456_kilometerstand` (unlesbar)
+- **Nachher:** `sensor.audi_q4_e_tron_kilometerstand`
+
+Schema: `{platform}.{marke}_{modell}_{sensor_key}`
+
+Beispiele:
+- `sensor.audi_q4_e_tron_batterieladestand`
+- `binary_sensor.skoda_enyaq_iv_turen_offen`
+- `device_tracker.volkswagen_id_4_pro_position`
+- `switch.seat_cupra_born_verriegelung`
+
+Bei zwei gleichen Modellen (z.B. Firmenwagen + Privat):
+- `sensor.audi_q4_e_tron_kilometerstand` (erstes Fahrzeug)
+- `sensor.audi_q4_e_tron_2_kilometerstand` (zweites — HA setzt _2 automatisch)
+
+**BREAKING:** Wer bereits Automationen mit entity_id hatte, muss diese anpassen.
+  **Autor:** @Prash1407
+
+#### Mehrere Fahrzeuge — wie es funktioniert
+- Ein Audi-Konto mit Q4 + A4: beide erscheinen als separate Geräte, automatisch
+- Audi + Skoda: Integration zweimal hinzufügen (je ein Config Entry)
+- Jedes Fahrzeug = ein HA-Gerät mit eigener VIN als Identifier (stabil)
+  **Autor:** @Prash1407
 ## [0.2.1] - 2026-04-11
 
 Hotfix: fehlende Service-Registrierungen nach Cross-Check entdeckt.
