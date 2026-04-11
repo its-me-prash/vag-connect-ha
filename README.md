@@ -102,11 +102,15 @@ sensor  |  binary_sensor  |  device_tracker  |  switch  |  button  |  climate  |
 
 ---
 
-## ⚠️ Empfehlung: Separater App-Account
+## API-Nutzung & Rate Limiting
 
-> Leg einen **eigenen App-Account** (z.B. zweite E-Mail-Adresse) für Home Assistant an und teile das Fahrzeug darüber. Die offiziellen Hersteller-Apps erlauben das unter "Fahrzeug teilen" / "Berechtigungen".
->
-> **Warum?** Wenn HA und du gleichzeitig aus der App zugreifst, kann die API den Account vorübergehend sperren. Mit einem eigenen HA-Account passiert das nicht.
+VAG-APIs (Audi, VW, Škoda, SEAT/CUPRA) haben ein serverseitiges Rate Limit. VAG Connect ist darauf ausgelegt, es einzuhalten:
+
+- **Reaktive Architektur** (`cloud_push`): Das Fahrzeug meldet sich selbst — kein permanentes Polling
+- **Mindestintervall 3 Minuten** für manuelle Refreshes
+- **Token-Persistenz**: Keine erneute Anmeldung bei HA-Neustarts
+
+Falls der Account trotzdem kurz gesperrt wird (passiert selten): Die Sperre hebt sich automatisch nach 2–4 Stunden. Unter **Einstellungen → System → Reparaturen** erscheint dann ein Hinweis mit nächsten Schritten.
 
 ## Installation
 

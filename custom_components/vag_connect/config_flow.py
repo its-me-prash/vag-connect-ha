@@ -123,9 +123,9 @@ class VagConnectConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             ),
             description_placeholders={
                 "separate_account_hint": (
-                    "💡 Tipp: Empfehlenswert ist ein separater App-Account "
-                    "für Home Assistant (Fahrzeug teilen via Hersteller-App). "
-                    "Das schützt vor API-Sperren wenn beide Geräte gleichzeitig zugreifen."
+                    "ℹ️ VAG Connect nutzt reaktive Updates (cloud_push) — "
+                    "das Fahrzeug meldet sich selbst, kein permanentes Polling. "
+                    "Das API-Rate-Limit wird automatisch eingehalten."
                 )
             },
             errors=errors,
