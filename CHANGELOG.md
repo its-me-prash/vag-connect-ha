@@ -26,6 +26,8 @@ Geplant für 0.7.0:
 
 ---
 
+---
+
 ## [0.6.0] - 2026-04-12
 
 ### Hinzugefügt
@@ -41,9 +43,9 @@ Technische Sensoren die nicht täglich gebraucht werden, erscheinen jetzt nur no
 - Number-Sliders (Ladeziel, Klimatemp, Ladestrom) → CONFIG
 
 #### Neue Sensoren
-- `sensor.{fahrzeug}_reichweite_bei_100_prozent` — geschätzte Reichweite bei vollem Akku (aus drive.range_estimated_full)
-- `sensor.{fahrzeug}_wltp_reichweite` — WLTP-Normreichweite (DIAGNOSTIC)
-- `sensor.{fahrzeug}_akkuenergie_verfugbar` — verfügbare Akkuenergie in kWh
+- `sensor.{fahrzeug}_reichweite_bei_100_prozent` — geschätzte Reichweite bei vollem Akku (aus `drive.range_estimated_full`, CC-Core [@tillsteinbach](https://github.com/tillsteinbach/CarConnectivity))
+- `sensor.{fahrzeug}_wltp_reichweite` — WLTP-Normreichweite (aus `drive.range_wltp`, CC-Core [@tillsteinbach](https://github.com/tillsteinbach/CarConnectivity), DIAGNOSTIC)
+- `sensor.{fahrzeug}_akkuenergie_verfugbar` — verfügbare Akkuenergie in kWh (aus `battery.available_capacity`, CC-Core [@tillsteinbach](https://github.com/tillsteinbach/CarConnectivity))
 - `sensor.{fahrzeug}_zuletzt_aktualisiert` — Timestamp letztes Fahrzeug-Update (DIAGNOSTIC)
 
 #### Fixes
@@ -51,7 +53,7 @@ Technische Sensoren die nicht täglich gebraucht werden, erscheinen jetzt nur no
 - `Max Ladestrom` → `Max. Ladestrom` (korrekte Abkürzung)
 
 #### UX / Infrastruktur
-- Config Flow: Hinweis auf separaten App-Account (schützt vor API-Sperren)
+- Config Flow: korrekter VAG-Hinweis — kein separater Account nötig, Secondary Users haben bei CARIAD eingeschränkte API-Rechte (Fernzugriff nur mit Hauptnutzer-Account)
 - `hacs.json`: `iot_class` ergänzt für HACS Analytics-Tracking
 - `docs/lovelace-example.yaml`: Fertiges Beispiel-Dashboard (mushroom + mini-graph-card)
 - README: Analytics-Badge, Account-Empfehlung, Dashboard-Link, alle 8 Sprachen
@@ -59,8 +61,6 @@ Technische Sensoren die nicht täglich gebraucht werden, erscheinen jetzt nur no
 - 6 neue Tests → **69/69 grün**
 
 _Autor: @Prash1407_
-
-
 
 ## [0.5.0] - 2026-04-12
 
@@ -84,7 +84,7 @@ data:
 ```
 
 **Technischer Hintergrund:**
-- `AudiClimatization.Timers` (CC-Connector-Audi ≥0.3.0) war bereits vorhanden, aber nicht im HA-Layer exponiert.
+- `AudiClimatization.Timers` (CC-Connector-Audi ≥0.3.0) war bereits vorhanden, aber nicht im HA-Layer exponiert. Die Timer-Klasse stammt aus [@acfischer42](https://github.com/acfischer42/CarConnectivity-connector-audi)'s Audi-Connector — wir haben sie lediglich in Entities und einen Service übersetzt.
 - `_extract()` liest jetzt `vehicle.climatization.timers.timer_1/2/3` (enabled + target_datetime).
 - `async_set_departure_timer()` setzt enabled-Flag und optionale Zielzeit direkt auf dem CC-Objekt.
 - Bei fehlendem Timer-Objekt (API hat noch keinen Timer zurückgegeben) → alle Keys = `None`, kein Crash.
@@ -95,6 +95,369 @@ data:
 
 _Autor: @Prash1407_
 
+## [0.4.6] - 2026-04-11
+
+### Hinzugefügt
+- Logo: Echtes VAG Connect Logo (VAG Connected, AI-generiert, Gemini-Wasserzeichen entfernt)
+  icon.png (256×256), logo.png (512×512), icon@2x.png (512×512)
+
+### Behoben
+- `set_target_soc` und `set_climatisation_temperature` waren in services.yaml dokumentiert
+  aber nicht in `_register_services()` registriert — jetzt vollständig verknüpft
+- strings.json: 21 → 87 Keys (synchron mit de.json)
+- CHANGELOG fehlte für Versionen 0.4.3–0.4.5
+
+---
+
+## [0.4.5] - 2026-04-11
+
+### Geändert
+- icon.png durch echtes AI-generiertes Logo ersetzt
+
+---
+
+## [0.4.4] - 2026-04-11
+
+### Hinzugefügt
+- Logo/Icon erstellt (Pillow, Platzhalter)
+- strings.json auf 87 Keys synchronisiert
+- services.yaml: set_target_soc + set_climatisation_temperature ergänzt
+- README.en.md vollständig aktualisiert
+- README.fr/nl/es/pl/cs/sv aktualisiert
+
+---
+
+## [0.4.3] - 2026-04-11
+
+### Behoben
+- Alle 6 Sprachen (FR/NL/ES/PL/CS/SV): von 10 auf 87 Keys aktualisiert
+- README: 'separate Geräte' → 'separate Fahrzeuge'
+- README EV/PHEV: konkrete Modelle aufgelistet
+
+---
+
+## [0.4.2] - 2026-04-11
+
+### Hinzugefügt
+
+#### Metrisch / Imperial — vollständige Einheitenunterstützung
+
+VAG Connect nutzt HAs eingebautes Einheitensystem. Einstellung:
+**Einstellungen → System → Allgemein → Einheitensystem**
+
+| Sensor | Metrisch | Imperial |
+|---|---|---|
+| Reichweite | km | mi |
+| Kilometerstand | km | mi |
+| Nächste Inspektion | km | mi |
+| Nächster Ölwechsel | km | mi |
+| Außentemperatur | °C | °F |
+| Zieltemperatur | °C | °F |
+| Akkutemperatur | °C | °F |
+| **Ladegeschwindigkeit** | km/h | mph |
+
+Kein eigenes Konfigurations-Feld nötig — HA übernimmt die Umrechnung automatisch
+für alle Entities mit korrektem `device_class`.
+
+**Neu:** `charging_rate_kmh` bekommt `device_class=SensorDeviceClass.SPEED` →
+automatische km/h → mph Konvertierung bei imperialem Einheitensystem.
+
+Alle anderen Sensoren (Leistung kW, Prozent, kWh, Grad) haben keine imperiale
+Entsprechung — bleiben unverändert.
+  **Autor:** @Prash1407
+
+### Hinweis
+
+**`sensor.*_ladesaule`** — Entity-IDs enthalten grundsätzlich keine Umlaute
+(ä → a, ö → o, ü → u) — das ist normales HA-Verhalten bei allen Integrationen.
+Der Anzeigename in HA bleibt korrekt: **Ladesäule**.
+
+## [0.4.1] - 2026-04-11
+
+### Sprachbereinigung — Umlaute, Terminologie, Ton
+
+#### README.md
+- Alle ae/oe/ue-Substitute durch echte Umlaute ersetzt: Türen, Außentemperatur,
+  Tankfüllstand, Verfügbarkeit, fällig, Ölstand, Ölservice, Unterstützte, usw.
+- Feature-Tabellen auf aktuellen Stand 0.4.0 gebracht
+- Ton: sachlich, direkt, für normale Nutzer verständlich
+  **Autor:** @Prash1407
+
+#### Sensor-Namen
+- `Batterieladestand` → `Akkustand` (wie es Nutzer kennen — z.B. Handy-Akku)
+- `Ladziel` → `Ladeziel` (Tippfehler behoben)
+- `Tankfüllstand` → `Tankstand` (kürzer, genauso klar)
+- `Ladestatus` → `Ladevorgang` (beschreibt was es ist)
+- `Steckerstatus` → `Ladestecker` (konkreter)
+- `Klimatisierungsstatus` → `Klimatisierung` (kein überflüssiges -status)
+- `Fahrzeugstatus` → `Fahrzeugzustand` (präziser)
+- `Verbindungsstatus` → `Verbindung` (kürzer)
+- `Inspektion fällig in` → `Nächste Inspektion`
+- `Ölservice fällig in` → `Nächster Ölwechsel`
+- `Ölservicedatum` → `Ölwechseldatum`
+- `Parkadresse` → `Standort` (natürlicher)
+- `Firmware` → `Firmware-Version`
+  **Autor:** @Prash1407
+
+#### Binary Sensor Namen
+- `Fährt` → `In Fahrt` (natürlicheres Deutsch)
+- `Ladekabel verbunden` → `Ladekabel steckt`
+- `Klimatisierung aktiv` → `Klimatisierung läuft`
+- `Online` → `Erreichbar` (was es für den Nutzer bedeutet)
+  **Autor:** @Prash1407
+
+#### Switch-Namen
+- `Stecker Auto-Entsperren` → `Stecker nach Laden entsperren`
+- `Fensterheizung` → `Scheibenheizung` (automotive Standard-Begriff)
+  **Autor:** @Prash1407
+
+#### Translations de.json + en.json
+- Vollständig aktualisiert auf alle 0.4.0-Features (31 neue Entity-Keys)
+- Repair-Issues: natürlicheres Deutsch, klare Handlungsanweisungen
+- en.json: automotive Standard-Englisch (Battery Level statt State of Charge)
+  **Autor:** @Prash1407
+
+## [0.4.0] - 2026-04-11
+
+Features die kein anderes VAG Home Assistant Plugin hat.
+
+### Hinzugefügt
+
+#### Fahrzeugstatus (vehicle.state + connection_state)
+- `sensor.*_fahrzeugstatus` — PARKED / DRIVING / IGNITION_ON / OFFLINE
+- `sensor.*_verbindungsstatus` — ONLINE / REACHABLE / OFFLINE
+- `binary_sensor.*_fahrt` — True wenn Fahrzeug fährt (DRIVING oder IGNITION_ON)
+- `binary_sensor.*_online` — True wenn Fahrzeug erreichbar
+  **Einzigartig:** Kein anderes VAG-HA-Plugin zeigt ob das Auto fährt.
+  Nutzbar für Automationen: *„Wenn Auto fährt → Heizung runterdrehen"*
+  **Autor:** @Prash1407
+
+#### Parkadresse als Text (position.location)
+- `sensor.*_parkadresse` — vollständige Adresse direkt von der API (kein Geocoding)
+- `sensor.*_parkstadt` — Stadt wo das Fahrzeug steht
+  **Einzigartig:** myskoda Issue #824 offen seit 2025, nie implementiert.
+  **Autor:** @Prash1407
+
+#### Fahrtrichtung (position.heading)
+- `sensor.*_fahrtrichtung` — 0–360°, Einheit °
+  Nutzbar für Karten-Dashboards mit Richtungspfeil.
+  **Autor:** @Prash1407
+
+#### Akkutemperatur + Kapazität (battery.temperature, total_capacity)
+- `sensor.*_akkutemperatur` — °C (erklärt Reichweitenverlust im Winter)
+- `sensor.*_akkukapazitat` — kWh (für Degradations-Monitoring)
+  **Einzigartig:** Tesla-Integration hat das — nie bei VAG gesehen.
+  **Autor:** @Prash1407
+
+#### Ladeende-ETA (charging.estimated_date_reached)
+- `sensor.*_ladeende` — Timestamp wann Akku voll (z.B. „heute 22:47 Uhr")
+  Nutzbar für: *„Benachrichtige mich wenn Auto voll geladen"*
+  **Einzigartig:** Alle anderen zeigen nur %-Stand, niemand den Zeitpunkt.
+  **Autor:** @Prash1407
+
+#### Ladetyp AC/DC (charging.type)
+- `sensor.*_ladetyp` — OFF / AC / DC
+  **Autor:** @Prash1407
+
+#### Ladesäulen-Info (charging.charging_station)
+- `sensor.*_ladestaule` — Name der Ladesäule (z.B. „IONITY A9")
+- `sensor.*_ladestaule_adresse` — Adresse
+- `sensor.*_ladestaule_max_leistung` — Max-kW
+- `sensor.*_ladestaule_betreiber` — Betreibername
+  **Einzigartig:** evcc zeigt das — kein HA-Plugin bisher.
+  **Autor:** @Prash1407
+
+#### Auto-Unlock Switch (charging.settings.auto_unlock)
+- `switch.*_stecker_auto_entsperren` — Stecker nach Ladeende automatisch öffnen
+  **Einzigartig:** VW-App kann das — kein HA-Plugin bisher.
+  **Autor:** @Prash1407
+
+#### Max Ladestrom Slider (charging.settings.maximum_current)
+- `number.*_max_ladestrom` — 6–32A, Slider in HA
+  Für schwache Hausinstallationen oder gesteuertes Laden.
+  **Einzigartig:** Kein anderes VAG-HA-Plugin.
+  **Autor:** @Prash1407
+
+#### Stecker-Verriegelung (charging.connector.lock_state)
+- `binary_sensor.*_stecker_verriegelt` — True wenn Kabel mechanisch gesperrt
+  **Autor:** @Prash1407
+
+#### Kennzeichen + Firmware (vehicle.license_plate, software.version)
+- `sensor.*_kennzeichen` — Kennzeichen
+- `sensor.*_firmware` — Firmware-Version für OTA-Tracking
+  **Autor:** @Prash1407
+
+### Tests
+- 57 Unit-Tests (vorher 42) — 15 neue Tests für alle Features
+  **Autor:** @Prash1407
+
+## [0.3.4] - 2026-04-11
+
+### Codebereinigung — kein Funktionsverlust
+
+#### Kritische Bugs behoben
+- `number.py`: `is_electric` → `has_battery` — PHEV-Fahrzeuge bekamen keine Number-Entities
+- `_run_subsystem_command` entfernt — war identisch zu `_run_command`, beide hatten
+  unterschiedliche sub_maps; jetzt eine einzige Methode mit vollständiger Map
+  (doors, charging, climatization, lights, **window_heatings**)
+
+#### Totes Gewicht entfernt
+- `const.py`: 33 ungenutzte Konstanten gelöscht (PATH_*, ICON_*, REGIONS, CONF_REGION)
+  — Reste aus alter API-Pfad-Architektur, nie von Entities verwendet
+- `coordinator._extract()`: `nickname`-Key entfernt — gesetzt aber nie gelesen
+- `from __future__ import annotations`: aus allen 13 Python-Dateien entfernt
+  (Python 3.12 unterstützt native Union-Typen, kein Compat-Import nötig)
+
+#### Konsistenz
+- `CONF_FORCE_ACCESS`: war direkt als String `"force_enable_access"` im Coordinator,
+  jetzt korrekt aus const.py importiert
+- F821 Ruff: Forward-Reference `VagConnectOptionsFlow` mit String-Annotation gelöst
+
+#### Zahlen
+- const.py: 70 → 20 Zeilen (-71%)
+- coordinator.py: -30 Zeilen (redundante Methode)
+- Gesamt: ~80 Zeilen weniger bei gleicher Funktionalität
+  **Autor:** @Prash1407
+
+## [0.3.3] - 2026-04-11
+
+### Behoben
+
+#### EV / PHEV / Verbrenner-Logik komplett überarbeitet
+Das `is_electric`-Flag war zu simpel und führte zu falschen Sensor-Zuordnungen bei PHEVs.
+
+**Neue Flags im Coordinator:**
+| Flag | Wahr für | Bedeutung |
+|---|---|---|
+| `is_electric` | Nur reine EVs | `vehicle.type == ELECTRIC` |
+| `has_battery` | EV + PHEV | Hat Akku und Lader |
+| `is_hybrid` | PHEV | `vehicle.type == HYBRID` |
+| `has_combustion` | Verbrenner + PHEV | Hat Verbrennungsmotor |
+
+**Sensor-Conditions:**
+- `condition="electric"` → prüft jetzt `has_battery` (EV + PHEV sehen Lade-Sensoren)
+- `condition="combustion"` → prüft jetzt `has_combustion` (Verbrenner + PHEV sehen Tank/Öl)
+
+**Fallback:** Wenn `vehicle.type = None` → Flags werden aus den Drive-Typen abgeleitet.
+
+**Autor:** @Prash1407
+
+#### sensor.py: Runtime-Crash `is_electric` nicht definiert
+- `is_electric` wurde nach Refactoring nicht mehr gesetzt → NameError beim Starten
+- Behoben: `has_battery` und `has_combustion` direkt aus vehicle-Dict
+  **Autor:** @Prash1407
+
+#### Lade-Reichweite/h — Einheit aus HA-Konstante
+- `native_unit_of_measurement=UnitOfSpeed.KILOMETERS_PER_HOUR` statt hartcodiertem `"km/h"`
+- `native_unit_of_measurement=UnitOfPower.KILO_WATT` für Ladeleistung statt `"kW"`
+  **Autor:** @Prash1407
+
+### Hinzugefügt
+
+#### 7 neue Tests für EV/PHEV/Verbrenner-Logik (42 Tests gesamt)
+- Pure EV: alle Flags korrekt, kein Tankstand
+- PHEV: `has_battery=True` UND `has_combustion=True`, beides anzeigen
+- Verbrenner: `has_battery=False`, kein Ladestand
+- Fallback aus Drives wenn `vehicle.type = None`
+  **Autor:** @Prash1407
+
+## [0.3.2] - 2026-04-11
+
+### Hinzugefügt
+
+#### Tests: 35 Unit-Tests (vorher 18)
+17 neue Tests für alle Features seit v0.2.0:
+- `charging_power_kw` + `charging_rate_kmh` Extraktion
+- `doors_individual` — individuelle Türen inkl. Edge-Cases
+- `_async_push_update(success=False)` — stale-data-Fix bestätigt
+- `_tokenstore_path()` — Pfad korrekt + eindeutig pro Entry
+- `force_enable_access` — Flag im coordinator-Code verifiziert
+- `_device_name()` — alle Naming-Cases (Marke+Modell, Fallback VIN)
+  **Autor:** @Prash1407
+
+## [0.3.1] - 2026-04-11
+
+### Behoben
+
+#### Ladegeschwindigkeit-Sensor falsch benannt
+- **Vorher:** Name "Ladegeschwindigkeit", Einheit "km/h" → klang nach Fahrzeuggeschwindigkeit
+- **Nachher:** Name "Lade-Reichweite pro Stunde", Einheit "km/h"
+  Bedeutung: Wie viele km Reichweite werden pro Stunde geladen (z.B. 120 km/h = nach 1h Laden hat man 120 km mehr)
+  Kein `SensorDeviceClass.SPEED` — das wäre falsch (Fahrzeuggeschwindigkeit)
+  **Autor:** @Prash1407
+
+### Hinzugefügt
+
+#### HA Repair-Issues für Auth-Fehler (2FA, T&C, gesperrter Account)
+Statt stiller Fehler im Log erscheint jetzt eine sichtbare Meldung im HA UI
+unter **Einstellungen → System → Reparaturen** mit konkreter Handlungsanweisung.
+
+| Fehler | Reparatur-Anleitung |
+|---|---|
+| `two_factor_required` | App öffnen, einmalig 2FA bestätigen, HA neu starten |
+| `terms_and_conditions` | App öffnen, T&C akzeptieren |
+| `marketing_consent` | App → Profil → Zustimmungen |
+| `too_many_requests` | 15 Minuten warten, Intervall erhöhen |
+| `auth_failed` | Zugangsdaten prüfen, neu konfigurieren |
+
+Nach erfolgreichem Login werden alle alten Repair-Issues automatisch gelöscht.
+  **Autor:** @Prash1407
+  **Referenz Issue:** #7 (2FA upstream), myskoda#976, myskoda#934
+
+#### Warum 2FA nicht vollständig automatisierbar ist
+Der CarConnectivity-Connector hat keinen OTP-Eingabe-Schritt im Auth-Flow.
+VW/Audi sendet den Code per E-Mail — das kann HA nicht abfangen.
+Der **Token-Persistenz-Workaround** (seit v0.2.0) funktioniert so:
+1. Einmal manuell in der App 2FA bestätigen
+2. Tokens werden in `.storage/vag_connect_tokens_*.json` gespeichert
+3. Bei HA-Neustarts werden gespeicherte Tokens wiederverwendet → kein Re-Auth
+
+## [0.3.0] - 2026-04-11
+
+Schließt Issues #1, #2, #3, #4, #6 aus der Ökosystem-Analyse.
+
+### Hinzugefügt
+
+#### Ladeleistung + Ladegeschwindigkeit (Issue #2)
+- `sensor.*_ladeleistung` — aktuelle Ladeleistung in kW
+- `sensor.*_ladegeschwindigkeit` — Ladegeschwindigkeit in km/h
+- Datenquelle: `vehicle.charging.power.value` + `vehicle.charging.rate.value`
+  **Autor:** @Prash1407
+  **Quell-Issue:** #2
+
+#### Individuelle Tür-Sensoren (Issue #3)
+- Dynamische `binary_sensor.*_tur_vorne_links/rechts/hinten_links/rechts` etc.
+- `binary_sensor.*_kofferraum` + `binary_sensor.*_motorhaube`
+- Werden automatisch angelegt basierend auf `vehicle.doors.doors`-Dict
+- Deutsch: frontLeft, frontRight, rearLeft, rearRight, trunk, bonnet
+  **Autor:** @Prash1407
+  **Quell-Issue:** #3
+
+#### Sitzheizung Switch (Issue #6)
+- `switch.*_sitzheizung` — Sitzheizung Ein/Aus
+- Nutzt `vehicle.climatization.settings.seat_heating`
+  **Autor:** @Prash1407
+  **Quell-Issue:** #6
+
+#### force_enable_access Option (Issue #1)
+- Neues optionales Feld im Config-Flow: "Türen erzwingen"
+- Für ältere VW/Audi-Modelle die keine 'access' Capability melden
+- Wird als `force_enable_access: true` an den CC-Connector weitergegeben
+  **Autor:** @Prash1407
+  **Quell-Issue:** #1
+  **Referenz:** CarConnectivity-connector-volkswagen force_enable_access Option
+
+### Behoben
+
+#### Stale Data bei VAG-Server-Fehler (Issue #4)
+- Wenn der VAG-Server nicht erreichbar ist oder einen Fehler zurückgibt,
+  werden Entities jetzt als `unavailable` markiert statt veraltete Werte zu zeigen
+- `_on_cc_update` übergibt `success=False` bei Exception
+- `_async_push_update(data, success=False)` setzt `last_update_success=False`
+  und ruft `async_update_listeners()` auf — HA rendert Entities als unavailable
+  **Autor:** @Prash1407
+  **Quell-Issue:** #4
+  **Referenz:** myskoda#731 Wrong/old sensor info when server unavailable
 
 ## [0.2.2] - 2026-04-11
 
@@ -124,6 +487,7 @@ Bei zwei gleichen Modellen (z.B. Firmenwagen + Privat):
 - Audi + Skoda: Integration zweimal hinzufügen (je ein Config Entry)
 - Jedes Fahrzeug = ein HA-Gerät mit eigener VIN als Identifier (stabil)
   **Autor:** @Prash1407
+
 ## [0.2.1] - 2026-04-11
 
 Hotfix: fehlende Service-Registrierungen nach Cross-Check entdeckt.
@@ -137,6 +501,7 @@ Hotfix: fehlende Service-Registrierungen nach Cross-Check entdeckt.
 - services.yaml fehlten die drei neuen Einträge
   **Entdeckt durch:** automatisierten Cross-Check (Coordinator-Actions vs. Services)
   **Autor:** @Prash1407
+
 ## [0.2.0] - 2026-04-11
 
 Features aus Issue-Analyse des gesamten VAG-HA-Ökosystems.
@@ -321,368 +686,3 @@ Jede Version folgt diesem Ablauf:
    - git push origin vX.Y.Z
    → GitHub Actions release.yml erstellt automatisch ZIP + Release
 ```
-
-
-
-
-
-
-
-
-
-
-## [0.4.6] - 2026-04-11
-
-### Hinzugefügt
-- Logo: Echtes VAG Connect Logo (VAG Connected, AI-generiert, Gemini-Wasserzeichen entfernt)
-  icon.png (256×256), logo.png (512×512), icon@2x.png (512×512)
-
-### Behoben
-- `set_target_soc` und `set_climatisation_temperature` waren in services.yaml dokumentiert
-  aber nicht in `_register_services()` registriert — jetzt vollständig verknüpft
-- strings.json: 21 → 87 Keys (synchron mit de.json)
-- CHANGELOG fehlte für Versionen 0.4.3–0.4.5
-
----
-
-## [0.4.5] - 2026-04-11
-
-### Geändert
-- icon.png durch echtes AI-generiertes Logo ersetzt
-
----
-
-## [0.4.4] - 2026-04-11
-
-### Hinzugefügt
-- Logo/Icon erstellt (Pillow, Platzhalter)
-- strings.json auf 87 Keys synchronisiert
-- services.yaml: set_target_soc + set_climatisation_temperature ergänzt
-- README.en.md vollständig aktualisiert
-- README.fr/nl/es/pl/cs/sv aktualisiert
-
----
-
-## [0.4.3] - 2026-04-11
-
-### Behoben
-- Alle 6 Sprachen (FR/NL/ES/PL/CS/SV): von 10 auf 87 Keys aktualisiert
-- README: 'separate Geräte' → 'separate Fahrzeuge'
-- README EV/PHEV: konkrete Modelle aufgelistet
-
----
-## [0.4.2] - 2026-04-11
-
-### Hinzugefügt
-
-#### Metrisch / Imperial — vollständige Einheitenunterstützung
-
-VAG Connect nutzt HAs eingebautes Einheitensystem. Einstellung:
-**Einstellungen → System → Allgemein → Einheitensystem**
-
-| Sensor | Metrisch | Imperial |
-|---|---|---|
-| Reichweite | km | mi |
-| Kilometerstand | km | mi |
-| Nächste Inspektion | km | mi |
-| Nächster Ölwechsel | km | mi |
-| Außentemperatur | °C | °F |
-| Zieltemperatur | °C | °F |
-| Akkutemperatur | °C | °F |
-| **Ladegeschwindigkeit** | km/h | mph |
-
-Kein eigenes Konfigurations-Feld nötig — HA übernimmt die Umrechnung automatisch
-für alle Entities mit korrektem `device_class`.
-
-**Neu:** `charging_rate_kmh` bekommt `device_class=SensorDeviceClass.SPEED` →
-automatische km/h → mph Konvertierung bei imperialem Einheitensystem.
-
-Alle anderen Sensoren (Leistung kW, Prozent, kWh, Grad) haben keine imperiale
-Entsprechung — bleiben unverändert.
-  **Autor:** @Prash1407
-
-### Hinweis
-
-**`sensor.*_ladesaule`** — Entity-IDs enthalten grundsätzlich keine Umlaute
-(ä → a, ö → o, ü → u) — das ist normales HA-Verhalten bei allen Integrationen.
-Der Anzeigename in HA bleibt korrekt: **Ladesäule**.
-## [0.4.1] - 2026-04-11
-
-### Sprachbereinigung — Umlaute, Terminologie, Ton
-
-#### README.md
-- Alle ae/oe/ue-Substitute durch echte Umlaute ersetzt: Türen, Außentemperatur,
-  Tankfüllstand, Verfügbarkeit, fällig, Ölstand, Ölservice, Unterstützte, usw.
-- Feature-Tabellen auf aktuellen Stand 0.4.0 gebracht
-- Ton: sachlich, direkt, für normale Nutzer verständlich
-  **Autor:** @Prash1407
-
-#### Sensor-Namen
-- `Batterieladestand` → `Akkustand` (wie es Nutzer kennen — z.B. Handy-Akku)
-- `Ladziel` → `Ladeziel` (Tippfehler behoben)
-- `Tankfüllstand` → `Tankstand` (kürzer, genauso klar)
-- `Ladestatus` → `Ladevorgang` (beschreibt was es ist)
-- `Steckerstatus` → `Ladestecker` (konkreter)
-- `Klimatisierungsstatus` → `Klimatisierung` (kein überflüssiges -status)
-- `Fahrzeugstatus` → `Fahrzeugzustand` (präziser)
-- `Verbindungsstatus` → `Verbindung` (kürzer)
-- `Inspektion fällig in` → `Nächste Inspektion`
-- `Ölservice fällig in` → `Nächster Ölwechsel`
-- `Ölservicedatum` → `Ölwechseldatum`
-- `Parkadresse` → `Standort` (natürlicher)
-- `Firmware` → `Firmware-Version`
-  **Autor:** @Prash1407
-
-#### Binary Sensor Namen
-- `Fährt` → `In Fahrt` (natürlicheres Deutsch)
-- `Ladekabel verbunden` → `Ladekabel steckt`
-- `Klimatisierung aktiv` → `Klimatisierung läuft`
-- `Online` → `Erreichbar` (was es für den Nutzer bedeutet)
-  **Autor:** @Prash1407
-
-#### Switch-Namen
-- `Stecker Auto-Entsperren` → `Stecker nach Laden entsperren`
-- `Fensterheizung` → `Scheibenheizung` (automotive Standard-Begriff)
-  **Autor:** @Prash1407
-
-#### Translations de.json + en.json
-- Vollständig aktualisiert auf alle 0.4.0-Features (31 neue Entity-Keys)
-- Repair-Issues: natürlicheres Deutsch, klare Handlungsanweisungen
-- en.json: automotive Standard-Englisch (Battery Level statt State of Charge)
-  **Autor:** @Prash1407
-## [0.4.0] - 2026-04-11
-
-Features die kein anderes VAG Home Assistant Plugin hat.
-
-### Hinzugefügt
-
-#### Fahrzeugstatus (vehicle.state + connection_state)
-- `sensor.*_fahrzeugstatus` — PARKED / DRIVING / IGNITION_ON / OFFLINE
-- `sensor.*_verbindungsstatus` — ONLINE / REACHABLE / OFFLINE
-- `binary_sensor.*_fahrt` — True wenn Fahrzeug fährt (DRIVING oder IGNITION_ON)
-- `binary_sensor.*_online` — True wenn Fahrzeug erreichbar
-  **Einzigartig:** Kein anderes VAG-HA-Plugin zeigt ob das Auto fährt.
-  Nutzbar für Automationen: *„Wenn Auto fährt → Heizung runterdrehen"*
-  **Autor:** @Prash1407
-
-#### Parkadresse als Text (position.location)
-- `sensor.*_parkadresse` — vollständige Adresse direkt von der API (kein Geocoding)
-- `sensor.*_parkstadt` — Stadt wo das Fahrzeug steht
-  **Einzigartig:** myskoda Issue #824 offen seit 2025, nie implementiert.
-  **Autor:** @Prash1407
-
-#### Fahrtrichtung (position.heading)
-- `sensor.*_fahrtrichtung` — 0–360°, Einheit °
-  Nutzbar für Karten-Dashboards mit Richtungspfeil.
-  **Autor:** @Prash1407
-
-#### Akkutemperatur + Kapazität (battery.temperature, total_capacity)
-- `sensor.*_akkutemperatur` — °C (erklärt Reichweitenverlust im Winter)
-- `sensor.*_akkukapazitat` — kWh (für Degradations-Monitoring)
-  **Einzigartig:** Tesla-Integration hat das — nie bei VAG gesehen.
-  **Autor:** @Prash1407
-
-#### Ladeende-ETA (charging.estimated_date_reached)
-- `sensor.*_ladeende` — Timestamp wann Akku voll (z.B. „heute 22:47 Uhr")
-  Nutzbar für: *„Benachrichtige mich wenn Auto voll geladen"*
-  **Einzigartig:** Alle anderen zeigen nur %-Stand, niemand den Zeitpunkt.
-  **Autor:** @Prash1407
-
-#### Ladetyp AC/DC (charging.type)
-- `sensor.*_ladetyp` — OFF / AC / DC
-  **Autor:** @Prash1407
-
-#### Ladesäulen-Info (charging.charging_station)
-- `sensor.*_ladestaule` — Name der Ladesäule (z.B. „IONITY A9")
-- `sensor.*_ladestaule_adresse` — Adresse
-- `sensor.*_ladestaule_max_leistung` — Max-kW
-- `sensor.*_ladestaule_betreiber` — Betreibername
-  **Einzigartig:** evcc zeigt das — kein HA-Plugin bisher.
-  **Autor:** @Prash1407
-
-#### Auto-Unlock Switch (charging.settings.auto_unlock)
-- `switch.*_stecker_auto_entsperren` — Stecker nach Ladeende automatisch öffnen
-  **Einzigartig:** VW-App kann das — kein HA-Plugin bisher.
-  **Autor:** @Prash1407
-
-#### Max Ladestrom Slider (charging.settings.maximum_current)
-- `number.*_max_ladestrom` — 6–32A, Slider in HA
-  Für schwache Hausinstallationen oder gesteuertes Laden.
-  **Einzigartig:** Kein anderes VAG-HA-Plugin.
-  **Autor:** @Prash1407
-
-#### Stecker-Verriegelung (charging.connector.lock_state)
-- `binary_sensor.*_stecker_verriegelt` — True wenn Kabel mechanisch gesperrt
-  **Autor:** @Prash1407
-
-#### Kennzeichen + Firmware (vehicle.license_plate, software.version)
-- `sensor.*_kennzeichen` — Kennzeichen
-- `sensor.*_firmware` — Firmware-Version für OTA-Tracking
-  **Autor:** @Prash1407
-
-### Tests
-- 57 Unit-Tests (vorher 42) — 15 neue Tests für alle Features
-  **Autor:** @Prash1407
-## [0.3.4] - 2026-04-11
-
-### Codebereinigung — kein Funktionsverlust
-
-#### Kritische Bugs behoben
-- `number.py`: `is_electric` → `has_battery` — PHEV-Fahrzeuge bekamen keine Number-Entities
-- `_run_subsystem_command` entfernt — war identisch zu `_run_command`, beide hatten
-  unterschiedliche sub_maps; jetzt eine einzige Methode mit vollständiger Map
-  (doors, charging, climatization, lights, **window_heatings**)
-
-#### Totes Gewicht entfernt
-- `const.py`: 33 ungenutzte Konstanten gelöscht (PATH_*, ICON_*, REGIONS, CONF_REGION)
-  — Reste aus alter API-Pfad-Architektur, nie von Entities verwendet
-- `coordinator._extract()`: `nickname`-Key entfernt — gesetzt aber nie gelesen
-- `from __future__ import annotations`: aus allen 13 Python-Dateien entfernt
-  (Python 3.12 unterstützt native Union-Typen, kein Compat-Import nötig)
-
-#### Konsistenz
-- `CONF_FORCE_ACCESS`: war direkt als String `"force_enable_access"` im Coordinator,
-  jetzt korrekt aus const.py importiert
-- F821 Ruff: Forward-Reference `VagConnectOptionsFlow` mit String-Annotation gelöst
-
-#### Zahlen
-- const.py: 70 → 20 Zeilen (-71%)
-- coordinator.py: -30 Zeilen (redundante Methode)
-- Gesamt: ~80 Zeilen weniger bei gleicher Funktionalität
-  **Autor:** @Prash1407
-## [0.3.3] - 2026-04-11
-
-### Behoben
-
-#### EV / PHEV / Verbrenner-Logik komplett überarbeitet
-Das `is_electric`-Flag war zu simpel und führte zu falschen Sensor-Zuordnungen bei PHEVs.
-
-**Neue Flags im Coordinator:**
-| Flag | Wahr für | Bedeutung |
-|---|---|---|
-| `is_electric` | Nur reine EVs | `vehicle.type == ELECTRIC` |
-| `has_battery` | EV + PHEV | Hat Akku und Lader |
-| `is_hybrid` | PHEV | `vehicle.type == HYBRID` |
-| `has_combustion` | Verbrenner + PHEV | Hat Verbrennungsmotor |
-
-**Sensor-Conditions:**
-- `condition="electric"` → prüft jetzt `has_battery` (EV + PHEV sehen Lade-Sensoren)
-- `condition="combustion"` → prüft jetzt `has_combustion` (Verbrenner + PHEV sehen Tank/Öl)
-
-**Fallback:** Wenn `vehicle.type = None` → Flags werden aus den Drive-Typen abgeleitet.
-
-**Autor:** @Prash1407
-
-#### sensor.py: Runtime-Crash `is_electric` nicht definiert
-- `is_electric` wurde nach Refactoring nicht mehr gesetzt → NameError beim Starten
-- Behoben: `has_battery` und `has_combustion` direkt aus vehicle-Dict
-  **Autor:** @Prash1407
-
-#### Lade-Reichweite/h — Einheit aus HA-Konstante
-- `native_unit_of_measurement=UnitOfSpeed.KILOMETERS_PER_HOUR` statt hartcodiertem `"km/h"`
-- `native_unit_of_measurement=UnitOfPower.KILO_WATT` für Ladeleistung statt `"kW"`
-  **Autor:** @Prash1407
-
-### Hinzugefügt
-
-#### 7 neue Tests für EV/PHEV/Verbrenner-Logik (42 Tests gesamt)
-- Pure EV: alle Flags korrekt, kein Tankstand
-- PHEV: `has_battery=True` UND `has_combustion=True`, beides anzeigen
-- Verbrenner: `has_battery=False`, kein Ladestand
-- Fallback aus Drives wenn `vehicle.type = None`
-  **Autor:** @Prash1407
-## [0.3.2] - 2026-04-11
-
-### Hinzugefügt
-
-#### Tests: 35 Unit-Tests (vorher 18)
-17 neue Tests für alle Features seit v0.2.0:
-- `charging_power_kw` + `charging_rate_kmh` Extraktion
-- `doors_individual` — individuelle Türen inkl. Edge-Cases
-- `_async_push_update(success=False)` — stale-data-Fix bestätigt
-- `_tokenstore_path()` — Pfad korrekt + eindeutig pro Entry
-- `force_enable_access` — Flag im coordinator-Code verifiziert
-- `_device_name()` — alle Naming-Cases (Marke+Modell, Fallback VIN)
-  **Autor:** @Prash1407
-## [0.3.1] - 2026-04-11
-
-### Behoben
-
-#### Ladegeschwindigkeit-Sensor falsch benannt
-- **Vorher:** Name "Ladegeschwindigkeit", Einheit "km/h" → klang nach Fahrzeuggeschwindigkeit
-- **Nachher:** Name "Lade-Reichweite pro Stunde", Einheit "km/h"
-  Bedeutung: Wie viele km Reichweite werden pro Stunde geladen (z.B. 120 km/h = nach 1h Laden hat man 120 km mehr)
-  Kein `SensorDeviceClass.SPEED` — das wäre falsch (Fahrzeuggeschwindigkeit)
-  **Autor:** @Prash1407
-
-### Hinzugefügt
-
-#### HA Repair-Issues für Auth-Fehler (2FA, T&C, gesperrter Account)
-Statt stiller Fehler im Log erscheint jetzt eine sichtbare Meldung im HA UI
-unter **Einstellungen → System → Reparaturen** mit konkreter Handlungsanweisung.
-
-| Fehler | Reparatur-Anleitung |
-|---|---|
-| `two_factor_required` | App öffnen, einmalig 2FA bestätigen, HA neu starten |
-| `terms_and_conditions` | App öffnen, T&C akzeptieren |
-| `marketing_consent` | App → Profil → Zustimmungen |
-| `too_many_requests` | 15 Minuten warten, Intervall erhöhen |
-| `auth_failed` | Zugangsdaten prüfen, neu konfigurieren |
-
-Nach erfolgreichem Login werden alle alten Repair-Issues automatisch gelöscht.
-  **Autor:** @Prash1407
-  **Referenz Issue:** #7 (2FA upstream), myskoda#976, myskoda#934
-
-#### Warum 2FA nicht vollständig automatisierbar ist
-Der CarConnectivity-Connector hat keinen OTP-Eingabe-Schritt im Auth-Flow.
-VW/Audi sendet den Code per E-Mail — das kann HA nicht abfangen.
-Der **Token-Persistenz-Workaround** (seit v0.2.0) funktioniert so:
-1. Einmal manuell in der App 2FA bestätigen
-2. Tokens werden in `.storage/vag_connect_tokens_*.json` gespeichert
-3. Bei HA-Neustarts werden gespeicherte Tokens wiederverwendet → kein Re-Auth
-## [0.3.0] - 2026-04-11
-
-Schließt Issues #1, #2, #3, #4, #6 aus der Ökosystem-Analyse.
-
-### Hinzugefügt
-
-#### Ladeleistung + Ladegeschwindigkeit (Issue #2)
-- `sensor.*_ladeleistung` — aktuelle Ladeleistung in kW
-- `sensor.*_ladegeschwindigkeit` — Ladegeschwindigkeit in km/h
-- Datenquelle: `vehicle.charging.power.value` + `vehicle.charging.rate.value`
-  **Autor:** @Prash1407
-  **Quell-Issue:** #2
-
-#### Individuelle Tür-Sensoren (Issue #3)
-- Dynamische `binary_sensor.*_tur_vorne_links/rechts/hinten_links/rechts` etc.
-- `binary_sensor.*_kofferraum` + `binary_sensor.*_motorhaube`
-- Werden automatisch angelegt basierend auf `vehicle.doors.doors`-Dict
-- Deutsch: frontLeft, frontRight, rearLeft, rearRight, trunk, bonnet
-  **Autor:** @Prash1407
-  **Quell-Issue:** #3
-
-#### Sitzheizung Switch (Issue #6)
-- `switch.*_sitzheizung` — Sitzheizung Ein/Aus
-- Nutzt `vehicle.climatization.settings.seat_heating`
-  **Autor:** @Prash1407
-  **Quell-Issue:** #6
-
-#### force_enable_access Option (Issue #1)
-- Neues optionales Feld im Config-Flow: "Türen erzwingen"
-- Für ältere VW/Audi-Modelle die keine 'access' Capability melden
-- Wird als `force_enable_access: true` an den CC-Connector weitergegeben
-  **Autor:** @Prash1407
-  **Quell-Issue:** #1
-  **Referenz:** CarConnectivity-connector-volkswagen force_enable_access Option
-
-### Behoben
-
-#### Stale Data bei VAG-Server-Fehler (Issue #4)
-- Wenn der VAG-Server nicht erreichbar ist oder einen Fehler zurückgibt,
-  werden Entities jetzt als `unavailable` markiert statt veraltete Werte zu zeigen
-- `_on_cc_update` übergibt `success=False` bei Exception
-- `_async_push_update(data, success=False)` setzt `last_update_success=False`
-  und ruft `async_update_listeners()` auf — HA rendert Entities als unavailable
-  **Autor:** @Prash1407
-  **Quell-Issue:** #4
-  **Referenz:** myskoda#731 Wrong/old sensor info when server unavailable
