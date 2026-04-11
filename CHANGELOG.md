@@ -263,6 +263,47 @@ Jede Version folgt diesem Ablauf:
 
 
 
+
+## [0.4.6] - 2026-04-11
+
+### Hinzugefügt
+- Logo: Echtes VAG Connect Logo (VAG Connected, AI-generiert, Gemini-Wasserzeichen entfernt)
+  icon.png (256×256), logo.png (512×512), icon@2x.png (512×512)
+
+### Behoben
+- `set_target_soc` und `set_climatisation_temperature` waren in services.yaml dokumentiert
+  aber nicht in `_register_services()` registriert — jetzt vollständig verknüpft
+- strings.json: 21 → 87 Keys (synchron mit de.json)
+- CHANGELOG fehlte für Versionen 0.4.3–0.4.5
+
+---
+
+## [0.4.5] - 2026-04-11
+
+### Geändert
+- icon.png durch echtes AI-generiertes Logo ersetzt
+
+---
+
+## [0.4.4] - 2026-04-11
+
+### Hinzugefügt
+- Logo/Icon erstellt (Pillow, Platzhalter)
+- strings.json auf 87 Keys synchronisiert
+- services.yaml: set_target_soc + set_climatisation_temperature ergänzt
+- README.en.md vollständig aktualisiert
+- README.fr/nl/es/pl/cs/sv aktualisiert
+
+---
+
+## [0.4.3] - 2026-04-11
+
+### Behoben
+- Alle 6 Sprachen (FR/NL/ES/PL/CS/SV): von 10 auf 87 Keys aktualisiert
+- README: 'separate Geräte' → 'separate Fahrzeuge'
+- README EV/PHEV: konkrete Modelle aufgelistet
+
+---
 ## [0.4.2] - 2026-04-11
 
 ### Hinzugefügt

@@ -151,6 +151,14 @@ def _register_services(hass: HomeAssistant) -> None:
         if c := _get_coordinator(hass, call.data["vin"]):
             await c.async_wake_vehicle(call.data["vin"])
 
+    async def _handle_set_target_soc(call: ServiceCall) -> None:
+        if c := _get_coordinator(hass, call.data["vin"]):
+            await c.async_set_target_soc(call.data["vin"], int(call.data["target"]))
+
+    async def _handle_set_clim_temp(call: ServiceCall) -> None:
+        if c := _get_coordinator(hass, call.data["vin"]):
+            await c.async_set_climatisation_temperature(call.data["vin"], float(call.data["temperature"]))
+
     async def _handle_flash(call: ServiceCall) -> None:
         if c := _get_coordinator(hass, call.data["vin"]):
             await c.async_flash_lights(call.data["vin"])
@@ -170,6 +178,8 @@ def _register_services(hass: HomeAssistant) -> None:
         ("stop_window_heating",   _handle_stop_window,     SERVICE_VIN_SCHEMA),
         ("wake_vehicle",          _handle_wake,            SERVICE_VIN_SCHEMA),
         ("flash_lights",          _handle_flash,           SERVICE_VIN_SCHEMA),
+        ("set_target_soc",        _handle_set_target_soc,  vol.Schema({vol.Required("vin"): str, vol.Required("target"): vol.All(vol.Coerce(int), vol.Range(20, 100))})),
+        ("set_climatisation_temperature", _handle_set_clim_temp, vol.Schema({vol.Required("vin"): str, vol.Required("temperature"): vol.All(vol.Coerce(float), vol.Range(16, 30))})),
         ("refresh_vehicle",       _handle_refresh,         vol.Schema({})),
     ]:
         hass.services.async_register(DOMAIN, name, handler, schema)
