@@ -13,9 +13,32 @@
           "force_enable_access": "Türzustand erzwingen (für ältere Modelle)"
         },
         "data_description": {
-          "spin": "Wird für Türverriegelung und einige andere Aktionen benötigt. Kann leer gelassen werden.",
-          "scan_interval": "Mindestens 5 Minuten — zu häufige Abfragen können zur Account-Sperrung führen.",
-          "force_enable_access": "Aktivieren, wenn Tür- und Fensterstatus nicht angezeigt werden, obwohl sie in der App sichtbar sind."
+          "brand": "Wähle deine Fahrzeugmarke.",
+          "username": "Die E-Mail-Adresse aus der Hersteller-App (myAudi, WeConnect, etc.).",
+          "password": "Das Passwort aus der App.",
+          "spin": "Nur erforderlich für Verriegelung. Steht in der App unter Sicherheit → S-PIN.",
+          "scan_interval": "Wie oft CC im Hintergrund die API abfragt (Minuten). Standard: 5. Minimum: 3.",
+          "force_enable_access": "Für ältere Fahrzeuge die den 'access' Capability-Check nicht bestehen."
+        }
+      },
+      "reauth_confirm": {
+        "title": "Erneut anmelden",
+        "description": "Bitte gib dein Passwort für {brand} ({username}) erneut ein.",
+        "data": {
+          "password": "Passwort",
+          "spin": "S-PIN (optional)"
+        }
+      },
+      "reconfigure": {
+        "title": "VAG Connect neu konfigurieren",
+        "description": "Ändere Zugangsdaten oder Einstellungen ohne die Integration zu entfernen.",
+        "data": {
+          "brand": "Fahrzeugmarke",
+          "username": "E-Mail",
+          "password": "Neues Passwort",
+          "spin": "S-PIN",
+          "scan_interval": "Abfrageintervall (Minuten)",
+          "force_enable_access": "Zugriff erzwingen"
         }
       }
     },
@@ -30,7 +53,9 @@
       "invalid_credentials": "E-Mail-Adresse oder Passwort falsch."
     },
     "abort": {
-      "already_configured": "Dieses Konto ist bereits eingerichtet."
+      "already_configured": "Dieses Konto ist bereits eingerichtet.",
+      "reauth_successful": "Erneute Anmeldung erfolgreich.",
+      "reconfigure_successful": "Konfiguration erfolgreich aktualisiert."
     }
   },
   "options": {
@@ -278,6 +303,11 @@
     "auth_failed": {
       "title": "Anmeldung fehlgeschlagen — {brand}",
       "description": "Die Verbindung zu {brand} ({username}) ist fehlgeschlagen.\n\nEinstellungen → Geräte & Dienste → VAG Connect → ⋮ → Neu konfigurieren."
+    }
+  },
+  "exceptions": {
+    "vehicle_not_found": {
+      "message": "Fahrzeug mit VIN '{vin}' nicht gefunden. Prüfe ob die Integration gestartet ist."
     }
   }
 }

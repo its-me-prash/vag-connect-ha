@@ -17,6 +17,26 @@
           "scan_interval": "Minst 5 minuter — för frekventa förfrågningar kan leda till kontosuspension.",
           "force_enable_access": "Aktivera om dörrstatus inte visas trots att det syns i appen."
         }
+      },
+      "reauth_confirm": {
+        "title": "Autentisera igen",
+        "description": "Ange ditt lösenord för {brand} ({username}) igen.",
+        "data": {
+          "password": "Lösenord",
+          "spin": "S-PIN (valfritt, krävs för dörrlåsning)"
+        }
+      },
+      "reconfigure": {
+        "title": "Konfigurera om VAG Connect",
+        "description": "Ändra inloggningsuppgifter utan att ta bort integrationen.",
+        "data": {
+          "brand": "Fordonsvarumärke",
+          "username": "E-postadress",
+          "password": "Lösenord",
+          "spin": "S-PIN (valfritt, krävs för dörrlåsning)",
+          "scan_interval": "Uppdateringsintervall (minuter)",
+          "force_enable_access": "Tvinga dörråtkomst (äldre modeller)"
+        }
       }
     },
     "error": {
@@ -30,7 +50,9 @@
       "invalid_credentials": "Felaktig e-postadress eller lösenord."
     },
     "abort": {
-      "already_configured": "Det här kontot är redan konfigurerat."
+      "already_configured": "Det här kontot är redan konfigurerat.",
+      "reauth_successful": "Omautentisering lyckades.",
+      "reconfigure_successful": "Konfigurationen uppdaterades."
     }
   },
   "options": {
@@ -278,6 +300,11 @@
     "auth_failed": {
       "title": "Inloggning misslyckades — {brand}",
       "description": "Inställningar → Enheter och tjänster → VAG Connect → ⋮ → Omkonfigurera."
+    }
+  },
+  "exceptions": {
+    "vehicle_not_found": {
+      "message": "Fordon med VIN '{vin}' hittades inte."
     }
   }
 }

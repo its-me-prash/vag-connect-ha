@@ -10,7 +10,6 @@ from homeassistant.const import UnitOfTemperature
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import DOMAIN
 from .coordinator import VagConnectCoordinator
 from .entity_base import VagConnectEntity
 
@@ -28,7 +27,7 @@ async def async_setup_entry(
     entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    coordinator: VagConnectCoordinator = hass.data[DOMAIN][entry.entry_id]
+    coordinator: VagConnectCoordinator = entry.runtime_data
     async_add_entities(
         [VagClimate(coordinator, vin) for vin in coordinator.vehicles]
     )

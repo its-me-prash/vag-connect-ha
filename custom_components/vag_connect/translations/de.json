@@ -17,6 +17,26 @@
           "scan_interval": "Mindestens 5 Minuten — zu häufige Abfragen können zur Account-Sperrung führen.",
           "force_enable_access": "Aktivieren, wenn Tür- und Fensterstatus nicht angezeigt werden, obwohl sie in der App sichtbar sind."
         }
+      },
+      "reauth_confirm": {
+        "title": "Erneut anmelden",
+        "description": "Bitte gib dein Passwort für {brand} ({username}) erneut ein.",
+        "data": {
+          "password": "Passwort",
+          "spin": "S-PIN (optional, für Türverriegelung)"
+        }
+      },
+      "reconfigure": {
+        "title": "VAG Connect neu konfigurieren",
+        "description": "Ändere Zugangsdaten oder Einstellungen ohne die Integration zu entfernen.",
+        "data": {
+          "brand": "Fahrzeugmarke",
+          "username": "E-Mail-Adresse",
+          "password": "Passwort",
+          "spin": "S-PIN (optional, für Türverriegelung)",
+          "scan_interval": "Aktualisierungsintervall (Minuten)",
+          "force_enable_access": "Türzustand erzwingen (für ältere Modelle)"
+        }
       }
     },
     "error": {
@@ -30,7 +50,9 @@
       "invalid_credentials": "E-Mail-Adresse oder Passwort falsch."
     },
     "abort": {
-      "already_configured": "Dieses Konto ist bereits eingerichtet."
+      "already_configured": "Dieses Konto ist bereits eingerichtet.",
+      "reauth_successful": "Erneute Anmeldung erfolgreich.",
+      "reconfigure_successful": "Konfiguration erfolgreich aktualisiert."
     }
   },
   "options": {
@@ -278,6 +300,11 @@
     "auth_failed": {
       "title": "Anmeldung fehlgeschlagen — {brand}",
       "description": "Die Verbindung zu {brand} ({username}) ist fehlgeschlagen.\n\nEinstellungen → Geräte & Dienste → VAG Connect → ⋮ → Neu konfigurieren."
+    }
+  },
+  "exceptions": {
+    "vehicle_not_found": {
+      "message": "Fahrzeug mit VIN '{vin}' nicht gefunden. Prüfe ob die Integration gestartet ist."
     }
   }
 }

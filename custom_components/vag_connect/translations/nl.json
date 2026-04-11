@@ -17,6 +17,26 @@
           "scan_interval": "Minimaal 5 minuten — te frequente verzoeken kunnen leiden tot blokkering.",
           "force_enable_access": "Inschakelen als deurstatus ontbreekt maar zichtbaar is in de app."
         }
+      },
+      "reauth_confirm": {
+        "title": "Opnieuw authenticeren",
+        "description": "Voer uw wachtwoord opnieuw in voor {brand} ({username}).",
+        "data": {
+          "password": "Wachtwoord",
+          "spin": "S-PIN (optioneel, vereist voor vergrendeling)"
+        }
+      },
+      "reconfigure": {
+        "title": "VAG Connect opnieuw configureren",
+        "description": "Wijzig inloggegevens of instellingen zonder de integratie te verwijderen.",
+        "data": {
+          "brand": "Voertuigmerk",
+          "username": "E-mailadres",
+          "password": "Wachtwoord",
+          "spin": "S-PIN (optioneel, vereist voor vergrendeling)",
+          "scan_interval": "Bijwerkinterval (minuten)",
+          "force_enable_access": "Deurtoegang forceren (oudere modellen)"
+        }
       }
     },
     "error": {
@@ -30,7 +50,9 @@
       "invalid_credentials": "E-mailadres of wachtwoord onjuist."
     },
     "abort": {
-      "already_configured": "Dit account is al geconfigureerd."
+      "already_configured": "Dit account is al geconfigureerd.",
+      "reauth_successful": "Herauthenticatie geslaagd.",
+      "reconfigure_successful": "Configuratie succesvol bijgewerkt."
     }
   },
   "options": {
@@ -278,6 +300,11 @@
     "auth_failed": {
       "title": "Aanmelden mislukt — {brand}",
       "description": "Instellingen → Apparaten en diensten → VAG Connect → ⋮ → Opnieuw configureren."
+    }
+  },
+  "exceptions": {
+    "vehicle_not_found": {
+      "message": "Voertuig met VIN '{vin}' niet gevonden."
     }
   }
 }

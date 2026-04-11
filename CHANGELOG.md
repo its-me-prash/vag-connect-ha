@@ -20,11 +20,54 @@ ci:       CI/CD-Änderungen
 
 ## [Unreleased]
 
-Geplant für 0.7.0:
-- Porsche-Support (Issue #9) — wartet auf `carconnectivity-connector-porsche` auf PyPI
-- HACS offizieller Antrag (Issue #10) — benötigt mehr Tester
+Geplant für 0.8.0:
+- `strict-typing` — mypy strict mode für alle Module
+- `icon-translations` — Icons aus strings.json statt hardcoded
+- `stale-devices` — automatisches Entfernen von Fahrzeugen die nicht mehr im Account sind
+- `test-coverage` — Coverage über 95% mit HA-Integration-Test-Framework
 
 ---
+
+## [0.7.0] - 2026-04-12
+
+### Gold-Level — HA Quality Scale systematisch umgesetzt
+
+#### Bronze (vervollständigt)
+- **`entry.runtime_data`** — Alle Plattform-Files auf modernes HA-Pattern umgestellt (war: `hass.data[DOMAIN]`)
+- **`unique-config-entry`** — `async_set_unique_id(f"{brand}_{username}")` + `_abort_if_unique_id_configured()` verhindert doppelte Einträge ✅ (war schon korrekt, jetzt dokumentiert)
+- **`data_description`** — Config-Flow-Felder haben Beschreibungstexte in allen 8 Sprachen
+- **`test-before-configure`** — `_validate_credentials()` prüft CC-Instantiierung vor Entry-Erstellung ✅
+
+#### Silver (vervollständigt)
+- **`parallel-updates`** — `_attr_parallel_updates = 0` auf `VagConnectEntity` Basisklasse (`cloud_push`, kein direkter API-Zugriff von Entities)
+- **`reauthentication-flow`** — `async_step_reauth` + `async_step_reauth_confirm` in config_flow.py; wird automatisch ausgelöst wenn CC Auth fehlschlägt
+- **`action-exceptions`** — Alle Service-Handler werfen `ServiceValidationError` (nicht `RuntimeError`) wenn VIN nicht gefunden; übersetzt in 8 Sprachen
+- **`log-when-unavailable`** — `_was_available` Flag in Coordinator; loggt genau einmal bei Offline → Online Transition, nie wiederholend
+
+#### Gold (vervollständigt)
+- **`entity-disabled-by-default`** — 15 DIAGNOSTIC-Sensoren haben `entity_registry_enabled_default=False`: firmware, Kennzeichen, Akkutemp, Ladesäule-Details, Verbindung, Heading, WLTP-Reichweite, Ladetyp u.a.
+- **`reconfiguration-flow`** — `async_step_reconfigure` erlaubt Änderung aller Einstellungen ohne Integration zu löschen
+- **`exception-translations`** — `ServiceValidationError` mit `translation_key="vehicle_not_found"`, übersetzt in 8 Sprachen
+- **`diagnostics`** — `diagnostics.py` auf `entry.runtime_data` umgestellt, `cloud_push_active` Status ergänzt
+- **`docs-known-limitations`** — README: CC-Sync-Blocker, Live-Test-Hinweis, SEAT/CUPRA-404, Porsche-Status, Timer-Schreibzugriff
+- **`docs-use-cases`** — README: 2 Beispiel-Automationen (Akku-Warnung + Klimatisierung vor Abfahrt)
+- **`docs-removal-instructions`** — README: Schritt-für-Schritt-Anleitung zum Entfernen inkl. Token-Datei
+- **`quality_scale.yaml`** — Vollständige Gold-Checkliste mit Status und Begründungen für alle Regeln; Platinum-Blocker dokumentiert
+
+#### Infrastruktur
+- **`config_flow.py`** — Komplett neu: saubere Typen, `_user_schema()` Fabrik für DRY Wiederverwendung, `_map_error()` für alle Fehlercodes
+- **`entity_base.py`** — `sw_version` (Firmware) in `DeviceInfo`; vollständige Docstrings
+- **`const.py`** — `CONF_FORCE_ACCESS` korrekt exportiert
+- **8 Übersetzungen** — 114/114 Keys synchron (DE/EN/FR/NL/ES/PL/CS/SV)
+- **10 neue Tests** → **79/79 grün** | Lint: sauber
+
+#### Was noch fehlt (0.8.0)
+- `strict-typing`, `icon-translations`, `stale-devices`, `test-coverage >95%`
+- Platinum: upstream CarConnectivity muss async werden (nicht in unserer Hand)
+
+_Autor: @Prash1407_
+
+
 
 ---
 

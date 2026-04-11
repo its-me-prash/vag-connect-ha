@@ -46,20 +46,26 @@ _CC_MIN_INTERVAL_S = 180
 
 
 class VagConnectCoordinator(DataUpdateCoordinator):
-    """Koordiniert Fahrzeugdaten via CarConnectivity Observer-Push."""
+    """Coordinates vehicle data via CarConnectivity observer push (cloud_push).
+
+    No HA polling — CC background thread owns all API calls.
+    Updates flow: CC thread → Observer → asyncio bridge → async_set_updated_data → Entities.
+    """
 
     def __init__(self, hass: HomeAssistant, entry) -> None:
+        """Initialise coordinator."""
         self.entry = entry
         self._cc = None
         self._started = False
         self._observer_registered = False
+        self._was_available: bool = True  # tracks availability for log_when_unavailable
 
-        # Thread-safe dict für Fahrzeugdaten
+        # Thread-safe dict for vehicle data
         self.vehicles: dict[str, Any] = {}
         self._vehicles_lock = threading.Lock()
 
-        # update_interval=None: kein eigenes HA-Polling
-        # Updates kommen reaktiv via _on_cc_update → async_set_updated_data
+        # update_interval=None: no HA-level polling
+        # Updates arrive reactively via _on_cc_update → async_set_updated_data
         super().__init__(
             hass,
             _LOGGER,
@@ -232,18 +238,29 @@ class VagConnectCoordinator(DataUpdateCoordinator):
                 )
 
     async def _async_push_update(self, data: dict, success: bool = True) -> None:
-        """
-        Pusht Fahrzeugdaten zu HA.
-        success=False: setzt last_update_success=False → Entities zeigen 'unavailable'.
+        """Push vehicle data to HA.
+
+        Implements log_when_unavailable: logs once when going offline,
+        once when coming back online — never fills logs with repeated errors.
         """
         if success:
+            if not self._was_available:
+                _LOGGER.info(
+                    "VAG Connect: Fahrzeug wieder erreichbar (%s)",
+                    self.entry.data.get("username", ""),
+                )
+                self._was_available = True
             self.async_set_updated_data(data)
             _LOGGER.debug("VAG Connect: Push zu HA — %d Fahrzeug(e)", len(data))
         else:
-            # Entities unavailable machen ohne die gespeicherten Daten zu überschreiben
+            if self._was_available:
+                _LOGGER.warning(
+                    "VAG Connect: Fahrzeug nicht erreichbar — Entities auf unavailable gesetzt (%s)",
+                    self.entry.data.get("username", ""),
+                )
+                self._was_available = False
             self.last_update_success = False
             self.async_update_listeners()
-            _LOGGER.warning("VAG Connect: Fehler-Push — Entities auf unavailable gesetzt")
 
     # ──────────────────────────────────────────────────────────────────
     # Daten-Extraktion

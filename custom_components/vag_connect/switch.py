@@ -5,7 +5,6 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import DOMAIN
 from .coordinator import VagConnectCoordinator
 from .entity_base import VagConnectEntity
 
@@ -15,7 +14,7 @@ async def async_setup_entry(
     entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    coordinator: VagConnectCoordinator = hass.data[DOMAIN][entry.entry_id]
+    coordinator: VagConnectCoordinator = entry.runtime_data
     entities: list[SwitchEntity] = []
 
     for vin, vehicle in coordinator.vehicles.items():

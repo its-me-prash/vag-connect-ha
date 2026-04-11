@@ -12,13 +12,13 @@ CONF_FORCE_ACCESS   = "force_enable_access"
 
 # Supported brands — must match CarConnectivity connector type strings
 BRANDS = {
-    "audi":        "Audi (myAudi)",
-    "volkswagen":  "Volkswagen EU (WeConnect)",
-    "volkswagen_na": "Volkswagen US/CA",
-    "skoda":       "Škoda (MySkoda)",
-    "seatcupra":   "SEAT / CUPRA",
+    "audi":           "Audi (myAudi)",
+    "volkswagen":     "Volkswagen EU (WeConnect)",
+    "volkswagen_na":  "Volkswagen US/CA",
+    "skoda":          "Škoda (MySkoda)",
+    "seatcupra":      "SEAT / CUPRA",
 }
 
-# Polling interval
+# Polling interval limits
 DEFAULT_SCAN_INTERVAL = 5    # minutes
 MIN_SCAN_INTERVAL     = 3    # minutes

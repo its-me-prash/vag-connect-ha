@@ -1,0 +1,252 @@
+# VAG Connect — Integration Quality Scale
+# Target: Gold (Platinum blocked by upstream CarConnectivity being sync/requests-based)
+# See: https://developers.home-assistant.io/docs/core/integration-quality-scale/
+
+rules:
+
+  # ── Bronze ────────────────────────────────────────────────────────────────
+  action-setup:
+    status: done
+    comment: All 14 services registered in async_setup_entry via _register_services().
+
+  appropriate-polling:
+    status: exempt
+    comment: |
+      cloud_push integration. update_interval=None. CarConnectivity background thread
+      handles all API polling. HA never polls — it receives pushes via Observer pattern.
+
+  brands:
+    status: done
+    comment: icon.png (256x256), icon@2x.png (512x512), logo.png (512x512) present.
+
+  common-modules:
+    status: done
+    comment: entity_base.py holds shared VagConnectEntity base class for all platforms.
+
+  config-flow-test-coverage:
+    status: done
+    comment: Config flow tests in tests/test_config_flow.py.
+
+  config-flow:
+    status: done
+    comment: Full UI config flow with brand selection, credential validation, options.
+
+  dependency-transparency:
+    status: done
+    comment: |
+      All dependencies declared in manifest.json requirements.
+      carconnectivity + 5 brand connectors, all with pinned minimum versions.
+
+  docs-actions:
+    status: done
+    comment: services.yaml documents all 14 services with field descriptions and selectors.
+
+  docs-high-quality-images:
+    status: done
+    comment: 512x512 RGBA logo.png, 256x256 icon.png.
+
+  docs-installation-instructions:
+    status: done
+    comment: README.md (8 languages) documents HACS and manual installation.
+
+  docs-removal-instructions:
+    status: done
+    comment: README.md documents integration removal steps.
+
+  entity-unique-id:
+    status: done
+    comment: All entities use f"{vin}_{key}" — VIN-stable, survives model renames.
+
+  has-entity-name:
+    status: done
+    comment: _attr_has_entity_name = True on VagConnectEntity base class.
+
+  runtime-data:
+    status: done
+    comment: entry.runtime_data holds VagConnectCoordinator. No hass.data usage.
+
+  test-before-configure:
+    status: done
+    comment: _validate_credentials() instantiates CC connector before creating entry.
+
+  test-before-setup:
+    status: done
+    comment: coordinator.async_setup() connects to API; raises ConfigEntryNotReady on failure.
+
+  unique-config-entry:
+    status: done
+    comment: |
+      async_set_unique_id(f"{brand}_{username}") + _abort_if_unique_id_configured()
+      prevent duplicate entries for the same brand+account combination.
+
+  # ── Silver ────────────────────────────────────────────────────────────────
+  action-exceptions:
+    status: done
+    comment: |
+      All service handlers raise ServiceValidationError (not RuntimeError) when
+      VIN not found. Coordinator action methods raise on CC errors.
+
+  config-entry-unloading:
+    status: done
+    comment: async_unload_entry() stops CC thread and unloads all platforms cleanly.
+
+  docs-configuration-parameters:
+    status: done
+    comment: README documents all config fields (brand, email, password, S-PIN, interval).
+
+  docs-installation-parameters:
+    status: done
+    comment: README documents HACS and manual installation paths.
+
+  entity-unavailable:
+    status: done
+    comment: |
+      last_update_success=False → all entities show unavailable.
+      Triggered when CC observer receives error or connection drops.
+
+  integration-owner:
+    status: done
+    comment: "@Prash1407 listed in manifest.json codeowners."
+
+  log-when-unavailable:
+    status: done
+    comment: |
+      _async_push_update() tracks _was_available flag.
+      Logs WARNING once when going offline, INFO once when back online.
+      Never floods logs with repeated connection errors.
+
+  parallel-updates:
+    status: done
+    comment: |
+      _attr_parallel_updates = 0 on VagConnectEntity base class.
+      cloud_push: CC thread owns all API calls, HA entities never call API directly.
+
+  reauthentication-flow:
+    status: done
+    comment: async_step_reauth + async_step_reauth_confirm implemented in config_flow.py.
+
+  test-coverage:
+    status: todo
+    comment: |
+      Coverage above 95% is the target. Currently: coordinator ~85%, config_flow ~70%.
+      Full coverage requires integration test framework setup. Tracked as improvement item.
+
+  # ── Gold ──────────────────────────────────────────────────────────────────
+  devices:
+    status: done
+    comment: |
+      DeviceInfo with identifiers, name, model, manufacturer, serial_number (VIN),
+      hw_version (model year), sw_version (firmware version).
+
+  diagnostics:
+    status: done
+    comment: |
+      diagnostics.py implements async_get_config_entry_diagnostics.
+      Redacts password, S-PIN, latitude, longitude.
+
+  discovery-update-info:
+    status: exempt
+    comment: VAG vehicles cannot be discovered on the local network.
+
+  docs-data-update:
+    status: done
+    comment: README documents cloud_push architecture, reactive updates, interval behavior.
+
+  docs-known-limitations:
+    status: done
+    comment: README documents Platinum blocker (CC sync), live test limitations.
+
+  docs-supported-devices:
+    status: done
+    comment: README has brand+connector table (Audi, VW EU, VW US/CA, Škoda, SEAT/CUPRA).
+
+  docs-supported-functions:
+    status: done
+    comment: README has feature tables for all vehicles, EVs, and combustion vehicles.
+
+  docs-troubleshooting:
+    status: done
+    comment: README has Login-Probleme section covering 2FA, T&C, rate limits.
+
+  docs-use-cases:
+    status: done
+    comment: README documents example automations and Lovelace dashboard (docs/).
+
+  dynamic-devices:
+    status: done
+    comment: |
+      Multiple vehicles per account detected automatically.
+      Each vehicle = separate HA device via VIN identifier.
+
+  entity-category:
+    status: done
+    comment: |
+      EntityCategory.DIAGNOSTIC: 15 sensors (firmware, license plate, battery temp, etc.)
+      EntityCategory.CONFIG: 3 number sliders (target SOC, clim temp, max current).
+
+  entity-device-class:
+    status: done
+    comment: All entities use appropriate SensorDeviceClass / BinarySensorDeviceClass.
+
+  entity-disabled-by-default:
+    status: done
+    comment: |
+      All DIAGNOSTIC sensors have entity_registry_enabled_default=False.
+      They appear in the device page but are not added to dashboards automatically.
+
+  entity-translations:
+    status: done
+    comment: |
+      All entities use translation_key via has_entity_name=True.
+      Names defined in strings.json entity section, translated in 8 languages.
+
+  exception-translations:
+    status: done
+    comment: |
+      ServiceValidationError uses translation_domain=DOMAIN + translation_key.
+      Exception messages defined in strings.json exceptions section.
+
+  icon-translations:
+    status: todo
+    comment: |
+      Icons currently hardcoded in entity descriptions.
+      Moving to icon translations (strings.json icons section) is a follow-up item.
+
+  reconfiguration-flow:
+    status: done
+    comment: |
+      async_step_reconfigure() allows changing brand, credentials, and all settings
+      without removing and re-adding the integration.
+
+  repair-issues:
+    status: done
+    comment: |
+      repairs.py creates HA repair issues for auth failures (T&C, 2FA, rate limit,
+      invalid credentials). Issues cleared automatically on successful reconnect.
+
+  stale-devices:
+    status: todo
+    comment: |
+      Devices are currently kept in the registry when a vehicle is removed from the
+      VAG account. Automatic stale device cleanup is a follow-up item.
+
+  # ── Platinum ──────────────────────────────────────────────────────────────
+  async-dependency:
+    status: todo
+    comment: |
+      UPSTREAM BLOCKER: CarConnectivity (carconnectivity>=0.11.8) uses synchronous
+      requests.Session and threading.Thread — it is not an async library.
+      We mitigate this via async_add_executor_job() but cannot achieve true async
+      without a full CC rewrite upstream. Tracked as upstream issue.
+
+  inject-websession:
+    status: todo
+    comment: |
+      UPSTREAM BLOCKER: CarConnectivity connectors do not accept an aiohttp ClientSession.
+      Blocked by the same upstream sync architecture as async-dependency.
+
+  strict-typing:
+    status: todo
+    comment: |
+      Type annotations are present on all public methods and properties.
+      Full mypy strict mode not yet enforced. Follow-up item for v0.8.0.

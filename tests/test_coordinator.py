@@ -338,8 +338,7 @@ class TestNewExtractFields:
         self.coordinator.entry = _make_entry()
         self.coordinator.vehicles = {}
         self.coordinator.logger = MagicMock()
-
-    # ── Ladeleistung + Ladegeschwindigkeit (Issue #2) ─────────────────────
+        self.coordinator._was_available = True  # required by log_when_unavailable
     def test_charging_power_extracted(self):
         v = _make_vehicle(is_electric=True)
         v.charging.power.value = 22.0

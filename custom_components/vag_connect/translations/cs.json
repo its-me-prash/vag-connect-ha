@@ -17,6 +17,26 @@
           "scan_interval": "Minimum 5 minut — příliš časté dotazy mohou vést k zablokování účtu.",
           "force_enable_access": "Zapněte pokud se stav dveří nezobrazuje, přestože je viditelný v aplikaci."
         }
+      },
+      "reauth_confirm": {
+        "title": "Opětovné ověření",
+        "description": "Zadejte prosím heslo pro {brand} ({username}).",
+        "data": {
+          "password": "Heslo",
+          "spin": "S-PIN (volitelné, nutné pro zamykání dveří)"
+        }
+      },
+      "reconfigure": {
+        "title": "Překonfigurovat VAG Connect",
+        "description": "Změňte přihlašovací údaje bez odebrání integrace.",
+        "data": {
+          "brand": "Značka vozidla",
+          "username": "E-mailová adresa",
+          "password": "Heslo",
+          "spin": "S-PIN (volitelné, nutné pro zamykání dveří)",
+          "scan_interval": "Interval aktualizace (minuty)",
+          "force_enable_access": "Vynutit přístup ke dveřím (starší modely)"
+        }
       }
     },
     "error": {
@@ -30,7 +50,9 @@
       "invalid_credentials": "Nesprávná e-mailová adresa nebo heslo."
     },
     "abort": {
-      "already_configured": "Tento účet je již nastaven."
+      "already_configured": "Tento účet je již nastaven.",
+      "reauth_successful": "Opětovné ověření bylo úspěšné.",
+      "reconfigure_successful": "Konfigurace byla úspěšně aktualizována."
     }
   },
   "options": {
@@ -278,6 +300,11 @@
     "auth_failed": {
       "title": "Přihlášení selhalo — {brand}",
       "description": "Nastavení → Zařízení a služby → VAG Connect → ⋮ → Znovu nakonfigurovat."
+    }
+  },
+  "exceptions": {
+    "vehicle_not_found": {
+      "message": "Vozidlo s VIN '{vin}' nebylo nalezeno."
     }
   }
 }

@@ -17,6 +17,26 @@
           "scan_interval": "Mínimo 5 minutos — demasiadas consultas pueden suspender la cuenta.",
           "force_enable_access": "Activar si el estado de puertas no se muestra aunque sea visible en la app."
         }
+      },
+      "reauth_confirm": {
+        "title": "Volver a autenticarse",
+        "description": "Introduce tu contraseña de {brand} ({username}) de nuevo.",
+        "data": {
+          "password": "Contraseña",
+          "spin": "S-PIN (opcional, necesario para el bloqueo)"
+        }
+      },
+      "reconfigure": {
+        "title": "Reconfigurar VAG Connect",
+        "description": "Cambia credenciales o ajustes sin eliminar la integración.",
+        "data": {
+          "brand": "Marca del vehículo",
+          "username": "Correo electrónico",
+          "password": "Contraseña",
+          "spin": "S-PIN (opcional, necesario para el bloqueo)",
+          "scan_interval": "Intervalo de actualización (minutos)",
+          "force_enable_access": "Forzar acceso a puertas (modelos antiguos)"
+        }
       }
     },
     "error": {
@@ -30,7 +50,9 @@
       "invalid_credentials": "Correo electrónico o contraseña incorrectos."
     },
     "abort": {
-      "already_configured": "Esta cuenta ya está configurada."
+      "already_configured": "Esta cuenta ya está configurada.",
+      "reauth_successful": "Reautenticación exitosa.",
+      "reconfigure_successful": "Configuración actualizada con éxito."
     }
   },
   "options": {
@@ -278,6 +300,11 @@
     "auth_failed": {
       "title": "Autenticación fallida — {brand}",
       "description": "Ajustes → Dispositivos y servicios → VAG Connect → ⋮ → Reconfigurar."
+    }
+  },
+  "exceptions": {
+    "vehicle_not_found": {
+      "message": "Vehículo con VIN '{vin}' no encontrado."
     }
   }
 }

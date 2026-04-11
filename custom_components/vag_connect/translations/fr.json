@@ -17,6 +17,26 @@
           "scan_interval": "Minimum 5 minutes — des requêtes trop fréquentes peuvent suspendre le compte.",
           "force_enable_access": "Activer si l'état des portes ne s'affiche pas, bien que visible dans l'app."
         }
+      },
+      "reauth_confirm": {
+        "title": "Ré-authentification",
+        "description": "Veuillez saisir à nouveau votre mot de passe pour {brand} ({username}).",
+        "data": {
+          "password": "Mot de passe",
+          "spin": "S-PIN (optionnel, requis pour le verrouillage)"
+        }
+      },
+      "reconfigure": {
+        "title": "Reconfigurer VAG Connect",
+        "description": "Modifiez les identifiants ou les paramètres sans supprimer l'intégration.",
+        "data": {
+          "brand": "Marque du véhicule",
+          "username": "Adresse e-mail",
+          "password": "Mot de passe",
+          "spin": "S-PIN (optionnel, requis pour le verrouillage)",
+          "scan_interval": "Intervalle de mise à jour (minutes)",
+          "force_enable_access": "Forcer l'accès aux portes (anciens modèles)"
+        }
       }
     },
     "error": {
@@ -30,7 +50,9 @@
       "invalid_credentials": "Adresse e-mail ou mot de passe incorrect."
     },
     "abort": {
-      "already_configured": "Ce compte est déjà configuré."
+      "already_configured": "Ce compte est déjà configuré.",
+      "reauth_successful": "Ré-authentification réussie.",
+      "reconfigure_successful": "Configuration mise à jour avec succès."
     }
   },
   "options": {
@@ -278,6 +300,11 @@
     "auth_failed": {
       "title": "Connexion échouée — {brand}",
       "description": "Paramètres → Appareils et services → VAG Connect → ⋮ → Reconfigurer."
+    }
+  },
+  "exceptions": {
+    "vehicle_not_found": {
+      "message": "Véhicule avec VIN '{vin}' introuvable."
     }
   }
 }

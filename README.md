@@ -112,6 +112,14 @@ VAG-APIs (Audi, VW, Škoda, SEAT/CUPRA) haben ein serverseitiges Rate Limit. VAG
 
 Falls der Account trotzdem kurz gesperrt wird (passiert selten): Die Sperre hebt sich automatisch nach 2–4 Stunden. Unter **Einstellungen → System → Reparaturen** erscheint dann ein Hinweis mit nächsten Schritten.
 
+## Bekannte Einschränkungen
+
+- **Kein Live-Test mit echtem Fahrzeug** — alle Features wurden gegen CC-Mocks entwickelt. Rückmeldungen aus echten Installationen sind sehr willkommen.
+- **Platinum Quality Scale nicht erreichbar** — CarConnectivity nutzt `requests` (synchron) und `threading`. Platinum erfordert eine vollständig asynchrone Abhängigkeit. Das ist ein Upstream-Problem bei [@tillsteinbach](https://github.com/tillsteinbach/CarConnectivity).
+- **SEAT/CUPRA 404 capabilities** — Bekanntes Upstream-Problem im `carconnectivity-connector-seatcupra`. Basis-Features funktionieren, manche Capabilities fehlen.
+- **Porsche** — Kein offizieller Connector auf PyPI. Technisch identische CARIAD-API wie Audi — wartet auf Community-Tester.
+- **Departure Timer** — Schreibzugriff auf CC-Objekt implementiert, aber ob die VAG-API den Wert tatsächlich ans Fahrzeug sendet ist ungetestet (kein echtes Fahrzeug verfügbar).
+
 ## Installation
 
 ### Via HACS (empfohlen)
@@ -197,6 +205,41 @@ Nach einer Änderung der Nutzungsbedingungen erscheint unter **Einstellungen →
 | `vag_connect.set_target_soc` | Ladezielprozent setzen |
 | `vag_connect.set_climatisation_temperature` | Klimatemperatur setzen |
 | `vag_connect.set_departure_timer` | Abfahrtstimer setzen (neu in v0.5.0) |
+## Beispiel-Automationen
+
+```yaml
+# Benachrichtigung wenn Akku unter 20% und nicht geladen
+automation:
+  trigger:
+    platform: numeric_state
+    entity_id: sensor.audi_q4_e_tron_akkustand
+    below: 20
+  condition:
+    condition: state
+    entity_id: binary_sensor.audi_q4_e_tron_ladt
+    state: "off"
+  action:
+    service: notify.mobile_app
+    data:
+      message: "Audi Akku unter 20% — bitte laden!"
+
+# Klimatisierung automatisch 15 Min vor Abfahrt starten
+automation:
+  trigger:
+    platform: time
+    at: "07:45:00"
+  condition:
+    condition: state
+    entity_id: binary_sensor.audi_q4_e_tron_ladekabel_verbunden
+    state: "on"
+  action:
+    service: vag_connect.start_climatisation
+    data:
+      vin: "WAUZZZ4G7EN123456"
+```
+
+Weiteres Beispiel-Dashboard: [`docs/lovelace-example.yaml`](docs/lovelace-example.yaml)
+
 ## Beispiel-Dashboard
 
 Eine fertige Lovelace-Konfiguration (mushroom-cards + mini-graph-card) liegt in [`docs/lovelace-example.yaml`](docs/lovelace-example.yaml).
@@ -206,6 +249,16 @@ Benötigt aus HACS → Frontend:
 - [mini-graph-card](https://github.com/kalkih/mini-graph-card)
 
 ---
+
+## Integration entfernen
+
+1. **Einstellungen → Geräte & Dienste → VAG Connect → ⋮ → Löschen**
+2. HA neu starten
+3. Optional: Token-Datei manuell löschen:
+   ```
+   config/.storage/vag_connect_tokens_{entry_id}.json
+   ```
+   (Entry-ID steht in der URL wenn du die Integration öffnest)
 
 ## Danksagungen
 
