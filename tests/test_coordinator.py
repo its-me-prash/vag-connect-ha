@@ -71,6 +71,16 @@ def _make_vehicle(
     v.manufacturer.value = "Audi"
     v.model_year.value = 2023
 
+    # Vehicle type — nötig für EV/PHEV/Verbrenner-Logik
+    type_mock = MagicMock()
+    if is_electric and fuel_level is None:
+        type_mock.name = "ELECTRIC"
+    elif is_electric and fuel_level is not None:
+        type_mock.name = "HYBRID"
+    else:
+        type_mock.name = "GASOLINE"
+    v.type.value = type_mock
+
     # Odometer
     v.odometer.value = odometer
 
@@ -488,3 +498,108 @@ class TestEntityBaseName:
         vehicle = {"model": "", "vin": "WAUZZAABBCC"}
         name = _device_name(vehicle, "volkswagen")
         assert "AABBCC" in name
+
+
+class TestDriveTypeLogic:
+    """EV / PHEV / Verbrenner — korrekte Flag-Setzung."""
+
+    def setup_method(self):
+        self.coord = VagConnectCoordinator.__new__(VagConnectCoordinator)
+        hass = MagicMock()
+        hass.config.config_dir = "/tmp"
+        self.coord.hass = hass
+        self.coord.entry = _make_entry()
+        self.coord.logger = MagicMock()
+
+    def _vehicle_with_type(self, vtype_name: str, drive_types: list[str]):
+        """Erstellt ein Mock-Fahrzeug mit gegebenem vehicle.type und Antrieben."""
+        from carconnectivity.drive import GenericDrive  # noqa: PLC0415
+        from carconnectivity.vehicle import GenericVehicle  # noqa: PLC0415
+
+        v = _make_vehicle(is_electric="ELECTRIC" in drive_types)
+
+        # vehicle.type setzen
+        vtype_mock = MagicMock()
+        vtype_mock.name = vtype_name
+        v.type.value = vtype_mock
+
+        # Drives aufbauen
+        drives = {}
+        for dt in drive_types:
+            d = MagicMock()
+            dtype_mock = MagicMock()
+            dtype_mock.name = dt
+            # Map zu echtem Enum-Wert
+            enum_val = getattr(GenericDrive.Type, dt, GenericDrive.Type.UNKNOWN)
+            d.type.value = enum_val
+            d.level.value = 75.0
+            d.range.value = 300.0
+            drives[dt.lower()] = d
+        v.drives.drives = drives
+        v.drives.total_range.value = None
+        return v
+
+    # ── Pure EV ──────────────────────────────────────────────────────────────
+    def test_pure_ev_flags(self):
+        v = self._vehicle_with_type("ELECTRIC", ["ELECTRIC"])
+        data = self.coord._extract(v)
+        assert data["is_electric"] is True
+        assert data["has_battery"] is True
+        assert data["is_hybrid"] is False
+        assert data["has_combustion"] is False
+
+    def test_pure_ev_no_fuel_sensor(self):
+        v = self._vehicle_with_type("ELECTRIC", ["ELECTRIC"])
+        data = self.coord._extract(v)
+        assert data["fuel_level"] is None
+        assert data["battery_soc"] == 75.0
+
+    # ── PHEV / Hybrid ────────────────────────────────────────────────────────
+    def test_phev_flags(self):
+        v = self._vehicle_with_type("HYBRID", ["ELECTRIC", "GASOLINE"])
+        data = self.coord._extract(v)
+        assert data["is_electric"] is False   # PHEV ist kein reines EV
+        assert data["has_battery"] is True    # hat Akku → Lade-Entities anzeigen
+        assert data["is_hybrid"] is True
+        assert data["has_combustion"] is True
+
+    def test_phev_has_both_fuel_and_battery(self):
+        """PHEV zeigt Tankstand UND Ladestand."""
+        v = self._vehicle_with_type("HYBRID", ["ELECTRIC", "GASOLINE"])
+        data = self.coord._extract(v)
+        assert data["battery_soc"] == 75.0
+        assert data["fuel_level"] == 75.0
+
+    # ── Verbrenner ───────────────────────────────────────────────────────────
+    def test_combustion_flags(self):
+        v = self._vehicle_with_type("GASOLINE", ["GASOLINE"])
+        data = self.coord._extract(v)
+        assert data["is_electric"] is False
+        assert data["has_battery"] is False
+        assert data["is_hybrid"] is False
+        assert data["has_combustion"] is True
+
+    def test_combustion_no_battery_sensor(self):
+        v = self._vehicle_with_type("DIESEL", ["DIESEL"])
+        data = self.coord._extract(v)
+        assert data["battery_soc"] is None
+        assert data["fuel_level"] == 75.0
+
+    # ── Fallback wenn vehicle.type None ──────────────────────────────────────
+    def test_fallback_from_drives_when_type_none(self):
+        """Wenn vehicle.type None → aus Drives ableiten."""
+        v = _make_vehicle(is_electric=True)
+        v.type.value = None
+        # Drives manuell setzen
+        from carconnectivity.drive import GenericDrive  # noqa: PLC0415
+        elec = MagicMock()
+        elec.type.value = GenericDrive.Type.ELECTRIC
+        elec.level.value = 80.0
+        elec.range.value = 400.0
+        v.drives.drives = {"electric": elec}
+        v.drives.total_range.value = None
+
+        data = self.coord._extract(v)
+        assert data["is_electric"] is True   # abgeleitet aus Drives
+        assert data["has_battery"] is True
+        assert data["has_combustion"] is False

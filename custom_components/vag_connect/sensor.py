@@ -1,4 +1,17 @@
-"""Sensors for VAG Connect — aligned to real CarConnectivity data model."""
+"""Sensors for VAG Connect — aligned to real CarConnectivity data model.
+
+Conditions:
+  "electric"    → Nur für Fahrzeuge mit Akku (EV + PHEV) — has_battery=True
+  "combustion"  → Nur für Fahrzeuge mit Verbrennungsmotor (Verbrenner + PHEV) — has_combustion=True
+  None          → Alle Fahrzeuge
+
+Ladegeschwindigkeit (charging_rate_kmh):
+  CarConnectivity gibt charging.rate als SpeedAttribute (Einheit: km/h) zurück.
+  Bedeutung: Wie viele km Reichweite werden pro Stunde geladen.
+  Beispiel: 50 kW Lader, 6 km/kWh Effizienz → 300 km/h Rate
+  Einheit km/h ist korrekt (≠ Fahrzeuggeschwindigkeit).
+  Kein SensorDeviceClass.SPEED — das wäre semantisch falsch.
+"""
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -14,6 +27,8 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
     PERCENTAGE,
     UnitOfLength,
+    UnitOfPower,
+    UnitOfSpeed,
     UnitOfTemperature,
 )
 from homeassistant.core import HomeAssistant
@@ -26,13 +41,13 @@ from .entity_base import VagConnectEntity
 
 @dataclass(frozen=True)
 class VagSensorDescription(SensorEntityDescription):
-    """Extended description with coordinator data-key and optional condition."""
+    """Extended sensor description with coordinator data-key and condition."""
     data_key: str = ""
     condition: str | None = None  # "electric" | "combustion" | None
 
 
 SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
-    # ── Fuel / Battery ──────────────────────────────────────────────
+    # ── Antrieb: Verbrenner ──────────────────────────────────────────────────
     VagSensorDescription(
         key="fuel_level",
         data_key="fuel_level",
@@ -40,8 +55,9 @@ SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
         native_unit_of_measurement=PERCENTAGE,
         state_class=SensorStateClass.MEASUREMENT,
         icon="mdi:gas-station",
-        condition="combustion",
+        condition="combustion",  # Verbrenner + PHEV
     ),
+    # ── Antrieb: Elektrisch (EV + PHEV) ─────────────────────────────────────
     VagSensorDescription(
         key="battery_soc",
         data_key="battery_soc",
@@ -50,8 +66,9 @@ SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
         device_class=SensorDeviceClass.BATTERY,
         state_class=SensorStateClass.MEASUREMENT,
         icon="mdi:battery-charging",
-        condition="electric",
+        condition="electric",  # EV + PHEV
     ),
+    # ── Reichweite: alle Fahrzeuge ───────────────────────────────────────────
     VagSensorDescription(
         key="range_km",
         data_key="range_km",
@@ -61,7 +78,7 @@ SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
         state_class=SensorStateClass.MEASUREMENT,
         icon="mdi:map-marker-distance",
     ),
-    # ── Odometer ────────────────────────────────────────────────────
+    # ── Kilometerstand ───────────────────────────────────────────────────────
     VagSensorDescription(
         key="odometer_km",
         data_key="odometer_km",
@@ -71,7 +88,7 @@ SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
         state_class=SensorStateClass.TOTAL_INCREASING,
         icon="mdi:counter",
     ),
-    # ── Charging ────────────────────────────────────────────────────
+    # ── Laden (nur EV + PHEV) ────────────────────────────────────────────────
     VagSensorDescription(
         key="charging_state",
         data_key="charging_state",
@@ -95,7 +112,31 @@ SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
         icon="mdi:battery-charging-high",
         condition="electric",
     ),
-    # ── Climatisation ───────────────────────────────────────────────
+    VagSensorDescription(
+        key="charging_power_kw",
+        data_key="charging_power_kw",
+        name="Ladeleistung",
+        # PowerAttribute von CarConnectivity — direkt in kW
+        native_unit_of_measurement=UnitOfPower.KILO_WATT,
+        device_class=SensorDeviceClass.POWER,
+        state_class=SensorStateClass.MEASUREMENT,
+        icon="mdi:flash",
+        condition="electric",
+    ),
+    VagSensorDescription(
+        key="charging_rate_kmh",
+        data_key="charging_rate_kmh",
+        name="Lade-Reichweite/h",
+        # SpeedAttribute von CarConnectivity — Einheit km/h
+        # Bedeutung: km Reichweite die pro Stunde geladen werden
+        # Beispiel: DC 50 kW bei 6 km/kWh → 300 km/h
+        # NICHT DeviceClass.SPEED (das wäre Fahrzeuggeschwindigkeit)
+        native_unit_of_measurement=UnitOfSpeed.KILOMETERS_PER_HOUR,
+        state_class=SensorStateClass.MEASUREMENT,
+        icon="mdi:battery-charging-outline",
+        condition="electric",
+    ),
+    # ── Klimatisierung ───────────────────────────────────────────────────────
     VagSensorDescription(
         key="climatisation_state",
         data_key="climatisation_state",
@@ -111,7 +152,7 @@ SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
         state_class=SensorStateClass.MEASUREMENT,
         icon="mdi:thermometer-auto",
     ),
-    # ── Environment ─────────────────────────────────────────────────
+    # ── Umgebung ─────────────────────────────────────────────────────────────
     VagSensorDescription(
         key="outside_temp",
         data_key="outside_temp",
@@ -121,7 +162,7 @@ SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
         state_class=SensorStateClass.MEASUREMENT,
         icon="mdi:thermometer",
     ),
-    # ── Maintenance ─────────────────────────────────────────────────
+    # ── Wartung ──────────────────────────────────────────────────────────────
     VagSensorDescription(
         key="service_km",
         data_key="service_km",
@@ -146,7 +187,7 @@ SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
         device_class=SensorDeviceClass.DISTANCE,
         state_class=SensorStateClass.MEASUREMENT,
         icon="mdi:oil",
-        condition="combustion",
+        condition="combustion",  # Verbrenner + PHEV
     ),
     VagSensorDescription(
         key="oil_service_at",
@@ -154,7 +195,7 @@ SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
         name="Ölservicedatum",
         device_class=SensorDeviceClass.DATE,
         icon="mdi:oil",
-        condition="combustion",
+        condition="combustion",  # Verbrenner + PHEV
     ),
 )
 
@@ -169,11 +210,13 @@ async def async_setup_entry(
     entities: list[VagConnectSensor] = []
 
     for vin, vehicle in coordinator.vehicles.items():
-        is_electric = vehicle.get("is_electric", False)
+        has_battery   = vehicle.get("has_battery", False)    # EV + PHEV
+        has_combustion = vehicle.get("has_combustion", False)  # Verbrenner + PHEV
+
         for desc in SENSOR_DESCRIPTIONS:
-            if desc.condition == "electric" and not is_electric:
+            if desc.condition == "electric" and not has_battery:
                 continue
-            if desc.condition == "combustion" and is_electric:
+            if desc.condition == "combustion" and not has_combustion:
                 continue
             entities.append(VagConnectSensor(coordinator, vin, desc))
 
@@ -195,29 +238,3 @@ class VagConnectSensor(VagConnectEntity, SensorEntity):
     @property
     def native_value(self) -> Any:
         return self._vehicle.get(self.entity_description.data_key)
-
-
-# ── Issue #2: Ladeleistung + Ladegeschwindigkeit ──────────────────────────────
-SENSOR_DESCRIPTIONS = SENSOR_DESCRIPTIONS + (
-    VagSensorDescription(
-        key="charging_power_kw",
-        data_key="charging_power_kw",
-        name="Ladeleistung",
-        native_unit_of_measurement="kW",
-        device_class=SensorDeviceClass.POWER,
-        state_class=SensorStateClass.MEASUREMENT,
-        icon="mdi:ev-plug-type2",
-        condition="electric",
-    ),
-    VagSensorDescription(
-        key="charging_rate_kmh",
-        data_key="charging_rate_kmh",
-        # km/h = km Reichweite die pro Stunde geladen wird
-        # KEIN SensorDeviceClass.SPEED — das waere Fahrzeuggeschwindigkeit
-        name="Lade-Reichweite pro Stunde",
-        native_unit_of_measurement="km/h",
-        state_class=SensorStateClass.MEASUREMENT,
-        icon="mdi:battery-charging-outline",
-        condition="electric",
-    ),
-)

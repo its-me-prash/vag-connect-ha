@@ -80,9 +80,9 @@ async def async_setup_entry(
     entities: list[VagConnectBinarySensor] = []
 
     for vin, vehicle in coordinator.vehicles.items():
-        is_electric = vehicle.get("is_electric", False)
+        has_battery = vehicle.get("has_battery", False)  # EV + PHEV
         for desc in BINARY_DESCRIPTIONS:
-            if desc.condition == "electric" and not is_electric:
+            if desc.condition == "electric" and not has_battery:
                 continue
             entities.append(VagConnectBinarySensor(coordinator, vin, desc))
 

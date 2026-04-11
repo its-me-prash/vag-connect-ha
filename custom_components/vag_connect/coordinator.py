@@ -296,12 +296,30 @@ class VagConnectCoordinator(DataUpdateCoordinator):
         except Exception:  # noqa: BLE001
             data["odometer_km"] = None
 
-        # Drives (Verbrenner / Elektro / Hybrid)
-        data["fuel_level"]  = None
-        data["battery_soc"] = None
-        data["range_km"]    = None
-        data["is_electric"] = False
+        # ── Antriebe: EV / PHEV / Verbrenner ──────────────────────────
+        # vehicle.type: ELECTRIC / HYBRID / FUEL / GASOLINE / DIESEL
+        # Pure EV:   drives=[ELECTRIC]
+        # PHEV:      drives=[ELECTRIC, GASOLINE]  vehicle.type=HYBRID
+        # Verbrenner:drives=[GASOLINE/DIESEL]
+        data["fuel_level"]    = None
+        data["battery_soc"]   = None
+        data["range_km"]      = None
+        data["is_electric"]   = False  # True nur für reine EVs
+        data["has_battery"]   = False  # True für EV + PHEV (hat Akku+Lader)
+        data["is_hybrid"]     = False  # True für PHEV
+        data["has_combustion"] = False  # True für Verbrenner + PHEV
         try:
+            # Fahrzeugtyp direkt aus vehicle.type (zuverlässiger als Drives)
+            vtype = vehicle.type.value
+            if vtype is not None:
+                type_name = vtype.name if hasattr(vtype, 'name') else str(vtype)
+                data["is_electric"]   = type_name == "ELECTRIC"
+                data["is_hybrid"]     = type_name == "HYBRID"
+                data["has_battery"]   = type_name in ("ELECTRIC", "HYBRID")
+                data["has_combustion"] = type_name in (
+                    "HYBRID", "FUEL", "GASOLINE", "PETROL", "DIESEL", "CNG", "LPG"
+                )
+
             electric_types = {GenericDrive.Type.ELECTRIC}
             fuel_types = {
                 GenericDrive.Type.FUEL, GenericDrive.Type.GASOLINE,
@@ -311,20 +329,28 @@ class VagConnectCoordinator(DataUpdateCoordinator):
             total = _val(vehicle.drives.total_range)
             if total is not None:
                 data["range_km"] = total
+
             for drive in vehicle.drives.drives.values():
                 dtype = drive.type.value
                 level = _val(drive.level)
                 rng   = _val(drive.range)
                 if dtype in electric_types:
-                    data["is_electric"] = True
+                    data["has_battery"] = True
                     data["battery_soc"] = level
                     data["range_km"]    = data["range_km"] or rng
                 elif dtype in fuel_types:
+                    data["has_combustion"] = True
                     data["fuel_level"] = level
                     data["range_km"]   = data["range_km"] or rng
                 else:
                     data["fuel_level"] = data["fuel_level"] or level
                     data["range_km"]   = data["range_km"]   or rng
+
+            # Fallback: wenn vehicle.type None — aus Drives ableiten
+            if vtype is None:
+                data["is_electric"]    = data["has_battery"] and not data["has_combustion"]
+                data["is_hybrid"]      = data["has_battery"] and data["has_combustion"]
+
         except Exception as exc:  # noqa: BLE001
             _LOGGER.debug("Drive-Daten Fehler (VIN=%s): %s", data.get("vin"), exc)
 

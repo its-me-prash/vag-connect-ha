@@ -258,6 +258,48 @@ Jede Version folgt diesem Ablauf:
 
 
 
+
+## [0.3.3] - 2026-04-11
+
+### Behoben
+
+#### EV / PHEV / Verbrenner-Logik komplett überarbeitet
+Das `is_electric`-Flag war zu simpel und führte zu falschen Sensor-Zuordnungen bei PHEVs.
+
+**Neue Flags im Coordinator:**
+| Flag | Wahr für | Bedeutung |
+|---|---|---|
+| `is_electric` | Nur reine EVs | `vehicle.type == ELECTRIC` |
+| `has_battery` | EV + PHEV | Hat Akku und Lader |
+| `is_hybrid` | PHEV | `vehicle.type == HYBRID` |
+| `has_combustion` | Verbrenner + PHEV | Hat Verbrennungsmotor |
+
+**Sensor-Conditions:**
+- `condition="electric"` → prüft jetzt `has_battery` (EV + PHEV sehen Lade-Sensoren)
+- `condition="combustion"` → prüft jetzt `has_combustion` (Verbrenner + PHEV sehen Tank/Öl)
+
+**Fallback:** Wenn `vehicle.type = None` → Flags werden aus den Drive-Typen abgeleitet.
+
+**Autor:** @Prash1407
+
+#### sensor.py: Runtime-Crash `is_electric` nicht definiert
+- `is_electric` wurde nach Refactoring nicht mehr gesetzt → NameError beim Starten
+- Behoben: `has_battery` und `has_combustion` direkt aus vehicle-Dict
+  **Autor:** @Prash1407
+
+#### Lade-Reichweite/h — Einheit aus HA-Konstante
+- `native_unit_of_measurement=UnitOfSpeed.KILOMETERS_PER_HOUR` statt hartcodiertem `"km/h"`
+- `native_unit_of_measurement=UnitOfPower.KILO_WATT` für Ladeleistung statt `"kW"`
+  **Autor:** @Prash1407
+
+### Hinzugefügt
+
+#### 7 neue Tests für EV/PHEV/Verbrenner-Logik (42 Tests gesamt)
+- Pure EV: alle Flags korrekt, kein Tankstand
+- PHEV: `has_battery=True` UND `has_combustion=True`, beides anzeigen
+- Verbrenner: `has_battery=False`, kein Ladestand
+- Fallback aus Drives wenn `vehicle.type = None`
+  **Autor:** @Prash1407
 ## [0.3.2] - 2026-04-11
 
 ### Hinzugefügt

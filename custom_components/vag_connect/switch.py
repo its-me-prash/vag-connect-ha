@@ -24,7 +24,7 @@ async def async_setup_entry(
         entities.append(VagClimatisationSwitch(coordinator, vin))
         entities.append(VagWindowHeatingSwitch(coordinator, vin))
         entities.append(VagSeatHeatingSwitch(coordinator, vin))
-        if vehicle.get("is_electric"):
+        if vehicle.get("has_battery"):  # EV + PHEV
             entities.append(VagChargingSwitch(coordinator, vin))
 
     async_add_entities(entities)
