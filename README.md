@@ -28,13 +28,12 @@
 
 ---
 
-Ich wollte meinen Audi in Home Assistant steuern, ohne drei verschiedene Integrationen parallel zu pflegen oder einen extra MQTT-Broker zu betreiben. Also hab ich das hier gebaut.
+Ich wollte meinen Audi in Home Assistant steuern — vollständig, nicht halbgar. Also hab ich das hier gebaut.
 
-**VAG Connect** verbindet Home Assistant direkt mit den offiziellen Apps von Audi, VW, Skoda, SEAT und CUPRA. Keine Zwischenschicht, kein Docker, kein separater Dienst. Integration installieren, Zugangsdaten eingeben, fertig.
+**VAG Connect** ist eine eigenständige Home Assistant Integration für alle VAG-Marken. Keine Zwischenschicht, kein Docker, kein separater Dienst. Integration installieren, Zugangsdaten eingeben, fertig.
 
-Die technische Arbeit dahinter hat vor allem Till Steinbach mit seinem [CarConnectivity](https://github.com/tillsteinbach/CarConnectivity)-Framework erledigt. Diese Integration ist ein sauberer Home Assistant-Wrapper darum.
+Das Projekt nutzt [CarConnectivity](https://github.com/tillsteinbach/CarConnectivity) von @tillsteinbach als Kommunikations-Engine — und erweitert es mit eigenen Features, die im CC-Kern nicht existieren: Abfahrtstimer, Akkutemperatur, Ladeende-ETA, Ladesäuleninformationen, Standortadressen und mehr. Was CarConnectivity nicht kann, bauen wir selbst.
 
----
 
 ## Unterstützte Plattformen
 
@@ -88,6 +87,7 @@ sensor  |  binary_sensor  |  device_tracker  |  switch  |  button  |  climate  |
 | Sitzheizung | ✓ | ✓ | ✓ | ✓ |
 | **Max. Ladestrom begrenzen** | ✓ | ✓ | ✓ | ✓ |
 | **Stecker nach Laden entsperren** | ✓ | ✓ | ✓ | ✓ |
+| **Abfahrtstimer (1–3)** | ✓ | ✓ | ✓ | ✓ |
 
 ### Verbrenner und Hybrid
 
@@ -183,14 +183,14 @@ Nach einer Änderung der Nutzungsbedingungen erscheint unter **Einstellungen →
 | `vag_connect.wake_vehicle` | Fahrzeug aufwecken |
 | `vag_connect.flash_lights` | Lichtsignal |
 | `vag_connect.refresh_vehicle` | Daten sofort aktualisieren |
-
----
-
+| `vag_connect.set_target_soc` | Ladezielprozent setzen |
+| `vag_connect.set_climatisation_temperature` | Klimatemperatur setzen |
+| `vag_connect.set_departure_timer` | Abfahrtstimer setzen (neu in v0.5.0) |
 ## Danksagungen
 
 Diese Integration wäre ohne folgende Open-Source-Projekte nicht möglich:
 
-- **[CarConnectivity](https://github.com/tillsteinbach/CarConnectivity)** von @tillsteinbach — das Herzstück
+- **[CarConnectivity](https://github.com/tillsteinbach/CarConnectivity)** von @tillsteinbach — Kommunikations-Engine für alle VAG-APIs
 - **[CarConnectivity-connector-audi](https://github.com/acfischer42/CarConnectivity-connector-audi)** von @acfischer42
 - **[CarConnectivity-connector-volkswagen](https://github.com/tillsteinbach/CarConnectivity-connector-volkswagen)** von @tillsteinbach
 - **[CarConnectivity-connector-skoda](https://github.com/tillsteinbach/CarConnectivity-connector-skoda)** von @tillsteinbach
@@ -198,10 +198,3 @@ Diese Integration wäre ohne folgende Open-Source-Projekte nicht möglich:
 - **[CarConnectivity-connector-volkswagen-na](https://github.com/matpoulin/CarConnectivity-connector-volkswagen-na)** von @matpoulin
 - **[ioBroker.vw-connect](https://github.com/TA2k/ioBroker.vw-connect)** von @TA2k — API-Recherche
 
----
-
-## Lizenz
-
-MIT — Details in [LICENSE](LICENSE).
-
-Diese Integration nutzt inoffizielle APIs — dieselben, die die offiziellen Apps verwenden. Es gibt keine Garantie, dass sie dauerhaft funktioniert. Audi, Volkswagen, Škoda, SEAT und CUPRA sind eingetragene Marken der jeweiligen Hersteller.

@@ -28,13 +28,12 @@
 
 ---
 
-I wanted to control my Audi in Home Assistant without running three separate integrations or setting up an extra MQTT broker. So I built this.
+I wanted to control my Audi in Home Assistant — properly, not halfway. So I built this.
 
-**VAG Connect** connects Home Assistant directly to the official apps of Audi, VW, Skoda, SEAT and CUPRA. No middleware, no Docker, no separate service. Install the integration, enter your credentials, done.
+**VAG Connect** is a standalone Home Assistant integration for all VAG brands. No middleware, no Docker, no separate service. Install the integration, enter your credentials, done.
 
-The technical foundation is Till Steinbach's [CarConnectivity](https://github.com/tillsteinbach/CarConnectivity) framework. This integration is essentially a clean Home Assistant wrapper around it.
+The project uses [CarConnectivity](https://github.com/tillsteinbach/CarConnectivity) by @tillsteinbach as its communication engine — and extends it with features that don't exist in CC's core: departure timers, battery temperature, charge completion ETA, charging station details, location addresses, and more. What CarConnectivity can't do, we build ourselves.
 
----
 
 ## Supported Platforms
 
@@ -193,10 +192,10 @@ After a terms update, a notification appears under **Settings → System → Rep
 
 | Service | Description |
 |---|---|
-| `vag_connect.lock` | Lock vehicle |
-| `vag_connect.unlock` | Unlock vehicle |
-| `vag_connect.start_climatisation` | Start climatisation |
-| `vag_connect.stop_climatisation` | Stop climatisation |
+| `vag_connect.lock` | Lock the vehicle |
+| `vag_connect.unlock` | Unlock the vehicle |
+| `vag_connect.start_climatisation` | Start pre-conditioning |
+| `vag_connect.stop_climatisation` | Stop pre-conditioning |
 | `vag_connect.start_charging` | Start charging |
 | `vag_connect.stop_charging` | Stop charging |
 | `vag_connect.start_window_heating` | Start window heating |
@@ -204,14 +203,14 @@ After a terms update, a notification appears under **Settings → System → Rep
 | `vag_connect.wake_vehicle` | Wake up vehicle |
 | `vag_connect.flash_lights` | Flash lights |
 | `vag_connect.refresh_vehicle` | Force data refresh |
-
----
-
+| `vag_connect.set_target_soc` | Set charge target (%) |
+| `vag_connect.set_climatisation_temperature` | Set climatisation temperature |
+| `vag_connect.set_departure_timer` | Set departure timer (new in v0.5.0) |
 ## Credits
 
-This integration would not be possible without these open-source projects:
+This integration builds on the following open-source projects:
 
-- **[CarConnectivity](https://github.com/tillsteinbach/CarConnectivity)** by @tillsteinbach — the core engine
+- **[CarConnectivity](https://github.com/tillsteinbach/CarConnectivity)** by @tillsteinbach — communication engine for all VAG APIs
 - **[CarConnectivity-connector-audi](https://github.com/acfischer42/CarConnectivity-connector-audi)** by @acfischer42
 - **[CarConnectivity-connector-volkswagen](https://github.com/tillsteinbach/CarConnectivity-connector-volkswagen)** by @tillsteinbach
 - **[CarConnectivity-connector-skoda](https://github.com/tillsteinbach/CarConnectivity-connector-skoda)** by @tillsteinbach
@@ -219,10 +218,3 @@ This integration would not be possible without these open-source projects:
 - **[CarConnectivity-connector-volkswagen-na](https://github.com/matpoulin/CarConnectivity-connector-volkswagen-na)** by @matpoulin
 - **[ioBroker.vw-connect](https://github.com/TA2k/ioBroker.vw-connect)** by @TA2k — API research
 
----
-
-## License
-
-MIT — see [LICENSE](LICENSE).
-
-This integration uses unofficial APIs — the same ones the official apps use. No guarantee it will always work. Audi, Volkswagen, Škoda, SEAT and CUPRA are registered trademarks of their respective manufacturers.

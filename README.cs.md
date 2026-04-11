@@ -28,7 +28,12 @@
 
 ---
 
-Připojte svůj Audi, VW, Škodu, SEAT nebo CUPRA k Home Assistant.
+Chtěl jsem ovládat své Audi v Home Assistant — pořádně, ne napůl. Tak jsem to postavil.
+
+**VAG Connect** je samostatná integrace Home Assistant pro všechny značky VAG. Žádný middleware, žádný Docker, žádná samostatná služba. Nainstalujte integraci, zadejte přihlašovací údaje, hotovo.
+
+Projekt využívá [CarConnectivity](https://github.com/tillsteinbach/CarConnectivity) od @tillsteinbach jako komunikační engine — a rozšiřuje ho o funkce, které v jádře CC neexistují: časovače odjezdu, teplota baterie, ETA nabíjení, informace o nabíjecích stanicích, adresy polohy a další.
+
 
 ## Hlavní funkce
 
