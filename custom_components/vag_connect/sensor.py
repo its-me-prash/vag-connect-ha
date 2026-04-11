@@ -122,8 +122,11 @@ SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
         key="charging_rate_kmh",
         data_key="charging_rate_kmh",
         name="Ladegeschwindigkeit",
-        # km/h = km Reichweite pro Stunde Laden (nicht Fahrgeschwindigkeit)
+        # km/h = km Reichweite die pro Stunde geladen werden.
+        # device_class=SPEED damit HA automatisch km/h → mph umrechnet
+        # wenn Nutzer imperiales Einheitensystem gewählt hat.
         native_unit_of_measurement=UnitOfSpeed.KILOMETERS_PER_HOUR,
+        device_class=SensorDeviceClass.SPEED,
         state_class=SensorStateClass.MEASUREMENT,
         icon="mdi:battery-charging-outline",
         condition="electric",

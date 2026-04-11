@@ -262,6 +262,42 @@ Jede Version folgt diesem Ablauf:
 
 
 
+
+## [0.4.2] - 2026-04-11
+
+### Hinzugefügt
+
+#### Metrisch / Imperial — vollständige Einheitenunterstützung
+
+VAG Connect nutzt HAs eingebautes Einheitensystem. Einstellung:
+**Einstellungen → System → Allgemein → Einheitensystem**
+
+| Sensor | Metrisch | Imperial |
+|---|---|---|
+| Reichweite | km | mi |
+| Kilometerstand | km | mi |
+| Nächste Inspektion | km | mi |
+| Nächster Ölwechsel | km | mi |
+| Außentemperatur | °C | °F |
+| Zieltemperatur | °C | °F |
+| Akkutemperatur | °C | °F |
+| **Ladegeschwindigkeit** | km/h | mph |
+
+Kein eigenes Konfigurations-Feld nötig — HA übernimmt die Umrechnung automatisch
+für alle Entities mit korrektem `device_class`.
+
+**Neu:** `charging_rate_kmh` bekommt `device_class=SensorDeviceClass.SPEED` →
+automatische km/h → mph Konvertierung bei imperialem Einheitensystem.
+
+Alle anderen Sensoren (Leistung kW, Prozent, kWh, Grad) haben keine imperiale
+Entsprechung — bleiben unverändert.
+  **Autor:** @Prash1407
+
+### Hinweis
+
+**`sensor.*_ladesaule`** — Entity-IDs enthalten grundsätzlich keine Umlaute
+(ä → a, ö → o, ü → u) — das ist normales HA-Verhalten bei allen Integrationen.
+Der Anzeigename in HA bleibt korrekt: **Ladesäule**.
 ## [0.4.1] - 2026-04-11
 
 ### Sprachbereinigung — Umlaute, Terminologie, Ton
