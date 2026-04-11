@@ -1,72 +1,36 @@
-# VAG Connect — Home Assistant
+# VAG Connect
 
-**[Deutsch](README.md) · [English](README.en.md) · [Nederlands](README.nl.md) · [Español](README.es.md) · [Polski](README.pl.md) · [Čeština](README.cs.md) · [Svenska](README.sv.md)**
+[![HACS](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://hacs.xyz)
+[![Version](https://img.shields.io/github/v/release/Prash1407/vag-connect-ha)](https://github.com/Prash1407/vag-connect-ha/releases)
+[![Tests](https://img.shields.io/badge/Tests-57%2F57-brightgreen)](tests/)
 
----
-
-Je voulais contrôler ma voiture depuis Home Assistant sans maintenir trois intégrations séparées ni faire tourner un broker MQTT dédié. Alors j'ai construit ça.
-
-**VAG Connect** connecte Home Assistant directement aux applications officielles d'Audi, VW, Skoda, SEAT et CUPRA. Pas d'intermédiaire, pas de Docker, pas de service supplémentaire. On installe l'intégration, on entre ses identifiants, c'est tout.
-
-Le travail technique difficile a surtout été accompli par Till Steinbach avec son framework [CarConnectivity](https://github.com/tillsteinbach/CarConnectivity). Cette intégration en est essentiellement un wrapper propre pour Home Assistant.
+**[Deutsch](README.md) · [English](README.en.md) · [Français](README.fr.md) · [Nederlands](README.nl.md) · [Español](README.es.md) · [Polski](README.pl.md) · [Čeština](README.cs.md) · [Svenska](README.sv.md)**
 
 ---
 
-## Ce qui fonctionne
+Connectez votre Audi, VW, Škoda, SEAT ou CUPRA à Home Assistant.
 
-| Fonctionnalité | Audi | VW | Skoda | SEAT/CUPRA |
-|---|:---:|:---:|:---:|:---:|
-| Niveau carburant / batterie | ✅ | ✅ | ✅ | ✅ |
-| Autonomie | ✅ | ✅ | ✅ | ✅ |
-| Kilométrage | ✅ | ✅ | ✅ | ✅ |
-| Position sur la carte | ✅ | ✅ | ✅ | ✅ |
-| État portes & vitres | ✅ | ✅ | ✅ | ✅ |
-| Verrouillage / déverrouillage | ✅ | ✅ | ✅ | ✅ |
-| Démarrer la climatisation | ✅ | ✅ | ✅ | ✅ |
-| Démarrer / arrêter la charge | ✅ | ✅ | ✅ | ✅ |
-| Curseur objectif de charge | ✅ | ✅ | ✅ | ✅ |
-| Niveau d'huile, révision | ✅ | ✅ | – | – |
-| Température extérieure | ✅ | ✅ | ✅ | ✅ |
-| Signal lumineux | ✅ | ✅ | ✅ | ✅ |
+## Fonctionnalités principales
 
-Tout ne fonctionne pas sur tous les modèles — ça dépend du véhicule et des services connectés souscrits. Ce qui ne marche pas dans l'app ne marchera pas ici non plus.
+- Niveau de carburant/batterie, autonomie, kilométrage
+- GPS + adresse de stationnement
+- État du véhicule (conduite/stationné/hors ligne)
+- Charge : puissance, vitesse, heure de fin, borne de recharge
+- Température de la batterie · Capacité de la batterie
+- Climatisation, chauffage des sièges, dégivrage
+- Verrouillage/déverrouillage, signal lumineux
+- **Métrique et impérial** automatiquement via les paramètres HA
+
+Voir [README complet en anglais](README.en.md) pour tous les détails.
 
 ---
 
 ## Installation
 
-### Via HACS (recommandé)
-
-1. HACS → Intégrations → ⋮ → Dépôts personnalisés
-2. URL : `https://github.com/Prash1407/vag-connect-ha`, Catégorie : Intégration
-3. Rechercher **VAG Connect**, installer, redémarrer HA
-
-### Manuel
-
-Copier le dossier `custom_components/vag_connect/` dans votre répertoire `config/custom_components/`, puis redémarrer Home Assistant.
+Paramètres → Appareils et services → Ajouter une intégration → **VAG Connect**
 
 ---
 
-## Configuration
+## Lizenz / License
 
-**Paramètres → Appareils et services → + Ajouter une intégration → "VAG Connect"**
-
-Quatre informations sont demandées : marque, e-mail, mot de passe, et S-PIN (facultatif, mais nécessaire pour le verrouillage).
-
----
-
-## Intervalle de mise à jour
-
-Par défaut : 15 minutes. Ne pas descendre en dessous de 5 minutes — trop de requêtes peuvent bloquer temporairement votre compte.
-
----
-
-## Mentions légales
-
-Cette intégration utilise des API non officielles — les mêmes que les apps officielles. Elle n'est pas autorisée par Audi AG, Volkswagen AG, CARIAD, Škoda Auto ou SEAT S.A.
-
-Tous les noms de marques sont la propriété de leurs détenteurs respectifs. Détails dans [NOTICE.md](NOTICE.md).
-
----
-
-*Créé par [prash1407](https://github.com/Prash1407) · Licence MIT · 2026*
+MIT — [GitHub](https://github.com/Prash1407/vag-connect-ha)

@@ -106,3 +106,41 @@ wake_vehicle:
       required: true
       selector:
         text:
+
+set_target_soc:
+  name: Ladeziel setzen
+  description: Setzt das Ladeziel des Fahrzeugs in Prozent.
+  fields:
+    vin:
+      name: VIN
+      required: true
+      selector:
+        text:
+    target:
+      name: Ladeziel (%)
+      required: true
+      selector:
+        number:
+          min: 20
+          max: 100
+          step: 5
+          unit_of_measurement: "%"
+
+set_climatisation_temperature:
+  name: Klimatemperatur setzen
+  description: Setzt die Zieltemperatur der Vorklimatisierung.
+  fields:
+    vin:
+      name: VIN
+      required: true
+      selector:
+        text:
+    temperature:
+      name: Temperatur (°C)
+      required: true
+      selector:
+        number:
+          min: 16
+          max: 30
+          step: 0.5
+          unit_of_measurement: "°C"

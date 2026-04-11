@@ -1,31 +1,36 @@
-# VAG Connect — Home Assistant
+# VAG Connect
+
+[![HACS](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://hacs.xyz)
+[![Version](https://img.shields.io/github/v/release/Prash1407/vag-connect-ha)](https://github.com/Prash1407/vag-connect-ha/releases)
+[![Tests](https://img.shields.io/badge/Tests-57%2F57-brightgreen)](tests/)
 
 **[Deutsch](README.md) · [English](README.en.md) · [Français](README.fr.md) · [Nederlands](README.nl.md) · [Español](README.es.md) · [Polski](README.pl.md) · [Čeština](README.cs.md) · [Svenska](README.sv.md)**
 
 ---
 
-Jag ville styra min bil från Home Assistant utan att underhålla tre separata integrationer eller köra en dedikerad MQTT-broker. Så jag byggde det här.
+Anslut din Audi, VW, Škoda, SEAT eller CUPRA till Home Assistant.
 
-**VAG Connect** kopplar Home Assistant direkt till de officiella apparna för Audi, VW, Skoda, SEAT och CUPRA. Inget mellanlager, ingen Docker, ingen extra tjänst. Installera integrationen, ange dina inloggningsuppgifter, klart.
+## Huvudfunktioner
 
-Det tunga tekniska arbetet gjordes främst av Till Steinbach med hans [CarConnectivity](https://github.com/tillsteinbach/CarConnectivity)-ramverk. Den här integrationen är i princip ett rent Home Assistant-omslag runt det.
+- Bränsle-/batterinivå, räckvidd, mätarställning
+- GPS + parkeringsplats som adress
+- Fordonsstatus (kör/parkerat/offline)
+- Laddning: effekt, hastighet, klar-tid, info om laddpunkt
+- Batteritemperatur · Batterikapacitet
+- Klimatisering, sätesvärme, rutavfrostning
+- Lås/lås upp, ljussignal
+- **Metriska och imperiala** enheter automatiskt via HA-inställningar
+
+Se [fullständig README på engelska](README.en.md) för all information.
 
 ---
 
 ## Installation
 
-### Via HACS (rekommenderat)
-
-1. HACS → Integrationer → ⋮ → Anpassade arkiv
-2. URL: `https://github.com/Prash1407/vag-connect-ha`, Kategori: Integration
-3. Sök efter **VAG Connect**, installera, starta om HA
+Inställningar → Enheter och tjänster → Lägg till integration → **VAG Connect**
 
 ---
 
-## Juridiskt
+## Lizenz / License
 
-Den här integrationen använder inofficiella API:er — samma som de officiella apparna använder. Den är inte godkänd av Audi AG, Volkswagen AG, CARIAD, Škoda Auto eller SEAT S.A. Alla varumärken tillhör sina respektive ägare. Detaljer i [NOTICE.md](NOTICE.md).
-
----
-
-*Byggt door/por/przez/od/av [prash1407](https://github.com/Prash1407) · MIT License · 2026*
+MIT — [GitHub](https://github.com/Prash1407/vag-connect-ha)

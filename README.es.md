@@ -1,31 +1,36 @@
-# VAG Connect — Home Assistant
+# VAG Connect
+
+[![HACS](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://hacs.xyz)
+[![Version](https://img.shields.io/github/v/release/Prash1407/vag-connect-ha)](https://github.com/Prash1407/vag-connect-ha/releases)
+[![Tests](https://img.shields.io/badge/Tests-57%2F57-brightgreen)](tests/)
 
 **[Deutsch](README.md) · [English](README.en.md) · [Français](README.fr.md) · [Nederlands](README.nl.md) · [Español](README.es.md) · [Polski](README.pl.md) · [Čeština](README.cs.md) · [Svenska](README.sv.md)**
 
 ---
 
-Quería controlar mi coche desde Home Assistant sin mantener tres integraciones separadas ni ejecutar un broker MQTT dedicado. Así que construí esto.
+Conecta tu Audi, VW, Škoda, SEAT o CUPRA con Home Assistant.
 
-**VAG Connect** conecta Home Assistant directamente con las aplicaciones oficiales de Audi, VW, Skoda, SEAT y CUPRA. Sin intermediarios, sin Docker, sin servicio extra. Instala la integración, introduce tus credenciales, listo.
+## Funciones principales
 
-El trabajo técnico duro fue realizado principalmente por Till Steinbach con su framework [CarConnectivity](https://github.com/tillsteinbach/CarConnectivity). Esta integración es básicamente un wrapper limpio de Home Assistant alrededor de él.
+- Nivel de combustible/batería, autonomía, kilometraje
+- GPS + dirección de aparcamiento
+- Estado del vehículo (en marcha/aparcado/sin conexión)
+- Carga: potencia, velocidad, hora de fin, info del punto de carga
+- Temperatura de la batería · Capacidad de la batería
+- Climatización, calefacción de asientos, desempañador
+- Bloqueo/desbloqueo, señal luminosa
+- **Métrico e imperial** automáticamente mediante ajustes de HA
+
+Consulta el [README completo en inglés](README.en.md) para todos los detalles.
 
 ---
 
 ## Installation
 
-### A través de HACS (recomendado)
-
-1. HACS → Integraciones → ⋮ → Repositorios personalizados
-2. URL: `https://github.com/Prash1407/vag-connect-ha`, Categoría: Integración
-3. Buscar **VAG Connect**, instalar, reiniciar HA
+Ajustes → Dispositivos y servicios → Añadir integración → **VAG Connect**
 
 ---
 
-## Legal
+## Lizenz / License
 
-Esta integración utiliza API no oficiales — las mismas que usan las apps oficiales. No está autorizada por Audi AG, Volkswagen AG, CARIAD, Škoda Auto ni SEAT S.A. Todos los nombres de marca son propiedad de sus respectivos titulares. Detalles en [NOTICE.md](NOTICE.md).
-
----
-
-*Creado door/por/przez/od/av [prash1407](https://github.com/Prash1407) · MIT License · 2026*
+MIT — [GitHub](https://github.com/Prash1407/vag-connect-ha)

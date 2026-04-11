@@ -1,31 +1,36 @@
-# VAG Connect — Home Assistant
+# VAG Connect
+
+[![HACS](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://hacs.xyz)
+[![Version](https://img.shields.io/github/v/release/Prash1407/vag-connect-ha)](https://github.com/Prash1407/vag-connect-ha/releases)
+[![Tests](https://img.shields.io/badge/Tests-57%2F57-brightgreen)](tests/)
 
 **[Deutsch](README.md) · [English](README.en.md) · [Français](README.fr.md) · [Nederlands](README.nl.md) · [Español](README.es.md) · [Polski](README.pl.md) · [Čeština](README.cs.md) · [Svenska](README.sv.md)**
 
 ---
 
-Ik wilde mijn auto vanuit Home Assistant bedienen zonder drie losse integraties bij te houden of een aparte MQTT-broker te draaien. Dus bouwde ik dit.
+Verbind uw Audi, VW, Škoda, SEAT of CUPRA met Home Assistant.
 
-**VAG Connect** verbindt Home Assistant rechtstreeks met de officiële apps van Audi, VW, Skoda, SEAT en CUPRA. Geen tussenlaag, geen Docker, geen extra dienst. Installeer de integratie, vul je inloggegevens in, klaar.
+## Hoofdfuncties
 
-Het zware technische werk is grotendeels gedaan door Till Steinbach met zijn [CarConnectivity](https://github.com/tillsteinbach/CarConnectivity) framework. Deze integratie is in feite een nette Home Assistant-wrapper daaromheen.
+- Brandstof-/accuniveau, actieradius, kilometerstand
+- GPS + parkeerlocatie als adres
+- Voertuigstatus (rijden/geparkeerd/offline)
+- Laden: vermogen, snelheid, gereed-tijdstip, laadpaal-info
+- Accutemperatuur · Accucapaciteit
+- Klimaatregeling, stoelverwarming, ruitenverwarming
+- Vergrendelen/ontgrendelen, lichtsignaal
+- **Metrisch en imperiaal** automatisch via HA-instellingen
+
+Zie de [volledige README in het Engels](README.en.md) voor alle details.
 
 ---
 
 ## Installation
 
-### Via HACS (aanbevolen)
-
-1. HACS → Integraties → ⋮ → Aangepaste repositories
-2. URL: `https://github.com/Prash1407/vag-connect-ha`, Categorie: Integratie
-3. Zoek naar **VAG Connect**, installeer, herstart HA
+Instellingen → Apparaten en diensten → Integratie toevoegen → **VAG Connect**
 
 ---
 
-## Juridisch
+## Lizenz / License
 
-Deze integratie gebruikt onofficiële API's — dezelfde die de officiële apps gebruiken. Ze is niet goedgekeurd door Audi AG, Volkswagen AG, CARIAD, Škoda Auto of SEAT S.A. Alle merknamen zijn eigendom van hun respectieve houders. Details in [NOTICE.md](NOTICE.md).
-
----
-
-*Gebouwd door/por/przez/od/av [prash1407](https://github.com/Prash1407) · MIT License · 2026*
+MIT — [GitHub](https://github.com/Prash1407/vag-connect-ha)

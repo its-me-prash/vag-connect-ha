@@ -1,31 +1,36 @@
-# VAG Connect — Home Assistant
+# VAG Connect
+
+[![HACS](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://hacs.xyz)
+[![Version](https://img.shields.io/github/v/release/Prash1407/vag-connect-ha)](https://github.com/Prash1407/vag-connect-ha/releases)
+[![Tests](https://img.shields.io/badge/Tests-57%2F57-brightgreen)](tests/)
 
 **[Deutsch](README.md) · [English](README.en.md) · [Français](README.fr.md) · [Nederlands](README.nl.md) · [Español](README.es.md) · [Polski](README.pl.md) · [Čeština](README.cs.md) · [Svenska](README.sv.md)**
 
 ---
 
-Chciałem sterować swoim samochodem z Home Assistant bez utrzymywania trzech osobnych integracji czy uruchamiania dedykowanego brokera MQTT. Więc zbudowałem to.
+Połącz swojego Audi, VW, Škodę, SEAT lub CUPRA z Home Assistant.
 
-**VAG Connect** łączy Home Assistant bezpośrednio z oficjalnymi aplikacjami Audi, VW, Skoda, SEAT i CUPRA. Bez pośredników, bez Dockera, bez dodatkowej usługi. Zainstaluj integrację, wpisz dane logowania, gotowe.
+## Główne funkcje
 
-Ciężką pracę techniczną wykonał głównie Till Steinbach swoim frameworkiem [CarConnectivity](https://github.com/tillsteinbach/CarConnectivity). Ta integracja to w zasadzie czysty wrapper Home Assistant wokół niego.
+- Poziom paliwa/baterii, zasięg, przebieg
+- GPS + adres miejsca parkowania
+- Stan pojazdu (jedzie/zaparkowany/offline)
+- Ładowanie: moc, prędkość, czas zakończenia, info o stacji
+- Temperatura baterii · Pojemność baterii
+- Klimatyzacja, ogrzewanie siedzeń, ogrzewanie szyb
+- Blokowanie/odblokowanie, sygnał świetlny
+- **Metryczny i imperialny** automatycznie przez ustawienia HA
+
+Szczegóły w [pełnym README po angielsku](README.en.md).
 
 ---
 
 ## Installation
 
-### Przez HACS (zalecane)
-
-1. HACS → Integracje → ⋮ → Niestandardowe repozytoria
-2. URL: `https://github.com/Prash1407/vag-connect-ha`, Kategoria: Integracja
-3. Wyszukaj **VAG Connect**, zainstaluj, zrestartuj HA
+Ustawienia → Urządzenia i usługi → Dodaj integrację → **VAG Connect**
 
 ---
 
-## Prawne
+## Lizenz / License
 
-Ta integracja korzysta z nieoficjalnych API — tych samych, których używają oficjalne aplikacje. Nie jest autoryzowana przez Audi AG, Volkswagen AG, CARIAD, Škoda Auto ani SEAT S.A. Wszystkie nazwy marek są własnością ich właścicieli. Szczegóły w [NOTICE.md](NOTICE.md).
-
----
-
-*Zbudowane door/por/przez/od/av [prash1407](https://github.com/Prash1407) · MIT License · 2026*
+MIT — [GitHub](https://github.com/Prash1407/vag-connect-ha)
