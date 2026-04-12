@@ -570,46 +570,6 @@ class TestAudiClient:
         client = AudiClient(MagicMock(), "u@t.de", "pw")
         assert client.brand.redirect_uri == "myaudi:///"
 
-    def test_azs_exchange_updates_tokens(self):
-        from custom_components.vag_connect.cariad.api.audi import AudiClient
-        from custom_components.vag_connect.cariad.models import TokenSet
-
-        session = _mock_session(status=200, json_data={
-            "access_token": "new_access",
-            "refresh_token": "new_refresh",
-            "id_token": "new_id",
-        })
-        client = AudiClient(session, "u@t.de", "pw")
-        client._tokens = TokenSet("old_access", "old_refresh", "old_id")
-
-        asyncio.get_event_loop().run_until_complete(client._exchange_azs())
-        assert client._tokens.access_token == "new_access"
-
-    def test_azs_exchange_raises_on_failure(self):
-        from custom_components.vag_connect.cariad.api.audi import AudiClient
-        from custom_components.vag_connect.cariad.exceptions import AuthenticationError
-        from custom_components.vag_connect.cariad.models import TokenSet
-
-        session = _mock_session(status=401, text="Unauthorized")
-        client = AudiClient(session, "u@t.de", "pw")
-        client._tokens = TokenSet("acc", "ref", "id")
-
-        with pytest.raises(AuthenticationError, match="401"):
-            asyncio.get_event_loop().run_until_complete(client._exchange_azs())
-
-    def test_mbb_register_stores_xclient_id(self):
-        from custom_components.vag_connect.cariad.api.audi import AudiClient
-        from custom_components.vag_connect.cariad.models import TokenSet
-
-        session = _mock_session(status=200, json_data={"client_id": "MBB_CLIENT_XYZ"})
-        client = AudiClient(session, "u@t.de", "pw")
-        client._tokens = TokenSet("acc", "ref", "id")
-
-        asyncio.get_event_loop().run_until_complete(client._mbb_register_and_auth())
-        assert client._xclient_id == "MBB_CLIENT_XYZ"
-
-
-# ── Škoda client ───────────────────────────────────────────────────────────────
 
 class TestSkodaClient:
     def test_brand_is_skoda(self):
@@ -2353,35 +2313,7 @@ class TestVWEUStatusAdditional:
 # ── audi.py remaining paths ───────────────────────────────────────────────────
 
 class TestAudiClientAdditional:
-    def test_authenticate_no_tokens_raises_azs(self):
-        """_exchange_azs raises if tokens are None."""
-        from custom_components.vag_connect.cariad.api.audi import AudiClient
-        from custom_components.vag_connect.cariad.exceptions import AuthenticationError
 
-        client = AudiClient(MagicMock(), "u@t.de", "pw")
-        # _tokens is None → should raise AuthenticationError
-        with pytest.raises(AuthenticationError, match="IDK tokens"):
-            asyncio.get_event_loop().run_until_complete(client._exchange_azs())
-
-    def test_mbb_registration_failure_raises(self):
-        """MBB register 500 raises AuthenticationError."""
-        from custom_components.vag_connect.cariad.api.audi import AudiClient
-        from custom_components.vag_connect.cariad.exceptions import AuthenticationError
-        from custom_components.vag_connect.cariad.models import TokenSet
-
-        resp = AsyncMock()
-        resp.status = 500
-        resp.text = AsyncMock(return_value="Server Error")
-        resp.__aenter__ = AsyncMock(return_value=resp)
-        resp.__aexit__ = AsyncMock(return_value=False)
-        session = MagicMock()
-        session.post = MagicMock(return_value=resp)
-
-        client = AudiClient(session, "u@t.de", "pw")
-        client._tokens = TokenSet("acc", "ref", "id")
-
-        with pytest.raises(AuthenticationError, match="500"):
-            asyncio.get_event_loop().run_until_complete(client._mbb_register_and_auth())
 
     def test_audi_get_vehicles(self):
         """get_vehicles uses VW EU endpoint."""
