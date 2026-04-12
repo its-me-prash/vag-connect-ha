@@ -67,9 +67,11 @@ async def _validate_credentials(
             _LOGGER.warning("VAG Connect auth failed (%s): %s", brand, err)
             raise ValueError("invalid_credentials") from err
         except Exception as err:  # noqa: BLE001
+            import traceback  # noqa: PLC0415
             _LOGGER.error(
-                "VAG Connect unexpected error during %s auth: %s — %s",
+                "VAG Connect unexpected error during %s auth: %s — %s\nTraceback:\n%s",
                 brand, type(err).__name__, err,
+                "".join(traceback.format_tb(err.__traceback__)),
             )
             raise ValueError("cannot_connect") from err
 
