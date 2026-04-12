@@ -29,6 +29,22 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ---
 
+## [0.14.9] - 2026-04-12
+
+### Fixed — basierend auf volkswagencarnet (MIT) Analyse
+
+volkswagencarnet nutzt SELBE client_id und SELBES Auth0 `/u/login` und funktioniert.
+Ihr Ansatz direkt übernommen:
+
+1. **`<input name="state">` aus HTML extrahieren** (nicht aus URL-Query)
+2. **state SOWOHL in URL als auch im Body** (`/u/login?state=S` + `{state: S}` in Form-Body)
+3. **username + password KOMBINIERT in einem POST** (nicht zwei Schritte)
+4. **`allow_redirects=False`** + manuelles Redirect-Folgen
+5. **CARIAD BFF Token-Endpoint** (`emea.bff.cariad.digital/login/v1/idk/token`)
+   statt IDK direkt — wie audiconnect und volkswagencarnet
+
+---
+
 ## [0.14.8] - 2026-04-12
 
 ### Fixed

@@ -158,100 +158,134 @@ class IDKAuth:
         verifier: str,
         mfa_code: str | None = None,
     ) -> TokenSet:
-        """Auth0 Universal Login v2 flow (/u/login).
+        """Auth0 Universal Login — combined username+password POST.
 
-        VW Group uses Auth0 UL v2 — identifier-first:
-          1. POST /u/login?state=S  {username, action}  → redirect to /u/login/password?state=S2
-          2. POST /u/login/password?state=S2 {password, action} → redirect to callback / MFA
-          3. (optional) POST /u/mfa-otp-challenge with code
-          4. Follow redirect chain → app:// URI → exchange code
+        Based on reverse-engineering of volkswagencarnet (MIT) which uses the
+        SAME client_id and the SAME Auth0 /u/login page successfully:
 
-        Reference: auth0.com/docs/authenticate/login/universal-login,
-                   myskoda (MIT), community reverse-engineering.
+          1. Parse <input name="state"> from the login page HTML
+          2. POST {username, password, state} to /u/login?state=STATE
+             with allow_redirects=False
+          3. Follow redirects manually until app:// URI
+          4. Exchange auth code (PKCE)
         """
-        auth0_state: str = parse_qs(urlparse(login_url).query).get("state", [""])[0]
+        # Step 1 — extract state from hidden HTML input
+        # Auth0 embeds state as <input type="hidden" name="state" value="...">
+        # even in SPA pages. Fall back to URL query string if not found.
+        state_from_html = self._parse_csrf_robust(html).fields.get("state", "")
+        auth0_state: str = (
+            state_from_html
+            or parse_qs(urlparse(login_url).query).get("state", [""])[0]
+        )
         if not auth0_state:
-            raise AuthenticationError("Auth0: no state in login URL.")
-        _LOGGER.debug("IDK Auth0 v2: state=%s... url=%s", auth0_state[:20], login_url[:80])
+            raise AuthenticationError("Auth0: could not find state token.")
 
-        # Strategy A: combined email+password in one POST (some Auth0 configs)
-        # Strategy B: identifier-first (two steps)
-        # We try A first — it's simpler and works for VW's combined form.
-        # login_url already has state correctly encoded — use as-is.
-
-        combined_resp_url, combined_resp_html = await self._auth0_post_form(
-            login_url,  # exact URL with state — don't reconstruct
-            extra={"username": email, "password": password, "action": "default"},
+        _LOGGER.debug(
+            "IDK Auth0: state=%s... (from_html=%s)",
+            auth0_state[:20], bool(state_from_html),
         )
-        _LOGGER.debug("IDK Auth0 combined: → %s", combined_resp_url[:80])
 
-        # If we're still on a login page (400 was caught, or redirect back to /u/login),
-        # fall back to identifier-first two-step approach
-        if "/u/login" in combined_resp_url and "password" not in combined_resp_url:
-            _LOGGER.debug("IDK Auth0: combined failed, trying identifier-first")
+        # Step 2 — POST credentials (combined, NOT identifier-first)
+        # state goes BOTH in URL query AND in form body (volkswagencarnet pattern)
+        login_form = {
+            "username": email,
+            "password": password,
+            "state":    auth0_state,
+        }
+        post_url = f"{_IDK_BASE}/u/login?state={auth0_state}"
 
-            # Step 2a: POST email only
-            email_resp_url, _ = await self._auth0_post_form(
-                login_url,
-                extra={"username": email, "action": "default"},
-            )
-            _LOGGER.debug("IDK Auth0 email step: → %s", email_resp_url[:80])
+        async with self._session.post(
+            post_url,
+            data=login_form,
+            headers=self._form_headers(),
+            allow_redirects=False,  # follow manually to preserve cookies
+        ) as resp:
+            status   = resp.status
+            location = resp.headers.get("Location", "")
+            resp_html = await resp.text(errors="replace")
 
-            # Step 2b: POST password to where Auth0 redirected us
-            combined_resp_url, combined_resp_html = await self._auth0_post_form(
-                email_resp_url,
-                extra={"password": password, "action": "default"},
-            )
-            _LOGGER.debug("IDK Auth0 password step: → %s", combined_resp_url[:80])
-
-        pw_resp_url  = combined_resp_url
-        pw_resp_html = combined_resp_html
-
-        # Check for MFA challenge
-        if "/u/mfa" in pw_resp_url or "/u/email-challenge" in pw_resp_url or "/u/mfa-otp" in pw_resp_url:
-            _LOGGER.debug("IDK Auth0: MFA challenge at %s", pw_resp_url[:80])
-            if mfa_code:
-                pw_resp_url, pw_resp_html = await self._auth0_post_form(
-                    pw_resp_url,
-                    extra={"code": mfa_code, "action": "default"},
-                )
-                _LOGGER.debug("IDK Auth0: MFA submitted → %s", pw_resp_url[:80])
-            else:
-                raise TwoFactorRequiredError()
-
-        # Step 4 — follow redirect chain to app:// URI
-        final_loc = await self._follow_to_app_redirect_get(
-            pw_resp_url, self._brand.redirect_uri
+        _LOGGER.debug(
+            "IDK Auth0 POST: status=%s location=%s",
+            status, location[:80] if location else "(none)",
         )
-        location = final_loc or ""
 
-        # If we got HTML instead of a redirect (form_post), submit it
-        if not location and pw_resp_html:
-            loc2 = await self._submit_auth0_callback(pw_resp_html)
-            if loc2:
-                final_loc2 = await self._follow_to_app_redirect_get(
-                    loc2, self._brand.redirect_uri
-                )
-                location = final_loc2 or ""
-
-        _LOGGER.debug("IDK Auth0: final location = %s", location[:60] if location else "(none)")
-
-        # If still on login/error page — wrong credentials
-        if not location and "/u/login" in pw_resp_url:
+        if status == 400:
+            # Parse error from Auth0 HTML response
+            err = self._extract_auth0_error(resp_html)
+            _LOGGER.warning("IDK Auth0 400: %s", err)
             raise AuthenticationError(
-                "Auth0: credentials rejected — email or password wrong."
+                f"Auth0 login rejected (400): {err or 'check email/password'}"
             )
-        if not location:
+        if status == 401:
+            raise AuthenticationError("Invalid email or password.")
+        if status == 429:
+            raise RateLimitError()
+        if status not in (302, 303):
             raise AuthenticationError(
-                f"Auth0: no app:// redirect after login. Last URL: {pw_resp_url[:80]}"
+                f"Auth0 POST returned HTTP {status}: {resp_html[:200]}"
             )
 
-        auth_code = _extract_auth_code(location, self._brand.redirect_uri)
+        # Step 3 — follow redirect chain manually until app:// URI
+        prefix = self._brand.redirect_uri.split("://")[0] + "://"
+        ref = location
+        for _ in range(15):
+            if not ref:
+                break
+            if ref.startswith(prefix):
+                break
+            # Detect MFA
+            if "/u/mfa" in ref or "/u/email-challenge" in ref:
+                _LOGGER.debug("IDK Auth0: MFA challenge at %s", ref[:80])
+                if mfa_code:
+                    mfa_state = parse_qs(urlparse(ref).query).get("state", [auth0_state])[0]
+                    async with self._session.post(
+                        ref,
+                        data={"code": mfa_code, "state": mfa_state},
+                        headers=self._form_headers(),
+                        allow_redirects=False,
+                    ) as mfa_resp:
+                        ref = mfa_resp.headers.get("Location", "")
+                    continue
+                else:
+                    raise TwoFactorRequiredError()
+
+            async with self._session.get(
+                ref,
+                headers=self._base_headers(),
+                allow_redirects=False,
+            ) as redir_resp:
+                next_loc = redir_resp.headers.get("Location", "")
+                if redir_resp.status in (301, 302, 303, 307, 308) and next_loc:
+                    ref = next_loc
+                else:
+                    break
+
+        _LOGGER.debug("IDK Auth0: final redirect = %s", ref[:80] if ref else "(none)")
+
+        if not ref or not ref.startswith(prefix):
+            raise AuthenticationError(
+                f"Auth0: no app:// redirect after login. Last: {ref[:80]}"
+            )
+
+        auth_code = _extract_auth_code(ref, self._brand.redirect_uri)
         if not auth_code:
-            raise AuthenticationError(f"Auth0: no code in: {location[:80]}")
+            raise AuthenticationError(f"Auth0: no code in: {ref[:80]}")
 
-        _LOGGER.debug("IDK Auth0: got code, exchanging for tokens")
+        _LOGGER.debug("IDK Auth0: got auth code, exchanging tokens")
         return await self._exchange_code(auth_code, verifier)
+
+    @staticmethod
+    def _extract_auth0_error(html: str) -> str:
+        """Extract human-readable error from Auth0 400 response page."""
+        for pattern in [
+            r'data-error-code=["\']([^"\']+)["\']',
+            r'"errorCode"\s*:\s*"([^"]+)"',
+            r'class=["\']error[^"\']*["\'][^>]*>([^<]{5,80})<',
+        ]:
+            m = re.search(pattern, html)
+            if m:
+                return m.group(1)
+        return ""
 
     async def _auth0_post_form(
         self,
@@ -538,14 +572,18 @@ class IDKAuth:
         return self._parse_tokens(payload)
 
     async def _get_token_endpoint(self) -> str:
-        """Fetch token endpoint from IDK OpenID configuration."""
-        url = f"{_IDK_BASE}/.well-known/openid-configuration"
+        """Fetch token endpoint — prefer CARIAD BFF over IDK direct."""
+        # CARIAD BFF endpoint (confirmed by audiconnect + CARIAD openid-config)
+        cariad_token = "https://emea.bff.cariad.digital/login/v1/idk/token"
         try:
+            url = "https://emea.bff.cariad.digital/login/v1/idk/openid-configuration"
             async with self._session.get(url) as resp:
-                cfg: dict[str, Any] = await resp.json()
-                return str(cfg.get("token_endpoint", f"{_IDK_BASE}/oidc/v1/token"))
+                if resp.status == 200:
+                    cfg: dict[str, Any] = await resp.json()
+                    return str(cfg.get("token_endpoint", cariad_token))
         except Exception:  # noqa: BLE001
-            return f"{_IDK_BASE}/oidc/v1/token"
+            pass
+        return cariad_token
 
     def _parse_tokens(self, payload: dict[str, Any]) -> TokenSet:
         """Parse token response into a TokenSet."""

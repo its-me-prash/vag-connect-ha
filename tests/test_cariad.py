@@ -191,7 +191,7 @@ class TestIDKAuth:
 
         auth = IDKAuth(session, BRAND_VW_EU)
         result = asyncio.get_event_loop().run_until_complete(auth._get_token_endpoint())
-        assert "identity.vwgroup.io" in result
+        assert "cariad.digital" in result or "identity.vwgroup.io" in result
         assert "token" in result
 
     def test_idk_auth_raises_on_bad_auth_page(self):
