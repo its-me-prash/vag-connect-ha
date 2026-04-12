@@ -141,7 +141,7 @@ Restart Home Assistant.
 
 Apache License 2.0 — [LICENSE](../LICENSE)
 
-**VAG Connect™** is a registered trademark. Forks may not use this name.
+**VAG Connect™** is an unregistered trademark (™, not ®). Please do not use this name in forks to avoid confusion.
 
 This integration is an independent community project with no affiliation to Volkswagen AG, Audi AG, Škoda Auto, SEAT S.A., CUPRA, Porsche AG or any VAG subsidiary.
 

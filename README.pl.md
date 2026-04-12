@@ -140,7 +140,7 @@ Uruchom ponownie Home Assistant.
 
 Apache License 2.0 — [LICENSE](../LICENSE)
 
-**VAG Connect™** jest zastrzeżonym znakiem towarowym. Forki nie mogą używać tej nazwy.
+**VAG Connect™** jest niezastrzeżonym znakiem towarowym (™, nie ®). Prosimy nie używać tej nazwy w forkach, aby uniknąć nieporozumień.
 
 Ta integracja jest niezależnym projektem społecznościowym bez powiązania z Volkswagen AG, Audi AG, Škoda Auto, SEAT S.A., CUPRA, Porsche AG ani żadną filią Grupy Volkswagen.
 

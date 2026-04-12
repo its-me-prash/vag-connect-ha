@@ -140,7 +140,7 @@ Herstart Home Assistant.
 
 Apache License 2.0 — [LICENSE](../LICENSE)
 
-**VAG Connect™** is een geregistreerd handelsmerk. Forks mogen deze naam niet gebruiken.
+**VAG Connect™** is een niet-geregistreerd handelsmerk (™, niet ®). Gebruik deze naam niet in forks om verwarring te voorkomen.
 
 Deze integratie is een onafhankelijk communityproject zonder enige verbinding met Volkswagen AG, Audi AG, Škoda Auto, SEAT S.A., CUPRA, Porsche AG of andere VAG-dochterondernemingen.
 

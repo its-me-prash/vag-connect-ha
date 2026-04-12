@@ -23,7 +23,8 @@ were discovered through publicly available open-source research and
 reverse engineering of official mobile applications. No confidential
 or proprietary information was used.
 
-Trademarks: VAG Connect™ is the name of this Home Assistant integration.
-It may not be used by derivative works without written permission from
-the author. All automotive brand names (Volkswagen, Audi, Škoda, SEAT,
-CUPRA) are trademarks of their respective owners.
+Name: VAG Connect™ is the name of this Home Assistant integration (™ denotes
+an unregistered trademark claim based on use — not a registered trademark).
+Please do not use the name "VAG Connect" for derivative works or forks to
+avoid user confusion. All automotive brand names (Volkswagen, Audi, Škoda,
+SEAT, CUPRA, Porsche) are trademarks of their respective owners.

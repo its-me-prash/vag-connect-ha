@@ -211,7 +211,7 @@ cariad/
 
 Apache License 2.0 — [LICENSE](LICENSE)
 
-**VAG Connect™** ist ein eingetragenes Markenzeichen. Forks dürfen diesen Namen nicht verwenden.
+**VAG Connect™** ist ein Markenzeichen (™, nicht ®, nicht registriert). Forks sollten diesen Namen nicht verwenden, um Verwechslungen zu vermeiden.
 
 Diese Integration ist ein unabhängiges Community-Projekt ohne Verbindung zu Volkswagen AG, Audi AG, Škoda Auto, SEAT S.A., CUPRA, Porsche AG oder anderen VAG-Tochtergesellschaften.
 
