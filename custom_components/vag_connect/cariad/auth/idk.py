@@ -380,9 +380,9 @@ class IDKAuth:
     ) -> TokenSet:
         """Legacy signin-service flow (pre-2025 IDK)."""
         csrf = self._parse_csrf_robust(html)
-        _LOGGER.debug(
+        _LOGGER.warning(
             "IDK legacy: step1 fields=%s action=%s",
-            list(csrf.fields.keys()), csrf.form_action[:60] if csrf.form_action else "(none)",
+            list(csrf.fields.keys()), csrf.form_action[:80] if csrf.form_action else "(none)",
         )
         if not csrf.fields.get("_csrf") and not csrf.fields.get("hmac"):
             raise AuthenticationError(
@@ -393,19 +393,20 @@ class IDKAuth:
             _IDK_BASE,
             csrf.form_action or f"{_SIGNIN_BASE}/{self._brand.client_id}/login/identifier",
         )
-        _LOGGER.debug("IDK legacy: posting email to %s", email_url[:80])
+        _LOGGER.warning("IDK legacy: posting email to %s", email_url[:100])
         async with self._session.post(
             email_url, data={**csrf.fields, "email": email},
             headers=self._form_headers(), allow_redirects=True,
         ) as resp:
             if resp.status != 200:
-                raise AuthenticationError(f"Email submission HTTP {resp.status}")
+                raise AuthenticationError(f"Email submission HTTP {resp.status} at {email_url[:80]}")
             html2 = await resp.text()
 
         csrf2 = self._parse_csrf_robust(html2)
-        _LOGGER.debug(
-            "IDK legacy: step2 fields=%s",
+        _LOGGER.warning(
+            "IDK legacy: step2 fields=%s form_action=%s",
             list(csrf2.fields.keys()),
+            csrf2.form_action[:80] if csrf2.form_action else "(none)",
         )
         if "hmac" not in csrf2.fields:
             m = re.search(r'"hmac"\s*:\s*"([0-9a-fA-F]+)"', html2)
@@ -426,9 +427,9 @@ class IDKAuth:
                 _IDK_BASE,
                 f"{_SIGNIN_BASE}/{self._brand.client_id}/login/authenticate",
             )
-        _LOGGER.debug(
-            "IDK legacy: posting password to %s fields=%s",
-            pw_url[:80], list(csrf2.fields.keys()),
+        _LOGGER.warning(
+            "IDK legacy: posting password to %s with fields=%s",
+            pw_url[:100], list(csrf2.fields.keys()),
         )
         location = await self._follow_to_app_redirect(
             pw_url, {**csrf2.fields, "email": email, "password": password},
@@ -592,7 +593,7 @@ class IDKAuth:
             if resp.status not in (302, 303, 301, 307, 308):
                 body = await resp.text()
                 raise AuthenticationError(
-                    f"Password POST returned HTTP {resp.status}: {body[:200]}"
+                    f"Password POST returned HTTP {resp.status} at {url[:100]}: {body[:200]}"
                 )
             raw_loc = resp.headers.get("Location", "")
             location = _make_absolute(url, raw_loc) if raw_loc else ""
