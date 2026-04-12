@@ -413,10 +413,19 @@ class IDKAuth:
                 csrf2.fields["hmac"] = m.group(1)
                 _LOGGER.debug("IDK legacy: hmac extracted from JS")
 
-        pw_url = _absolute_url(
-            _IDK_BASE,
-            f"{_SIGNIN_BASE}/{self._brand.client_id}/login/authenticate",
-        )
+        # Password URL — audiconnect pattern:
+        # 1. Try form action from the password-page HTML
+        # 2. Fall back: replace "identifier" with "authenticate" in email_url
+        # 3. Last resort: hardcoded authenticate path
+        if csrf2.form_action:
+            pw_url = _absolute_url(_IDK_BASE, csrf2.form_action)
+        elif "identifier" in email_url:
+            pw_url = email_url.replace("identifier", "authenticate")
+        else:
+            pw_url = _absolute_url(
+                _IDK_BASE,
+                f"{_SIGNIN_BASE}/{self._brand.client_id}/login/authenticate",
+            )
         _LOGGER.debug(
             "IDK legacy: posting password to %s fields=%s",
             pw_url[:80], list(csrf2.fields.keys()),
