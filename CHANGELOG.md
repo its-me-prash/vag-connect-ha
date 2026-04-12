@@ -27,31 +27,50 @@ Geplant für 0.11.0+:
 
 ### Feature-Backlog (nach requests-Fix)
 
-**VIN-Auswahl im Config Flow** (inspiriert von marksieczkowski/ha-volkswagen)
-- Nutzer kann beim Setup wählen welche Fahrzeuge integriert werden
-- Wichtig für Nutzer mit mehreren Fahrzeugen die nur 1-2 in HA wollen
+**Priorität 1 — Fehlende Sensoren aus CARIAD-API:**
+- `adblue_level` — AdBlue-Stand für Diesel
+- `hood_closed` — Motorhaube offen/zu
+- `trunk_closed` / `trunk_locked` — Kofferraum separat
+- `sunroof_closed` — Schiebedach-Status
+- `parking_time` — Zeitstempel letztes Parken
+- `hv_battery_min_temperature` / `hv_battery_max_temperature` — Akku-Temperaturbereich
+- `gas_level` / `gas_range` — CNG/Erdgas-Fahrzeuge
 
-**Connector LED-Farbe** (CarConnectivity Issue #122)
-- `sensor.connector_led_color` — Farbe der Ladestecker-LED
-- Sobald @tillsteinbach es wieder exposed
+**Priorität 2 — Trip-Statistiken (volkswagencarnet hat 424 Properties):**
+- `last_trip_duration`, `last_trip_length`, `last_trip_average_speed`
+- `last_trip_average_fuel_consumption`, `last_trip_average_electric_engine_consumption`
+- `last_trip_average_recuperation` — Rekuperation pro Fahrt
+- `longterm_trip_*` — Langzeit-Durchschnitte
+- Benötigt: Prüfen ob CarConnectivity trip data exposed
 
-**Verbräuche & Trip-Statistiken** (aus audiconnect/volkswagencarnet)
-- Kraftstoffverbrauch, Stromverbrauch, Letzte Fahrt
-- Benötigt API-Recherche ob CarConnectivity das exposed
+**Priorität 3 — UX-Verbesserungen:**
+- VIN-Auswahl im Config Flow (inspiriert von marksieczkowski/ha-volkswagen)
+- Pre-Heater Support für Verbrenner (audiconnect hat das)
+- Connector LED-Farbe wenn CC Issue #122 gefixt
 
-**Pre-Heater Support (Verbrenner)** (aus audiconnect)  
-- Vorheizung für Verbrenner-Modelle (nicht Klimatisierung)
-- Separate CarConnectivity-Funktion
+**Strategisch (falls CC dauerhaft broken):**
+- Eigene CARIAD-API direkt (`emea.bff.cariad.digital`) — beide konkurrierenden
+  Integrationen nutzen dieselbe API. Fork von volkswagencarnet + Multi-Brand-Support.
+  Aufwand: sehr hoch. Nur wenn @tillsteinbach langfristig inaktiv.
 
 ### Ecosystem-Analyse (Stand April 2026)
 
-| Integration | API | Status | Stars | requests-Problem |
+| Integration | API-Backend | Status | Stars | requests-OK |
 |---|---|---|---|---|
-| **vag-connect-ha** (unser) | CarConnectivity | 🟡 requests-Blocker | 0 | ✅ ja |
-| audiconnect/audi_connect_ha | Eigene MyAudi API | 🟢 funktioniert | 325 | ❌ nein |
-| robinostlund/volkswagencarnet | Eigene CarNet API | 🟢 funktioniert | 502 | ❌ nein |
-| marksieczkowski/ha-volkswagen | CC + VW NA Connector | 🟡 WIP, requests-Blocker | 0 | ✅ ja |
-| skodaconnect/skodaconnect | Eigene API | 🔴 archiviert | 104 | ❌ nein |
+| **vag-connect-ha** | CarConnectivity | 🟡 requests-Blocker | 0 | ❌ |
+| audiconnect | CARIAD BFF direkt | 🟡 läuft, neue Modelle 2025 kaputt | 325 | ✅ |
+| volkswagencarnet | CARIAD BFF direkt | 🟢 läuft, Stabilitäts-Bugs | 502 | ✅ |
+| marksieczkowski/ha-volkswagen | CC + VW NA | 🟡 WIP, requests-Blocker | 0 | ❌ |
+| skodaconnect | Eigene API | 🔴 archiviert (Skoda Connect abgeschaltet 2024) | 104 | ✅ |
+
+**Warum skodaconnect archiviert:** Škoda hat skoda-connect.com Ende 2024 abgeschaltet
+und Nutzer auf MyŠkoda migriert. Die alte API existiert nicht mehr.
+Škoda ist jetzt über CarConnectivity (connector-skoda) erreichbar.
+
+**Fallback-Entscheidung:** Kein Fallback auf volkswagencarnet/audiconnect solange
+CarConnectivity verfügbar ist. Beide haben aktive API-Bugs (audiconnect: 502 bei
+Klimatisierung, GPS-Probleme; volkswagencarnet: State-Detection falsch, Task-Exceptions).
+Erst Phase 2/3 wenn CC langfristig inaktiv bleibt.
 - `strict-typing` vollständig — mypy --strict ohne Upstream-Einschränkungen
 - `test-coverage` >85% — HA Integration Test Framework Setup
 - HACS offizieller Antrag wenn genug Tester
