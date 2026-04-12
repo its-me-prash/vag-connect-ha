@@ -92,7 +92,6 @@ SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
         state_class=SensorStateClass.MEASUREMENT,
         icon="mdi:map-marker-check",
         entity_category=EntityCategory.DIAGNOSTIC,
-        entity_registry_enabled_default=False,
         condition="electric",
     ),
 
@@ -164,7 +163,6 @@ SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
         name="Ladetyp",
         icon="mdi:ev-plug-type2",
         entity_category=EntityCategory.DIAGNOSTIC,
-        entity_registry_enabled_default=False,
         condition="electric",
     ),
 
@@ -181,7 +179,6 @@ SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
         name="Ladesäule Adresse",
         icon="mdi:map-marker-outline",
         entity_category=EntityCategory.DIAGNOSTIC,
-        entity_registry_enabled_default=False,
         condition="electric",
     ),
     VagSensorDescription(
@@ -193,7 +190,6 @@ SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
         state_class=SensorStateClass.MEASUREMENT,
         icon="mdi:lightning-bolt",
         entity_category=EntityCategory.DIAGNOSTIC,
-        entity_registry_enabled_default=False,
         condition="electric",
     ),
     VagSensorDescription(
@@ -202,7 +198,6 @@ SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
         name="Ladesäule Betreiber",
         icon="mdi:domain",
         entity_category=EntityCategory.DIAGNOSTIC,
-        entity_registry_enabled_default=False,
         condition="electric",
     ),
 
@@ -248,7 +243,6 @@ SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
         device_class=SensorDeviceClass.DATE,
         icon="mdi:calendar-clock",
         entity_category=EntityCategory.DIAGNOSTIC,
-        entity_registry_enabled_default=False,
     ),
     VagSensorDescription(
         key="oil_service_km",
@@ -267,7 +261,6 @@ SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
         device_class=SensorDeviceClass.DATE,
         icon="mdi:oil",
         entity_category=EntityCategory.DIAGNOSTIC,
-        entity_registry_enabled_default=False,
         condition="combustion",
     ),
 
@@ -283,7 +276,6 @@ SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
         name="Verbindung",
         icon="mdi:car-wireless",
         entity_category=EntityCategory.DIAGNOSTIC,
-        entity_registry_enabled_default=False,
     ),
 
     VagSensorDescription(
@@ -298,7 +290,6 @@ SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
         name="Standort Stadt",
         icon="mdi:city",
         entity_category=EntityCategory.DIAGNOSTIC,
-        entity_registry_enabled_default=False,
     ),
     VagSensorDescription(
         key="heading",
@@ -308,7 +299,6 @@ SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
         state_class=SensorStateClass.MEASUREMENT,
         icon="mdi:compass",
         entity_category=EntityCategory.DIAGNOSTIC,
-        entity_registry_enabled_default=False,
     ),
 
     VagSensorDescription(
@@ -320,7 +310,6 @@ SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
         state_class=SensorStateClass.MEASUREMENT,
         icon="mdi:thermometer",
         entity_category=EntityCategory.DIAGNOSTIC,
-        entity_registry_enabled_default=False,
         condition="electric",
     ),
     VagSensorDescription(
@@ -332,7 +321,6 @@ SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
         state_class=SensorStateClass.MEASUREMENT,
         icon="mdi:battery",
         entity_category=EntityCategory.DIAGNOSTIC,
-        entity_registry_enabled_default=False,
         condition="electric",
     ),
     VagSensorDescription(
@@ -352,7 +340,6 @@ SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
         name="Firmware-Version",
         icon="mdi:update",
         entity_category=EntityCategory.DIAGNOSTIC,
-        entity_registry_enabled_default=False,
     ),
     VagSensorDescription(
         key="license_plate",
@@ -360,7 +347,6 @@ SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
         name="Kennzeichen",
         icon="mdi:card-text",
         entity_category=EntityCategory.DIAGNOSTIC,
-        entity_registry_enabled_default=False,
     ),
     VagSensorDescription(
         key="last_updated_at",
@@ -369,7 +355,6 @@ SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
         device_class=SensorDeviceClass.TIMESTAMP,
         icon="mdi:clock-check-outline",
         entity_category=EntityCategory.DIAGNOSTIC,
-        entity_registry_enabled_default=False,
     ),
 
     VagSensorDescription(

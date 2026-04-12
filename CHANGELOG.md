@@ -21,6 +21,21 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ---
 
+## [0.14.23] - 2026-04-12
+
+### Geändert
+
+- **Alle Entities standardmäßig sichtbar** — `entity_registry_enabled_default=False`
+  von allen 15 Sensoren entfernt. Bisher waren technische Felder
+  (WLTP-Reichweite, Akkutemperatur, Ladesäule-Details, Firmware etc.)
+  beim Setup automatisch deaktiviert und für den Nutzer unsichtbar.
+  Jetzt erscheinen alle Entities direkt nach der Installation — der Nutzer
+  entscheidet selbst welche er braucht und welche er in HA ausblendet.
+  EntityCategory.DIAGNOSTIC bleibt für die Gruppierung erhalten.
+
+---
+
+
 ## [0.14.22] - 2026-04-12
 
 ### Behoben
