@@ -98,6 +98,14 @@ class CariadBaseClient:
         """Set pre-conditioning target temperature."""
         raise NotImplementedError
 
+    async def command_set_charge_mode(self, vin: str, mode: str) -> None:
+        """Set charging mode (MANUAL | TIMER | PREFERRED_CHARGING_TIMES)."""
+        raise NotImplementedError
+
+    async def command_set_min_soc(self, vin: str, min_soc: int) -> None:
+        """Set minimum SoC for PHEV departure timer (0–100%)."""
+        raise NotImplementedError
+
     async def command_start_window_heating(self, vin: str) -> None:
         """Start window (windscreen + rear) heating."""
         raise NotImplementedError

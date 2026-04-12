@@ -293,6 +293,9 @@
       },
       "target_temperature": {
         "name": "Klimatisierungstemperatur"
+      },
+      "min_soc": {
+        "name": "Mindest-Akkustand (PHEV)"
       }
     },
     "button": {
@@ -314,6 +317,11 @@
     "device_tracker": {
       "position": {
         "name": "Position"
+      }
+    },
+    "select": {
+      "charge_mode_select": {
+        "name": "Lademodus"
       }
     }
   },

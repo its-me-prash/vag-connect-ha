@@ -414,6 +414,14 @@ class VagConnectCoordinator(DataUpdateCoordinator):
             _LOGGER.error("VAG Connect: %s(%s) failed: %s", method, vin, err)
             raise
 
+    async def async_set_charge_mode(self, vin: str, mode: str) -> None:
+        """Set charging mode (MANUAL / TIMER / PREFERRED_CHARGING_TIMES)."""
+        await self._cariad_cmd(vin, "command_set_charge_mode", mode=mode)
+
+    async def async_set_min_soc(self, vin: str, min_soc: int) -> None:
+        """Set minimum SoC for PHEV departure timer."""
+        await self._cariad_cmd(vin, "command_set_min_soc", min_soc=min_soc)
+
     async def async_set_max_charge_current(self, vin: str, ampere: int) -> None:
         """Set max charge current — informational, refresh state."""
         _LOGGER.info("VAG: max_charge_current %sA for %s", ampere, vin)

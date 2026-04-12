@@ -170,12 +170,14 @@ class VehicleData:
     charging_type: str | None = None
     target_soc: int | None = None
     max_charge_current: float | None = None
+    min_soc: int | None = None  # Minimum SoC for departure timer (PHEV)
     auto_unlock_charge: bool = False
     connector_locked: bool = False
     charging_station_name: str | None = None
     charging_station_address: str | None = None
     charging_station_kw: float | None = None
     charging_station_operator: str | None = None
+    charge_mode: str | None = None  # MANUAL | TIMER | PREFERRED_CHARGING_TIMES | IMMEDIATE_DISCHARGING
 
     # Climate
     climatisation_state: str | None = None

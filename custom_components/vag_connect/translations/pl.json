@@ -293,6 +293,9 @@
       },
       "target_temperature": {
         "name": "Temperatura klimatyzacji"
+      },
+      "min_soc": {
+        "name": "Minimalny poziom (PHEV)"
       }
     },
     "button": {
@@ -314,6 +317,11 @@
     "device_tracker": {
       "position": {
         "name": "Pozycja"
+      }
+    },
+    "select": {
+      "charge_mode_select": {
+        "name": "Tryb ładowania"
       }
     }
   },

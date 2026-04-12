@@ -21,6 +21,38 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ---
 
+## [1.2.0] - 2026-04-12
+
+### Hinzugefügt
+
+#### Lademodus-Steuerung — Issue #891 (volkswagencarnet)
+Neues `select.{fahrzeug}_lademodus` Entity für EVs und PHEVs:
+
+| Option | Bedeutung |
+|---|---|
+| Manuell | Sofort laden wenn angesteckt |
+| Timer | Ladestart per Abfahrtstimer |
+| Bevorzugte Ladezeiten | Günstigen Ladestrom nutzen |
+| Nur Eigenstrom | Nur PV-Überschuss |
+
+- `select.py` als neue HA-Plattform (8. Plattform: select)
+- Coordinator: `async_set_charge_mode(vin, mode)`
+- VW EU API: `POST /charging/settings {"chargeMode": "TIMER"}`
+- `charge_mode` Feld in `VehicleData` + aus CARIAD Response geparst
+
+#### Mindest-Akkustand (Min SoC) — Issue #889 (volkswagencarnet)
+`number.{fahrzeug}_mindest_akkustand_phev` Slider (0–100%, Schritt 5%):
+
+- Setzt den Mindest-SoC den das Fahrzeug vor einem Abfahrtstimer erreichen soll
+- Speziell für PHEVs: Ladevorgang hört auf wenn Min SoC erreicht
+- `min_soc` in `VehicleData` + VW EU parst `minChargeLimit_pct` aus API
+- Coordinator: `async_set_min_soc(vin, min_soc)`
+
+**Alle 8 Sprachen aktualisiert | 351/351 Tests grün | Lint sauber**
+
+---
+
+
 ## [1.1.1] - 2026-04-12
 
 ### Behoben

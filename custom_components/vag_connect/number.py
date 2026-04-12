@@ -53,6 +53,20 @@ NUMBER_DESCRIPTIONS: tuple[VagNumberDescription, ...] = (
         entity_category=EntityCategory.CONFIG,
     ),
     VagNumberDescription(
+        key="min_soc",
+        data_key="min_soc",
+        name="Mindest-Akkustand (PHEV)",
+        native_unit_of_measurement=PERCENTAGE,
+        device_class=NumberDeviceClass.BATTERY,
+        native_min_value=0,
+        native_max_value=100,
+        native_step=5,
+        mode=NumberMode.SLIDER,
+        icon="mdi:battery-charging-low",
+        entity_category=EntityCategory.CONFIG,
+        condition="electric",
+    ),
+    VagNumberDescription(
         key="max_charge_current",
         data_key="max_charge_current",
         name="Max. Ladestrom",
@@ -108,5 +122,7 @@ class VagConnectNumber(VagConnectEntity, NumberEntity):
             await self.coordinator.async_set_target_soc(self._vin, int(value))
         elif key == "target_temperature":
             await self.coordinator.async_set_climatisation_temperature(self._vin, value)
+        elif key == "min_soc":
+            await self.coordinator.async_set_min_soc(self._vin, int(value))
         elif key == "max_charge_current":
             await self.coordinator.async_set_max_charge_current(self._vin, int(value))

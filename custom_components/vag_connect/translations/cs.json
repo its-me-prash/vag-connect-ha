@@ -293,6 +293,9 @@
       },
       "target_temperature": {
         "name": "Teplota klimatizace"
+      },
+      "min_soc": {
+        "name": "Minimální SoC (PHEV)"
       }
     },
     "button": {
@@ -314,6 +317,11 @@
     "device_tracker": {
       "position": {
         "name": "Poloha"
+      }
+    },
+    "select": {
+      "charge_mode_select": {
+        "name": "Režim nabíjení"
       }
     }
   },

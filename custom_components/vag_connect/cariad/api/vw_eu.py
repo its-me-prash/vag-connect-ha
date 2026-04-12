@@ -159,6 +159,20 @@ class VWEUClient(CariadBaseClient):
             json={"targetTemperature_C": temp_c},
         )
 
+    async def command_set_charge_mode(self, vin: str, mode: str) -> None:
+        """Set charging mode — MANUAL, TIMER, PREFERRED_CHARGING_TIMES."""
+        await self._post(
+            f"{_BASE}/vehicle/v1/vehicles/{vin}/charging/settings",
+            json={"chargeMode": mode.upper()},
+        )
+
+    async def command_set_min_soc(self, vin: str, min_soc: int) -> None:
+        """Set minimum SoC for PHEV (0–100%)."""
+        await self._post(
+            f"{_BASE}/vehicle/v1/vehicles/{vin}/charging/settings",
+            json={"minChargeLimit_pct": min_soc},
+        )
+
     async def command_start_window_heating(self, vin: str) -> None:
         """Start window heating (front windscreen + rear window)."""
         await self._post(
@@ -242,6 +256,8 @@ class VWEUClient(CariadBaseClient):
         d.connector_locked = v(raw, "charging", "plugStatus", "value", "plugLockState") == "LOCKED"
 
         d.target_soc = v(raw, "charging", "chargingSettings", "value", "targetSOC_pct")
+        d.charge_mode = v(raw, "charging", "chargingStatus", "value", "chargeMode")
+        d.min_soc = v(raw, "charging", "chargingSettings", "value", "minChargeLimit_pct")
         max_ac = v(raw, "charging", "chargingSettings", "value", "maxChargeCurrentAC_A")
         if max_ac is not None:
             d.max_charge_current = float(max_ac)

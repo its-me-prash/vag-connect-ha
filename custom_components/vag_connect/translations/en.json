@@ -293,6 +293,9 @@
       },
       "target_temperature": {
         "name": "Climatisation Temperature"
+      },
+      "min_soc": {
+        "name": "Minimum SoC (PHEV)"
       }
     },
     "button": {
@@ -314,6 +317,11 @@
     "device_tracker": {
       "position": {
         "name": "Location"
+      }
+    },
+    "select": {
+      "charge_mode_select": {
+        "name": "Charging Mode"
       }
     }
   },
