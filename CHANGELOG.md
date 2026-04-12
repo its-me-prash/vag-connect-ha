@@ -29,7 +29,7 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ---
 
-## [0.11.1] - 2026-04-12
+## [0.14.1] - 2026-04-12
 
 ### Changed
 - Semver retroaktiv korrigiert: 0.9.0–0.14.0 → 0.8.1–0.11.0 (Dokumentation/Tags)
