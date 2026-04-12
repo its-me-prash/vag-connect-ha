@@ -378,69 +378,140 @@ class IDKAuth:
         password: str,
         verifier: str,
     ) -> TokenSet:
-        """Legacy signin-service flow (pre-2025 IDK)."""
-        csrf = self._parse_csrf_robust(html)
+        """Legacy signin-service flow — ported 1:1 from audiconnect (arjenvrh, MIT).
+
+        audiconnect approach (confirmed working):
+          1. Parse hidden form fields + form action from authorize page
+          2. POST email with ALL step1 fields + cookies from step1 GET
+          3. Extract hmac from JavaScript in response (JS-rendered, not in form)
+          4. POST password using step1 fields + new hmac (NOT step2 fields!)
+             with allow_redirects=False, cookies from step1
+          5. Manually follow exactly 3 redirects (each with step1 cookies)
+          6. Extract auth code from final redirect Location
+        """
+        # Step 1 — parse initial login page
+        csrf1 = self._parse_csrf_robust(html)
         _LOGGER.warning(
             "IDK legacy: step1 fields=%s action=%s",
-            list(csrf.fields.keys()), csrf.form_action[:80] if csrf.form_action else "(none)",
+            list(csrf1.fields.keys()),
+            csrf1.form_action[:80] if csrf1.form_action else "(none)",
         )
-        if not csrf.fields.get("_csrf") and not csrf.fields.get("hmac"):
+        if not csrf1.fields.get("_csrf") and not csrf1.fields.get("hmac") \
+                and not csrf1.fields.get("relayState"):
             raise AuthenticationError(
-                "Could not parse IDK login page CSRF (legacy flow)."
+                "Could not parse IDK login page (legacy flow) — no form fields found."
             )
 
         email_url = _absolute_url(
             _IDK_BASE,
-            csrf.form_action or f"{_SIGNIN_BASE}/{self._brand.client_id}/login/identifier",
+            csrf1.form_action or f"{_SIGNIN_BASE}/{self._brand.client_id}/login/identifier",
         )
+
+        # audiconnect: submit_data starts with ALL step1 hidden fields + email
+        submit_data: dict[str, str] = {**csrf1.fields, "email": email}
+
+        # Step 2 — POST email (audiconnect: cookies=step1_cookies, allow_redirects=True)
         _LOGGER.warning("IDK legacy: posting email to %s", email_url[:100])
         async with self._session.post(
-            email_url, data={**csrf.fields, "email": email},
+            email_url, data=submit_data,
             headers=self._form_headers(), allow_redirects=True,
         ) as resp:
             if resp.status != 200:
-                raise AuthenticationError(f"Email submission HTTP {resp.status} at {email_url[:80]}")
+                raise AuthenticationError(
+                    f"Email POST HTTP {resp.status} at {email_url[:80]}"
+                )
             html2 = await resp.text()
 
-        csrf2 = self._parse_csrf_robust(html2)
-        _LOGGER.warning(
-            "IDK legacy: step2 fields=%s form_action=%s",
-            list(csrf2.fields.keys()),
-            csrf2.form_action[:80] if csrf2.form_action else "(none)",
-        )
-        if "hmac" not in csrf2.fields:
-            m = re.search(r'"hmac"\s*:\s*"([0-9a-fA-F]+)"', html2)
-            if m:
-                csrf2.fields["hmac"] = m.group(1)
-                _LOGGER.debug("IDK legacy: hmac extracted from JS")
-
-        # Password URL — audiconnect pattern:
-        # 1. Try form action from the password-page HTML
-        # 2. Fall back: replace "identifier" with "authenticate" in email_url
-        # 3. Last resort: hardcoded authenticate path
-        if csrf2.form_action:
-            pw_url = _absolute_url(_IDK_BASE, csrf2.form_action)
-        elif "identifier" in email_url:
+        # Step 3 — extract hmac from JavaScript (audiconnect pattern)
+        # "new HTML response uses JS to build form — extract hmac from embedded JS"
+        hmac_matches = re.findall(r'"hmac"\s*:\s*"([0-9a-fA-F]+)"', html2)
+        if hmac_matches:
+            # audiconnect: UPDATE submit_data with new hmac, keep _csrf+relayState from step1
+            submit_data["hmac"] = hmac_matches[0]
+            # Password URL: replace "identifier" with "authenticate" in email_url
             pw_url = email_url.replace("identifier", "authenticate")
-        else:
-            pw_url = _absolute_url(
-                _IDK_BASE,
-                f"{_SIGNIN_BASE}/{self._brand.client_id}/login/authenticate",
+            _LOGGER.warning(
+                "IDK legacy: hmac from JS, step1 fields kept, pw_url=%s", pw_url[:100]
             )
-        _LOGGER.warning(
-            "IDK legacy: posting password to %s with fields=%s",
-            pw_url[:100], list(csrf2.fields.keys()),
-        )
-        location = await self._follow_to_app_redirect(
-            pw_url, {**csrf2.fields, "email": email, "password": password},
-            self._brand.redirect_uri,
-        )
-        if not location:
-            raise AuthenticationError("Legacy: no redirect after password.")
+        else:
+            # Fallback: try form fields from password page
+            csrf2 = self._parse_csrf_robust(html2)
+            submit_data = {**csrf2.fields, "email": email, "password": password}
+            if csrf2.form_action:
+                pw_url = _absolute_url(_IDK_BASE, csrf2.form_action)
+            else:
+                pw_url = email_url.replace("identifier", "authenticate") \
+                    if "identifier" in email_url \
+                    else _absolute_url(
+                        _IDK_BASE,
+                        f"{_SIGNIN_BASE}/{self._brand.client_id}/login/authenticate",
+                    )
+            _LOGGER.warning(
+                "IDK legacy: no hmac in JS, using form fields=%s pw_url=%s",
+                list(csrf2.fields.keys()), pw_url[:100],
+            )
 
-        auth_code = _extract_auth_code(location, self._brand.redirect_uri)
+        submit_data["password"] = password
+
+        # Step 4 — POST password (audiconnect: allow_redirects=False, manual redirects)
+        _LOGGER.warning(
+            "IDK legacy: posting password to %s fields=%s",
+            pw_url[:100], list(submit_data.keys()),
+        )
+        async with self._session.post(
+            pw_url, data=submit_data,
+            headers=self._form_headers(), allow_redirects=False,
+        ) as resp:
+            pw_status = resp.status
+            pw_loc = _make_absolute(pw_url, resp.headers.get("Location", ""))
+            pw_body = await resp.text() if pw_status != 302 else ""
+
+        _LOGGER.warning(
+            "IDK legacy: password POST status=%s location=%s",
+            pw_status, pw_loc[:80] if pw_loc else "(none)",
+        )
+
+        if pw_status == 200:
+            if "terms-and-conditions" in pw_body.lower():
+                raise TermsAndConditionsError()
+            if "two-factor" in pw_body.lower() or "2fa" in pw_body.lower():
+                raise TwoFactorRequiredError()
+            raise AuthenticationError(
+                "Unexpected 200 after password POST — wrong credentials?"
+            )
+        if pw_status == 401:
+            raise AuthenticationError("Invalid credentials (401).")
+        if pw_status == 429:
+            raise RateLimitError()
+        if pw_status not in (302, 303):
+            raise AuthenticationError(
+                f"Password POST HTTP {pw_status} at {pw_url[:80]}: {pw_body[:200]}"
+            )
+        if not pw_loc:
+            raise AuthenticationError("Password POST: no Location header.")
+
+        # Step 5 — follow redirect chain (audiconnect: 3 explicit GETs)
+        prefix = self._brand.redirect_uri.split("://")[0] + "://"
+        ref = pw_loc
+        for hop in range(10):
+            _LOGGER.warning("IDK legacy: redirect hop %d → %s", hop + 1, ref[:100])
+            if ref.startswith(prefix):
+                break
+            if "terms-and-conditions" in ref:
+                raise TermsAndConditionsError()
+            async with self._session.get(
+                ref, headers=self._base_headers(), allow_redirects=False,
+            ) as redir:
+                next_loc = redir.headers.get("Location", "")
+                if redir.status in (301, 302, 303, 307, 308) and next_loc:
+                    ref = _make_absolute(ref, next_loc)
+                else:
+                    break
+
+        _LOGGER.warning("IDK legacy: final ref=%s", ref[:100])
+        auth_code = _extract_auth_code(ref, self._brand.redirect_uri)
         if not auth_code:
-            raise AuthenticationError(f"Legacy: no code in redirect: {location}")
+            raise AuthenticationError(f"Legacy: no code in: {ref[:100]}")
 
         return await self._exchange_code(auth_code, verifier)
 
