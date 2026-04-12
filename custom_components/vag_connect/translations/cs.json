@@ -300,6 +300,10 @@
     "auth_failed": {
       "title": "Přihlášení selhalo — {brand}",
       "description": "Nastavení → Zařízení a služby → VAG Connect → ⋮ → Znovu nakonfigurovat."
+    },
+    "requirements_conflict": {
+      "title": "CarConnectivity: Konflikt závislostí",
+      "description": "CarConnectivity nelze nainstalovat kvůli konfliktu s requests 2.33.x. Workaround: pip install requests==2.32.5"
     }
   },
   "exceptions": {

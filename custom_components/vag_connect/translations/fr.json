@@ -300,6 +300,10 @@
     "auth_failed": {
       "title": "Connexion échouée — {brand}",
       "description": "Paramètres → Appareils et services → VAG Connect → ⋮ → Reconfigurer."
+    },
+    "requirements_conflict": {
+      "title": "CarConnectivity: Conflit de dépendances",
+      "description": "CarConnectivity ne peut pas être installé car requests 2.33.x est incompatible. Workaround: pip install requests==2.32.5"
     }
   },
   "exceptions": {

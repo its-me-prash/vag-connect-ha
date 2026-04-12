@@ -300,6 +300,10 @@
     "auth_failed": {
       "title": "Inloggning misslyckades — {brand}",
       "description": "Inställningar → Enheter och tjänster → VAG Connect → ⋮ → Omkonfigurera."
+    },
+    "requirements_conflict": {
+      "title": "CarConnectivity: Beroendekonflik",
+      "description": "CarConnectivity kan inte installeras på grund av konflikt med requests 2.33.x. Workaround: pip install requests==2.32.5"
     }
   },
   "exceptions": {

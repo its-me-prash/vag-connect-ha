@@ -300,6 +300,10 @@
     "auth_failed": {
       "title": "Aanmelden mislukt — {brand}",
       "description": "Instellingen → Apparaten en diensten → VAG Connect → ⋮ → Opnieuw configureren."
+    },
+    "requirements_conflict": {
+      "title": "CarConnectivity: Afhankelijkheidsconflict",
+      "description": "CarConnectivity kan niet worden geïnstalleerd vanwege requests 2.33.x. Workaround: pip install requests==2.32.5"
     }
   },
   "exceptions": {

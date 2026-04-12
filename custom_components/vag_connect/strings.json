@@ -303,6 +303,10 @@
     "auth_failed": {
       "title": "Anmeldung fehlgeschlagen — {brand}",
       "description": "Die Verbindung zu {brand} ({username}) ist fehlgeschlagen.\n\nEinstellungen → Geräte & Dienste → VAG Connect → ⋮ → Neu konfigurieren."
+    },
+    "requirements_conflict": {
+      "title": "CarConnectivity: Dependency-Konflikt",
+      "description": "CarConnectivity kann nicht installiert werden weil dein Home Assistant `requests {installed_version}` hat, aber CarConnectivity `requests~=2.32.5` benötigt.\n\n**Das ist ein bekanntes Upstream-Problem** das in CarConnectivity selbst behoben werden muss. Bitte kommentiere auf [GitHub Issue](https://github.com/tillsteinbach/CarConnectivity/issues) damit @tillsteinbach die Priorität sieht.\n\n**Temporärer Workaround:** In deiner HA-Shell:\n```\npip install requests==2.32.5\n```\nDanach HA neu starten."
     }
   },
   "exceptions": {

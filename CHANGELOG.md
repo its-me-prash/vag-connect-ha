@@ -20,12 +20,33 @@ ci:       CI/CD-Änderungen
 
 ## [Unreleased]
 
-Geplant für 0.10.0:
+Geplant für 0.11.0:
 - `strict-typing` vollständig — mypy --strict ohne Upstream-Einschränkungen
 - `test-coverage` >85% — HA Integration Test Framework Setup
 - HACS offizieller Antrag wenn genug Tester
 
 ---
+
+## [0.10.0] - 2026-04-12
+
+### Fix: requests 2.33.x Dependency-Konflikt (HA 2026.x)
+
+**Ursache:** CarConnectivity 0.11.8 verlangt `requests~=2.32.5`, aber HA 2026.x
+hat `requests==2.33.1` installiert. Das ist ein Upstream-Problem bei @tillsteinbach.
+
+**Was wir getan haben:**
+- Erkennung des Konflikts in `async_setup_entry` eingebaut
+- HA Repair-Issue unter Einstellungen → Reparaturen mit klarer Erklärung und Workaround
+- Upstream Issue bei tillsteinbach/CarConnectivity gemeldet
+
+**Temporärer Workaround** bis upstream gepatcht:
+```bash
+# In der HA-Shell (Einstellungen → System → Terminal)
+pip install requests==2.32.5
+# Dann HA neu starten
+```
+
+_Autor: @its-me-prash_
 
 ## [0.9.0] - 2026-04-12
 

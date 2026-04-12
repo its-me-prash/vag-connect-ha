@@ -300,6 +300,10 @@
     "auth_failed": {
       "title": "Authentication failed — {brand}",
       "description": "Connection to {brand} ({username}) failed.\n\nSettings → Devices & Services → VAG Connect → ⋮ → Reconfigure."
+    },
+    "requirements_conflict": {
+      "title": "CarConnectivity: Dependency Conflict",
+      "description": "CarConnectivity cannot be installed because your Home Assistant has `requests 2.33.x` but CarConnectivity requires `requests~=2.32.5`. This is an upstream issue. Temporary workaround: run `pip install requests==2.32.5` in the HA shell, then restart HA."
     }
   },
   "exceptions": {

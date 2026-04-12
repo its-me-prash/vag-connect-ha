@@ -81,6 +81,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: VagConnectConfigEntry) -
         raise_issue_auth_required(hass, entry.entry_id, reason)
         raise ConfigEntryNotReady(_SETUP_ERRORS.get(reason, str(err))) from err
     except Exception as err:  # noqa: BLE001
+        if "RequirementsNotFound" in type(err).__name__ or "requirements" in str(err).lower():
+            from .repairs import raise_issue_requirements_conflict  # noqa: PLC0415
+            raise_issue_requirements_conflict(hass)
+            raise ConfigEntryNotReady(
+                "CarConnectivity cannot be installed: requests version conflict. "
+                "See Repairs dashboard for details."
+            ) from err
         raise ConfigEntryNotReady(str(err)) from err
 
     if not ok:

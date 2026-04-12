@@ -300,6 +300,10 @@
     "auth_failed": {
       "title": "Logowanie nieudane — {brand}",
       "description": "Ustawienia → Urządzenia i usługi → VAG Connect → ⋮ → Skonfiguruj ponownie."
+    },
+    "requirements_conflict": {
+      "title": "CarConnectivity: Konflikt zależności",
+      "description": "CarConnectivity nie może być zainstalowany z powodu konfliktu z requests 2.33.x. Workaround: pip install requests==2.32.5"
     }
   },
   "exceptions": {
