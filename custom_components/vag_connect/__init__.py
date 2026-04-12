@@ -1,3 +1,4 @@
+# Copyright 2026 Prash Nair (@its-me-prash) — Apache License 2.0
 """VAG Connect — Home Assistant integration for Audi, VW, Škoda, SEAT and CUPRA.
 
 Architecture:

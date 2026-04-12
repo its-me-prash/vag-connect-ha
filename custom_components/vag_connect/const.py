@@ -1,3 +1,4 @@
+# Copyright 2026 Prash Nair (@its-me-prash) — Apache License 2.0
 """Constants for VAG Connect."""
 
 DOMAIN = "vag_connect"

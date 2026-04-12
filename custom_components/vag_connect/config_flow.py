@@ -1,3 +1,4 @@
+# Copyright 2026 Prash Nair (@its-me-prash) — Apache License 2.0
 """Config flow for VAG Connect — setup, reconfigure, and re-authentication."""
 
 from __future__ import annotations

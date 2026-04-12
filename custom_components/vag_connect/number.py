@@ -1,3 +1,4 @@
+# Copyright 2026 Prash Nair (@its-me-prash) — Apache License 2.0
 """Number entities for VAG Connect (target SOC, climatisation temperature)."""
 
 from dataclasses import dataclass

@@ -1,3 +1,4 @@
+# Copyright 2026 Prash Nair (@its-me-prash) — Apache License 2.0
 """Button entities for VAG Connect (flash lights, force refresh)."""
 
 from homeassistant.components.button import ButtonEntity

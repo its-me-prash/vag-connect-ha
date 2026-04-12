@@ -1,3 +1,4 @@
+# Copyright 2026 Prash Nair (@its-me-prash) — Apache License 2.0
 """Coordinator for VAG Connect — cloud_push via CarConnectivity observer pattern.
 
 Data flow:

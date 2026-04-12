@@ -1,3 +1,4 @@
+# Copyright 2026 Prash Nair (@its-me-prash) — Apache License 2.0
 """Device tracker (GPS) for VAG Connect."""
 
 from homeassistant.components.device_tracker import SourceType, TrackerEntity

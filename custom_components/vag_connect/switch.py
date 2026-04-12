@@ -1,3 +1,4 @@
+# Copyright 2026 Prash Nair (@its-me-prash) — Apache License 2.0
 """Switches for VAG Connect (lock/unlock, charging)."""
 
 from homeassistant.components.switch import SwitchEntity

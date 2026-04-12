@@ -1,3 +1,4 @@
+# Copyright 2026 Prash Nair (@its-me-prash) — Apache License 2.0
 """Binary sensors for VAG Connect — correct data keys from coordinator."""
 
 from dataclasses import dataclass
