@@ -9,6 +9,7 @@ from typing import Any
 from aiohttp import ClientSession, ClientTimeout
 
 from ..auth.idk import IDKAuth
+from .graphql import VehicleImageFetcher, VehicleImageData
 from ..exceptions import APIError, AuthenticationError, TokenExpiredError
 from ..models import BrandConfig, TokenSet, VehicleData
 
@@ -38,6 +39,7 @@ class CariadBaseClient:
         self._password = password
         self._spin = spin
         self._tokens: TokenSet | None = None
+        self._image_data: dict[str, VehicleImageData] = {}
         self._auth = IDKAuth(session, brand)
 
     @property
@@ -57,6 +59,24 @@ class CariadBaseClient:
     async def get_status(self, vin: str) -> VehicleData:
         """Return current vehicle data for the given VIN."""
         raise NotImplementedError
+
+    async def fetch_images(self) -> None:
+        """Fetch render image URLs via GraphQL — best-effort, never blocks.
+
+        Called once during get_vehicles(). Populates self._image_data.
+        Subclasses override this if they use a different GraphQL endpoint.
+        """
+        try:
+            fetcher = VehicleImageFetcher(self._session)
+            data = await fetcher.fetch_image_data(self._access_token, self._brand.name)
+            self._image_data = data
+            if data:
+                _LOGGER.info(
+                    "VAG images (%s): render URLs for %d vehicle(s)",
+                    self._brand.name, len(data),
+                )
+        except Exception:  # noqa: BLE001
+            self._image_data = {}
 
     async def command_lock(self, vin: str) -> None:
         """Remote lock."""

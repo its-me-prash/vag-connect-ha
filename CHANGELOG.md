@@ -21,6 +21,46 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ---
 
+## [1.3.2] - 2026-04-12
+
+### Hinzugefügt
+
+#### Render Images für alle EU-Marken (Škoda, SEAT, CUPRA)
+
+`fetch_images()` aus VW EU in `CariadBaseClient` verschoben → alle EU-Clients
+erben es automatisch. Aktiviert für Škoda, SEAT und CUPRA.
+
+| Marke | Images | Status |
+|---|---|---|
+| Audi | ✅ bestätigt | Live |
+| VW EU | ✅ | Live |
+| **Škoda** | ✅ neu | Live (ungetestet) |
+| **SEAT** | ✅ neu | Live (ungetestet) |
+| **CUPRA** | ✅ neu | Live (ungetestet) |
+| VW US/CA | — | Andere API, nicht implementiert |
+| Porsche | — | Andere Architektur |
+
+#### Code-Refactoring
+
+`CariadBaseClient`:
+- `_image_data: dict[str, VehicleImageData]` — initialisiert in `__init__`
+- `fetch_images()` — async, ruft GraphQL auf, füllt `_image_data`
+- Alle Subklassen (`VWEUClient`, `SkodaClient`, `SeatCupraClient`) rufen
+  `await self.fetch_images()` am Ende von `get_vehicles()`
+
+`vw_eu.py` bereinigt — kein duplizierter Fetch-Code mehr.
+
+#### GitHub Issue #16 erstellt
+
+Cross-Brand Live-Test-Matrix für `renderPictures` via vgql.
+Tester für VW EU, Škoda, SEAT, CUPRA gesucht.
+→ https://github.com/its-me-prash/vag-connect-ha/issues/16
+
+**360/360 Tests ✓ | mypy 32/32 ✓ | Ruff ✓**
+
+---
+
+
 ## [1.3.1] - 2026-04-12
 
 ### Geändert (Upgrade von v1.3.0)

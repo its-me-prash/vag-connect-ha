@@ -35,7 +35,9 @@ class SkodaClient(CariadBaseClient):
         }
         data = await self._get(f"{_BASE}/v2/garage", params=params)
         vehicles: list[dict[str, Any]] = data.get("vehicles", [])
-        return [v["vin"] for v in vehicles if v.get("vin")]
+        vins = [v["vin"] for v in vehicles if v.get("vin")]
+        await self.fetch_images()
+        return vins
 
     async def get_status(self, vin: str) -> VehicleData:
         """Fetch full status from Škoda API."""

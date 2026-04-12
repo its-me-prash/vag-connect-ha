@@ -52,7 +52,9 @@ class SeatCupraClient(CariadBaseClient):
             await self._fetch_user_id()
         data = await self._get(f"{_BASE}/v2/users/{self._user_id}/garage/vehicles")
         vehicles: list[dict[str, Any]] = data.get("vehicles", [])
-        return [v["vin"] for v in vehicles if v.get("vin")]
+        vins = [v["vin"] for v in vehicles if v.get("vin")]
+        await self.fetch_images()
+        return vins
 
     async def get_status(self, vin: str) -> VehicleData:
         """Fetch full status from OLA server."""
@@ -106,6 +108,14 @@ class SeatCupraClient(CariadBaseClient):
         if isinstance(parking, dict):
             d.latitude = v(parking, "lat")
             d.longitude = v(parking, "lon")
+
+        # ── Image data ───────────────────────────────────────────────────────
+        img = self._image_data.get(vin)
+        if img:
+            d.image_urls          = img.image_urls
+            d.media_short_name    = img.short_name
+            d.media_long_name     = img.long_name
+            d.media_exterior_color = img.exterior_color
 
         # ── Drivetrain ────────────────────────────────────────────────────────
         d.is_electric = d.has_battery and not d.has_combustion
