@@ -21,6 +21,54 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ---
 
+## [1.3.0] - 2026-04-12
+
+### Hinzugefügt
+
+#### Vehicle Render Images — Issue #15
+
+Neue `image.{fahrzeug}_fahrzeugbild` Entity — zeigt das offizielle Render-Bild
+des Fahrzeugs (PNG, transparenter Hintergrund) direkt in HA.
+
+**Wie es funktioniert:**
+1. Bei Setup: `GET_USER_VEHICLES` GraphQL Query via VW Group `vgql` Proxy
+2. Auth: bestehender IDK Bearer Token (kein separater Login)
+3. Response enthält bis zu 7 verschiedene Bildgrößen/Perspektiven
+4. Die URLs sind **öffentlich** — kein Auth nötig um das PNG zu laden
+5. HA fetcht + cached das Bild, zeigt es in Lovelace-Cards
+
+**Verfügbare Perspektiven (als `extra_state_attributes`):**
+
+| Attribut | Perspektive | Größe |
+|---|---|---|
+| `url_myapn8nb` | Seitenprofil | ~309 KB ✦ Standard |
+| `url_myaan8nb` | 3/4-Winkel groß | ~879 KB |
+| `url_ms_myp5` | 3/4-Winkel mittel | ~196 KB |
+| `url_myapn3nb` | Seitenprofil kompakt | ~158 KB |
+| `url_ms_myp4` | 3/4-Winkel klein | ~117 KB |
+| `url_ms_myp3` | 3/4-Winkel Icon | ~76 KB |
+
+**Verwendung in Lovelace:**
+```yaml
+type: picture-entity
+entity: sensor.audi_q4_e_tron_akkustand
+image: "{{ state_attr('image.audi_q4_e_tron_fahrzeugbild', 'url_myapn8nb') }}"
+```
+
+**Neue Dateien:**
+- `cariad/api/graphql.py` — `VehicleImageFetcher` GraphQL Client
+- `image.py` — HA Image Platform (9. Plattform)
+
+**Unterstützte Marken:** Audi ✅, VW EU (experimentell), Škoda/SEAT/CUPRA (experimentell)
+VW US/CA + Porsche: andere API-Architektur, noch nicht unterstützt.
+
+**Forschungsquelle:** Issue #15 — bestätigt auf Audi S6 Avant (April 2026)
+
+**8 neue Tests → 359/359 grün | 8 Übersetzungen | Lint ✓ | mypy ✓**
+
+---
+
+
 ## [1.2.0] - 2026-04-12
 
 ### Hinzugefügt

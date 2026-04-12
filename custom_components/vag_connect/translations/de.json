@@ -317,6 +317,11 @@
       "charge_mode_select": {
         "name": "Lademodus"
       }
+    },
+    "image": {
+      "vehicle_image": {
+        "name": "Fahrzeugbild"
+      }
     }
   },
   "issues": {

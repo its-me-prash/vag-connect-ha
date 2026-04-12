@@ -8,6 +8,7 @@ import logging
 from typing import Any
 
 from ..models import BRAND_VW_EU, VehicleData
+from .graphql import VehicleImageFetcher
 from .base import CariadBaseClient
 
 _LOGGER = logging.getLogger(__name__)
@@ -41,6 +42,7 @@ class VWEUClient(CariadBaseClient):
 
     def __init__(self, session: Any, email: str, password: str, spin: str = "") -> None:
         super().__init__(session, BRAND_VW_EU, email, password, spin)
+        self._image_urls: dict[str, dict[str, str]] = {}
 
     async def get_vehicles(self) -> list[str]:
         """Return list of VINs from the CARIAD garage."""
@@ -73,6 +75,22 @@ class VWEUClient(CariadBaseClient):
             len(vins),
             {k: m["model"] for k, m in self._vehicle_metadata.items()},
         )
+
+        # Fetch render images via GraphQL — best-effort, never blocks startup
+        try:
+            fetcher = VehicleImageFetcher(self._session)
+            brand = self._brand.name
+            self._image_urls = await fetcher.fetch_image_urls(
+                self._access_token, brand
+            )
+            if self._image_urls:
+                _LOGGER.info(
+                    "VAG images: fetched render URLs for %d vehicle(s)",
+                    len(self._image_urls),
+                )
+        except Exception:  # noqa: BLE001
+            self._image_urls = {}
+
         return vins
 
     async def get_status(self, vin: str) -> VehicleData:

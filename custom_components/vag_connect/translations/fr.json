@@ -323,6 +323,11 @@
       "charge_mode_select": {
         "name": "Mode de charge"
       }
+    },
+    "image": {
+      "vehicle_image": {
+        "name": "Image du véhicule"
+      }
     }
   },
   "issues": {

@@ -323,6 +323,11 @@
       "charge_mode_select": {
         "name": "Tryb ładowania"
       }
+    },
+    "image": {
+      "vehicle_image": {
+        "name": "Zdjęcie pojazdu"
+      }
     }
   },
   "issues": {

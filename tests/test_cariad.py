@@ -2771,3 +2771,82 @@ class TestTokenstorePath:
         assert "abc123" in path
         assert ".storage" in path
         assert path.endswith(".json")
+
+
+# ── Issue #15: Vehicle render images via GraphQL ─────────────────────────────
+
+class TestVehicleImageFetcher:
+    """Tests for VehicleImageFetcher GraphQL client."""
+
+    def test_parse_response_extracts_urls(self):
+        """GraphQL response → {vin: {mediaType: url}}."""
+        from custom_components.vag_connect.cariad.api.graphql import VehicleImageFetcher
+        data = {
+            "data": {
+                "userVehicles": [
+                    {
+                        "vin": "WAUZZZ4G7EN123456",
+                        "vehicle": {
+                            "renderPictures": [
+                                {"mediaType": "MYAPN8NB", "url": "https://mediaservice.audi.com/fast/v3_abc"},
+                                {"mediaType": "MS_MYP3",  "url": "https://mediaservice.audi.com/fast/v3_xyz"},
+                            ]
+                        }
+                    }
+                ]
+            }
+        }
+        result = VehicleImageFetcher._parse_response(data)
+        assert "WAUZZZ4G7EN123456" in result
+        assert result["WAUZZZ4G7EN123456"]["MYAPN8NB"] == "https://mediaservice.audi.com/fast/v3_abc"
+        assert result["WAUZZZ4G7EN123456"]["MS_MYP3"] == "https://mediaservice.audi.com/fast/v3_xyz"
+
+    def test_parse_response_handles_empty(self):
+        """Empty/missing data → empty dict, no crash."""
+        from custom_components.vag_connect.cariad.api.graphql import VehicleImageFetcher
+        assert VehicleImageFetcher._parse_response({}) == {}
+        assert VehicleImageFetcher._parse_response({"data": {}}) == {}
+        assert VehicleImageFetcher._parse_response({"data": {"userVehicles": []}}) == {}
+
+    def test_parse_response_skips_missing_vin(self):
+        """Vehicle without VIN is skipped."""
+        from custom_components.vag_connect.cariad.api.graphql import VehicleImageFetcher
+        data = {"data": {"userVehicles": [{"vehicle": {"renderPictures": []}}]}}
+        assert VehicleImageFetcher._parse_response(data) == {}
+
+    def test_best_url_prefers_side_profile(self):
+        """MYAPN8NB is the preferred mediaType for Lovelace cards."""
+        from custom_components.vag_connect.cariad.api.graphql import VehicleImageFetcher
+        urls = {
+            "MS_MYP3":   "https://small.png",
+            "MYAPN8NB":  "https://side-profile.png",
+            "MYAAN8NB":  "https://angle.png",
+        }
+        assert VehicleImageFetcher.best_url(urls) == "https://side-profile.png"
+
+    def test_best_url_falls_back_gracefully(self):
+        """Falls back to available URL if preferred not present."""
+        from custom_components.vag_connect.cariad.api.graphql import VehicleImageFetcher
+        urls = {"MS_MYP5": "https://medium.png"}
+        assert VehicleImageFetcher.best_url(urls) == "https://medium.png"
+
+    def test_best_url_returns_none_for_empty(self):
+        """Empty dict → None."""
+        from custom_components.vag_connect.cariad.api.graphql import VehicleImageFetcher
+        assert VehicleImageFetcher.best_url({}) is None
+        assert VehicleImageFetcher.best_url(None) is None
+
+    def test_vehicle_data_has_image_urls_field(self):
+        """VehicleData.image_urls initialises as empty dict."""
+        from custom_components.vag_connect.cariad.models import VehicleData
+        d = VehicleData(vin="TEST123")
+        assert isinstance(d.image_urls, dict)
+        assert len(d.image_urls) == 0
+
+    def test_vehicle_data_to_dict_preserves_image_urls(self):
+        """to_dict() preserves image_urls for coordinator storage."""
+        from custom_components.vag_connect.cariad.models import VehicleData
+        d = VehicleData(vin="TEST123")
+        d.image_urls = {"MYAPN8NB": "https://example.com/car.png"}
+        serialised = d.to_dict()
+        assert serialised["image_urls"]["MYAPN8NB"] == "https://example.com/car.png"

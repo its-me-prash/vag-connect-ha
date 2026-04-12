@@ -246,10 +246,11 @@ async def _async_update_listener(
 
     # Fields that require a full reload (new auth client needed)
     _RELOAD_KEYS = {CONF_BRAND, CONF_USERNAME, CONF_PASSWORD}
+    options: dict = dict(entry.options) if entry.options else {}
 
     changed = {
         k for k in _RELOAD_KEYS
-        if entry.data.get(k) != (entry.options or {}).get(k, entry.data.get(k))
+        if entry.data.get(k) != options.get(k, entry.data.get(k))
     }
 
     if changed:
@@ -257,7 +258,7 @@ async def _async_update_listener(
         await hass.config_entries.async_reload(entry.entry_id)
     else:
         # Soft update: merge options into entry data so coordinator picks them up
-        new_data = {**entry.data, **(entry.options or {})}
+        new_data: dict = {**dict(entry.data), **options}
         hass.config_entries.async_update_entry(entry, data=new_data, options={})
         if coordinator:
             _LOGGER.debug(

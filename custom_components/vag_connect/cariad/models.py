@@ -142,6 +142,15 @@ class VehicleData:
     firmware_version: str | None = None
     license_plate: str | None = None
 
+    # Render images — dict of mediaType → public URL (fetched via GraphQL, no auth needed to GET)
+    # e.g. {"MYAPN8NB": "https://mediaservice.audi.com/media/fast/v3_...", ...}
+    image_urls: dict = None  # type: ignore[assignment]
+
+    def __post_init__(self) -> None:
+        """Initialise mutable defaults."""
+        if self.image_urls is None:
+            self.image_urls = {}
+
     # Drivetrain
     is_electric: bool = False
     has_battery: bool = False

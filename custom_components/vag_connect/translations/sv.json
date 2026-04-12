@@ -323,6 +323,11 @@
       "charge_mode_select": {
         "name": "Laddningsläge"
       }
+    },
+    "image": {
+      "vehicle_image": {
+        "name": "Fordonsbild"
+      }
     }
   },
   "issues": {
