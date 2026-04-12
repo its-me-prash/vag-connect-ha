@@ -234,11 +234,10 @@ rules:
 
   # ── Platinum ──────────────────────────────────────────────────────────────
   async-dependency:
-    status: todo
+    status: done
     comment: |
-      Blocked by CarConnectivity using requests (sync). Planned: own CARIAD API client
-      with aiohttp (no requests dependency). This solves async-dependency AND inject-websession
-      in one step. Implementation in progress.
+      Own CARIAD client uses pure aiohttp — no requests dependency.
+      manifest.json requirements: [] — zero external dependencies.
     comment: |
       UPSTREAM BLOCKER: CarConnectivity (carconnectivity>=0.11.8) uses synchronous
       requests.Session and threading.Thread — it is not an async library.
@@ -246,13 +245,10 @@ rules:
       without a full CC rewrite upstream. Tracked as upstream issue.
 
   inject-websession:
-    status: todo
+    status: done
     comment: |
-      Requires own async API client. Will use async_get_clientsession(hass) once
-      the CARIAD aiohttp client replaces CarConnectivity dependency.
-    comment: |
-      UPSTREAM BLOCKER: CarConnectivity connectors do not accept an aiohttp ClientSession.
-      Blocked by the same upstream sync architecture as async-dependency.
+      async_get_clientsession(hass) injected in VagConnectCoordinator.async_setup().
+      All API calls share HA's managed aiohttp session.
 
   strict-typing:
     status: done

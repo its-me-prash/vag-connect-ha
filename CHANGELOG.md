@@ -77,6 +77,27 @@ Erst Phase 2/3 wenn CC langfristig inaktiv bleibt.
 
 ---
 
+## [0.13.0] - 2026-04-12
+
+### 🏆 CarConnectivity entfernt — eigener CARIAD Client aktiv
+
+**ZERO externe Abhängigkeiten** — `manifest.json requirements: []`
+
+- CarConnectivity und alle 5 Connectors aus `manifest.json` entfernt
+- Coordinator nutzt jetzt `cariad.CariadClientFactory` + injizierte aiohttp Session
+- `async_setup()` vollständig neu: PKCE-Auth → Garage-Fetch → parallele Status-Fetches
+- `_poll_loop()`: eigene async Polling-Schleife ersetzt CC Background-Thread
+- `async_shutdown()`: sauber, kein Executor-Job mehr nötig
+
+**70 neue Tests** für cariad/ Package (262 total, alle grün)
+**Platinum-Status:**
+- ✅ `strict-typing`
+- ✅ `async-dependency` — kein requests, nur aiohttp
+- ✅ `inject-websession` — `async_get_clientsession(hass)` in async_setup
+- ⏳ `test-coverage` — 68% gesamt, cariad/ Module bei 70-100%
+
+_Autor: Prash Balan (@its-me-prash)_
+
 ## [0.12.0] - 2026-04-12
 
 ### 🚀 Eigener CARIAD API Client — MVP aller 5 IDK-Marken

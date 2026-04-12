@@ -50,6 +50,7 @@ class VagConnectCoordinator(DataUpdateCoordinator):
         self._started = False
         self._observer_registered = False
         self._was_available: bool = True  # tracks availability for log_when_unavailable
+        self._cariad_client: Any = None
 
         # Thread-safe dict for vehicle data
         self.vehicles: dict[str, Any] = {}
@@ -66,35 +67,109 @@ class VagConnectCoordinator(DataUpdateCoordinator):
 
 
     async def async_setup(self) -> bool:
-        """
-        Startet CarConnectivity + erster Fetch + Observer.
-        Wird einmal in async_setup_entry aufgerufen.
-        Gibt True zurück wenn mindestens ein Fahrzeug gefunden wurde.
-        """
+        """Authenticate and fetch initial vehicle data via own CARIAD client."""
+        from homeassistant.helpers.aiohttp_client import async_get_clientsession  # noqa: PLC0415
+        from .cariad import CariadClientFactory  # noqa: PLC0415
+        from .cariad.exceptions import (  # noqa: PLC0415
+            AuthenticationError,
+            TermsAndConditionsError,
+            MarketingConsentError,
+            TwoFactorRequiredError,
+            RateLimitError,
+        )
+
+        brand    = self.entry.data[CONF_BRAND]
+        username = self.entry.data[CONF_USERNAME]
+        password = self.entry.data[CONF_PASSWORD]
+        spin     = self.entry.data.get(CONF_SPIN) or ""
+
+        session = async_get_clientsession(self.hass)
+        self._cariad_client = CariadClientFactory.create(brand, session, username, password, spin)
+
         try:
-            await self.hass.async_add_executor_job(self._start_cc)
+            await self._cariad_client.authenticate()
+            vins = await self._cariad_client.get_vehicles()
+            if not vins:
+                return False
+
+            # Fetch status for all vehicles
+            import asyncio as _asyncio  # noqa: PLC0415
+            results = await _asyncio.gather(
+                *[self._cariad_client.get_status(vin) for vin in vins],
+                return_exceptions=True,
+            )
+
             with self._vehicles_lock:
-                found = len(self.vehicles)
+                for vin, result in zip(vins, results):
+                    if isinstance(result, Exception):
+                        _LOGGER.warning("Could not fetch status for %s: %s", vin, result)
+                        continue
+                    data = result.to_dict()
+                    data["_client"] = self._cariad_client
+                    self.vehicles[vin] = data
+
+            self._started = True
+            found = len(self.vehicles)
             _LOGGER.info("VAG Connect: setup complete — %d vehicle(s)", found)
+
+            # Start background polling
+            self.hass.loop.call_soon_threadsafe(
+                lambda: _asyncio.ensure_future(self._poll_loop(), loop=self.hass.loop)
+            )
             return found > 0
+
+        except TermsAndConditionsError as err:
+            raise ValueError("terms_and_conditions") from err
+        except MarketingConsentError as err:
+            raise ValueError("marketing_consent") from err
+        except TwoFactorRequiredError as err:
+            raise ValueError("two_factor_required") from err
+        except RateLimitError as err:
+            raise ValueError("too_many_requests") from err
+        except AuthenticationError as err:
+            raise ValueError("invalid_credentials") from err
         except Exception as err:  # noqa: BLE001
-            err_str = str(err).lower()
-            if "terms and conditions" in err_str or "accept" in err_str and "condition" in err_str:
-                raise ValueError("terms_and_conditions") from err
-            if "too many requests" in err_str or "429" in err_str:
-                raise ValueError("too_many_requests") from err
-            if "marketing" in err_str or "consent" in err_str:
-                raise ValueError("marketing_consent") from err
-            if "password" in err_str or "credential" in err_str or "authentication" in err_str:
-                raise ValueError("invalid_credentials") from err
-            if "two_factor" in err_str or "2fa" in err_str or "otp" in err_str:
-                raise ValueError("two_factor_required") from err
-            _LOGGER.error("VAG Connect Setup fehlgeschlagen: %s", err)
+            _LOGGER.error("VAG Connect setup failed: %s", err)
             return False
 
+    async def _poll_loop(self) -> None:
+        """Background polling loop — replaces CC background thread."""
+        import asyncio as _asyncio  # noqa: PLC0415
+        interval_s = max(
+            self.entry.data.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL) * 60,
+            _CC_MIN_INTERVAL_S,
+        )
+        while self._started:
+            await _asyncio.sleep(interval_s)
+            if not self._started:
+                break
+            try:
+                vins = list(self.vehicles.keys())
+                results = await _asyncio.gather(
+                    *[self._cariad_client.get_status(vin) for vin in vins],
+                    return_exceptions=True,
+                )
+                fresh: dict[str, Any] = {}
+                for vin, result in zip(vins, results):
+                    if isinstance(result, Exception):
+                        _LOGGER.debug("Poll failed for %s: %s", vin, result)
+                        fresh[vin] = self.vehicles.get(vin, {})
+                    else:
+                        data = result.to_dict()
+                        data["_client"] = self._cariad_client
+                        fresh[vin] = data
+                with self._vehicles_lock:
+                    self.vehicles.update(fresh)
+                await self._async_push_update(fresh, success=True)
+            except Exception as err:  # noqa: BLE001
+                _LOGGER.error("VAG Connect poll error: %s", err)
+                await self._async_push_update({}, success=False)
+
     async def async_shutdown(self) -> None:
-        """Stop CarConnectivity and release resources."""
-        await self.hass.async_add_executor_job(self._stop_cc)
+        """Stop polling loop and release resources."""
+        self._started = False
+        self._cariad_client = None
+        _LOGGER.debug("VAG Connect: shutdown complete")
 
     @property
     def is_active(self) -> bool:
