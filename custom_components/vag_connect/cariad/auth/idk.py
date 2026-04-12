@@ -172,23 +172,40 @@ class IDKAuth:
         auth0_state: str = parse_qs(urlparse(login_url).query).get("state", [""])[0]
         if not auth0_state:
             raise AuthenticationError("Auth0: no state in login URL.")
-        _LOGGER.debug("IDK Auth0 v2: state=%s...", auth0_state[:20])
+        _LOGGER.debug("IDK Auth0 v2: state=%s... url=%s", auth0_state[:20], login_url[:80])
 
-        # Step 2 — POST email (identifier-first)
-        # Auth0 UL v2: state goes in URL query, NOT in form body
-        email_resp_url, email_resp_html = await self._auth0_post_form(
-            f"{_IDK_BASE}/u/login?state={auth0_state}",
-            extra={"username": email, "action": "default"},
-        )
-        _LOGGER.debug("IDK Auth0: email step → %s", email_resp_url[:80])
+        # Strategy A: combined email+password in one POST (some Auth0 configs)
+        # Strategy B: identifier-first (two steps)
+        # We try A first — it's simpler and works for VW's combined form.
+        # login_url already has state correctly encoded — use as-is.
 
-        # Step 3 — POST password to wherever Auth0 redirected us
-        # The redirect URL already contains the new state
-        pw_resp_url, pw_resp_html = await self._auth0_post_form(
-            email_resp_url,
-            extra={"password": password, "action": "default"},
+        combined_resp_url, combined_resp_html = await self._auth0_post_form(
+            login_url,  # exact URL with state — don't reconstruct
+            extra={"username": email, "password": password, "action": "default"},
         )
-        _LOGGER.debug("IDK Auth0: password step → %s", pw_resp_url[:80])
+        _LOGGER.debug("IDK Auth0 combined: → %s", combined_resp_url[:80])
+
+        # If we're still on a login page (400 was caught, or redirect back to /u/login),
+        # fall back to identifier-first two-step approach
+        if "/u/login" in combined_resp_url and "password" not in combined_resp_url:
+            _LOGGER.debug("IDK Auth0: combined failed, trying identifier-first")
+
+            # Step 2a: POST email only
+            email_resp_url, _ = await self._auth0_post_form(
+                login_url,
+                extra={"username": email, "action": "default"},
+            )
+            _LOGGER.debug("IDK Auth0 email step: → %s", email_resp_url[:80])
+
+            # Step 2b: POST password to where Auth0 redirected us
+            combined_resp_url, combined_resp_html = await self._auth0_post_form(
+                email_resp_url,
+                extra={"password": password, "action": "default"},
+            )
+            _LOGGER.debug("IDK Auth0 password step: → %s", combined_resp_url[:80])
+
+        pw_resp_url  = combined_resp_url
+        pw_resp_html = combined_resp_html
 
         # Check for MFA challenge
         if "/u/mfa" in pw_resp_url or "/u/email-challenge" in pw_resp_url or "/u/mfa-otp" in pw_resp_url:
@@ -218,8 +235,16 @@ class IDKAuth:
                 location = final_loc2 or ""
 
         _LOGGER.debug("IDK Auth0: final location = %s", location[:60] if location else "(none)")
+
+        # If still on login/error page — wrong credentials
+        if not location and "/u/login" in pw_resp_url:
+            raise AuthenticationError(
+                "Auth0: credentials rejected — email or password wrong."
+            )
         if not location:
-            raise AuthenticationError("Auth0: no app:// redirect after login.")
+            raise AuthenticationError(
+                f"Auth0: no app:// redirect after login. Last URL: {pw_resp_url[:80]}"
+            )
 
         auth_code = _extract_auth_code(location, self._brand.redirect_uri)
         if not auth_code:
@@ -263,9 +288,15 @@ class IDKAuth:
                 raise AuthenticationError("Invalid email or password (Auth0 401).")
             if resp.status == 429:
                 raise RateLimitError()
-            if resp.status not in (200, 302):
+            if resp.status not in (200, 302, 400):
                 raise AuthenticationError(
                     f"Auth0 form POST returned HTTP {resp.status}: {resp_html[:200]}"
+                )
+            # 400: Auth0 returns login page again — caller decides what to do
+            if resp.status == 400:
+                _LOGGER.debug(
+                    "IDK Auth0 form POST 400 — html_len=%d url=%s",
+                    len(resp_html), final_url[-60:],
                 )
         return final_url, resp_html
 

@@ -29,6 +29,17 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ---
 
+## [0.14.8] - 2026-04-12
+
+### Fixed
+- **Auth0 400: login_url direkt verwenden** statt URL mit f-string rekonstruieren (state war ggf. falsch encoded)
+- **Kombinierter POST** (email+password in einem Request) als primäre Strategie — viele Auth0-Instanzen zeigen kombiniertes Formular
+- **Fallback**: Identifier-First (2 Steps) wenn kombinierter POST zurück auf Login-Seite leitet
+- `_auth0_post_form()` wirft bei 400 keine Exception mehr — gibt HTML zurück für Fallback-Logik
+- Bessere Fehlermeldung wenn Login nach allen Versuchen fehlschlägt
+
+---
+
 ## [0.14.7] - 2026-04-12
 
 ### Fixed
