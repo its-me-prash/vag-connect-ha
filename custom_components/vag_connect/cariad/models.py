@@ -41,10 +41,12 @@ BRAND_VW_EU = BrandConfig(
 
 BRAND_AUDI = BrandConfig(
     name="audi",
-    client_id="f4d0934f-32bf-4ce4-b3c4-699a7049ad26@apps_vw-dilab_com",
+    # client_id from audiconnect (arjenvrh/audi_connect_ha, MIT) — confirmed working
+    client_id="09b6cbec-cd19-4589-82fd-363dfa8c24da@apps_vw-dilab_com",
     redirect_uri="myaudi:///",
     user_agent="Android/4.31.0 (Build 800341641.root project 'myaudi_android'.ext.buildTime) Android/13",
     api_base="https://emea.bff.cariad.digital",
+    # scope exactly matching audiconnect — no extra "cars"/"dealers" scopes
     scope=(
         "address profile badge birthdate birthplace nationalIdentifier nationality "
         "profession email vin phone nickname name picture mbb gallery openid"

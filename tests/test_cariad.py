@@ -39,7 +39,7 @@ class TestModels:
 
     def test_brand_audi_client_id(self):
         from custom_components.vag_connect.cariad.models import BRAND_AUDI
-        assert "f4d0934f" in BRAND_AUDI.client_id
+        assert "09b6cbec" in BRAND_AUDI.client_id
         assert BRAND_AUDI.redirect_uri == "myaudi:///"
 
     def test_brand_skoda_client_id(self):
