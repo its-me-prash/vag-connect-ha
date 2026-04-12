@@ -205,6 +205,8 @@ class TestIDKAuth:
         resp.__aenter__ = AsyncMock(return_value=resp)
         resp.__aexit__ = AsyncMock(return_value=False)
         resp.status = 200
+        resp.url = "https://identity.vwgroup.io/login"
+        resp.headers = {"Content-Type": "text/html"}
         resp.text = AsyncMock(return_value="<html>No form here</html>")
         session.get = MagicMock(return_value=resp)
 
@@ -224,6 +226,8 @@ class TestIDKAuth:
         resp.__aenter__ = AsyncMock(return_value=resp)
         resp.__aexit__ = AsyncMock(return_value=False)
         resp.status = 503
+        resp.url = "https://identity.vwgroup.io/authorize"
+        resp.headers = {"Content-Type": "text/html"}
         resp.text = AsyncMock(return_value="Service Unavailable")
         session.get = MagicMock(return_value=resp)
 

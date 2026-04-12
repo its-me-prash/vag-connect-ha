@@ -125,18 +125,41 @@ class IDKAuth:
         async with self._session.get(
             _AUTHORIZE_URL, params=params, headers=headers, allow_redirects=True
         ) as resp:
+            final_url = str(resp.url)
+            ctype = resp.headers.get("Content-Type", "")
+            html = await resp.text(errors="replace")
+            _LOGGER.debug(
+                "IDK step1: status=%s url=%s ctype=%s html_len=%d",
+                resp.status, final_url[:80], ctype[:40], len(html),
+            )
             if resp.status != 200:
                 raise AuthenticationError(
-                    f"Authorization page returned HTTP {resp.status}"
+                    f"Authorization page returned HTTP {resp.status} at {final_url}"
                 )
-            html = await resp.text()
 
-        csrf = self._parse_csrf(html)
-        _LOGGER.debug("IDK step1: parsed form fields=%s action=%s",
-                      list(csrf.fields.keys()), csrf.form_action[:60] if csrf.form_action else "(none)")
+        if not html.strip():
+            _LOGGER.error(
+                "IDK step1: empty response — url=%s possible bot-detection or app-scheme redirect",
+                final_url,
+            )
+            raise AuthenticationError(
+                "IDK returned empty page. Possible bot detection — retry in a few minutes."
+            )
+
+        csrf = self._parse_csrf_robust(html)
+        _LOGGER.debug(
+            "IDK step1: fields=%s action=%s",
+            list(csrf.fields.keys()),
+            (csrf.form_action[:60] if csrf.form_action else "(none)"),
+        )
         if not csrf.fields.get("_csrf") and not csrf.fields.get("hmac"):
-            _LOGGER.error("IDK login page has no CSRF fields — page snippet: %s", html[:500])
-            raise AuthenticationError("Could not parse login page — IDK may have changed.")
+            _LOGGER.error(
+                "IDK step1: no CSRF fields — url=%s snippet=%r",
+                final_url, html[:800],
+            )
+            raise AuthenticationError(
+                "Could not parse IDK login page — IDK may have changed its HTML structure."
+            )
 
         # Step 2 — submit email
         email_url = _absolute_url(
@@ -152,7 +175,7 @@ class IDKAuth:
             html = await resp.text()
 
         # Extract updated CSRF for password step
-        csrf2 = self._parse_csrf(html)
+        csrf2 = self._parse_csrf_robust(html)
         # IDK uses a JavaScript-injected hmac — extract via regex if form parser missed it
         if "hmac" not in csrf2.fields:
             m = re.search(r'"hmac"\s*:\s*"([0-9a-fA-F]+)"', html)
@@ -293,6 +316,57 @@ class IDKAuth:
     def _parse_csrf(html: str) -> _CSRFParser:
         parser = _CSRFParser()
         parser.feed(html)
+        return parser
+
+    @staticmethod
+    def _parse_csrf_robust(html: str) -> _CSRFParser:
+        """Parse CSRF from IDK login page — handles multiple page structures.
+
+        IDK has changed their login page over the years:
+        - Classic (2022): <input type="hidden" name="_csrf" value="...">
+        - Modern (2024+): CSRF embedded in <script> JSON block
+        - Also tries regex fallback for all hidden inputs.
+        """
+        parser = _CSRFParser()
+        parser.feed(html)
+
+        # Fallback 1 — regex over ALL hidden inputs (HTMLParser can miss JS-rendered)
+        for tag in re.finditer(r"<input[^>]+>", html, re.IGNORECASE):
+            t = tag.group(0)
+            if 'type="hidden"' not in t.lower() and "type='hidden'" not in t.lower():
+                continue
+            nm = re.search(r'name=["\']([^"\']+)["\']', t)
+            vm = re.search(r'value=["\']([^"\']*)["\']', t)
+            if nm:
+                parser.fields[nm.group(1)] = vm.group(1) if vm else ""
+
+        # Fallback 2 — form action via regex
+        if not parser.form_action:
+            fm = re.search(r'action=["\']([^"\']+/login/[^"\']+)["\']', html)
+            if fm:
+                parser.form_action = fm.group(1)
+
+        # Fallback 3 — CSRF in JSON/script blocks (modern IDK SPA pages)
+        # e.g.: {"_csrf":"token","hmac":"hexval",...}
+        # or:   window.__STORE__ = {...,"csrf":"token",...}
+        if not parser.fields.get("_csrf"):
+            for pattern in [
+                r'"_csrf"\s*:\s*"([^"]{8,})"',
+                r'"csrf"\s*:\s*"([^"]{8,})"',
+                r'"csrfToken"\s*:\s*"([^"]{8,})"',
+            ]:
+                m = re.search(pattern, html)
+                if m:
+                    parser.fields["_csrf"] = m.group(1)
+                    _LOGGER.debug("IDK: _csrf extracted via JSON pattern")
+                    break
+
+        if not parser.fields.get("hmac"):
+            m = re.search(r'"hmac"\s*:\s*"([0-9a-fA-F]{20,})"', html)
+            if m:
+                parser.fields["hmac"] = m.group(1)
+                _LOGGER.debug("IDK: hmac extracted via JSON pattern")
+
         return parser
 
     def _base_headers(self) -> dict[str, str]:

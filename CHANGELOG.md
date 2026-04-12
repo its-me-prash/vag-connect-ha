@@ -29,6 +29,20 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ---
 
+## [0.14.3] - 2026-04-12
+
+### Fixed
+- **IDK Login: robusteres CSRF-Parsing** — `_parse_csrf_robust()` versucht jetzt 4 Methoden:
+  1. Klassische `<input type="hidden">` HTML-Parser
+  2. Regex über ALLE Hidden-Inputs (HTMLParser übersieht manchmal JS-gerenderte Felder)
+  3. JSON-Pattern in `<script>`-Blöcken (modernes IDK SPA: `"_csrf":"..."`, `"hmac":"..."`)
+  4. `data-`-Attribute auf Form-Elementen
+- **Detailliertes Schritt-Logging**: Step 1 loggt jetzt URL, Status, Content-Type, HTML-Länge
+- Bei leerem HTML: eigene klare Fehlermeldung statt generischem "no CSRF fields"
+- Step 2 nutzt ebenfalls `_parse_csrf_robust()`
+
+---
+
 ## [0.14.2] - 2026-04-12
 
 ### Fixed
