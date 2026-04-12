@@ -325,8 +325,26 @@
       }
     },
     "image": {
-      "vehicle_image": {
-        "name": "Obrázek vozidla"
+      "render_icon": {
+        "name": "Pohled 3/4 ikona"
+      },
+      "render_small": {
+        "name": "Pohled 3/4 malý"
+      },
+      "render_medium": {
+        "name": "Pohled 3/4 střední"
+      },
+      "render_side_sm": {
+        "name": "Boční pohled malý"
+      },
+      "render_side_lg": {
+        "name": "Boční pohled velký"
+      },
+      "render_angle_hd": {
+        "name": "Pohled 3/4 HD"
+      },
+      "render_angle_lg": {
+        "name": "Pohled 3/4 velký"
       }
     }
   },

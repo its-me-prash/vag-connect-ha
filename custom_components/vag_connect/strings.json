@@ -325,8 +325,26 @@
       }
     },
     "image": {
-      "vehicle_image": {
-        "name": "Fahrzeugbild"
+      "render_icon": {
+        "name": "3/4-Ansicht Icon"
+      },
+      "render_small": {
+        "name": "3/4-Ansicht Klein"
+      },
+      "render_medium": {
+        "name": "3/4-Ansicht Mittel"
+      },
+      "render_side_sm": {
+        "name": "Seitenprofil Klein"
+      },
+      "render_side_lg": {
+        "name": "Seitenprofil Groß"
+      },
+      "render_angle_hd": {
+        "name": "3/4-Ansicht HD"
+      },
+      "render_angle_lg": {
+        "name": "3/4-Ansicht Groß"
       }
     }
   },

@@ -145,6 +145,10 @@ class VehicleData:
     # Render images — dict of mediaType → public URL (fetched via GraphQL, no auth needed to GET)
     # e.g. {"MYAPN8NB": "https://mediaservice.audi.com/media/fast/v3_...", ...}
     image_urls: dict = None  # type: ignore[assignment]
+    # Vehicle media names from GraphQL (vehicle.media.shortName/longName)
+    media_short_name: str | None = None  # e.g. "Q4 e-tron"
+    media_long_name: str | None = None   # e.g. "Audi Q4 50 e-tron quattro"
+    media_exterior_color: str | None = None
 
     def __post_init__(self) -> None:
         """Initialise mutable defaults."""

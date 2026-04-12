@@ -21,6 +21,61 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ---
 
+## [1.3.1] - 2026-04-12
+
+### Geändert (Upgrade von v1.3.0)
+
+#### 7 Image-Entities statt 1 pro Fahrzeug
+
+v1.3.0 hatte ein einzelnes "bestes Bild" Entity. v1.3.1 implementiert die vollständige
+Spezifikation aus Issue #15: **7 separate Image-Entities** pro Fahrzeug, eine pro MediaType.
+
+| Entity | MediaType | Ansicht | Größe |
+|---|---|---|---|
+| `render_icon` | MS_MYP3 | 3/4-Ansicht | ~76 KB |
+| `render_small` | MS_MYP4 | 3/4-Ansicht | ~117 KB |
+| `render_medium` | MS_MYP5 | 3/4-Ansicht | ~196 KB |
+| `render_side_sm` | MYAPN3NB | Seitenprofil | ~158 KB |
+| `render_side_lg` | MYAPN8NB | Seitenprofil | ~309 KB ⭐ |
+| `render_angle_hd` | MYAAN3NB | 3/4-Ansicht HD | ~1.7 MB |
+| `render_angle_lg` | MYAAN8NB | 3/4-Ansicht | ~879 KB |
+
+#### Lokales Caching
+
+Alle 7 Bilder werden als Background-Task lokal gecacht:
+`/config/www/vehicles/{vin}_{tag}.png`
+
+Lovelace-Karten können direkt auf `/local/vehicles/{vin}_{tag}.png` verweisen
+→ kein Online-Zugriff nach dem ersten Cache nötig.
+
+#### Attribute pro Entity (vollständig)
+
+`media_type`, `tag`, `view_description`, `recommended_use`, `file_size_approx`,
+`source_url`, `local_path`, `local_cached`, `vin`, `vehicle_short_name`,
+`vehicle_long_name`, `exterior_color`
+
+#### `VehicleImageData` Dataclass
+
+`graphql.py` gibt jetzt `VehicleImageData` statt `dict[str, str]` zurück:
+- `image_urls: dict[str, str]`
+- `short_name`, `long_name`, `exterior_color`, `nickname`
+
+Diese Daten werden in VehicleData gespeichert (`media_short_name`, `media_long_name`,
+`media_exterior_color`) und sind auf allen 7 Image-Entities verfügbar.
+
+#### README: Lovelace-Beispiele
+
+Neuer Abschnitt "Fahrzeugbilder in Lovelace" mit 5 Beispiel-Karten.
+
+#### Strings + Translations
+
+8 Sprachen mit allen 7 Entity-Namen aktualisiert (war: 1 generischer Name).
+
+**360/360 Tests grün | mypy 32/32 ✓ | Ruff ✓**
+
+---
+
+
 ## [1.3.0] - 2026-04-12
 
 ### Hinzugefügt

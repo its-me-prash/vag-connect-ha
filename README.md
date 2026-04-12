@@ -100,6 +100,75 @@ sensor  |  binary_sensor  |  device_tracker  |  switch  |  button  |  climate  |
 
 ---
 
+## Fahrzeugbilder in Lovelace
+
+VAG Connect lädt automatisch bis zu 7 Render-Bilder pro Fahrzeug (PNG, transparenter Hintergrund).
+Die Bilder werden lokal unter `/config/www/vehicles/` gecacht.
+
+### Verfügbare Bildvarianten
+
+| Entity-Suffix | MediaType | Ansicht | Größe | Empfehlung |
+|---|---|---|---|---|
+| `render_icon` | MS_MYP3 | 3/4-Ansicht | ~76 KB | Mini-Icons, Badges, Chip-Cards |
+| `render_small` | MS_MYP4 | 3/4-Ansicht | ~117 KB | Kleine Karten, Sidebar |
+| `render_medium` | MS_MYP5 | 3/4-Ansicht | ~196 KB | Standard-Karten, Grid |
+| `render_side_sm` | MYAPN3NB | Seitenprofil | ~158 KB | Kompakte Seitenansicht |
+| `render_side_lg` | MYAPN8NB | Seitenprofil | ~309 KB | ⭐ **Lovelace-Karten (empfohlen)** |
+| `render_angle_hd` | MYAAN3NB | 3/4-Ansicht | ~1.7 MB | Hero-Banner, Vollbild |
+| `render_angle_lg` | MYAAN8NB | 3/4-Ansicht | ~879 KB | Dashboard-Karten |
+
+### Picture-Entity Card
+
+```yaml
+type: picture-entity
+entity: sensor.audi_s6_avant_kilometerstand
+image: /local/vehicles/WAUZZZF29MN0XXXXX_side_large.png
+name: "S6 Avant"
+```
+
+### Button Card mit Fahrzeugbild
+
+```yaml
+type: custom:button-card
+entity: sensor.audi_s6_avant_tankstand
+show_icon: false
+styles:
+  card:
+    - background-image: url('/local/vehicles/WAUZZZF29MN0XXXXX_side_large.png')
+    - background-size: contain
+    - background-position: center
+    - background-repeat: no-repeat
+    - height: 200px
+```
+
+### Mushroom Card
+
+```yaml
+type: custom:mushroom-entity-card
+entity: sensor.audi_s6_avant_kilometerstand
+icon: ''
+picture: /local/vehicles/WAUZZZF29MN0XXXXX_icon.png
+name: "S6 Avant"
+```
+
+### Garage-View (mehrere Fahrzeuge)
+
+```yaml
+type: horizontal-stack
+cards:
+  - type: picture-entity
+    entity: sensor.audi_s6_avant_kilometerstand
+    image: /local/vehicles/VIN1_side_large.png
+  - type: picture-entity
+    entity: sensor.vw_id4_kilometerstand
+    image: /local/vehicles/VIN2_side_large.png
+```
+
+> **Tipp:** Die VIN findest du als Attribut auf jeder Image-Entity (`vin` in den Entitäts-Attributen) oder im Fahrzeugschein.
+
+
+---
+
 ## Installation
 
 ### HACS (empfohlen)

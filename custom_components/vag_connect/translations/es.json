@@ -325,8 +325,26 @@
       }
     },
     "image": {
-      "vehicle_image": {
-        "name": "Imagen del vehículo"
+      "render_icon": {
+        "name": "Vista 3/4 icono"
+      },
+      "render_small": {
+        "name": "Vista 3/4 pequeña"
+      },
+      "render_medium": {
+        "name": "Vista 3/4 mediana"
+      },
+      "render_side_sm": {
+        "name": "Perfil lateral pequeño"
+      },
+      "render_side_lg": {
+        "name": "Perfil lateral grande"
+      },
+      "render_angle_hd": {
+        "name": "Vista 3/4 HD"
+      },
+      "render_angle_lg": {
+        "name": "Vista 3/4 grande"
       }
     }
   },

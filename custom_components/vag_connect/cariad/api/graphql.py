@@ -14,13 +14,14 @@ Research source: vag-connect-ha Issue #15
 from __future__ import annotations
 
 import logging
+from dataclasses import dataclass
 from typing import Any
 
 from aiohttp import ClientSession, ClientTimeout
 
 _LOGGER = logging.getLogger(__name__)
 
-# GraphQL endpoints per brand (proxy path differs, vgql layer is shared)
+# GraphQL endpoints per brand (proxy path differs, vgql layer is shared VW Group)
 _GRAPHQL_ENDPOINTS: dict[str, str] = {
     "audi":       "https://www.audi.de/userinfo-emea/v2/myaudi/proxy/vgql/v1/graphql",
     "volkswagen": "https://www.volkswagen.de/app/proxy/vgql/v1/graphql",
@@ -29,25 +30,87 @@ _GRAPHQL_ENDPOINTS: dict[str, str] = {
     "cupra":      "https://www.cupraofficial.com/mycupra/proxy/vgql/v1/graphql",
 }
 
-# Best image per use case — ordered by preference
-_PREFERRED_MEDIA_TYPES = [
-    "MYAPN8NB",  # Side profile large ~309KB — best for Lovelace cards
-    "MYAAN8NB",  # 3/4 angle large ~879KB — dashboard hero
-    "MS_MYP5",   # 3/4 angle ~196KB — medium cards
-    "MYAPN3NB",  # Side profile ~158KB — compact cards
-    "MS_MYP4",   # 3/4 angle ~117KB — small cards
-    "MS_MYP3",   # 3/4 angle ~76KB  — icon/badge
+# Complete metadata for all 7 render image types
+# Order = preference (best for Lovelace first)
+RENDER_IMAGE_TYPES: list[dict[str, str]] = [
+    {
+        "media_type":       "MYAPN8NB",
+        "entity_suffix":    "render_side_lg",
+        "tag":              "side_large",
+        "view_description": "Seitenprofil groß",
+        "recommended_use":  "⭐ Empfohlen für Lovelace-Karten und Dashboards",
+        "file_size_approx": "309 KB",
+    },
+    {
+        "media_type":       "MYAAN8NB",
+        "entity_suffix":    "render_angle_lg",
+        "tag":              "angle_large",
+        "view_description": "3/4-Ansicht groß",
+        "recommended_use":  "Dashboard-Karten, Picture-Entity Cards",
+        "file_size_approx": "879 KB",
+    },
+    {
+        "media_type":       "MS_MYP5",
+        "entity_suffix":    "render_medium",
+        "tag":              "medium",
+        "view_description": "3/4-Ansicht mittel",
+        "recommended_use":  "Standard-Karten, Grid-Layouts",
+        "file_size_approx": "196 KB",
+    },
+    {
+        "media_type":       "MYAPN3NB",
+        "entity_suffix":    "render_side_sm",
+        "tag":              "side_small",
+        "view_description": "Seitenprofil klein",
+        "recommended_use":  "Kompakte Seitenansicht, horizontale Karten",
+        "file_size_approx": "158 KB",
+    },
+    {
+        "media_type":       "MS_MYP4",
+        "entity_suffix":    "render_small",
+        "tag":              "small",
+        "view_description": "3/4-Ansicht klein",
+        "recommended_use":  "Kleine Karten, Sidebar-Widgets",
+        "file_size_approx": "117 KB",
+    },
+    {
+        "media_type":       "MS_MYP3",
+        "entity_suffix":    "render_icon",
+        "tag":              "icon",
+        "view_description": "3/4-Ansicht Icon",
+        "recommended_use":  "Mini-Icon in Listen, Badges, Chip-Cards",
+        "file_size_approx": "76 KB",
+    },
+    {
+        "media_type":       "MYAAN3NB",
+        "entity_suffix":    "render_angle_hd",
+        "tag":              "angle_hd",
+        "view_description": "3/4-Ansicht HD",
+        "recommended_use":  "Hero-Banner, Vollbild-Dashboards, Wallpaper",
+        "file_size_approx": "1.7 MB",
+    },
 ]
+
+# Quick lookup: media_type → metadata dict
+RENDER_TYPE_BY_MEDIA: dict[str, dict[str, str]] = {
+    r["media_type"]: r for r in RENDER_IMAGE_TYPES
+}
+
+# Preferred order for "best single image" fallback
+_PREFERRED_ORDER = [r["media_type"] for r in RENDER_IMAGE_TYPES]
 
 _GQL_QUERY = """
 query GET_USER_VEHICLES {
   userVehicles {
     vin
+    nickname
     vehicle {
+      brand { name }
       media {
         shortName
         longName
         exteriorColor
+        interiorColor
       }
       renderPictures(
         mediaTypes: [
@@ -69,20 +132,32 @@ query GET_USER_VEHICLES {
 """
 
 
+@dataclass
+class VehicleImageData:
+    """All render image data for a single vehicle."""
+
+    vin: str
+    image_urls: dict[str, str]          # {mediaType: public URL}
+    short_name: str | None = None       # e.g. "Q4 e-tron"
+    long_name: str | None = None        # e.g. "Audi Q4 50 e-tron quattro"
+    exterior_color: str | None = None
+    nickname: str | None = None         # User-set nickname in app
+
+
 class VehicleImageFetcher:
     """Fetches vehicle render image URLs via VW Group GraphQL API.
 
-    Call fetch_image_urls(access_token, brand) → dict[vin, dict[mediaType, url]]
-    URLs are public — no further auth needed to GET the image.
+    fetch_image_data(access_token, brand) → dict[vin, VehicleImageData]
+    URLs are public — no further auth needed to GET the actual PNG.
     """
 
     def __init__(self, session: ClientSession) -> None:
         self._session = session
 
-    async def fetch_image_urls(
+    async def fetch_image_data(
         self, access_token: str, brand: str
-    ) -> dict[str, dict[str, str]]:
-        """Return {vin: {mediaType: url}} for all vehicles in the account.
+    ) -> dict[str, VehicleImageData]:
+        """Return {vin: VehicleImageData} for all vehicles in the account.
 
         Returns empty dict on any error — images are optional, never block startup.
         """
@@ -117,39 +192,49 @@ class VehicleImageFetcher:
         return self._parse_response(data)
 
     @staticmethod
-    def _parse_response(data: dict[str, Any]) -> dict[str, dict[str, str]]:
-        """Extract {vin: {mediaType: url}} from GraphQL response."""
-        result: dict[str, dict[str, str]] = {}
+    def _parse_response(data: dict[str, Any]) -> dict[str, VehicleImageData]:
+        """Extract VehicleImageData per VIN from GraphQL response."""
+        result: dict[str, VehicleImageData] = {}
         try:
             vehicles = data.get("data", {}).get("userVehicles", []) or []
             for v in vehicles:
                 vin = v.get("vin")
                 if not vin:
                     continue
-                pictures = v.get("vehicle", {}).get("renderPictures", []) or []
+                vehicle = v.get("vehicle") or {}
+                media   = vehicle.get("media") or {}
+                pictures = vehicle.get("renderPictures") or []
+
                 urls: dict[str, str] = {}
                 for pic in pictures:
                     mt  = pic.get("mediaType")
                     url = pic.get("url")
                     if mt and url:
                         urls[mt] = url
-                if urls:
-                    result[vin] = urls
-                    _LOGGER.debug(
-                        "GraphQL images for %s: %d mediaTypes", vin, len(urls)
-                    )
+
+                result[vin] = VehicleImageData(
+                    vin=vin,
+                    image_urls=urls,
+                    short_name=media.get("shortName"),
+                    long_name=media.get("longName"),
+                    exterior_color=media.get("exteriorColor"),
+                    nickname=v.get("nickname"),
+                )
+                _LOGGER.debug(
+                    "GraphQL images for %s (%s): %d mediaTypes",
+                    vin, media.get("shortName", "?"), len(urls),
+                )
         except Exception as err:  # noqa: BLE001
             _LOGGER.debug("GraphQL response parse error: %s", err)
         return result
 
     @staticmethod
     def best_url(image_urls: dict[str, str] | None) -> str | None:
-        """Return the best available image URL from a dict of {mediaType: url}."""
+        """Return the best available image URL (MYAPN8NB preferred)."""
         if not image_urls:
             return None
-        for mt in _PREFERRED_MEDIA_TYPES:
+        for mt in _PREFERRED_ORDER:
             url = image_urls.get(mt)
             if url:
                 return url
-        # Fallback: any available URL
         return next(iter(image_urls.values()), None)

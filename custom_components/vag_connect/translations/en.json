@@ -325,8 +325,26 @@
       }
     },
     "image": {
-      "vehicle_image": {
-        "name": "Vehicle Image"
+      "render_icon": {
+        "name": "3/4 View Icon"
+      },
+      "render_small": {
+        "name": "3/4 View Small"
+      },
+      "render_medium": {
+        "name": "3/4 View Medium"
+      },
+      "render_side_sm": {
+        "name": "Side Profile Small"
+      },
+      "render_side_lg": {
+        "name": "Side Profile Large"
+      },
+      "render_angle_hd": {
+        "name": "3/4 View HD"
+      },
+      "render_angle_lg": {
+        "name": "3/4 View Large"
       }
     }
   },

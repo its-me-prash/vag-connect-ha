@@ -2779,14 +2779,16 @@ class TestVehicleImageFetcher:
     """Tests for VehicleImageFetcher GraphQL client."""
 
     def test_parse_response_extracts_urls(self):
-        """GraphQL response → {vin: {mediaType: url}}."""
-        from custom_components.vag_connect.cariad.api.graphql import VehicleImageFetcher
+        """GraphQL response → {vin: VehicleImageData}."""
+        from custom_components.vag_connect.cariad.api.graphql import VehicleImageFetcher, VehicleImageData
         data = {
             "data": {
                 "userVehicles": [
                     {
                         "vin": "WAUZZZ4G7EN123456",
+                        "nickname": "Mein Audi",
                         "vehicle": {
+                            "media": {"shortName": "S6 Avant", "longName": "Audi S6 Avant", "exteriorColor": "Navarra Blau"},
                             "renderPictures": [
                                 {"mediaType": "MYAPN8NB", "url": "https://mediaservice.audi.com/fast/v3_abc"},
                                 {"mediaType": "MS_MYP3",  "url": "https://mediaservice.audi.com/fast/v3_xyz"},
@@ -2798,8 +2800,14 @@ class TestVehicleImageFetcher:
         }
         result = VehicleImageFetcher._parse_response(data)
         assert "WAUZZZ4G7EN123456" in result
-        assert result["WAUZZZ4G7EN123456"]["MYAPN8NB"] == "https://mediaservice.audi.com/fast/v3_abc"
-        assert result["WAUZZZ4G7EN123456"]["MS_MYP3"] == "https://mediaservice.audi.com/fast/v3_xyz"
+        img = result["WAUZZZ4G7EN123456"]
+        assert isinstance(img, VehicleImageData)
+        assert img.image_urls["MYAPN8NB"] == "https://mediaservice.audi.com/fast/v3_abc"
+        assert img.image_urls["MS_MYP3"] == "https://mediaservice.audi.com/fast/v3_xyz"
+        assert img.short_name == "S6 Avant"
+        assert img.long_name == "Audi S6 Avant"
+        assert img.exterior_color == "Navarra Blau"
+        assert img.nickname == "Mein Audi"
 
     def test_parse_response_handles_empty(self):
         """Empty/missing data → empty dict, no crash."""
@@ -2844,9 +2852,27 @@ class TestVehicleImageFetcher:
         assert len(d.image_urls) == 0
 
     def test_vehicle_data_to_dict_preserves_image_urls(self):
-        """to_dict() preserves image_urls for coordinator storage."""
+        """to_dict() preserves image_urls + media names for coordinator storage."""
         from custom_components.vag_connect.cariad.models import VehicleData
         d = VehicleData(vin="TEST123")
         d.image_urls = {"MYAPN8NB": "https://example.com/car.png"}
+        d.media_short_name = "Q4 e-tron"
+        d.media_long_name = "Audi Q4 50 e-tron quattro"
+        d.media_exterior_color = "Glacier White"
         serialised = d.to_dict()
         assert serialised["image_urls"]["MYAPN8NB"] == "https://example.com/car.png"
+        assert serialised["media_short_name"] == "Q4 e-tron"
+        assert serialised["media_long_name"] == "Audi Q4 50 e-tron quattro"
+        assert serialised["media_exterior_color"] == "Glacier White"
+
+    def test_render_image_types_all_7_present(self):
+        """RENDER_IMAGE_TYPES must have all 7 MediaTypes."""
+        from custom_components.vag_connect.cariad.api.graphql import RENDER_IMAGE_TYPES, RENDER_TYPE_BY_MEDIA
+        assert len(RENDER_IMAGE_TYPES) == 7
+        expected_media = {"MS_MYP3", "MS_MYP4", "MS_MYP5", "MYAPN3NB", "MYAPN8NB", "MYAAN3NB", "MYAAN8NB"}
+        actual_media = {r["media_type"] for r in RENDER_IMAGE_TYPES}
+        assert actual_media == expected_media
+        # RENDER_TYPE_BY_MEDIA lookup
+        assert RENDER_TYPE_BY_MEDIA["MYAPN8NB"]["entity_suffix"] == "render_side_lg"
+        assert RENDER_TYPE_BY_MEDIA["MS_MYP3"]["entity_suffix"] == "render_icon"
+        assert RENDER_TYPE_BY_MEDIA["MYAAN3NB"]["tag"] == "angle_hd"

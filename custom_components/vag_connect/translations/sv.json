@@ -325,8 +325,26 @@
       }
     },
     "image": {
-      "vehicle_image": {
-        "name": "Fordonsbild"
+      "render_icon": {
+        "name": "3/4 vy ikon"
+      },
+      "render_small": {
+        "name": "3/4 vy liten"
+      },
+      "render_medium": {
+        "name": "3/4 vy medium"
+      },
+      "render_side_sm": {
+        "name": "Sidoprofil liten"
+      },
+      "render_side_lg": {
+        "name": "Sidoprofil stor"
+      },
+      "render_angle_hd": {
+        "name": "3/4 vy HD"
+      },
+      "render_angle_lg": {
+        "name": "3/4 vy stor"
       }
     }
   },

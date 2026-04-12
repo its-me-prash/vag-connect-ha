@@ -325,8 +325,26 @@
       }
     },
     "image": {
-      "vehicle_image": {
-        "name": "Voertuigafbeelding"
+      "render_icon": {
+        "name": "3/4 weergave icoon"
+      },
+      "render_small": {
+        "name": "3/4 weergave klein"
+      },
+      "render_medium": {
+        "name": "3/4 weergave middel"
+      },
+      "render_side_sm": {
+        "name": "Zijaanzicht klein"
+      },
+      "render_side_lg": {
+        "name": "Zijaanzicht groot"
+      },
+      "render_angle_hd": {
+        "name": "3/4 weergave HD"
+      },
+      "render_angle_lg": {
+        "name": "3/4 weergave groot"
       }
     }
   },

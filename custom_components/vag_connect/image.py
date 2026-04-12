@@ -1,21 +1,25 @@
 # Copyright 2026 Prash Balan (@its-me-prash) — Apache License 2.0
-"""Image entities for VAG Connect — vehicle render images.
+"""Image entities for VAG Connect — 7 vehicle render images per vehicle.
 
-Provides one ImageEntity per vehicle using the best available render image
-(side profile ~309KB). All images have transparent PNG backgrounds and are
-publicly accessible without authentication.
+Creates one ImageEntity per MediaType per vehicle:
+  image.{vehicle}_render_icon       (MS_MYP3,   76 KB)
+  image.{vehicle}_render_small      (MS_MYP4,  117 KB)
+  image.{vehicle}_render_medium     (MS_MYP5,  196 KB)
+  image.{vehicle}_render_side_sm    (MYAPN3NB, 158 KB)
+  image.{vehicle}_render_side_lg    (MYAPN8NB, 309 KB) ← recommended
+  image.{vehicle}_render_angle_hd   (MYAAN3NB, 1.7 MB)
+  image.{vehicle}_render_angle_lg   (MYAAN8NB, 879 KB)
 
-Data flow:
-  VWEUClient.get_vehicles() → VehicleImageFetcher.fetch_image_urls()
-  → GraphQL vgql → mediaservice.{brand}.com (public URL)
-  → ImageEntity._attr_image_url → HA fetches + caches bytes
-
-Supported brands: Audi, VW EU, Škoda, SEAT, CUPRA (all via vgql)
-VW US/CA + Porsche: separate API, images not yet supported.
+All images are cached locally under /config/www/vehicles/{vin}_{tag}.png
+for offline use and fast Lovelace card loading.
 """
 
 from __future__ import annotations
 
+import logging
+
+import asyncio
+import os
 from datetime import datetime, timezone
 
 from homeassistant.components.image import ImageEntity
@@ -23,10 +27,26 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .cariad.api.graphql import VehicleImageFetcher
+from .cariad.api.graphql import RENDER_IMAGE_TYPES
 from .const import DOMAIN
 from .coordinator import VagConnectCoordinator
 from .entity_base import VagConnectEntity
+
+_LOGGER = logging.getLogger(__name__)
+
+# Local cache directory under HA's /config/www/
+_CACHE_SUBDIR = "vehicles"
+
+
+def _local_path(hass: HomeAssistant, vin: str, tag: str) -> str:
+    """Return absolute path to local cached PNG file."""
+    www_dir = hass.config.path("www", _CACHE_SUBDIR)
+    return os.path.join(www_dir, f"{vin}_{tag}.png")
+
+
+def _local_url(vin: str, tag: str) -> str:
+    """Return HA /local/ URL for the cached image (for Lovelace use)."""
+    return f"/local/{_CACHE_SUBDIR}/{vin}_{tag}.png"
 
 
 async def async_setup_entry(
@@ -34,28 +54,84 @@ async def async_setup_entry(
     entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Set up image entities — one per vehicle that has render images."""
+    """Set up image entities — 7 per vehicle that has render images."""
     coordinator: VagConnectCoordinator = hass.data[DOMAIN][entry.entry_id]
-    entities = []
+    entities: list[ImageEntity] = []
 
     for vin, vehicle in coordinator.vehicles.items():
         image_urls: dict[str, str] = vehicle.get("image_urls") or {}
-        best_url = VehicleImageFetcher.best_url(image_urls)
-        if best_url:
-            entities.append(VagVehicleImage(hass, coordinator, vin, best_url))
+        if not image_urls:
+            continue
+
+        # Ensure cache directory exists
+        www_dir = hass.config.path("www", _CACHE_SUBDIR)
+        await hass.async_add_executor_job(os.makedirs, www_dir, 0o755, True)
+
+        for meta in RENDER_IMAGE_TYPES:
+            url = image_urls.get(meta["media_type"])
+            if url:
+                entities.append(
+                    VagRenderImageEntity(hass, coordinator, vin, meta, url)
+                )
 
     if entities:
         async_add_entities(entities)
+        # Trigger background cache of all images (fire-and-forget)
+        asyncio.ensure_future(
+            _cache_all_images(hass, coordinator)
+        )
 
 
-class VagVehicleImage(VagConnectEntity, ImageEntity):
-    """Vehicle render image entity.
+async def _cache_all_images(
+    hass: HomeAssistant,
+    coordinator: VagConnectCoordinator,
+) -> None:
+    """Download and cache all render images locally (background task)."""
+    from homeassistant.helpers.aiohttp_client import async_get_clientsession  # noqa: PLC0415
+    session = async_get_clientsession(hass)
 
-    Uses the best available mediaType (side profile MYAPN8NB preferred).
-    Image URL is stable until vehicle config (color, equipment) changes.
+    for vin, vehicle in coordinator.vehicles.items():
+        image_urls: dict[str, str] = vehicle.get("image_urls") or {}
+        for meta in RENDER_IMAGE_TYPES:
+            url = image_urls.get(meta["media_type"])
+            if not url:
+                continue
+            local = _local_path(hass, vin, meta["tag"])
+            if await hass.async_add_executor_job(os.path.exists, local):
+                continue  # Already cached
+            try:
+                async with session.get(url, timeout=None) as resp:
+                    if resp.status == 200:
+                        content = await resp.read()
+                        await hass.async_add_executor_job(
+                            _write_file, local, content
+                        )
+                        _LOGGER.debug(  # type: ignore[name-defined]
+                            "Cached %s → %s (%d KB)",
+                            meta["tag"], local, len(content) // 1024,
+                        )
+            except Exception:  # noqa: BLE001
+                pass  # Cache failure is non-critical
+
+
+def _write_file(path: str, content: bytes) -> None:
+    """Write bytes to file (runs in executor)."""
+    with open(path, "wb") as f:
+        f.write(content)
+
+
+
+
+class VagRenderImageEntity(VagConnectEntity, ImageEntity):
+    """One render image entity for a single MediaType + vehicle combination.
+
+    Attributes expose all metadata for Lovelace use:
+      - source_url: the original public URL from mediaservice
+      - local_path: /local/vehicles/{vin}_{tag}.png (usable in picture-entity)
+      - tag, media_type, view_description, recommended_use, file_size_approx
+      - vehicle_name, vin, media_short_name, media_long_name
     """
 
-    _attr_name = "Fahrzeugbild"
     _attr_content_type = "image/png"
 
     def __init__(
@@ -63,38 +139,67 @@ class VagVehicleImage(VagConnectEntity, ImageEntity):
         hass: HomeAssistant,
         coordinator: VagConnectCoordinator,
         vin: str,
-        image_url: str,
+        meta: dict[str, str],
+        initial_url: str,
     ) -> None:
-        VagConnectEntity.__init__(self, coordinator, vin, "vehicle_image")
+        VagConnectEntity.__init__(self, coordinator, vin, meta["entity_suffix"])
         ImageEntity.__init__(self, hass, verify_ssl=True)
-        self._attr_image_url = image_url
+        self._meta = meta
+        self._attr_name = self._label_for(meta)
+        self._attr_image_url = initial_url
         self._attr_image_last_updated = datetime.now(tz=timezone.utc)
+
+    @staticmethod
+    def _label_for(meta: dict[str, str]) -> str:
+        """Human-readable name, e.g. 'Seitenprofil groß'."""
+        return meta["view_description"]
 
     @property
     def image_url(self) -> str | None:
-        """Return the current best render image URL.
-
-        Re-checks coordinator data in case the URL changed after a vehicle
-        config update (e.g. new colour coded after workshop visit).
-        """
+        """Return current URL — refreshes if vehicle config changed."""
         vehicle = self._vehicle
         image_urls: dict[str, str] = vehicle.get("image_urls") or {}
-        fresh_url = VehicleImageFetcher.best_url(image_urls)
-        if fresh_url and fresh_url != self._attr_image_url:
-            # URL changed (vehicle colour/config update) — invalidate cache
-            self._attr_image_url = fresh_url
+        fresh = image_urls.get(self._meta["media_type"])
+        if fresh and fresh != self._attr_image_url:
+            self._attr_image_url = fresh
             self._attr_image_last_updated = datetime.now(tz=timezone.utc)
             self._cached_image = None  # type: ignore[assignment]
-        url = self._attr_image_url
-        # Cast away UndefinedType — we always set a concrete str in __init__
-        return url if isinstance(url, str) else None
+            # Delete stale local cache so it gets re-downloaded
+            local = _local_path(self.hass, self._vin, self._meta["tag"])
+            try:
+                if os.path.exists(local):
+                    os.remove(local)
+            except OSError:
+                pass
+        return self._attr_image_url if isinstance(self._attr_image_url, str) else None
 
     @property
     def extra_state_attributes(self) -> dict:
-        """Expose all available image URLs as attributes for advanced use."""
+        """Full metadata for Lovelace and automations."""
         vehicle = self._vehicle
         image_urls: dict[str, str] = vehicle.get("image_urls") or {}
-        attrs: dict = {}
-        for media_type, url in image_urls.items():
-            attrs[f"url_{media_type.lower()}"] = url
+        url = image_urls.get(self._meta["media_type"])
+        local = _local_url(self._vin, self._meta["tag"])
+        local_abs = _local_path(self.hass, self._vin, self._meta["tag"])
+
+        attrs: dict = {
+            "media_type":       self._meta["media_type"],
+            "tag":              self._meta["tag"],
+            "view_description": self._meta["view_description"],
+            "recommended_use":  self._meta["recommended_use"],
+            "file_size_approx": self._meta["file_size_approx"],
+            "source_url":       url,
+            "local_path":       local,
+            "local_cached":     os.path.exists(local_abs),
+            "vin":              self._vin,
+        }
+
+        # Media names from GraphQL
+        if vehicle.get("media_short_name"):
+            attrs["vehicle_short_name"] = vehicle["media_short_name"]
+        if vehicle.get("media_long_name"):
+            attrs["vehicle_long_name"] = vehicle["media_long_name"]
+        if vehicle.get("media_exterior_color"):
+            attrs["exterior_color"] = vehicle["media_exterior_color"]
+
         return attrs
