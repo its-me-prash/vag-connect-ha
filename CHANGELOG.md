@@ -20,13 +20,61 @@ ci:       CI/CD-Änderungen
 
 ## [Unreleased]
 
-Geplant für 0.8.0:
-- `strict-typing` — mypy strict mode für alle Module
-- `icon-translations` — Icons aus strings.json statt hardcoded
-- `stale-devices` — automatisches Entfernen von Fahrzeugen die nicht mehr im Account sind
-- `test-coverage` — Coverage über 95% mit HA-Integration-Test-Framework
+Geplant für 0.9.0:
+- `strict-typing` vollständig — mypy --strict ohne Upstream-Einschränkungen
+- `test-coverage` >85% — HA Integration Test Framework Setup
+- HACS offizieller Antrag wenn genug Tester
 
 ---
+
+## [0.8.0] - 2026-04-12
+
+### Gold vollständig — icon-translations, stale-devices, 192 Tests
+
+#### Gold (letzte offene Punkte geschlossen)
+
+**`icon-translations`** — `icons.json` erstellt:
+- 64 Icon-Definitionen für alle Platforms (sensor, binary_sensor, switch, button, number, device_tracker, climate)
+- Icons zentral verwaltet statt hardcoded in Python
+
+**`stale-devices`** — automatische Geräte-Bereinigung:
+- `_async_remove_stale_devices()` im Coordinator vergleicht aktuelle VINs mit `coordinator.data`
+- Fahrzeuge die nicht mehr im API-Account sind, werden automatisch aus dem HA Device Registry entfernt
+- Implementiert bei jedem erfolgreichen Cloud-Push
+
+#### Typing-Fixes
+- `config_flow.py`: `FlowResult` → `ConfigFlowResult` (modernes HA-Pattern)
+- `switch.py`: Null-Guard in `VagWindowHeatingSwitch.is_on` — kein AttributeError mehr wenn `_vehicle` None
+- `button.py`: Korrekte Typannotation für entities-Liste
+- `number.py`: `max_charge_current` Handler in `async_set_native_value` ergänzt
+
+#### Testsuite massiv erweitert
+- **+123 neue Tests** → **192/192 grün**
+- `test_entities.py`: Alle Platforms vollständig abgedeckt (sensor, binary_sensor, switch, button, number, climate, device_tracker, diagnostics, repairs)
+- `test_config_flow.py`: Reauth, Reconfigure, Error-Mapping, Options Flow
+- Coordinator action methods: `_run_command`, alle async Actions, `_async_update_data`, stale devices
+
+#### Coverage (72% — Ceiling ohne HA Integration Test Framework)
+| Modul | Coverage |
+|---|---|
+| button, climate, diagnostics, entity_base, repairs, const | **100%** |
+| binary_sensor | **98%** |
+| number, sensor | **97-98%** |
+| switch | **91%** |
+| config_flow | **90%** |
+| device_tracker | **97%** |
+| coordinator | **56%** (CC-Startup-Code + _start_cc erfordern echte CC-Verbindung) |
+| `__init__` | **24%** (async_setup_entry erfordert HA Integration Test Framework) |
+
+#### quality_scale.yaml aktualisiert
+- `icon-translations`: done
+- `stale-devices`: done
+- `strict-typing`: in progress (Upstream-Blocker dokumentiert)
+- `test-coverage`: todo mit Begründung
+
+_Autor: @Prash1407_
+
+
 
 ## [0.7.0] - 2026-04-12
 

@@ -101,8 +101,11 @@ class VagConnectNumber(VagConnectEntity, NumberEntity):
             return None
 
     async def async_set_native_value(self, value: float) -> None:
+        """Set slider value — dispatches to the appropriate coordinator action."""
         key = self.entity_description.key
         if key == "target_soc":
             await self.coordinator.async_set_target_soc(self._vin, int(value))
         elif key == "target_temperature":
             await self.coordinator.async_set_climatisation_temperature(self._vin, value)
+        elif key == "max_charge_current":
+            await self.coordinator.async_set_max_charge_current(self._vin, int(value))

@@ -128,8 +128,10 @@ rules:
   test-coverage:
     status: todo
     comment: |
-      Coverage above 95% is the target. Currently: coordinator ~85%, config_flow ~70%.
-      Full coverage requires integration test framework setup. Tracked as improvement item.
+      Current: 72% overall, 192 tests. Platform modules (button, climate, diagnostics,
+      entity_base, repairs, const) at 97-100%. Remaining gaps in coordinator.py (CC startup
+      code requires real CC connection) and __init__.py (async_setup_entry requires full HA
+      test framework). Targeting 85%+ with HA integration test setup in v0.9.0.
 
   # ── Gold ──────────────────────────────────────────────────────────────────
   devices:
@@ -207,10 +209,10 @@ rules:
       Exception messages defined in strings.json exceptions section.
 
   icon-translations:
-    status: todo
+    status: done
     comment: |
-      Icons currently hardcoded in entity descriptions.
-      Moving to icon translations (strings.json icons section) is a follow-up item.
+      icons.json defines all 64 entity icons across sensor, binary_sensor,
+      switch, button, number, device_tracker, and climate platforms.
 
   reconfiguration-flow:
     status: done
@@ -225,10 +227,10 @@ rules:
       invalid credentials). Issues cleared automatically on successful reconnect.
 
   stale-devices:
-    status: todo
+    status: done
     comment: |
-      Devices are currently kept in the registry when a vehicle is removed from the
-      VAG account. Automatic stale device cleanup is a follow-up item.
+      _async_remove_stale_devices() compares current VINs against previous coordinator.data.
+      Devices for VINs no longer in the API response are removed from the device registry.
 
   # ── Platinum ──────────────────────────────────────────────────────────────
   async-dependency:
@@ -248,5 +250,6 @@ rules:
   strict-typing:
     status: todo
     comment: |
-      Type annotations are present on all public methods and properties.
-      Full mypy strict mode not yet enforced. Follow-up item for v0.8.0.
+      ConfigFlowResult typing fixed (was FlowResult). All public methods have return type
+      annotations. Full mypy --strict blocked by upstream carconnectivity lacking stubs.
+      Inline type: alias VagConnectConfigEntry added in __init__.py.

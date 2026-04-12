@@ -242,6 +242,7 @@ class VagConnectCoordinator(DataUpdateCoordinator):
 
         Implements log_when_unavailable: logs once when going offline,
         once when coming back online — never fills logs with repeated errors.
+        Also removes stale devices when vehicles disappear from the account.
         """
         if success:
             if not self._was_available:
@@ -250,6 +251,10 @@ class VagConnectCoordinator(DataUpdateCoordinator):
                     self.entry.data.get("username", ""),
                 )
                 self._was_available = True
+
+            # Remove devices for VINs no longer present in the account
+            await self._async_remove_stale_devices(set(data.keys()))
+
             self.async_set_updated_data(data)
             _LOGGER.debug("VAG Connect: Push zu HA — %d Fahrzeug(e)", len(data))
         else:
@@ -261,6 +266,33 @@ class VagConnectCoordinator(DataUpdateCoordinator):
                 self._was_available = False
             self.last_update_success = False
             self.async_update_listeners()
+
+    async def _async_remove_stale_devices(self, current_vins: set) -> None:
+        """Remove device registry entries for VINs no longer in the account.
+
+        Implements the stale-devices Gold quality scale rule.
+        Only removes devices that were previously seen (in coordinator.data)
+        but are no longer returned by the API.
+        """
+        if not self.data:
+            return  # First run — nothing to clean up
+
+        from homeassistant.helpers import device_registry as dr  # noqa: PLC0415
+        from .const import DOMAIN as _DOMAIN  # noqa: PLC0415
+
+        device_reg = dr.async_get(self.hass)
+        previous_vins = set(self.data.keys()) - {"_meta"}
+
+        for stale_vin in previous_vins - current_vins:
+            device_entry = device_reg.async_get_device(
+                identifiers={(_DOMAIN, stale_vin)}
+            )
+            if device_entry is not None:
+                _LOGGER.info(
+                    "VAG Connect: Fahrzeug %s nicht mehr im Account — Gerät entfernt",
+                    stale_vin,
+                )
+                device_reg.async_remove_device(device_entry.id)
 
     # ──────────────────────────────────────────────────────────────────
     # Daten-Extraktion

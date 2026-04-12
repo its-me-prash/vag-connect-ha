@@ -14,3 +14,4 @@ venv/
 *.swp
 carconnectivity.json
 .netrc
+.coverage

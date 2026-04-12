@@ -339,6 +339,7 @@ class TestNewExtractFields:
         self.coordinator.vehicles = {}
         self.coordinator.logger = MagicMock()
         self.coordinator._was_available = True  # required by log_when_unavailable
+        self.coordinator.data = None             # required by _async_remove_stale_devices
     def test_charging_power_extracted(self):
         v = _make_vehicle(is_electric=True)
         v.charging.power.value = 22.0

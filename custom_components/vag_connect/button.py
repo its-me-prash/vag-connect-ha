@@ -15,7 +15,7 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     coordinator: VagConnectCoordinator = entry.runtime_data
-    entities = []
+    entities: list[VagConnectEntity] = []
     for vin in coordinator.vehicles:
         entities.append(VagFlashButton(coordinator, vin))
         entities.append(VagRefreshButton(coordinator, vin))

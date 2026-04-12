@@ -110,7 +110,10 @@ class VagWindowHeatingSwitch(VagConnectEntity, SwitchEntity):
     def is_on(self) -> bool | None:
         from carconnectivity.window_heating import WindowHeatings  # noqa: PLC0415
         try:
-            state = self._vehicle.get("_vehicle").window_heatings.heating_state.value
+            v = self._vehicle.get("_vehicle")
+            if v is None:
+                return None
+            state = v.window_heatings.heating_state.value
             if state is None:
                 return None
             return state not in (
