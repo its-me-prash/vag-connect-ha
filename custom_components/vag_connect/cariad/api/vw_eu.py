@@ -61,6 +61,12 @@ class VWEUClient(CariadBaseClient):
             for v in vehicles if v.get("vin")
         }
         vins = [v["vin"] for v in vehicles if v.get("vin")]
+        if vehicles:
+            _LOGGER.warning(
+                "VAG vehicles raw fields (first car): %s",
+                {k: str(v)[:40] for k, v in vehicles[0].items()
+                 if k not in ("vin",)},
+            )
         _LOGGER.debug(
             "Found %d vehicle(s): %s",
             len(vins),
