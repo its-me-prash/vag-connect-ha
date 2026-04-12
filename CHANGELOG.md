@@ -29,6 +29,20 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ---
 
+## [0.11.1] - 2026-04-12
+
+### Changed
+- Semver retroaktiv korrigiert: 0.9.0–0.14.0 → 0.8.1–0.11.0 (Dokumentation/Tags)
+- `iot_class`: `cloud_push` → `cloud_polling` (wir pollen, kein Push-Protokoll)
+- CI: CarConnectivity-Dependencies entfernt, mypy + coverage-threshold hinzugefügt
+- `icons.json`: Service-Icons für alle 14 Actions ergänzt
+- `RELEASE_PROCESS.md`: aktuelle Semver-Tabelle und Checkpoints
+
+### Fixed
+- HACS-Update-Erkennung: Version war durch Retroaktiv-Korrektur unter installiertem Stand
+
+---
+
 ## [0.11.0] - 2026-04-12
 
 > Früher fälschlicherweise als `0.14.0` getaggt.
