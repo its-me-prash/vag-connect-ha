@@ -33,7 +33,7 @@ Ik wilde mijn Audi volledig in Home Assistant besturen. Dus bouwde ik dit.
 
 **VAG Connect** is een zelfstandige Home Assistant integratie voor alle VAG-merken. Geen externe afhankelijkheden, geen Docker, geen externe diensten.
 
-Vanaf v0.14.0 communiceert de integratie **rechtstreeks** met de CARIAD API — eigen async-client, volledig zelfstandig.
+Vanaf v0.11.0 communiceert de integratie **rechtstreeks** met de CARIAD API — eigen async-client, volledig zelfstandig.
 
 ---
 
@@ -46,10 +46,10 @@ Vanaf v0.14.0 communiceert de integratie **rechtstreeks** met de CARIAD API — 
 | **Škoda** | IDK | mysmob.api.connect.skoda-auto.cz | ✅ |
 | **SEAT** | IDK | ola.prod.code.seat.cloud.vwgroup.com | ✅ |
 | **CUPRA** | IDK | ola.prod.code.seat.cloud.vwgroup.com | ✅ |
-| Porsche | Auth0 | api.ppa.porsche.com | 🔜 v0.15.0 |
-| VW NA (US/CA) | VW NA Auth | b-h-s.spr.*.p.con-veh.net | 🔜 v0.16.0 |
+| Porsche | Auth0 | api.ppa.porsche.com | 🔜 v0.12.0 |
+| VW NA (US/CA) | VW NA Auth | b-h-s.spr.*.p.con-veh.net | 🔜 v0.13.0 |
 
-> **Porsche:** Porsche gebruikt een volledig afzonderlijk Auth0-authenticatiesysteem. Gepland voor v0.15.0. Nu voor Porsche: [ha-porscheconnect](https://github.com/CJNE/ha-porscheconnect) (MIT).
+> **Porsche:** Porsche gebruikt een volledig afzonderlijk Auth0-authenticatiesysteem. Gepland voor v0.12.0. Nu voor Porsche: [ha-porscheconnect](https://github.com/CJNE/ha-porscheconnect) (MIT).
 
 ---
 
@@ -120,8 +120,8 @@ Herstart Home Assistant.
 - **S-PIN** vereist voor vergrendeling
 - **Poll-interval** minimaal 5 minuten
 - **2FA** — eenmalig handmatig bevestigen in de app
-- **Porsche** — apart Auth0-systeem, gepland v0.15.0
-- **VW Noord-Amerika** — apart auth-systeem, gepland v0.16.0
+- **Porsche** — apart Auth0-systeem, gepland v0.12.0
+- **VW Noord-Amerika** — apart auth-systeem, gepland v0.13.0
 
 ---
 
@@ -129,9 +129,9 @@ Herstart Home Assistant.
 
 | Version | Content |
 |---|---|
-| ✅ v0.14.0 | Platinum, own CARIAD client |
-| 🔜 v0.15.0 | Porsche (Auth0 + PPA API) |
-| 🔜 v0.16.0 | VW North America |
+| ✅ v0.11.0 | Platinum, own CARIAD client |
+| 🔜 v0.12.0 | Porsche (Auth0 + PPA API) |
+| 🔜 v0.13.0 | VW North America |
 | 🎯 v1.0.0 | HACS Official |
 
 ---

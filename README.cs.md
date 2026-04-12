@@ -33,7 +33,7 @@ Chtěl jsem plně ovládat své Audi v Home Assistant. Tak jsem to postavil.
 
 **VAG Connect** je samostatná integrace Home Assistant pro všechny značky VAG. Bez externích závislostí, bez Dockeru, bez externích služeb.
 
-Od v0.14.0 integrace **přímo** komunikuje s CARIAD API — vlastní async klient, plně autonomní.
+Od v0.11.0 integrace **přímo** komunikuje s CARIAD API — vlastní async klient, plně autonomní.
 
 ---
 
@@ -46,10 +46,10 @@ Od v0.14.0 integrace **přímo** komunikuje s CARIAD API — vlastní async klie
 | **Škoda** | IDK | mysmob.api.connect.skoda-auto.cz | ✅ |
 | **SEAT** | IDK | ola.prod.code.seat.cloud.vwgroup.com | ✅ |
 | **CUPRA** | IDK | ola.prod.code.seat.cloud.vwgroup.com | ✅ |
-| Porsche | Auth0 | api.ppa.porsche.com | 🔜 v0.15.0 |
-| VW NA (US/CA) | VW NA Auth | b-h-s.spr.*.p.con-veh.net | 🔜 v0.16.0 |
+| Porsche | Auth0 | api.ppa.porsche.com | 🔜 v0.12.0 |
+| VW NA (US/CA) | VW NA Auth | b-h-s.spr.*.p.con-veh.net | 🔜 v0.13.0 |
 
-> **Porsche:** Porsche používá zcela samostatný systém Auth0. Plánováno pro v0.15.0. Pro Porsche nyní: [ha-porscheconnect](https://github.com/CJNE/ha-porscheconnect) (MIT).
+> **Porsche:** Porsche používá zcela samostatný systém Auth0. Plánováno pro v0.12.0. Pro Porsche nyní: [ha-porscheconnect](https://github.com/CJNE/ha-porscheconnect) (MIT).
 
 ---
 
@@ -120,8 +120,8 @@ Restartujte Home Assistant.
 - **S-PIN** vyžadováno pro zamykání
 - **Interval** minimum 5 minut
 - **2FA** — jednou ručně potvrdit v aplikaci
-- **Porsche** — samostatný systém Auth0, plánováno v0.15.0
-- **VW Severní Amerika** — samostatný auth server, plánováno v0.16.0
+- **Porsche** — samostatný systém Auth0, plánováno v0.12.0
+- **VW Severní Amerika** — samostatný auth server, plánováno v0.13.0
 
 ---
 
@@ -129,9 +129,9 @@ Restartujte Home Assistant.
 
 | Version | Content |
 |---|---|
-| ✅ v0.14.0 | Platinum, own CARIAD client |
-| 🔜 v0.15.0 | Porsche (Auth0 + PPA API) |
-| 🔜 v0.16.0 | VW North America |
+| ✅ v0.11.0 | Platinum, own CARIAD client |
+| 🔜 v0.12.0 | Porsche (Auth0 + PPA API) |
+| 🔜 v0.13.0 | VW North America |
 | 🎯 v1.0.0 | HACS Official |
 
 ---

@@ -33,7 +33,7 @@ Je voulais contrôler mon Audi dans Home Assistant — complètement. Alors j'ai
 
 **VAG Connect** est une intégration Home Assistant autonome pour toutes les marques VAG. Aucune dépendance externe, aucun Docker, aucun service externe. Installez l'intégration, entrez vos identifiants, c'est prêt.
 
-Depuis v0.14.0, l'intégration parle **directement** à l'API CARIAD — client async propre, entièrement autonome.
+Depuis v0.11.0, l'intégration parle **directement** à l'API CARIAD — client async propre, entièrement autonome.
 
 ---
 
@@ -46,10 +46,10 @@ Depuis v0.14.0, l'intégration parle **directement** à l'API CARIAD — client 
 | **Škoda** | IDK | mysmob.api.connect.skoda-auto.cz | ✅ |
 | **SEAT** | IDK | ola.prod.code.seat.cloud.vwgroup.com | ✅ |
 | **CUPRA** | IDK | ola.prod.code.seat.cloud.vwgroup.com | ✅ |
-| Porsche | Auth0 | api.ppa.porsche.com | 🔜 v0.15.0 |
-| VW NA (US/CA) | VW NA Auth | b-h-s.spr.*.p.con-veh.net | 🔜 v0.16.0 |
+| Porsche | Auth0 | api.ppa.porsche.com | 🔜 v0.12.0 |
+| VW NA (US/CA) | VW NA Auth | b-h-s.spr.*.p.con-veh.net | 🔜 v0.13.0 |
 
-> **Porsche :** Porsche utilise un système d'authentification Auth0 entièrement distinct du VAG IDK. L'intégration est documentée techniquement et prévue pour v0.15.0. Pour Porsche maintenant : [ha-porscheconnect](https://github.com/CJNE/ha-porscheconnect) (MIT).
+> **Porsche :** Porsche utilise un système d'authentification Auth0 entièrement distinct du VAG IDK. L'intégration est documentée techniquement et prévue pour v0.12.0. Pour Porsche maintenant : [ha-porscheconnect](https://github.com/CJNE/ha-porscheconnect) (MIT).
 
 ---
 
@@ -120,8 +120,8 @@ Redémarrez Home Assistant.
 - **S-PIN** requis pour le verrouillage — à configurer dans l'app
 - **Intervalle** minimum 5 minutes — trop court entraîne un blocage temporaire
 - **2FA** — confirmer une fois manuellement dans l'app
-- **Porsche** — système Auth0 séparé, prévu pour v0.15.0
-- **VW Amérique du Nord** — serveur d'auth séparé, prévu v0.16.0
+- **Porsche** — système Auth0 séparé, prévu pour v0.12.0
+- **VW Amérique du Nord** — serveur d'auth séparé, prévu v0.13.0
 
 ---
 
@@ -129,9 +129,9 @@ Redémarrez Home Assistant.
 
 | Version | Content |
 |---|---|
-| ✅ v0.14.0 | Platinum, own CARIAD client |
-| 🔜 v0.15.0 | Porsche (Auth0 + PPA API) |
-| 🔜 v0.16.0 | VW North America |
+| ✅ v0.11.0 | Platinum, own CARIAD client |
+| 🔜 v0.12.0 | Porsche (Auth0 + PPA API) |
+| 🔜 v0.13.0 | VW North America |
 | 🎯 v1.0.0 | HACS Official |
 
 ---

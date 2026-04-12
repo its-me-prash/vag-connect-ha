@@ -33,7 +33,7 @@ Ich wollte meinen Audi in Home Assistant steuern — vollständig, nicht halbgar
 
 **VAG Connect** ist eine eigenständige Home Assistant Integration für alle VAG-Marken. Keine externen Abhängigkeiten, kein Docker, kein separater Dienst. Integration installieren, Zugangsdaten eingeben, fertig.
 
-Ab v0.14.0 spricht die Integration **direkt** mit der CARIAD-API — eigener async-Client, vollständig in der Integration, kein Upstream-Blocker.
+Ab v0.11.0 spricht die Integration **direkt** mit der CARIAD-API — eigener async-Client, vollständig in der Integration, kein Upstream-Blocker.
 
 ## Unterstützte Plattformen
 
@@ -52,10 +52,10 @@ sensor  |  binary_sensor  |  device_tracker  |  switch  |  button  |  climate  |
 | **Škoda** | IDK | mysmob.api.connect.skoda-auto.cz | ✅ Vollständig |
 | **SEAT** | IDK | ola.prod.code.seat.cloud.vwgroup.com | ✅ Vollständig |
 | **CUPRA** | IDK | ola.prod.code.seat.cloud.vwgroup.com | ✅ Vollständig |
-| Porsche | Auth0 (identity.porsche.com) | api.ppa.porsche.com | 🔜 v0.15.0 |
-| VW NA (US/CA) | VW NA Auth | b-h-s.spr.*.p.con-veh.net | 🔜 v0.16.0 |
+| Porsche | Auth0 (identity.porsche.com) | api.ppa.porsche.com | 🔜 v0.12.0 |
+| VW NA (US/CA) | VW NA Auth | b-h-s.spr.*.p.con-veh.net | 🔜 v0.13.0 |
 
-> **Porsche:** Porsche verwendet ein vollständig eigenständiges Auth0-Authentifizierungssystem — getrennt vom VAG IDK der anderen Marken. Die Integration ist technisch vollständig dokumentiert und in v0.15.0 geplant. Wer Porsche bereits heute steuern möchte: [ha-porscheconnect](https://github.com/CJNE/ha-porscheconnect) (MIT, aktiv) parallel installieren.
+> **Porsche:** Porsche verwendet ein vollständig eigenständiges Auth0-Authentifizierungssystem — getrennt vom VAG IDK der anderen Marken. Die Integration ist technisch vollständig dokumentiert und in v0.12.0 geplant. Wer Porsche bereits heute steuern möchte: [ha-porscheconnect](https://github.com/CJNE/ha-porscheconnect) (MIT, aktiv) parallel installieren.
 
 ---
 
@@ -155,7 +155,7 @@ Home Assistant neu starten.
 
 ## Technischer Hintergrund
 
-### Eigener CARIAD-Client (seit v0.12.0)
+### Eigener CARIAD-Client (seit v0.10.0)
 
 ```
 cariad/
@@ -190,8 +190,8 @@ cariad/
 - **S-PIN** für Verriegelung notwendig — in der App unter Sicherheit eintragen
 - **Polling-Intervall** mindestens 5 Minuten — zu kurz führt zur temporären Account-Sperre
 - **2FA** — einmalig manuell in der App bestätigen, danach automatisch
-- **Porsche** — eigenständiges Auth0-System, geplant für v0.15.0
-- **VW North America** — separater Auth-Server, geplant für v0.16.0
+- **Porsche** — eigenständiges Auth0-System, geplant für v0.12.0
+- **VW North America** — separater Auth-Server, geplant für v0.13.0
 - **VW China 2026+** — neue CEA/XPeng-Plattform, API nicht öffentlich, kein ETA
 
 ---
@@ -200,9 +200,9 @@ cariad/
 
 | Version | Inhalt |
 |---|---|
-| ✅ v0.14.0 | Platinum, eigener CARIAD-Client |
-| 🔜 v0.15.0 | Porsche (Auth0 + PPA-API) |
-| 🔜 v0.16.0 | VW North America (US/CA) |
+| ✅ v0.11.0 | Platinum, eigener CARIAD-Client |
+| 🔜 v0.12.0 | Porsche (Auth0 + PPA-API) |
+| 🔜 v0.13.0 | VW North America (US/CA) |
 | 🎯 v1.0.0 | HACS Official |
 
 ---
