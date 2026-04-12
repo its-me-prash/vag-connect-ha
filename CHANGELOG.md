@@ -20,7 +20,38 @@ ci:       CI/CD-Änderungen
 
 ## [Unreleased]
 
-Geplant für 0.11.0:
+Geplant für 0.11.0+:
+- `strict-typing` vollständig — mypy --strict ohne Upstream-Einschränkungen
+- `test-coverage` >85% — HA Integration Test Framework Setup
+- HACS offizieller Antrag wenn genug Tester
+
+### Feature-Backlog (nach requests-Fix)
+
+**VIN-Auswahl im Config Flow** (inspiriert von marksieczkowski/ha-volkswagen)
+- Nutzer kann beim Setup wählen welche Fahrzeuge integriert werden
+- Wichtig für Nutzer mit mehreren Fahrzeugen die nur 1-2 in HA wollen
+
+**Connector LED-Farbe** (CarConnectivity Issue #122)
+- `sensor.connector_led_color` — Farbe der Ladestecker-LED
+- Sobald @tillsteinbach es wieder exposed
+
+**Verbräuche & Trip-Statistiken** (aus audiconnect/volkswagencarnet)
+- Kraftstoffverbrauch, Stromverbrauch, Letzte Fahrt
+- Benötigt API-Recherche ob CarConnectivity das exposed
+
+**Pre-Heater Support (Verbrenner)** (aus audiconnect)  
+- Vorheizung für Verbrenner-Modelle (nicht Klimatisierung)
+- Separate CarConnectivity-Funktion
+
+### Ecosystem-Analyse (Stand April 2026)
+
+| Integration | API | Status | Stars | requests-Problem |
+|---|---|---|---|---|
+| **vag-connect-ha** (unser) | CarConnectivity | 🟡 requests-Blocker | 0 | ✅ ja |
+| audiconnect/audi_connect_ha | Eigene MyAudi API | 🟢 funktioniert | 325 | ❌ nein |
+| robinostlund/volkswagencarnet | Eigene CarNet API | 🟢 funktioniert | 502 | ❌ nein |
+| marksieczkowski/ha-volkswagen | CC + VW NA Connector | 🟡 WIP, requests-Blocker | 0 | ✅ ja |
+| skodaconnect/skodaconnect | Eigene API | 🔴 archiviert | 104 | ❌ nein |
 - `strict-typing` vollständig — mypy --strict ohne Upstream-Einschränkungen
 - `test-coverage` >85% — HA Integration Test Framework Setup
 - HACS offizieller Antrag wenn genug Tester
