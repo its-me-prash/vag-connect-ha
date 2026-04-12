@@ -45,8 +45,27 @@ class VWEUClient(CariadBaseClient):
         """Return list of VINs from the CARIAD garage."""
         data = await self._get(f"{_BASE}/vehicle/v1/vehicles")
         vehicles: list[dict[str, Any]] = data.get("data", [])
+
+        # Cache nickname/model per VIN — used in _parse_status to set device name
+        # CARIAD returns: nickname (user-set in app), model, modelYear
+        self._vehicle_metadata: dict[str, dict[str, Any]] = {
+            v["vin"]: {
+                "model": (
+                    v.get("nickname")       # user-set name (e.g. "Golf GTE")
+                    or v.get("vehicleNick")
+                    or v.get("model")
+                    or v.get("carModel")
+                ),
+                "model_year": v.get("modelYear") or v.get("model_year"),
+            }
+            for v in vehicles if v.get("vin")
+        }
         vins = [v["vin"] for v in vehicles if v.get("vin")]
-        _LOGGER.debug("Found %d VW vehicle(s)", len(vins))
+        _LOGGER.debug(
+            "Found %d vehicle(s): %s",
+            len(vins),
+            {k: m["model"] for k, m in self._vehicle_metadata.items()},
+        )
         return vins
 
     async def get_status(self, vin: str) -> VehicleData:
@@ -170,6 +189,16 @@ class VWEUClient(CariadBaseClient):
         """
         v = self._val
         d = VehicleData(vin=vin)
+
+        # ── Model name from vehicles list (nickname set in app) ────────────────
+        meta = getattr(self, "_vehicle_metadata", {}).get(vin, {})
+        if meta.get("model"):
+            d.model = meta["model"]
+        if meta.get("model_year"):
+            try:
+                d.model_year = int(meta["model_year"])
+            except (ValueError, TypeError):
+                pass
 
         # ── Charging ──────────────────────────────────────────────────────────
         d.charging_state = v(raw, "charging", "chargingStatus", "value", "chargingState")
