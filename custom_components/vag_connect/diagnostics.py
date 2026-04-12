@@ -40,5 +40,5 @@ async def async_get_config_entry_diagnostics(
         "vehicles": vehicles_diag,
         "vehicle_count": len(coordinator.vehicles),
         "last_update_success": coordinator.last_update_success,
-        "cloud_push_active": coordinator._started,  # noqa: SLF001
+        "cloud_push_active": coordinator.is_active,
     }

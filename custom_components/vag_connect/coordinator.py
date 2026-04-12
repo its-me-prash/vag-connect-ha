@@ -12,6 +12,7 @@ Thread safety:
 import asyncio
 import logging
 import threading
+from datetime import datetime, timezone
 from typing import Any
 
 from homeassistant.core import HomeAssistant
@@ -93,6 +94,11 @@ class VagConnectCoordinator(DataUpdateCoordinator):
     async def async_shutdown(self) -> None:
         """Stop CarConnectivity and release resources."""
         await self.hass.async_add_executor_job(self._stop_cc)
+
+    @property
+    def is_active(self) -> bool:
+        """Return True if the CC background thread is running."""
+        return self._started
 
     def _tokenstore_path(self) -> str:
         """Pfad zur Token-Datei im HA-Config-Verzeichnis.
@@ -293,7 +299,7 @@ class VagConnectCoordinator(DataUpdateCoordinator):
         self.vehicles = result
 
     def _extract(self, vehicle) -> dict[str, Any]:  # noqa: PLR0912, PLR0915
-        """Extrahiert alle CarConnectivity-Attribute in ein HA-Dict."""
+        """Extract all CarConnectivity attributes into a plain HA data dict."""
         from carconnectivity.drive import GenericDrive          # noqa: PLC0415
         from carconnectivity.doors import Doors                  # noqa: PLC0415
         from carconnectivity.windows import Windows              # noqa: PLC0415
@@ -590,7 +596,6 @@ class VagConnectCoordinator(DataUpdateCoordinator):
                 data[key_enabled] = data[key_time] = None
 
         # Zeitstempel: wann hat das Fahrzeug zuletzt Daten gesendet
-        from datetime import datetime, timezone  # noqa: PLC0415
         data["last_updated_at"] = datetime.now(tz=timezone.utc)
 
         # Raw CC-Objekt für Actions (nicht serialisiert, nicht geloggt)
