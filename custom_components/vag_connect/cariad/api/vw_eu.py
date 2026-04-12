@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+from datetime import datetime, timedelta, timezone
 import logging
 from typing import Any
 
@@ -228,7 +229,6 @@ class VWEUClient(CariadBaseClient):
 
         remaining_min: Any = v(raw, "charging", "chargingStatus", "value", "remainingChargingTimeToComplete_min")
         if remaining_min is not None:
-            from datetime import datetime, timezone, timedelta  # noqa: PLC0415
             d.charge_complete_eta = datetime.now(tz=timezone.utc) + timedelta(minutes=int(remaining_min))
 
         d.battery_soc = v(raw, "charging", "batteryStatus", "value", "currentSOC_pct")

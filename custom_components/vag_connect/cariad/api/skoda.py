@@ -6,6 +6,8 @@ Source: skodaconnect/myskoda (MIT) — clean-room reimplementation of endpoints.
 
 from __future__ import annotations
 
+import asyncio
+from datetime import datetime, timedelta, timezone
 import logging
 from typing import Any
 
@@ -41,7 +43,6 @@ class SkodaClient(CariadBaseClient):
         d = VehicleData(vin=vin)
 
         # Parallel fetch of key endpoints
-        import asyncio  # noqa: PLC0415
         results = await asyncio.gather(
             self._get(f"{_BASE}/v2/vehicle-status/{vin}"),
             self._get(f"{_BASE}/v1/charging/{vin}"),
@@ -72,7 +73,6 @@ class SkodaClient(CariadBaseClient):
             d.charging_rate_kmh = v(c, "charging", "chargeRateInKmPerHour")
             remaining = v(c, "charging", "remainingTimeToFullyChargedInMinutes")
             if remaining:
-                from datetime import datetime, timezone, timedelta  # noqa: PLC0415
                 d.charge_complete_eta = datetime.now(tz=timezone.utc) + timedelta(minutes=int(remaining))
             plug = v(c, "plug", "connectionState")
             d.plug_connected = plug == "CONNECTED"

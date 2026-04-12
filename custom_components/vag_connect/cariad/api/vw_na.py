@@ -8,6 +8,8 @@ Source: https://github.com/matpoulin/CarConnectivity-connector-volkswagen-na
 
 from __future__ import annotations
 
+import asyncio
+from datetime import datetime, timedelta, timezone
 import logging
 from typing import Any
 
@@ -92,7 +94,6 @@ class VWNAClient:
 
     async def get_status(self, vin: str) -> VehicleData:
         """Fetch vehicle status using UUID."""
-        import asyncio  # noqa: PLC0415
         v = self._val
         uuid = self._vin_to_uuid.get(vin, vin)
         d = VehicleData(vin=vin, manufacturer="Volkswagen")
@@ -162,7 +163,6 @@ class VWNAClient:
             d.target_soc        = v(charge, "chargingSettings", "targetSOC_pct")
             remaining           = v(charge, "chargingStatus", "remainingChargingTimeToComplete_min")
             if remaining:
-                from datetime import datetime, timezone, timedelta  # noqa: PLC0415
                 d.charge_complete_eta = datetime.now(tz=timezone.utc) + timedelta(minutes=int(remaining))
 
         # ── Climate ────────────────────────────────────────────────────────────

@@ -8,6 +8,7 @@ Source: https://github.com/CJNE/pyporscheconnectapi
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from typing import Any
 
@@ -63,7 +64,6 @@ class PorscheClient:
 
     async def get_status(self, vin: str) -> VehicleData:
         """Fetch full vehicle status from Porsche API."""
-        import asyncio  # noqa: PLC0415
         v = self._val
         d = VehicleData(vin=vin)
 

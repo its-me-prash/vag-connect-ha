@@ -10,6 +10,7 @@ Thread safety:
   CARIAD client (async) writes vehicles dict; HA entities read via coordinator data.
 """
 
+import asyncio
 import logging
 import threading
 from typing import Any
@@ -26,6 +27,9 @@ from .const import (
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
 )
+import os
+from homeassistant.helpers import device_registry as dr
+from .cariad.models import VehicleData
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -88,8 +92,7 @@ class VagConnectCoordinator(DataUpdateCoordinator):
                 return False
 
             # Fetch status for all vehicles
-            import asyncio as _asyncio  # noqa: PLC0415
-            results = await _asyncio.gather(
+            results = await asyncio.gather(
                 *[self._cariad_client.get_status(vin) for vin in vins],
                 return_exceptions=True,
             )
@@ -99,7 +102,6 @@ class VagConnectCoordinator(DataUpdateCoordinator):
                     if isinstance(result, Exception):
                         _LOGGER.warning("Could not fetch status for %s: %s", vin, result)
                         continue
-                    from .cariad.models import VehicleData  # noqa: PLC0415
                     if isinstance(result, VehicleData):
                         data = result.to_dict()
                         data["_client"] = self._cariad_client
@@ -111,7 +113,7 @@ class VagConnectCoordinator(DataUpdateCoordinator):
 
             # Start background polling
             self.hass.loop.call_soon_threadsafe(
-                lambda: _asyncio.ensure_future(self._poll_loop(), loop=self.hass.loop)
+                lambda: asyncio.ensure_future(self._poll_loop(), loop=self.hass.loop)
             )
             return found > 0
 
@@ -131,18 +133,17 @@ class VagConnectCoordinator(DataUpdateCoordinator):
 
     async def _poll_loop(self) -> None:
         """Background polling loop — runs independently of HA scheduler."""
-        import asyncio as _asyncio  # noqa: PLC0415
         interval_s = max(
             self.entry.data.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL) * 60,
             _CC_MIN_INTERVAL_S,
         )
         while self._started:
-            await _asyncio.sleep(interval_s)
+            await asyncio.sleep(interval_s)
             if not self._started:
                 break
             try:
                 vins = list(self.vehicles.keys())
-                results = await _asyncio.gather(
+                results = await asyncio.gather(
                     *[self._cariad_client.get_status(vin) for vin in vins],
                     return_exceptions=True,
                 )
@@ -152,11 +153,10 @@ class VagConnectCoordinator(DataUpdateCoordinator):
                         _LOGGER.debug("Poll failed for %s: %s", vin, result)
                         fresh[vin] = self.vehicles.get(vin, {})
                     else:
-                        from .cariad.models import VehicleData  # noqa: PLC0415
-                        if isinstance(result, VehicleData):
-                            data = result.to_dict()
-                            data["_client"] = self._cariad_client
-                            fresh[vin] = data
+                            if isinstance(result, VehicleData):
+                                data = result.to_dict()
+                                data["_client"] = self._cariad_client
+                                fresh[vin] = data
                 with self._vehicles_lock:
                     self.vehicles.update(fresh)
                 await self._async_push_update(fresh, success=True)
@@ -179,7 +179,6 @@ class VagConnectCoordinator(DataUpdateCoordinator):
         """Pfad zur Token-Datei im HA-Config-Verzeichnis.
         Tokens persist across HA restarts — no re-authentication needed.
         """
-        import os  # noqa: PLC0415
         storage_dir = os.path.join(self.hass.config.config_dir, ".storage")
         os.makedirs(storage_dir, exist_ok=True)
         return os.path.join(
@@ -228,15 +227,13 @@ class VagConnectCoordinator(DataUpdateCoordinator):
         if not self.data:
             return  # First run — nothing to clean up
 
-        from homeassistant.helpers import device_registry as dr  # noqa: PLC0415
-        from .const import DOMAIN as _DOMAIN  # noqa: PLC0415
 
         device_reg = dr.async_get(self.hass)
         previous_vins = set(self.data.keys()) - {"_meta"}
 
         for stale_vin in previous_vins - current_vins:
             device_entry = device_reg.async_get_device(
-                identifiers={(_DOMAIN, stale_vin)}
+                identifiers={(DOMAIN, stale_vin)}
             )
             if device_entry is not None:
                 _LOGGER.info(
@@ -252,9 +249,8 @@ class VagConnectCoordinator(DataUpdateCoordinator):
             with self._vehicles_lock:
                 return dict(self.vehicles)
         try:
-            import asyncio as _asyncio  # noqa: PLC0415
             vins = list(self.vehicles.keys())
-            results = await _asyncio.gather(
+            results = await asyncio.gather(
                 *[self._cariad_client.get_status(vin) for vin in vins],
                 return_exceptions=True,
             )
@@ -263,7 +259,6 @@ class VagConnectCoordinator(DataUpdateCoordinator):
                     if isinstance(result, Exception):
                         _LOGGER.debug("Refresh failed for %s: %s", vin, result)
                         continue
-                    from .cariad.models import VehicleData  # noqa: PLC0415
                     if isinstance(result, VehicleData):
                         data = result.to_dict()
                         data["_client"] = self._cariad_client
