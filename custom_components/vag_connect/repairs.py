@@ -20,7 +20,7 @@ def raise_issue_auth_required(hass: HomeAssistant, entry_id: str, reason: str) -
     """
     Erstellt ein HA-Repair-Issue wenn die Authentifizierung fehlschlägt.
     Erscheint unter Einstellungen → System → Reparaturen.
-    Nutzer wird geleitet was zu tun ist — kein Log-Parsing nötig.
+    Surfaces actionable guidance in the HA Repairs dashboard.
     """
     issue_map = {
         "two_factor_required": (

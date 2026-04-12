@@ -69,7 +69,6 @@ BINARY_DESCRIPTIONS: tuple[VagBinarySensorDescription, ...] = (
     ),
 )
 
-# ── Neue Binary Sensors ───────────────────────────────────────────────────────
 _NEW_BINARY: tuple[VagBinarySensorDescription, ...] = (
     VagBinarySensorDescription(
         key="is_driving",
@@ -114,7 +113,6 @@ async def async_setup_entry(
                 continue
             entities.append(VagConnectBinarySensor(coordinator, vin, desc))
 
-    # Issue #3: Individuelle Tür-Sensoren
     for vin, vehicle in coordinator.vehicles.items():
         await _async_setup_door_sensors(coordinator, vin, vehicle, entities)
 
@@ -136,7 +134,7 @@ class VagConnectBinarySensor(VagConnectEntity, BinarySensorEntity):
         return bool(val)
 
 
-# ── Issue #3: Individuelle Tür-Sensoren ─────────────────────────────────────
+# Per-door binary sensors.
 
 _DOOR_NAMES = {
     "frontLeft":  "Tür vorne links",

@@ -1,18 +1,12 @@
-"""Sensoren für VAG Connect.
+"""Sensor platform for VAG Connect.
 
-Conditions:
-  "electric"    → nur bei Fahrzeugen mit Akku (EV + PHEV)
-  "combustion"  → nur bei Fahrzeugen mit Verbrenner (Verbrenner + PHEV)
-  None          → alle Fahrzeuge
+The VagSensorDescription.condition field gates sensor creation:
+  "electric"  — EV and PHEV only (has_battery=True)
+  "combustion" — combustion and PHEV only (has_combustion=True)
+  None        — all vehicles
 
-EntityCategory:
-  DIAGNOSTIC    → erscheint nur unter Gerätediagnose, nicht im Haupt-Dashboard
-  CONFIG        → Einstellungswerte (z.B. Ladeziel)
-  None (default)→ Haupt-Entities die Nutzer täglich sehen
-
-Ladegeschwindigkeit:
-  charging.rate = SpeedAttribute (km/h) = km Reichweite die pro Stunde geladen werden.
-  device_class=SPEED → HA rechnet automatisch km/h → mph bei imperialem System um.
+charging_rate_kmh uses SensorDeviceClass.SPEED so HA auto-converts km/h ↔ mph
+based on the user's unit system preference.
 """
 from dataclasses import dataclass
 from typing import Any
@@ -50,7 +44,6 @@ class VagSensorDescription(SensorEntityDescription):
 
 SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
 
-    # ── Kraftstoff & Akku ────────────────────────────────────────────────────
     VagSensorDescription(
         key="fuel_level",
         data_key="fuel_level",
@@ -102,7 +95,6 @@ SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
         condition="electric",
     ),
 
-    # ── Kilometerstand ───────────────────────────────────────────────────────
     VagSensorDescription(
         key="odometer_km",
         data_key="odometer_km",
@@ -113,7 +105,6 @@ SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
         icon="mdi:counter",
     ),
 
-    # ── Laden ────────────────────────────────────────────────────────────────
     VagSensorDescription(
         key="charging_state",
         data_key="charging_state",
@@ -176,7 +167,6 @@ SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
         condition="electric",
     ),
 
-    # ── Ladesäule ────────────────────────────────────────────────────────────
     VagSensorDescription(
         key="charging_station_name",
         data_key="charging_station_name",
@@ -215,7 +205,6 @@ SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
         condition="electric",
     ),
 
-    # ── Klimatisierung ───────────────────────────────────────────────────────
     VagSensorDescription(
         key="climatisation_state",
         data_key="climatisation_state",
@@ -232,7 +221,6 @@ SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
         icon="mdi:thermometer-auto",
     ),
 
-    # ── Umgebung ─────────────────────────────────────────────────────────────
     VagSensorDescription(
         key="outside_temp",
         data_key="outside_temp",
@@ -243,7 +231,6 @@ SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
         icon="mdi:thermometer",
     ),
 
-    # ── Wartung ──────────────────────────────────────────────────────────────
     VagSensorDescription(
         key="service_km",
         data_key="service_km",
@@ -283,7 +270,6 @@ SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
         condition="combustion",
     ),
 
-    # ── Fahrzeugstatus ───────────────────────────────────────────────────────
     VagSensorDescription(
         key="vehicle_state",
         data_key="vehicle_state",
@@ -299,7 +285,6 @@ SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
         entity_registry_enabled_default=False,
     ),
 
-    # ── Position ─────────────────────────────────────────────────────────────
     VagSensorDescription(
         key="parking_address",
         data_key="parking_address",
@@ -325,7 +310,6 @@ SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
         entity_registry_enabled_default=False,
     ),
 
-    # ── Akku-Details (EV + PHEV) ─────────────────────────────────────────────
     VagSensorDescription(
         key="battery_temp",
         data_key="battery_temp",
@@ -361,7 +345,6 @@ SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
         condition="electric",
     ),
 
-    # ── Fahrzeugdaten (DIAGNOSTIC) ───────────────────────────────────────────
     VagSensorDescription(
         key="firmware_version",
         data_key="firmware_version",
@@ -388,7 +371,6 @@ SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
         entity_registry_enabled_default=False,
     ),
 
-    # ── Abfahrtstimer ────────────────────────────────────────────────────────
     VagSensorDescription(
         key="departure_timer_1_time",
         data_key="departure_timer_1_time",

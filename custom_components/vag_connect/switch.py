@@ -32,7 +32,7 @@ async def async_setup_entry(
 
 
 class VagLockSwitch(VagConnectEntity, SwitchEntity):
-    """Toggle door lock."""
+    """Door lock toggle."""
 
     _attr_name = "Türverriegelung"
     _attr_icon = "mdi:car-door-lock"
@@ -52,7 +52,7 @@ class VagLockSwitch(VagConnectEntity, SwitchEntity):
 
 
 class VagClimatisationSwitch(VagConnectEntity, SwitchEntity):
-    """Toggle climatisation."""
+    """Pre-conditioning toggle."""
 
     _attr_name = "Klimatisierung"
     _attr_icon = "mdi:thermometer"
@@ -75,7 +75,7 @@ class VagClimatisationSwitch(VagConnectEntity, SwitchEntity):
 
 
 class VagChargingSwitch(VagConnectEntity, SwitchEntity):
-    """Toggle charging (EVs only)."""
+    """Charging toggle."""
 
     _attr_name = "Laden"
     _attr_icon = "mdi:ev-plug-type2"
@@ -98,7 +98,7 @@ class VagChargingSwitch(VagConnectEntity, SwitchEntity):
 
 
 class VagWindowHeatingSwitch(VagConnectEntity, SwitchEntity):
-    """Fensterheizung Ein/Aus."""
+    """Window heating on/off."""
 
     _attr_name = "Fensterheizung"
     _attr_icon = "mdi:car-windshield"
@@ -169,7 +169,7 @@ class VagSeatHeatingSwitch(VagConnectEntity, SwitchEntity):
 
 
 class VagAutoUnlockSwitch(VagConnectEntity, SwitchEntity):
-    """Stecker nach Ladeende automatisch entsperren (Auto-Unlock)."""
+    """Auto-unlock plug after charging completes."""
 
     _attr_name = "Stecker nach Laden entsperren"
     _attr_icon = "mdi:ev-plug-ccs2"
@@ -197,7 +197,7 @@ class VagAutoUnlockSwitch(VagConnectEntity, SwitchEntity):
 
 
 class VagDepartureTimerSwitch(VagConnectEntity, SwitchEntity):
-    """Abfahrtstimer aktivieren / deaktivieren (1–3)."""
+    """Enable or disable a departure timer (1–3)."""
 
     _attr_icon = "mdi:clock-time-eight-outline"
 

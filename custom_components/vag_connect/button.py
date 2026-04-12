@@ -24,7 +24,7 @@ async def async_setup_entry(
 
 
 class VagFlashButton(VagConnectEntity, ButtonEntity):
-    """Flash lights (honk & flash)."""
+    """Trigger a honk-and-flash sequence."""
 
     _attr_name = "Lichtsignal"
     _attr_icon = "mdi:car-light-high"
@@ -37,7 +37,7 @@ class VagFlashButton(VagConnectEntity, ButtonEntity):
 
 
 class VagRefreshButton(VagConnectEntity, ButtonEntity):
-    """Force a data refresh from the cloud."""
+    """Force an immediate data refresh from the cloud."""
 
     _attr_name = "Daten aktualisieren"
     _attr_icon = "mdi:refresh"
@@ -50,7 +50,7 @@ class VagRefreshButton(VagConnectEntity, ButtonEntity):
 
 
 class VagWakeButton(VagConnectEntity, ButtonEntity):
-    """Fahrzeug aufwecken (wake-sleep)."""
+    """Wake the vehicle from sleep."""
 
     _attr_name = "Fahrzeug aufwecken"
     _attr_icon = "mdi:car-connected"

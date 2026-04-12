@@ -1,4 +1,4 @@
-"""Diagnostics for VAG Connect — helps users report bugs without exposing credentials."""
+"""Diagnostics for VAG Connect."""
 
 from __future__ import annotations
 
@@ -10,7 +10,6 @@ from homeassistant.core import HomeAssistant
 from .const import CONF_PASSWORD, CONF_SPIN
 from .coordinator import VagConnectCoordinator
 
-# Fields redacted from diagnostics output — never sent to issue trackers
 _REDACT = frozenset({CONF_PASSWORD, CONF_SPIN, "latitude", "longitude"})
 
 

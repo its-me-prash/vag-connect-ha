@@ -1,23 +1,12 @@
-"""
-VagConnectCoordinator — reaktiv via CarConnectivity Observer-Pattern.
+"""Coordinator for VAG Connect — cloud_push via CarConnectivity observer pattern.
 
-Datenfluss:
-  1. cc.startup()  → CC Background-Thread startet (pollt VAG-API)
-  2. Observer      → VALUE_CHANGED auf Garage, on_transaction_end=True
-  3. CC-Thread     → aktualisiert Objekte, feuert Observer-Callback
-  4. Callback      → _sync_vehicles() + asyncio.run_coroutine_threadsafe
-  5. HA-Loop       → async_set_updated_data() → async_update_listeners()
-  6. Entities      → async_write_ha_state()
+Data flow:
+  CC background thread polls VAG API → observer fires on VALUE_CHANGED
+  → asyncio.run_coroutine_threadsafe → async_set_updated_data → entities update.
 
-Thread-Safety:
-  - self._vehicles_lock  (threading.Lock) schützt self.vehicles
-  - self.vehicles wird nur in _sync_vehicles() (CC-Thread) geschrieben
-  - self.vehicles wird in _async_push_update() (HA-Loop) gelesen
-  - Lock + dict-copy verhindert Race Conditions
-
-Confirmed HA behavior:
-  - async_set_updated_data() ruft async_update_listeners() → Entities update sofort
-  - update_interval=None → kein eigenes HA-Polling, rein reaktiv
+Thread safety:
+  _vehicles_lock (threading.Lock) guards self.vehicles.
+  CC thread writes; HA event loop reads via a dict copy.
 """
 
 import asyncio
@@ -73,9 +62,6 @@ class VagConnectCoordinator(DataUpdateCoordinator):
             update_interval=None,
         )
 
-    # ──────────────────────────────────────────────────────────────────
-    # Lifecycle
-    # ──────────────────────────────────────────────────────────────────
 
     async def async_setup(self) -> bool:
         """
@@ -87,7 +73,7 @@ class VagConnectCoordinator(DataUpdateCoordinator):
             await self.hass.async_add_executor_job(self._start_cc)
             with self._vehicles_lock:
                 found = len(self.vehicles)
-            _LOGGER.info("VAG Connect: Setup OK — %d Fahrzeug(e)", found)
+            _LOGGER.info("VAG Connect: setup complete — %d vehicle(s)", found)
             return found > 0
         except Exception as err:  # noqa: BLE001
             err_str = str(err).lower()
@@ -105,12 +91,12 @@ class VagConnectCoordinator(DataUpdateCoordinator):
             return False
 
     async def async_shutdown(self) -> None:
-        """Stoppt CC Background-Thread sauber beim Unload."""
+        """Stop CarConnectivity and release resources."""
         await self.hass.async_add_executor_job(self._stop_cc)
 
     def _tokenstore_path(self) -> str:
         """Pfad zur Token-Datei im HA-Config-Verzeichnis.
-        Tokens werden zwischen Neustarts gespeichert → kein Re-Auth nötig.
+        Tokens persist across HA restarts — no re-authentication needed.
         """
         import os  # noqa: PLC0415
         storage_dir = os.path.join(self.hass.config.config_dir, ".storage")
@@ -120,9 +106,6 @@ class VagConnectCoordinator(DataUpdateCoordinator):
             f"vag_connect_tokens_{self.entry.entry_id}.json"
         )
 
-    # ──────────────────────────────────────────────────────────────────
-    # CarConnectivity Start/Stop (blocking, im Executor)
-    # ──────────────────────────────────────────────────────────────────
 
     def _start_cc(self) -> None:
         """Blocking: CC initialisieren, Background-Thread starten, Observer registrieren."""
@@ -147,7 +130,7 @@ class VagConnectCoordinator(DataUpdateCoordinator):
         }
         if spin:
             connector_cfg["spin"] = spin
-        # Issue #1: force_enable_access für ältere VW/Audi-Modelle ohne 'access' Capability
+        # force_enable_access: workaround for older VW/Audi models missing 'access' capability.
         if self.entry.data.get(CONF_FORCE_ACCESS, False):
             connector_cfg["force_enable_access"] = True
             _LOGGER.info("VAG Connect: force_enable_access aktiviert")
@@ -190,7 +173,7 @@ class VagConnectCoordinator(DataUpdateCoordinator):
         )
 
     def _stop_cc(self) -> None:
-        """Blocking: CC sauber herunterfahren."""
+        """Blocking: shut down CC cleanly."""
         try:
             if self._cc and self._started:
                 self._cc.shutdown()
@@ -202,9 +185,6 @@ class VagConnectCoordinator(DataUpdateCoordinator):
             self._started = False
             self._observer_registered = False
 
-    # ──────────────────────────────────────────────────────────────────
-    # Observer Callback
-    # ──────────────────────────────────────────────────────────────────
 
     def _on_cc_update(self, element, flags) -> None:
         """
@@ -229,7 +209,7 @@ class VagConnectCoordinator(DataUpdateCoordinator):
                 )
         except Exception as err:  # noqa: BLE001
             _LOGGER.error("VAG Connect Observer-Fehler: %s", err)
-            # Entities auf unavailable setzen (Fix Issue #4: Stale Data)
+            # Mark all entities unavailable.
             loop = self.hass.loop
             if loop and loop.is_running():
                 asyncio.run_coroutine_threadsafe(
@@ -294,9 +274,6 @@ class VagConnectCoordinator(DataUpdateCoordinator):
                 )
                 device_reg.async_remove_device(device_entry.id)
 
-    # ──────────────────────────────────────────────────────────────────
-    # Daten-Extraktion
-    # ──────────────────────────────────────────────────────────────────
 
     def _sync_vehicles_unlocked(self, cc) -> None:
         """
@@ -344,7 +321,7 @@ class VagConnectCoordinator(DataUpdateCoordinator):
         except Exception:  # noqa: BLE001
             data["odometer_km"] = None
 
-        # ── Antriebe: EV / PHEV / Verbrenner ──────────────────────────
+        # Drivetrain type detection (EV / PHEV / combustion).────
         # vehicle.type: ELECTRIC / HYBRID / FUEL / GASOLINE / DIESEL
         # Pure EV:   drives=[ELECTRIC]
         # PHEV:      drives=[ELECTRIC, GASOLINE]  vehicle.type=HYBRID
@@ -425,7 +402,7 @@ class VagConnectCoordinator(DataUpdateCoordinator):
         except Exception:  # noqa: BLE001
             data["latitude"] = data["longitude"] = None
 
-        # Türen — global + individuell (Issue #3)
+        # Doors — aggregate state and per-door state.
         try:
             lock  = vehicle.doors.lock_state.value
             opens = vehicle.doors.open_state.value
@@ -519,7 +496,7 @@ class VagConnectCoordinator(DataUpdateCoordinator):
             data["vehicle_state"] = data["connection_state"] = None
             data["is_driving"] = data["is_online"] = None
 
-        # Parkadresse (kommt direkt von der API, kein Geocoding nötig)
+        # Parking address — provided directly by the API, no geocoding required.
         try:
             loc  = vehicle.position.location
             name = _val(loc.display_name)
@@ -620,16 +597,13 @@ class VagConnectCoordinator(DataUpdateCoordinator):
         data["_vehicle"] = vehicle
         return data
 
-    # ──────────────────────────────────────────────────────────────────
-    # HA DataUpdateCoordinator
-    # ──────────────────────────────────────────────────────────────────
 
     async def _async_update_data(self) -> dict[str, Any]:
         """
         Wird nur bei manuellem Refresh aufgerufen (Refresh-Button, Service).
         Normale Updates kommen reaktiv via Observer → async_set_updated_data().
 
-        Macht einen echten CC-Fetch und gibt die frischen Daten zurück.
+        Forces a CC fetch and returns fresh vehicle data.
         """
         if self._cc is None or not self._started:
             with self._vehicles_lock:
@@ -650,9 +624,6 @@ class VagConnectCoordinator(DataUpdateCoordinator):
             with self._vehicles_lock:
                 return dict(self.vehicles)
 
-    # ──────────────────────────────────────────────────────────────────
-    # Actions
-    # ──────────────────────────────────────────────────────────────────
 
     async def async_lock(self, vin: str) -> None:
         await self._run_command(vin, "doors", "lock-unlock", "lock")
@@ -800,8 +771,6 @@ class VagConnectCoordinator(DataUpdateCoordinator):
             v.charging.settings.maximum_current.value = ampere
         await self.hass.async_add_executor_job(_do)
         await self.async_request_refresh()
-
-    # --- Neu: Fensterheizung & Auto aufwecken ---
 
     async def async_start_window_heating(self, vin: str) -> None:
         """Fensterheizung starten."""

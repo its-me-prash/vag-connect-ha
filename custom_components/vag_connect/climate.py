@@ -34,7 +34,7 @@ async def async_setup_entry(
 
 
 class VagClimate(VagConnectEntity, ClimateEntity):
-    """Climate entity — maps to vehicle pre-conditioning."""
+    """Climate entity for vehicle pre-conditioning."""
 
     _attr_name = "Vorklimatisierung"
     _attr_icon = "mdi:thermometer"

@@ -83,7 +83,6 @@ class VagConnectConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     VERSION = 1
 
-    # ── Initial setup ──────────────────────────────────────────────────────
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
@@ -125,7 +124,6 @@ class VagConnectConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             errors=errors,
         )
 
-    # ── Re-authentication ──────────────────────────────────────────────────
     # Triggered automatically when coordinator raises ConfigEntryAuthFailed
 
     async def async_step_reauth(
@@ -181,7 +179,6 @@ class VagConnectConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             },
         )
 
-    # ── Reconfigure ────────────────────────────────────────────────────────
     # Allows changing ALL settings without removing and re-adding the integration
 
     async def async_step_reconfigure(
@@ -237,7 +234,6 @@ class VagConnectConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             errors=errors,
         )
 
-    # ── Options flow ───────────────────────────────────────────────────────
 
     @staticmethod
     @callback

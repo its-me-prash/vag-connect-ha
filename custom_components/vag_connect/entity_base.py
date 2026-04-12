@@ -10,12 +10,7 @@ from .coordinator import VagConnectCoordinator
 
 
 def _device_name(vehicle: dict, brand: str) -> str:
-    """Build device name from brand + model.
-
-    Result: 'Audi Q4 e-tron' → entity_id prefix sensor.audi_q4_e_tron_*
-    Fallback when model is unknown: '<Brand> <last 6 of VIN>'
-    so two unknown vehicles still get different names.
-    """
+    """Return "{Brand} {Model}" or "{Brand} {VIN[-6:]}" as device name."""
     model = (vehicle.get("model") or "").strip()
     if model and model.lower() not in ("vag vehicle", "unknown", ""):
         return f"{brand.title()} {model}"
