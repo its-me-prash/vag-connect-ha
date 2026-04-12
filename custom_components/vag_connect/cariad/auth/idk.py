@@ -86,6 +86,26 @@ def _absolute_url(base: str, path: str) -> str:
     return urlunparse((parsed.scheme, parsed.netloc, path, "", "", ""))
 
 
+def _make_absolute(base_url: str, location: str) -> str:
+    """Resolve a Location header value to an absolute URL.
+
+    Auth0 and other servers often return relative Location headers
+    (e.g. '/v2/login/callback?...'). aiohttp requires absolute URLs.
+    """
+    if not location:
+        return ""
+    if location.startswith("http"):
+        return location
+    # Relative path — join with base
+    parsed = urlparse(base_url)
+    base = f"{parsed.scheme}://{parsed.netloc}"
+    if location.startswith("/"):
+        return base + location
+    # Relative to current path directory
+    from urllib.parse import urljoin
+    return urljoin(base_url, location)
+
+
 class IDKAuth:
     """Handles authentication against the VAG Identity Kit (IDK) server.
 
@@ -201,7 +221,9 @@ class IDKAuth:
             allow_redirects=False,  # follow manually to preserve cookies
         ) as resp:
             status   = resp.status
-            location = resp.headers.get("Location", "")
+            raw_loc  = resp.headers.get("Location", "")
+            # Resolve relative Location → absolute (volkwagencarnet pattern)
+            location = _make_absolute(_IDK_BASE, raw_loc) if raw_loc else ""
             resp_html = await resp.text(errors="replace")
 
         _LOGGER.debug(
@@ -244,7 +266,8 @@ class IDKAuth:
                         headers=self._form_headers(),
                         allow_redirects=False,
                     ) as mfa_resp:
-                        ref = mfa_resp.headers.get("Location", "")
+                        raw = mfa_resp.headers.get("Location", "")
+                        ref = _make_absolute(_IDK_BASE, raw) if raw else ""
                     continue
                 else:
                     raise TwoFactorRequiredError()
@@ -254,9 +277,9 @@ class IDKAuth:
                 headers=self._base_headers(),
                 allow_redirects=False,
             ) as redir_resp:
-                next_loc = redir_resp.headers.get("Location", "")
-                if redir_resp.status in (301, 302, 303, 307, 308) and next_loc:
-                    ref = next_loc
+                raw_next = redir_resp.headers.get("Location", "")
+                if redir_resp.status in (301, 302, 303, 307, 308) and raw_next:
+                    ref = _make_absolute(ref, raw_next)
                 else:
                     break
 
