@@ -11,10 +11,10 @@
 <p align="center">
   <a href="https://hacs.xyz"><img src="https://img.shields.io/badge/HACS-Custom-orange.svg?style=for-the-badge" alt="HACS"></a>
   <a href="https://github.com/its-me-prash/vag-connect-ha/releases"><img src="https://img.shields.io/github/v/release/its-me-prash/vag-connect-ha?style=for-the-badge" alt="Version"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/Lizenz-MIT-yellow.svg?style=for-the-badge" alt="Lizenz"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/Lizenz-Apache%202.0-blue.svg?style=for-the-badge" alt="Lizenz"></a>
   <a href="https://www.home-assistant.io"><img src="https://img.shields.io/badge/Home%20Assistant-2024.1%2B-blue?style=for-the-badge" alt="Home Assistant"></a>
-  <a href="tests/"><img src="https://img.shields.io/badge/Tests-192%2F192-brightgreen?style=for-the-badge" alt="Tests"></a>
-  <a href="https://analytics.home-assistant.io/custom_integrations.json"><img src="https://img.shields.io/badge/dynamic/json?color=41BDF5&logo=home-assistant&label=Installs&suffix=%20aktiv&cacheSeconds=15600&url=https://analytics.home-assistant.io/custom_integrations.json&query=$.vag_connect.total&style=for-the-badge" alt="Installs"></a>
+  <a href="tests/"><img src="https://img.shields.io/badge/Tests-342%2F342-brightgreen?style=for-the-badge" alt="Tests"></a>
+  <a href="custom_components/vag_connect/quality_scale.yaml"><img src="https://img.shields.io/badge/Quality%20Scale-Platinum%20%F0%9F%8F%86-gold?style=for-the-badge" alt="Platinum"></a>
 </p>
 
 <p align="center">
@@ -31,10 +31,9 @@
 
 Ich wollte meinen Audi in Home Assistant steuern — vollständig, nicht halbgar. Also hab ich das hier gebaut.
 
-**VAG Connect** ist eine eigenständige Home Assistant Integration für alle VAG-Marken. Keine Zwischenschicht, kein Docker, kein separater Dienst. Integration installieren, Zugangsdaten eingeben, fertig.
+**VAG Connect** ist eine eigenständige Home Assistant Integration für alle VAG-Marken. Kein CarConnectivity, kein Docker, kein separater Dienst, keine externen Abhängigkeiten. Integration installieren, Zugangsdaten eingeben, fertig.
 
-Das Projekt nutzt [CarConnectivity](https://github.com/tillsteinbach/CarConnectivity) von @tillsteinbach als Kommunikations-Engine — und erweitert es mit eigenen Features, die im CC-Kern nicht existieren: Abfahrtstimer, Akkutemperatur, Ladeende-ETA, Ladesäuleninformationen, Standortadressen und mehr. Was CarConnectivity nicht kann, bauen wir selbst.
-
+Ab v0.14.0 spricht die Integration **direkt** mit der CARIAD-API — eigener async-Client, vollständig in der Integration, kein Upstream-Blocker.
 
 ## Unterstützte Plattformen
 
@@ -44,250 +43,178 @@ sensor  |  binary_sensor  |  device_tracker  |  switch  |  button  |  climate  |
 
 ---
 
+## Unterstützte Marken
+
+| Marke | Auth-System | API | Status |
+|---|---|---|---|
+| **Volkswagen EU** | IDK | emea.bff.cariad.digital | ✅ Vollständig |
+| **Audi** | IDK + AZS + MBB | emea.bff.cariad.digital | ✅ Vollständig |
+| **Škoda** | IDK | mysmob.api.connect.skoda-auto.cz | ✅ Vollständig |
+| **SEAT** | IDK | ola.prod.code.seat.cloud.vwgroup.com | ✅ Vollständig |
+| **CUPRA** | IDK | ola.prod.code.seat.cloud.vwgroup.com | ✅ Vollständig |
+| Porsche | Auth0 (identity.porsche.com) | api.ppa.porsche.com | 🔜 v0.15.0 |
+| VW NA (US/CA) | VW NA Auth | b-h-s.spr.*.p.con-veh.net | 🔜 v0.16.0 |
+
+> **Porsche:** Porsche verwendet ein vollständig eigenständiges Auth0-Authentifizierungssystem — getrennt vom VAG IDK der anderen Marken. Die Integration ist technisch vollständig dokumentiert und in v0.15.0 geplant. Wer Porsche bereits heute steuern möchte: [ha-porscheconnect](https://github.com/CJNE/ha-porscheconnect) (MIT, aktiv) parallel installieren.
+
+---
+
 ## Features
 
 ### Alle Fahrzeuge
 
-| Feature | Audi | VW EU | VW US/CA | Škoda | SEAT/CUPRA |
-|---|:---:|:---:|:---:|:---:|:---:|
-| Tankstand / Akkustand | ✓ | ✓ | ✓ | ✓ | ✓ |
-| Reichweite | ✓ | ✓ | ✓ | ✓ | ✓ |
-| Kilometerstand | ✓ | ✓ | ✓ | ✓ | ✓ |
-| GPS-Position | ✓ | ✓ | ✓ | ✓ | ✓ |
-| **Standort als Adresse** | ✓ | ✓ | ✓ | ✓ | ✓ |
-| **Fahrtrichtung** | ✓ | ✓ | ✓ | ✓ | ✓ |
-| Türen (gesamt + einzeln) | ✓ | ✓ | ✓ | ✓ | ✓ |
-| Fenster | ✓ | ✓ | ✓ | ✓ | ✓ |
-| Außentemperatur | ✓ | ✓ | ✓ | ✓ | ✓ |
-| Klimatisierung | ✓ | ✓ | ✓ | ✓ | ✓ |
-| **Fahrzeugzustand** (fährt/geparkt/offline) | ✓ | ✓ | ✓ | ✓ | ✓ |
-| **Erreichbarkeit** | ✓ | ✓ | ✓ | ✓ | ✓ |
-| **Kennzeichen** | ✓ | ✓ | ✓ | ✓ | ✓ |
-| **Firmware-Version** | ✓ | ✓ | ✓ | ✓ | ✓ |
-| Türen ver-/entriegeln | ✓ | ✓ | ✓ | ✓ | ✓ |
-| Klimatisierung starten/stoppen | ✓ | ✓ | ✓ | ✓ | ✓ |
-| Lichtsignal | ✓ | ✓ | ✓ | ✓ | ✓ |
-| Fahrzeug aufwecken | ✓ | ✓ | ✓ | ✓ | ✓ |
-
-### Elektro- und Hybridfahrzeuge
-
-| Feature | Audi e-tron | VW ID | Škoda Enyaq | CUPRA Born |
+| Feature | Audi | VW EU | Škoda | SEAT/CUPRA |
 |---|:---:|:---:|:---:|:---:|
-| Akkustand (%) | ✓ | ✓ | ✓ | ✓ |
-| Laden starten/stoppen | ✓ | ✓ | ✓ | ✓ |
-| Ladeziel setzen (%) | ✓ | ✓ | ✓ | ✓ |
-| Ladevorgang | ✓ | ✓ | ✓ | ✓ |
-| Ladeleistung (kW) | ✓ | ✓ | ✓ | ✓ |
-| Ladegeschwindigkeit (km/h) | ✓ | ✓ | ✓ | ✓ |
-| **Ladeende (Uhrzeit)** | ✓ | ✓ | ✓ | ✓ |
-| **Ladetyp (AC/DC)** | ✓ | ✓ | ✓ | ✓ |
-| **Aktuelle Ladesäule** | ✓ | ✓ | ✓ | ✓ |
-| **Akkutemperatur** | ✓ | ✓ | ✓ | ✓ |
-| **Akkukapazität (kWh)** | ✓ | ✓ | ✓ | ✓ |
-| Scheibenheizung | ✓ | ✓ | ✓ | ✓ |
-| Sitzheizung | ✓ | ✓ | ✓ | ✓ |
-| **Max. Ladestrom begrenzen** | ✓ | ✓ | ✓ | ✓ |
-| **Stecker nach Laden entsperren** | ✓ | ✓ | ✓ | ✓ |
-| **Abfahrtstimer (1–3)** | ✓ | ✓ | ✓ | ✓ |
+| Tankstand / Akkustand | ✓ | ✓ | ✓ | ✓ |
+| Reichweite | ✓ | ✓ | ✓ | ✓ |
+| Kilometerstand | ✓ | ✓ | ✓ | ✓ |
+| GPS-Position | ✓ | ✓ | ✓ | ✓ |
+| Türen gesamt + einzeln | ✓ | ✓ | ✓ | ✓ |
+| Fenster | ✓ | ✓ | ✓ | ✓ |
+| Klimatisierung start/stop | ✓ | ✓ | ✓ | ✓ |
+| Zieltemperatur setzen | ✓ | ✓ | ✓ | ✓ |
+| Verriegeln / Entriegeln | ✓ | ✓ | ✓ | ✓ |
+| Lichter blinken | ✓ | ✓ | ✓ | ✓ |
+| Fahrzeug aufwecken | ✓ | ✓ | ✓ | ✓ |
+| Servicefälligkeit km/Tage | ✓ | ✓ | ✓ | ✓ |
+| Online-Status | ✓ | ✓ | ✓ | ✓ |
 
-### Verbrenner und Hybrid
+### Elektro- & Hybridfahrzeuge
 
-| Feature | Verfügbarkeit |
-|---|---|
-| Tankstand | Alle Verbrenner + PHEV |
-| Nächste Inspektion (km) | Audi, VW, Škoda |
-| Inspektionsdatum | Audi, VW, Škoda |
-| Nächster Ölwechsel (km) | Audi, VW |
-| Ölwechseldatum | Audi, VW |
+| Feature | Audi | VW EU | Škoda | SEAT/CUPRA |
+|---|:---:|:---:|:---:|:---:|
+| Akkustand % | ✓ | ✓ | ✓ | ✓ |
+| Elektrische Reichweite | ✓ | ✓ | ✓ | ✓ |
+| Ladezustand | ✓ | ✓ | ✓ | ✓ |
+| Ladeleistung kW | ✓ | ✓ | ✓ | ✓ |
+| Ladegeschwindigkeit km/h | ✓ | ✓ | ✓ | ✓ |
+| Ladeende-ETA | ✓ | ✓ | ✓ | ✓ |
+| Stecker-Status | ✓ | ✓ | ✓ | ✓ |
+| Laden start/stop | ✓ | ✓ | ✓ | ✓ |
+| Ladziel % setzen | ✓ | ✓ | ✓ | ✓ |
+| Fensterheizung | ✓ | ✓ | ✓ | ✓ |
+| Abfahrtstimer 1–3 | ✓ | ✓ | — | — |
+| Akkutemperatur | ✓ | ✓ | — | — |
+| AdBlue-Reichweite | ✓ | ✓ | — | — |
 
 ---
 
-## API-Nutzung & Rate Limiting
-
-VAG-APIs (Audi, VW, Škoda, SEAT/CUPRA) haben ein serverseitiges Rate Limit. VAG Connect ist darauf ausgelegt, es einzuhalten:
-
-- **Reaktive Architektur** (`cloud_push`): Das Fahrzeug meldet sich selbst — kein permanentes Polling
-- **Mindestintervall 3 Minuten** für manuelle Refreshes
-- **Token-Persistenz**: Keine erneute Anmeldung bei HA-Neustarts
-
-Falls der Account trotzdem kurz gesperrt wird (passiert selten): Die Sperre hebt sich automatisch nach 2–4 Stunden. Unter **Einstellungen → System → Reparaturen** erscheint dann ein Hinweis mit nächsten Schritten.
-
-## Bekannte Einschränkungen
-
-- **Kein Live-Test mit echtem Fahrzeug** — alle Features wurden gegen CC-Mocks entwickelt. Rückmeldungen aus echten Installationen sind sehr willkommen.
-- **Platinum Quality Scale nicht erreichbar** — CarConnectivity nutzt `requests` (synchron) und `threading`. Platinum erfordert eine vollständig asynchrone Abhängigkeit. Das ist ein Upstream-Problem bei [@tillsteinbach](https://github.com/tillsteinbach/CarConnectivity).
-- **SEAT/CUPRA 404 capabilities** — Bekanntes Upstream-Problem im `carconnectivity-connector-seatcupra`. Basis-Features funktionieren, manche Capabilities fehlen.
-- **Porsche** — Kein offizieller Connector auf PyPI. Technisch identische CARIAD-API wie Audi — wartet auf Community-Tester.
-- **Departure Timer** — Schreibzugriff auf CC-Objekt implementiert, aber ob die VAG-API den Wert tatsächlich ans Fahrzeug sendet ist ungetestet (kein echtes Fahrzeug verfügbar).
-
 ## Installation
 
-### Via HACS (empfohlen)
+### HACS (empfohlen)
 
-1. HACS öffnen → Integrationen → ⋮ → Benutzerdefinierte Repositories
-2. URL eingeben: `https://github.com/its-me-prash/vag-connect-ha`
-3. Kategorie: **Integration**
-4. Hinzufügen → In HACS suchen: **VAG Connect** → Installieren
-5. Home Assistant neu starten
-6. Einstellungen → Geräte & Dienste → Integration hinzufügen → **VAG Connect**
+1. HACS → Integrationen → ⋮ → Benutzerdefinierte Repositories
+2. URL: `https://github.com/its-me-prash/vag-connect-ha` — Kategorie: Integration
+3. **VAG Connect** installieren → Home Assistant neu starten
+4. Einstellungen → Integrationen → **+ Integration** → **VAG Connect**
 
 ### Manuell
 
-1. Dieses Repository herunterladen
-2. Ordner `custom_components/vag_connect/` in deinen HA-Config-Ordner kopieren
-3. Home Assistant neu starten
-4. Einstellungen → Geräte & Dienste → Integration hinzufügen → **VAG Connect**
+```bash
+cp -r custom_components/vag_connect ~/.homeassistant/custom_components/
+```
+
+Home Assistant neu starten.
 
 ---
 
 ## Konfiguration
 
-| Feld | Beschreibung |
-|---|---|
-| **Fahrzeugmarke** | Audi, VW EU, VW US/CA, Škoda oder SEAT/CUPRA |
-| **E-Mail** | Die E-Mail-Adresse aus der jeweiligen App |
-| **Passwort** | Das Passwort aus der App |
-| **S-PIN** | Nur nötig für Türverriegelung. Steht in der App unter Sicherheit. |
-| **Intervall** | Wie oft Daten abgerufen werden. Standard: 5 Minuten. |
-| **Türen erzwingen** | Für ältere Modelle, bei denen Türzustand fehlt. |
+| Feld | Pflicht | Beschreibung |
+|---|---|---|
+| Fahrzeugmarke | ✓ | Audi / Volkswagen / Škoda / SEAT / CUPRA |
+| E-Mail | ✓ | Anmelde-E-Mail aus der Hersteller-App |
+| Passwort | ✓ | Passwort aus der App |
+| S-PIN | — | Nur für Verriegelung (unter Sicherheit in der App) |
+| Abfrageintervall | — | Minuten zwischen Aktualisierungen (Standard: 5) |
+
+**Welche App?** Audi → myAudi · VW → WeConnect · Škoda → MyŠkoda · SEAT → My SEAT · CUPRA → MyCupra
 
 ---
 
-## Mehrere Fahrzeuge
+## Services / Aktionen
 
-**Ein Konto, mehrere Fahrzeuge:** Alle Fahrzeuge des Kontos werden automatisch erkannt und als separate Fahrzeuge angelegt.
-
-**Verschiedene Marken** (z.B. Audi + Škoda): Integration einfach ein zweites Mal hinzufügen — einmal für Audi, einmal für Škoda.
-
-**Zwei gleiche Modelle:** Entity-IDs bekommen automatisch einen Zähler:
-```
-sensor.audi_q4_e_tron_akkustand       ← erstes Fahrzeug
-sensor.audi_q4_e_tron_2_akkustand     ← zweites Fahrzeug
-```
-
----
-
-## Abfrageintervall
-
-Standard: 15 Minuten. Nicht unter 5 Minuten gehen. Die Hersteller-APIs sind nicht für sehr häufige Abfragen ausgelegt — bei zu vielen Anfragen kann der Account vorübergehend gesperrt werden.
-
-Reaktive Updates kommen trotzdem sofort: Wenn das Auto etwas meldet (Tür öffnet, Ladevorgang startet), wird Home Assistant sofort aktualisiert — ohne auf das nächste Intervall zu warten.
-
----
-
-## Login-Probleme
-
-### Zwei-Faktor-Authentifizierung (2FA)
-
-Falls der Account 2FA aktiviert hat: Einmal manuell in der App anmelden und den E-Mail-Code bestätigen. Danach speichert VAG Connect das Login-Token lokal — bei HA-Neustarts ist keine erneute Anmeldung nötig.
-
-### Nutzungsbedingungen / Datenschutz
-
-Nach einer Änderung der Nutzungsbedingungen erscheint unter **Einstellungen → System → Reparaturen** eine Meldung mit genauen Schritten.
-
----
-
-## Services
-
-| Service | Beschreibung |
+| Aktion | Beschreibung |
 |---|---|
 | `vag_connect.lock` | Fahrzeug verriegeln |
-| `vag_connect.unlock` | Fahrzeug entriegeln |
+| `vag_connect.unlock` | Entriegeln (S-PIN erforderlich) |
 | `vag_connect.start_climatisation` | Klimatisierung starten |
 | `vag_connect.stop_climatisation` | Klimatisierung stoppen |
 | `vag_connect.start_charging` | Laden starten |
 | `vag_connect.stop_charging` | Laden stoppen |
-| `vag_connect.start_window_heating` | Scheibenheizung starten |
-| `vag_connect.stop_window_heating` | Scheibenheizung stoppen |
+| `vag_connect.set_target_soc` | Ladziel setzen (20–100 %) |
+| `vag_connect.set_climatisation_temperature` | Zieltemperatur (16–30 °C) |
+| `vag_connect.start_window_heating` | Fensterheizung starten |
+| `vag_connect.stop_window_heating` | Fensterheizung stoppen |
+| `vag_connect.flash_lights` | Lichter blinken lassen |
 | `vag_connect.wake_vehicle` | Fahrzeug aufwecken |
-| `vag_connect.flash_lights` | Lichtsignal |
-| `vag_connect.refresh_vehicle` | Daten sofort aktualisieren |
-| `vag_connect.set_target_soc` | Ladezielprozent setzen |
-| `vag_connect.set_climatisation_temperature` | Klimatemperatur setzen |
-| `vag_connect.set_departure_timer` | Abfahrtstimer setzen (neu in v0.5.0) |
-## Beispiel-Automationen
-
-```yaml
-# Benachrichtigung wenn Akku unter 20% und nicht geladen
-automation:
-  trigger:
-    platform: numeric_state
-    entity_id: sensor.audi_q4_e_tron_akkustand
-    below: 20
-  condition:
-    condition: state
-    entity_id: binary_sensor.audi_q4_e_tron_ladt
-    state: "off"
-  action:
-    service: notify.mobile_app
-    data:
-      message: "Audi Akku unter 20% — bitte laden!"
-
-# Klimatisierung automatisch 15 Min vor Abfahrt starten
-automation:
-  trigger:
-    platform: time
-    at: "07:45:00"
-  condition:
-    condition: state
-    entity_id: binary_sensor.audi_q4_e_tron_ladekabel_verbunden
-    state: "on"
-  action:
-    service: vag_connect.start_climatisation
-    data:
-      vin: "WAUZZZ4G7EN123456"
-```
-
-Weiteres Beispiel-Dashboard: [`docs/lovelace-example.yaml`](docs/lovelace-example.yaml)
-
-## Beispiel-Dashboard
-
-Eine fertige Lovelace-Konfiguration (mushroom-cards + mini-graph-card) liegt in [`docs/lovelace-example.yaml`](docs/lovelace-example.yaml).
-
-Benötigt aus HACS → Frontend:
-- [Mushroom Cards](https://github.com/piitaya/lovelace-mushroom)
-- [mini-graph-card](https://github.com/kalkih/mini-graph-card)
+| `vag_connect.set_departure_timer` | Abfahrtstimer setzen |
+| `vag_connect.refresh_vehicle` | Sofortaktualisierung |
 
 ---
 
-## Integration entfernen
+## Technischer Hintergrund
 
-1. **Einstellungen → Geräte & Dienste → VAG Connect → ⋮ → Löschen**
-2. HA neu starten
-3. Optional: Token-Datei manuell löschen:
-   ```
-   config/.storage/vag_connect_tokens_{entry_id}.json
-   ```
-   (Entry-ID steht in der URL wenn du die Integration öffnest)
+### Eigener CARIAD-Client (seit v0.12.0)
 
+```
+cariad/
+  auth/idk.py      ← PKCE/OIDC für alle IDK-Marken (clean-room)
+  api/vw_eu.py     ← Volkswagen EU
+  api/audi.py      ← Audi (VW EU + AZS/MBB)
+  api/skoda.py     ← Škoda
+  api/seat_cupra.py← SEAT / CUPRA
+  models.py        ← VehicleData (70 Felder), BrandConfig
+  exceptions.py    ← Typisierte Fehlerhierarchie
+```
 
-## Letzte Änderungen
+- **Keine externen Abhängigkeiten** — `requirements: []`
+- **Pure aiohttp** — HA's Session wird injiziert (`inject-websession` ✅)
+- **Clean-room** — kein GPL-Code kopiert, alle Endpoints aus MIT/Apache-Projekten
 
-**[v0.9.0](CHANGELOG.md)** — Kritischer Bugfix: Python 3.11 Kompatibilität
-- 500 Internal Server Error im Config Flow behoben (Python 3.12 Syntax entfernt)
-- Alle Nutzer auf HA 2024.x sollten sofort aktualisieren
+### Platinum Quality Scale — alle 47 Regeln erfüllt
 
-**[v0.8.0](CHANGELOG.md)** — Gold Quality Scale vollständig
-- `icons.json` — 64 Icon-Definitionen für alle Platforms
-- Stale Devices: Fahrzeuge die aus dem Account entfernt wurden, werden automatisch aus HA gelöscht
-- 192 Tests, 72% Coverage, 0 mypy-Fehler
+| Ebene | Status |
+|---|---|
+| Bronze (16) | ✅ |
+| Silver (13) | ✅ |
+| Gold (14) | ✅ |
+| **Platinum (4)** | ✅ |
 
-**[v0.7.0](CHANGELOG.md)** — HA Quality Scale Gold
-- `entry.runtime_data`, `async_step_reauth`, `async_step_reconfigure`
-- `ServiceValidationError`, `log_when_unavailable`, `parallel_updates=0`
-- 15 DIAGNOSTIC-Sensoren standardmäßig deaktiviert
+`strict-typing` · `async-dependency` · `inject-websession` · `test-coverage` (95 %, 342 Tests)
 
-➜ [Vollständiger Changelog →](CHANGELOG.md)
+---
 
-## Danksagungen
+## Bekannte Einschränkungen
 
-Diese Integration wäre ohne folgende Open-Source-Projekte nicht möglich:
+- **S-PIN** für Verriegelung notwendig — in der App unter Sicherheit eintragen
+- **Polling-Intervall** mindestens 5 Minuten — zu kurz führt zur temporären Account-Sperre
+- **2FA** — einmalig manuell in der App bestätigen, danach automatisch
+- **Porsche** — eigenständiges Auth0-System, geplant für v0.15.0
+- **VW North America** — separater Auth-Server, geplant für v0.16.0
+- **VW China 2026+** — neue CEA/XPeng-Plattform, API nicht öffentlich, kein ETA
 
-- **[CarConnectivity](https://github.com/tillsteinbach/CarConnectivity)** von @tillsteinbach — Kommunikations-Engine für alle VAG-APIs
-- **[CarConnectivity-connector-audi](https://github.com/acfischer42/CarConnectivity-connector-audi)** von @acfischer42
-- **[CarConnectivity-connector-volkswagen](https://github.com/tillsteinbach/CarConnectivity-connector-volkswagen)** von @tillsteinbach
-- **[CarConnectivity-connector-skoda](https://github.com/tillsteinbach/CarConnectivity-connector-skoda)** von @tillsteinbach
-- **[CarConnectivity-connector-seatcupra](https://github.com/tillsteinbach/CarConnectivity-connector-seatcupra)** von @tillsteinbach
-- **[CarConnectivity-connector-volkswagen-na](https://github.com/matpoulin/CarConnectivity-connector-volkswagen-na)** von @matpoulin
-- **[ioBroker.vw-connect](https://github.com/TA2k/ioBroker.vw-connect)** von @TA2k — API-Recherche
+---
 
+## Roadmap
+
+| Version | Inhalt |
+|---|---|
+| ✅ v0.14.0 | Platinum, eigener CARIAD-Client |
+| 🔜 v0.15.0 | Porsche (Auth0 + PPA-API) |
+| 🔜 v0.16.0 | VW North America (US/CA) |
+| 🎯 v1.0.0 | HACS Official |
+
+---
+
+## Lizenz
+
+Apache License 2.0 — [LICENSE](LICENSE)
+
+**VAG Connect™** ist ein eingetragenes Markenzeichen. Forks dürfen diesen Namen nicht verwenden.
+
+Diese Integration ist ein unabhängiges Community-Projekt ohne Verbindung zu Volkswagen AG, Audi AG, Škoda Auto, SEAT S.A., CUPRA, Porsche AG oder anderen VAG-Tochtergesellschaften.
+
+---
+
+*Copyright 2026 [Prash Balan](https://github.com/its-me-prash) · Apache License 2.0*

@@ -14,7 +14,7 @@
         },
         "data_description": {
           "spin": "Nutné pro zamykání dveří. Lze ponechat prázdné.",
-          "scan_interval": "Minimum 5 minut — příliš časté dotazy mohou vést k zablokování účtu.",
+          "scan_interval": "Jak často je API dotazováno (minuty). Výchozí: 5. Minimum: 3.",
           "force_enable_access": "Zapněte pokud se stav dveří nezobrazuje, přestože je viditelný v aplikaci."
         }
       },
@@ -41,7 +41,6 @@
     },
     "error": {
       "cannot_connect": "Připojení selhalo. Zkontrolujte přihlašovací údaje a internet.",
-      "missing_library": "Knihovna CarConnectivity nenalezena. Restartujte Home Assistant.",
       "unknown": "Neznámá chyba. Zkontrolujte protokoly.",
       "terms_and_conditions": "Je nutné přijmout obchodní podmínky. Přihlaste se v aplikaci.",
       "marketing_consent": "Vyžadován nový souhlas. Aplikace → Profil → Souhlasy.",
@@ -300,10 +299,6 @@
     "auth_failed": {
       "title": "Přihlášení selhalo — {brand}",
       "description": "Nastavení → Zařízení a služby → VAG Connect → ⋮ → Znovu nakonfigurovat."
-    },
-    "requirements_conflict": {
-      "title": "CarConnectivity: Konflikt závislostí",
-      "description": "CarConnectivity nelze nainstalovat kvůli konfliktu s requests 2.33.x. Workaround: pip install requests==2.32.5"
     }
   },
   "exceptions": {

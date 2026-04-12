@@ -14,7 +14,7 @@
         },
         "data_description": {
           "spin": "Necesario para el bloqueo de puertas. Se puede dejar vacío.",
-          "scan_interval": "Mínimo 5 minutos — demasiadas consultas pueden suspender la cuenta.",
+          "scan_interval": "Frecuencia de consulta a la API (minutos). Predeterminado: 5. Mínimo: 3.",
           "force_enable_access": "Activar si el estado de puertas no se muestra aunque sea visible en la app."
         }
       },
@@ -41,7 +41,6 @@
     },
     "error": {
       "cannot_connect": "Conexión fallida. Comprueba las credenciales y la conexión.",
-      "missing_library": "Librería CarConnectivity no encontrada. Reinicia Home Assistant.",
       "unknown": "Error desconocido. Comprueba los registros.",
       "terms_and_conditions": "Hay que aceptar los términos. Inicia sesión en la aplicación.",
       "marketing_consent": "Nuevo consentimiento requerido. App → Perfil → Consentimientos.",
@@ -300,10 +299,6 @@
     "auth_failed": {
       "title": "Autenticación fallida — {brand}",
       "description": "Ajustes → Dispositivos y servicios → VAG Connect → ⋮ → Reconfigurar."
-    },
-    "requirements_conflict": {
-      "title": "CarConnectivity: Conflicto de dependencias",
-      "description": "CarConnectivity no se puede instalar por conflicto con requests 2.33.x. Workaround: pip install requests==2.32.5"
     }
   },
   "exceptions": {

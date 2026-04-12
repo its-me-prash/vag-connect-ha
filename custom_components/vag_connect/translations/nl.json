@@ -14,7 +14,7 @@
         },
         "data_description": {
           "spin": "Vereist voor deurvergrendeling. Kan leeg worden gelaten.",
-          "scan_interval": "Minimaal 5 minuten — te frequente verzoeken kunnen leiden tot blokkering.",
+          "scan_interval": "Hoe vaak de API wordt geraadpleegd (minuten). Standaard: 5. Minimum: 3.",
           "force_enable_access": "Inschakelen als deurstatus ontbreekt maar zichtbaar is in de app."
         }
       },
@@ -41,7 +41,6 @@
     },
     "error": {
       "cannot_connect": "Verbinding mislukt. Controleer inloggegevens en internetverbinding.",
-      "missing_library": "CarConnectivity-bibliotheek niet gevonden. Start Home Assistant opnieuw.",
       "unknown": "Onbekende fout. Controleer de logboeken.",
       "terms_and_conditions": "Gebruiksvoorwaarden moeten worden geaccepteerd. Log eenmaal in via de app.",
       "marketing_consent": "Nieuwe privacytoestemming vereist. App → Profiel → Toestemmingen.",
@@ -300,10 +299,6 @@
     "auth_failed": {
       "title": "Aanmelden mislukt — {brand}",
       "description": "Instellingen → Apparaten en diensten → VAG Connect → ⋮ → Opnieuw configureren."
-    },
-    "requirements_conflict": {
-      "title": "CarConnectivity: Afhankelijkheidsconflict",
-      "description": "CarConnectivity kan niet worden geïnstalleerd vanwege requests 2.33.x. Workaround: pip install requests==2.32.5"
     }
   },
   "exceptions": {

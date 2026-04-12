@@ -14,7 +14,7 @@
         },
         "data_description": {
           "spin": "Wird für Türverriegelung und einige andere Aktionen benötigt. Kann leer gelassen werden.",
-          "scan_interval": "Mindestens 5 Minuten — zu häufige Abfragen können zur Account-Sperrung führen.",
+          "scan_interval": "Wie oft die API abgefragt wird (Minuten). Standard: 5. Minimum: 3.",
           "force_enable_access": "Aktivieren, wenn Tür- und Fensterstatus nicht angezeigt werden, obwohl sie in der App sichtbar sind."
         }
       },
@@ -41,7 +41,6 @@
     },
     "error": {
       "cannot_connect": "Verbindung fehlgeschlagen. Zugangsdaten und Internetverbindung prüfen.",
-      "missing_library": "CarConnectivity-Bibliothek nicht gefunden. Bitte Home Assistant neu starten.",
       "unknown": "Unbekannter Fehler. Bitte die Logs prüfen.",
       "terms_and_conditions": "Nutzungsbedingungen müssen akzeptiert werden. Einmal in der App anmelden und bestätigen.",
       "marketing_consent": "Neue Datenschutzzustimmung erforderlich. App öffnen: Profil → Einwilligungen.",
@@ -300,10 +299,6 @@
     "auth_failed": {
       "title": "Anmeldung fehlgeschlagen — {brand}",
       "description": "Die Verbindung zu {brand} ({username}) ist fehlgeschlagen.\n\nEinstellungen → Geräte & Dienste → VAG Connect → ⋮ → Neu konfigurieren."
-    },
-    "requirements_conflict": {
-      "title": "CarConnectivity: Abhängigkeitskonflikt",
-      "description": "CarConnectivity kann nicht installiert werden weil dein Home Assistant `requests 2.33.x` hat, aber CarConnectivity `requests~=2.32.5` benötigt. Das ist ein Upstream-Problem. Temporärer Workaround: In der HA-Shell `pip install requests==2.32.5` ausführen, dann HA neu starten."
     }
   },
   "exceptions": {

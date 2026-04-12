@@ -14,7 +14,7 @@
         },
         "data_description": {
           "spin": "Requis pour le verrouillage des portes. Peut être laissé vide.",
-          "scan_interval": "Minimum 5 minutes — des requêtes trop fréquentes peuvent suspendre le compte.",
+          "scan_interval": "Fréquence d'interrogation de l'API (minutes). Défaut: 5. Minimum: 3.",
           "force_enable_access": "Activer si l'état des portes ne s'affiche pas, bien que visible dans l'app."
         }
       },
@@ -41,7 +41,6 @@
     },
     "error": {
       "cannot_connect": "Connexion échouée. Vérifiez les identifiants et la connexion internet.",
-      "missing_library": "Bibliothèque CarConnectivity introuvable. Redémarrez Home Assistant.",
       "unknown": "Erreur inconnue. Consultez les journaux.",
       "terms_and_conditions": "Conditions d'utilisation à accepter. Connectez-vous dans l'application.",
       "marketing_consent": "Nouveau consentement RGPD requis. Application → Profil → Consentements.",
@@ -300,10 +299,6 @@
     "auth_failed": {
       "title": "Connexion échouée — {brand}",
       "description": "Paramètres → Appareils et services → VAG Connect → ⋮ → Reconfigurer."
-    },
-    "requirements_conflict": {
-      "title": "CarConnectivity: Conflit de dépendances",
-      "description": "CarConnectivity ne peut pas être installé car requests 2.33.x est incompatible. Workaround: pip install requests==2.32.5"
     }
   },
   "exceptions": {

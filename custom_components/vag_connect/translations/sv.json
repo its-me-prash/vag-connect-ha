@@ -14,7 +14,7 @@
         },
         "data_description": {
           "spin": "Krävs för dörrlåsning. Kan lämnas tomt.",
-          "scan_interval": "Minst 5 minuter — för frekventa förfrågningar kan leda till kontosuspension.",
+          "scan_interval": "Hur ofta API:et avfrågas (minuter). Standard: 5. Minimum: 3.",
           "force_enable_access": "Aktivera om dörrstatus inte visas trots att det syns i appen."
         }
       },
@@ -41,7 +41,6 @@
     },
     "error": {
       "cannot_connect": "Anslutning misslyckades. Kontrollera inloggningsuppgifter och internet.",
-      "missing_library": "CarConnectivity-biblioteket hittades inte. Starta om Home Assistant.",
       "unknown": "Okänt fel. Kontrollera loggarna.",
       "terms_and_conditions": "Användarvillkor måste accepteras. Logga in i appen.",
       "marketing_consent": "Nytt dataskyddssamtycke krävs. App → Profil → Samtycken.",
@@ -300,10 +299,6 @@
     "auth_failed": {
       "title": "Inloggning misslyckades — {brand}",
       "description": "Inställningar → Enheter och tjänster → VAG Connect → ⋮ → Omkonfigurera."
-    },
-    "requirements_conflict": {
-      "title": "CarConnectivity: Beroendekonflik",
-      "description": "CarConnectivity kan inte installeras på grund av konflikt med requests 2.33.x. Workaround: pip install requests==2.32.5"
     }
   },
   "exceptions": {

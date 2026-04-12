@@ -9,17 +9,18 @@
 </p>
 
 <p align="center">
-  <a href="https://hacs.xyz"><img src="https://img.shields.io/badge/HACS-Custom-orange.svg?style=for-the-badge" alt="HACS"></a>
-  <a href="https://github.com/its-me-prash/vag-connect-ha/releases"><img src="https://img.shields.io/github/v/release/its-me-prash/vag-connect-ha?style=for-the-badge" alt="Version"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge" alt="License"></a>
-  <a href="https://www.home-assistant.io"><img src="https://img.shields.io/badge/Home%20Assistant-2024.1%2B-blue?style=for-the-badge" alt="Home Assistant"></a>
-  <a href="tests/"><img src="https://img.shields.io/badge/Tests-192%2F192-brightgreen?style=for-the-badge" alt="Tests"></a>
+  <a href="https://hacs.xyz"><img src="https://img.shields.io/badge/HACS-Custom-orange.svg?style=for-the-badge"></a>
+  <a href="https://github.com/its-me-prash/vag-connect-ha/releases"><img src="https://img.shields.io/github/v/release/its-me-prash/vag-connect-ha?style=for-the-badge"></a>
+  <a href="../LICENSE"><img src="https://img.shields.io/badge/License-Apache%202.0-blue.svg?style=for-the-badge"></a>
+  <a href="../tests/"><img src="https://img.shields.io/badge/Tests-342%2F342-brightgreen?style=for-the-badge"></a>
+  <a href="../custom_components/vag_connect/quality_scale.yaml"><img src="https://img.shields.io/badge/Quality%20Scale-Platinum%20%F0%9F%8F%86-gold?style=for-the-badge"></a>
 </p>
 
 <p align="center">
-  <a href="README.md">Deutsch</a> · 
+  <a href="../README.md">Deutsch</a> ·
   <a href="README.en.md">English</a> ·
   <a href="README.fr.md">Français</a> ·
+  <a href="README.nl.md">Nederlands</a> ·
   <a href="README.es.md">Español</a> ·
   <a href="README.pl.md">Polski</a> ·
   <a href="README.cs.md">Čeština</a> ·
@@ -28,47 +29,121 @@
 
 ---
 
-Ik wilde mijn Audi volledig bedienen vanuit Home Assistant. Dus bouwde ik dit.
+Ik wilde mijn Audi volledig in Home Assistant besturen. Dus bouwde ik dit.
 
-**VAG Connect** is een zelfstandige Home Assistant-integratie voor alle VAG-merken. Geen middleware, geen Docker, geen aparte dienst. Installeer de integratie, voer je inloggegevens in, klaar.
+**VAG Connect** is een zelfstandige Home Assistant integratie voor alle VAG-merken. Geen CarConnectivity, geen Docker, geen externe diensten, geen externe afhankelijkheden.
 
-Het project gebruikt [CarConnectivity](https://github.com/tillsteinbach/CarConnectivity) van @tillsteinbach als communicatie-engine — en breidt het uit met functies die niet in de CC-kern bestaan: vertrektimers, batterijtemperatuur, laadtijd ETA, laadstation-informatie, locatieadressen en meer.
-
-
-## Hoofdfuncties
-
-- Brandstof-/accuniveau, actieradius, kilometerstand
-- GPS + parkeerlocatie als adres
-- Voertuigstatus (rijden/geparkeerd/offline)
-- Laden: vermogen, snelheid, gereed-tijdstip, laadpaal-info
-- Accutemperatuur · Accucapaciteit
-- Klimaatregeling, stoelverwarming, ruitenverwarming
-- Vergrendelen/ontgrendelen, lichtsignaal
-- **Metrisch en imperiaal** automatisch via HA-instellingen
-
-Zie de [volledige README in het Engels](README.en.md) voor alle details.
+Vanaf v0.14.0 communiceert de integratie **rechtstreeks** met de CARIAD API — eigen async-client, volledig zelfstandig.
 
 ---
 
-## Installation
+## Ondersteunde Merken
 
-Instellingen → Apparaten en diensten → Integratie toevoegen → **VAG Connect**
+| Brand | Auth | API | Status |
+|---|---|---|---|
+| **Volkswagen EU** | IDK | emea.bff.cariad.digital | ✅ |
+| **Audi** | IDK + AZS/MBB | emea.bff.cariad.digital | ✅ |
+| **Škoda** | IDK | mysmob.api.connect.skoda-auto.cz | ✅ |
+| **SEAT** | IDK | ola.prod.code.seat.cloud.vwgroup.com | ✅ |
+| **CUPRA** | IDK | ola.prod.code.seat.cloud.vwgroup.com | ✅ |
+| Porsche | Auth0 | api.ppa.porsche.com | 🔜 v0.15.0 |
+| VW NA (US/CA) | VW NA Auth | b-h-s.spr.*.p.con-veh.net | 🔜 v0.16.0 |
 
----
-
-
----
-
-## Recente wijzigingen
-
-**[v0.9.0](CHANGELOG.md)** — Kritieke fix: Python 3.11 compatibiliteit (500 fout in configuratiestroom)
-**[v0.8.0](CHANGELOG.md)** — Gold Quality Scale volledig — icons.json, verouderde apparaten, 192 tests
-**[v0.7.0](CHANGELOG.md)** — Gold — entry.runtime_data, reauth, reconfigure, ServiceValidationError
-
-➜ [Volledig changelog →](CHANGELOG.md)
+> **Porsche:** Porsche gebruikt een volledig afzonderlijk Auth0-authenticatiesysteem. Gepland voor v0.15.0. Nu voor Porsche: [ha-porscheconnect](https://github.com/CJNE/ha-porscheconnect) (MIT).
 
 ---
 
-## Lizenz / License
+## Functies
 
-MIT — [GitHub](https://github.com/its-me-prash/vag-connect-ha)
+| Feature | Audi | VW EU | Škoda | SEAT/CUPRA |
+|---|:---:|:---:|:---:|:---:|
+| Fuel / Battery level | ✓ | ✓ | ✓ | ✓ |
+| Range | ✓ | ✓ | ✓ | ✓ |
+| Odometer | ✓ | ✓ | ✓ | ✓ |
+| GPS position | ✓ | ✓ | ✓ | ✓ |
+| Doors (total + per door) | ✓ | ✓ | ✓ | ✓ |
+| Windows | ✓ | ✓ | ✓ | ✓ |
+| Climate start/stop | ✓ | ✓ | ✓ | ✓ |
+| Target temperature | ✓ | ✓ | ✓ | ✓ |
+| Lock / Unlock | ✓ | ✓ | ✓ | ✓ |
+| Flash lights | ✓ | ✓ | ✓ | ✓ |
+| Wake vehicle | ✓ | ✓ | ✓ | ✓ |
+| Service due km/days | ✓ | ✓ | ✓ | ✓ |
+| Online status | ✓ | ✓ | ✓ | ✓ |
+| Battery SoC % | ✓ | ✓ | ✓ | ✓ |
+| Charge state | ✓ | ✓ | ✓ | ✓ |
+| Charge power kW | ✓ | ✓ | ✓ | ✓ |
+| Charge ETA | ✓ | ✓ | ✓ | ✓ |
+| Charge target % | ✓ | ✓ | ✓ | ✓ |
+| Window heating | ✓ | ✓ | ✓ | ✓ |
+| Departure timers 1–3 | ✓ | ✓ | — | — |
+| Battery temperature | ✓ | ✓ | — | — |
+| AdBlue range | ✓ | ✓ | — | — |
+
+---
+
+## Installatie
+
+### HACS
+
+1. HACS → Integraties → ⋮ → Aangepaste opslagplaatsen
+2. URL: `https://github.com/its-me-prash/vag-connect-ha` — Categorie: Integratie
+3. **VAG Connect** installeren → Home Assistant opnieuw opstarten
+4. Instellingen → Integraties → **+ Integratie** → **VAG Connect**
+
+### Manual
+
+```bash
+cp -r custom_components/vag_connect ~/.homeassistant/custom_components/
+```
+
+Herstart Home Assistant.
+
+---
+
+## Configuratie
+
+| Field | Required | Description |
+|---|---|---|
+| Merk | ✓ | Audi / Volkswagen / Škoda / SEAT / CUPRA |
+| E-mail | ✓ | Aanmeldings-e-mail van de fabrikants-app |
+| Wachtwoord | ✓ | Wachtwoord van de app |
+| S-PIN | — | Vereist voor vergrendeling (onder Beveiliging in de app) |
+| Poll-interval | — | Minuten tussen updates (standaard: 5) |
+
+**Welke app?** Audi → myAudi · VW → WeConnect · Škoda → MyŠkoda · SEAT → My SEAT · CUPRA → MyCupra
+
+---
+
+## Bekende Beperkingen
+
+- **S-PIN** vereist voor vergrendeling
+- **Poll-interval** minimaal 5 minuten
+- **2FA** — eenmalig handmatig bevestigen in de app
+- **Porsche** — apart Auth0-systeem, gepland v0.15.0
+- **VW Noord-Amerika** — apart auth-systeem, gepland v0.16.0
+
+---
+
+## Roadmap
+
+| Version | Content |
+|---|---|
+| ✅ v0.14.0 | Platinum, own CARIAD client |
+| 🔜 v0.15.0 | Porsche (Auth0 + PPA API) |
+| 🔜 v0.16.0 | VW North America |
+| 🎯 v1.0.0 | HACS Official |
+
+---
+
+## Licentie
+
+Apache License 2.0 — [LICENSE](../LICENSE)
+
+**VAG Connect™** is een geregistreerd handelsmerk. Forks mogen deze naam niet gebruiken.
+
+Deze integratie is een onafhankelijk communityproject zonder enige verbinding met Volkswagen AG, Audi AG, Škoda Auto, SEAT S.A., CUPRA, Porsche AG of andere VAG-dochterondernemingen.
+
+---
+
+*Copyright 2026 [Prash Balan](https://github.com/its-me-prash) · Apache License 2.0*

@@ -17,7 +17,7 @@
           "username": "Die E-Mail-Adresse aus der Hersteller-App (myAudi, WeConnect, etc.).",
           "password": "Das Passwort aus der App.",
           "spin": "Nur erforderlich für Verriegelung. Steht in der App unter Sicherheit → S-PIN.",
-          "scan_interval": "Wie oft CC im Hintergrund die API abfragt (Minuten). Standard: 5. Minimum: 3.",
+          "scan_interval": "Wie oft die API abgefragt wird (Minuten). Standard: 5. Minimum: 3.",
           "force_enable_access": "Für ältere Fahrzeuge die den 'access' Capability-Check nicht bestehen."
         }
       },
@@ -44,7 +44,6 @@
     },
     "error": {
       "cannot_connect": "Verbindung fehlgeschlagen. Zugangsdaten und Internetverbindung prüfen.",
-      "missing_library": "CarConnectivity-Bibliothek nicht gefunden. Bitte Home Assistant neu starten.",
       "unknown": "Unbekannter Fehler. Bitte die Logs prüfen.",
       "terms_and_conditions": "Nutzungsbedingungen müssen akzeptiert werden. Einmal in der App anmelden und bestätigen.",
       "marketing_consent": "Neue Datenschutzzustimmung erforderlich. App öffnen: Profil → Einwilligungen.",
@@ -303,10 +302,6 @@
     "auth_failed": {
       "title": "Anmeldung fehlgeschlagen — {brand}",
       "description": "Die Verbindung zu {brand} ({username}) ist fehlgeschlagen.\n\nEinstellungen → Geräte & Dienste → VAG Connect → ⋮ → Neu konfigurieren."
-    },
-    "requirements_conflict": {
-      "title": "CarConnectivity: Dependency-Konflikt",
-      "description": "CarConnectivity kann nicht installiert werden weil dein Home Assistant `requests {installed_version}` hat, aber CarConnectivity `requests~=2.32.5` benötigt.\n\n**Das ist ein bekanntes Upstream-Problem** das in CarConnectivity selbst behoben werden muss. Bitte kommentiere auf [GitHub Issue](https://github.com/tillsteinbach/CarConnectivity/issues) damit @tillsteinbach die Priorität sieht.\n\n**Temporärer Workaround:** In deiner HA-Shell:\n```\npip install requests==2.32.5\n```\nDanach HA neu starten."
     }
   },
   "exceptions": {
