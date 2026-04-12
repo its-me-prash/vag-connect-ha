@@ -260,6 +260,25 @@ Benötigt aus HACS → Frontend:
    ```
    (Entry-ID steht in der URL wenn du die Integration öffnest)
 
+## Letzte Änderungen
+
+**[v0.8.0](CHANGELOG.md)** — Gold Quality Scale vollständig
+- `icons.json` — 64 Icon-Definitionen für alle Platforms
+- Stale Devices: Fahrzeuge die aus dem Account entfernt wurden, werden automatisch aus HA gelöscht
+- 192 Tests, 72% Coverage, 0 mypy-Fehler
+
+**[v0.7.0](CHANGELOG.md)** — HA Quality Scale Gold
+- `entry.runtime_data`, `async_step_reauth`, `async_step_reconfigure`
+- `ServiceValidationError`, `log_when_unavailable`, `parallel_updates=0`
+- 15 DIAGNOSTIC-Sensoren standardmäßig deaktiviert
+
+**[v0.6.0](CHANGELOG.md)** — EntityCategory & neue Sensoren
+- `EntityCategory.DIAGNOSTIC` / `CONFIG` für saubere Entity-Struktur
+- 4 neue Sensoren: Reichweite bei 100%, WLTP, Akkuenergie verfügbar, Zuletzt aktualisiert
+- Typo `Ladziel` → `Ladeziel` behoben
+
+➜ [Vollständiger Changelog →](CHANGELOG.md)
+
 ## Danksagungen
 
 Diese Integration wäre ohne folgende Open-Source-Projekte nicht möglich:

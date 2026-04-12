@@ -17,50 +17,58 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Version aus manifest.json lesen
+      - name: Read version from manifest.json
         id: version
         run: |
           VERSION=$(python3 -c "import json; print(json.load(open('custom_components/vag_connect/manifest.json'))['version'])")
           echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "Version: $VERSION"
 
-      - name: Sicherstellen dass Tag und manifest.json Version übereinstimmen
+      - name: Verify tag matches manifest version
         run: |
           TAG="${GITHUB_REF#refs/tags/v}"
           MANIFEST="${{ steps.version.outputs.version }}"
           if [ "$TAG" != "$MANIFEST" ]; then
-            echo "FEHLER: Tag v$TAG stimmt nicht mit manifest.json Version $MANIFEST überein"
+            echo "ERROR: tag v$TAG does not match manifest.json version $MANIFEST"
             exit 1
           fi
 
-      - name: Changelog-Abschnitt für diese Version extrahieren
+      - name: Extract changelog section for this version
         id: changelog
-        run: |
-          VERSION="${{ steps.version.outputs.version }}"
-          python3 << 'PYTHON'
-          import re, os
-          with open('CHANGELOG.md') as f:
-              content = f.read()
-          # Abschnitt zwischen aktueller Version und nächster finden
-          pattern = rf'## \[{re.escape(os.environ.get("VERSION", ""))}\].*?(?=\n## \[|\Z)'
-          match = re.search(pattern, content, re.DOTALL)
-          section = match.group(0).strip() if match else "Keine Änderungen dokumentiert."
-          with open('/tmp/release_notes.md', 'w') as f:
-              f.write(section)
-          print("Changelog-Abschnitt extrahiert:")
-          print(section[:500])
-          PYTHON
         env:
           VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          python3 << 'PYTHON'
+          import re, os
+          version = os.environ["VERSION"]
+          with open("CHANGELOG.md") as f:
+              content = f.read()
+          pattern = rf"## \[{re.escape(version)}\].*?(?=\n## \[|\Z)"
+          match = re.search(pattern, content, re.DOTALL)
+          section = match.group(0).strip() if match else f"Release {version}"
+          # Prepend install instructions for HACS users
+          notes = f"""{section}
 
-      - name: ZIP der Integration bauen
+---
+
+### Installation / Update
+
+**HACS:** Update-Benachrichtigung erscheint automatisch.
+**Manuell:** `custom_components/vag_connect/` ersetzen und HA neu starten.
+
+**Repo:** https://github.com/its-me-prash/vag-connect-ha
+"""
+          with open("/tmp/release_notes.md", "w") as f:
+              f.write(notes)
+          print(notes[:300])
+          PYTHON
+
+      - name: Build integration ZIP
         run: |
           cd custom_components
           zip -r ../vag_connect.zip vag_connect/ \
             -x "**/__pycache__/*" "**/*.pyc"
-          echo "ZIP-Größe: $(du -sh ../vag_connect.zip)"
 
-      - name: GitHub Release erstellen
+      - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           files: vag_connect.zip

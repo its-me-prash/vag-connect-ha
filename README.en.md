@@ -206,6 +206,25 @@ After a terms update, a notification appears under **Settings → System → Rep
 | `vag_connect.set_target_soc` | Set charge target (%) |
 | `vag_connect.set_climatisation_temperature` | Set climatisation temperature |
 | `vag_connect.set_departure_timer` | Set departure timer (new in v0.5.0) |
+## Recent Changes
+
+**[v0.8.0](CHANGELOG.md)** — Gold Quality Scale complete
+- `icons.json` — 64 icon definitions across all platforms
+- Stale devices: vehicles removed from the account are automatically cleaned up in HA
+- 192 tests, 72% coverage, 0 mypy errors
+
+**[v0.7.0](CHANGELOG.md)** — HA Quality Scale Gold
+- `entry.runtime_data`, `async_step_reauth`, `async_step_reconfigure`
+- `ServiceValidationError`, `log_when_unavailable`, `parallel_updates=0`
+- 15 DIAGNOSTIC sensors disabled by default
+
+**[v0.6.0](CHANGELOG.md)** — EntityCategory & new sensors
+- `EntityCategory.DIAGNOSTIC` / `CONFIG` for clean entity structure
+- 4 new sensors: range at 100%, WLTP range, available battery energy, last updated
+- Fixed typo `Ladziel` → `Ladeziel`
+
+➜ [Full Changelog →](CHANGELOG.md)
+
 ## Credits
 
 This integration builds on the following open-source projects:
