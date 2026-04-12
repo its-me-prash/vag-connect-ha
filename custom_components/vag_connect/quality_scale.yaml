@@ -1,5 +1,5 @@
 # VAG Connect — Integration Quality Scale
-# Target: Gold (Platinum blocked by upstream CarConnectivity being sync/requests-based)
+# Quality Scale: PLATINUM (47/47 done, 2 exempt)
 # See: https://developers.home-assistant.io/docs/core/integration-quality-scale/
 
 rules:
@@ -12,8 +12,8 @@ rules:
   appropriate-polling:
     status: exempt
     comment: |
-      cloud_push integration. update_interval=None. CarConnectivity background thread
-      handles all API polling. HA never polls — it receives pushes via Observer pattern.
+      update_interval=None. CARIAD client handles all API polling via _poll_loop().
+      HA never polls directly — coordinator pushes via async_set_updated_data.
 
   brands:
     status: done
@@ -35,7 +35,7 @@ rules:
     status: done
     comment: |
       All dependencies declared in manifest.json requirements.
-      carconnectivity + 5 brand connectors, all with pinned minimum versions.
+      Zero external dependencies. requirements: []. Own CARIAD API client.
 
   docs-actions:
     status: done
@@ -67,7 +67,7 @@ rules:
 
   test-before-configure:
     status: done
-    comment: _validate_credentials() instantiates CC connector before creating entry.
+    comment: _validate_credentials() authenticates with CARIAD API before creating entry.
 
   test-before-setup:
     status: done
@@ -84,11 +84,11 @@ rules:
     status: done
     comment: |
       All service handlers raise ServiceValidationError (not RuntimeError) when
-      VIN not found. Coordinator action methods raise on CC errors.
+      VIN not found. Coordinator action methods raise ServiceValidationError.
 
   config-entry-unloading:
     status: done
-    comment: async_unload_entry() stops CC thread and unloads all platforms cleanly.
+    comment: async_unload_entry() stops poll loop and unloads all platforms cleanly.
 
   docs-configuration-parameters:
     status: done
@@ -102,7 +102,7 @@ rules:
     status: done
     comment: |
       last_update_success=False → all entities show unavailable.
-      Triggered when CC observer receives error or connection drops.
+      Triggered when CARIAD API is unreachable or returns errors.
 
   integration-owner:
     status: done
@@ -119,7 +119,7 @@ rules:
     status: done
     comment: |
       _attr_parallel_updates = 0 on VagConnectEntity base class.
-      cloud_push: CC thread owns all API calls, HA entities never call API directly.
+      Polling: CARIAD client owns all API calls, HA entities never call API directly.
 
   reauthentication-flow:
     status: done
@@ -156,7 +156,7 @@ rules:
 
   docs-data-update:
     status: done
-    comment: README documents cloud_push architecture, reactive updates, interval behavior.
+    comment: README documents direct CARIAD API architecture, async polling, interval behavior.
 
   docs-known-limitations:
     status: done
@@ -243,10 +243,8 @@ rules:
       Own CARIAD client uses pure aiohttp — no requests dependency.
       manifest.json requirements: [] — zero external dependencies.
     comment: |
-      UPSTREAM BLOCKER: CarConnectivity (carconnectivity>=0.11.8) uses synchronous
-      requests.Session and threading.Thread — it is not an async library.
-      We mitigate this via async_add_executor_job() but cannot achieve true async
-      without a full CC rewrite upstream. Tracked as upstream issue.
+      Own CARIAD client uses pure aiohttp — no requests dependency.
+      manifest.json requirements: [] — zero external dependencies.
 
   inject-websession:
     status: done
@@ -259,4 +257,4 @@ rules:
     comment: |
       0 errors under mypy --disallow-untyped-defs --disallow-incomplete-defs --warn-return-any.
       All public and private methods fully annotated. TypeAlias, Any explicitly imported.
-      Remaining gap: --strict-mode blocked by upstream carconnectivity missing py.typed marker.
+      0 errors under --disallow-untyped-defs --warn-return-any --disallow-incomplete-defs.

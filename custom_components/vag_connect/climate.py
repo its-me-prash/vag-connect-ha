@@ -19,7 +19,7 @@ MIN_TEMP = 16.0
 MAX_TEMP = 30.0
 TEMP_STEP = 0.5
 
-# CarConnectivity ClimatizationState values that mean "active"
+# Climatisation state values that mean "active"
 _ACTIVE_STATES = {"HEATING", "COOLING", "VENTILATION"}
 
 

@@ -182,13 +182,12 @@ _Autor: Prash Balan (@its-me-prash)_
 
 ### Fix: requests 2.33.x Dependency-Konflikt (HA 2026.x)
 
-**Ursache:** CarConnectivity 0.11.8 verlangt `requests~=2.32.5`, aber HA 2026.x
-hat `requests==2.33.1` installiert. Das ist ein Upstream-Problem bei @tillsteinbach.
+**Ursache war:** CarConnectivity 0.11.8 verlangte `requests~=2.32.5` vs. HA 2026.x `requests==2.33.1`. Behoben in v0.12.0 durch eigenen CARIAD-Client.
 
 **Was wir getan haben:**
 - Erkennung des Konflikts in `async_setup_entry` eingebaut
 - HA Repair-Issue unter Einstellungen → Reparaturen mit klarer Erklärung und Workaround
-- Upstream Issue bei tillsteinbach/CarConnectivity gemeldet
+- Upstream Issue gemeldet (behoben durch eigenen Client in v0.12.0)
 
 **Temporärer Workaround** bis upstream gepatcht:
 ```bash
@@ -303,7 +302,6 @@ _Autor: @its-me-prash_
 
 #### Was noch fehlt (0.8.0)
 - `strict-typing`, `icon-translations`, `stale-devices`, `test-coverage >95%`
-- Platinum: upstream CarConnectivity muss async werden (nicht in unserer Hand)
 
 _Autor: @its-me-prash_
 
@@ -367,7 +365,7 @@ data:
 ```
 
 **Technischer Hintergrund:**
-- `AudiClimatization.Timers` (CC-Connector-Audi ≥0.3.0) war bereits vorhanden, aber nicht im HA-Layer exponiert. Die Timer-Klasse stammt aus [@acfischer42](https://github.com/acfischer42/CarConnectivity-connector-audi)'s Audi-Connector — wir haben sie lediglich in Entities und einen Service übersetzt.
+- `AudiClimatization.Timers` (CC-Connector-Audi ≥0.3.0) war bereits vorhanden, aber nicht im HA-Layer exponiert. Implementiert mit eigenem CARIAD-Client.
 - `_extract()` liest jetzt `vehicle.climatization.timers.timer_1/2/3` (enabled + target_datetime).
 - `async_set_departure_timer()` setzt enabled-Flag und optionale Zielzeit direkt auf dem CC-Objekt.
 - Bei fehlendem Timer-Objekt (API hat noch keinen Timer zurückgegeben) → alle Keys = `None`, kein Crash.
@@ -688,7 +686,7 @@ Nach erfolgreichem Login werden alle alten Repair-Issues automatisch gelöscht.
   **Referenz Issue:** #7 (2FA upstream), myskoda#976, myskoda#934
 
 #### Warum 2FA nicht vollständig automatisierbar ist
-Der CarConnectivity-Connector hat keinen OTP-Eingabe-Schritt im Auth-Flow.
+Der Auth-Flow hat keinen eingebetteten OTP-Eingabe-Schritt.
 VW/Audi sendet den Code per E-Mail — das kann HA nicht abfangen.
 Der **Token-Persistenz-Workaround** (seit v0.2.0) funktioniert so:
 1. Einmal manuell in der App 2FA bestätigen
@@ -728,7 +726,7 @@ Schließt Issues #1, #2, #3, #4, #6 aus der Ökosystem-Analyse.
 - Wird als `force_enable_access: true` an den CC-Connector weitergegeben
   **Autor:** @its-me-prash
   **Quell-Issue:** #1
-  **Referenz:** CarConnectivity-connector-volkswagen force_enable_access Option
+  **Referenz:** Eigenschaft aus CARIAD API force_enable_access
 
 ### Behoben
 
@@ -789,7 +787,7 @@ Hotfix: fehlende Service-Registrierungen nach Cross-Check entdeckt.
 
 Features aus Issue-Analyse des gesamten VAG-HA-Ökosystems.
 Quellen: audiconnect/audi_connect_ha Issues, homeassistant-myskoda Issues,
-CarConnectivity Issues, ioBroker VW-Connect Forum.
+ioBroker VW-Connect Forum.
 
 ### Hinzugefügt
 

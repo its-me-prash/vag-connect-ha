@@ -31,7 +31,7 @@
 
 Ich wollte meinen Audi in Home Assistant steuern — vollständig, nicht halbgar. Also hab ich das hier gebaut.
 
-**VAG Connect** ist eine eigenständige Home Assistant Integration für alle VAG-Marken. Kein CarConnectivity, kein Docker, kein separater Dienst, keine externen Abhängigkeiten. Integration installieren, Zugangsdaten eingeben, fertig.
+**VAG Connect** ist eine eigenständige Home Assistant Integration für alle VAG-Marken. Keine externen Abhängigkeiten, kein Docker, kein separater Dienst. Integration installieren, Zugangsdaten eingeben, fertig.
 
 Ab v0.14.0 spricht die Integration **direkt** mit der CARIAD-API — eigener async-Client, vollständig in der Integration, kein Upstream-Blocker.
 

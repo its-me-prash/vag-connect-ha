@@ -1,7 +1,7 @@
 """Tests for VagConnectCoordinator — uses full mocks, no real API calls."""
 from __future__ import annotations
 
-from unittest.mock import MagicMock, patch, PropertyMock
+from unittest.mock import MagicMock
 import pytest
 
 from custom_components.vag_connect.coordinator import VagConnectCoordinator
@@ -25,117 +25,7 @@ def _make_entry(brand="audi", username="test@test.de", password="pw", spin="1234
     return entry
 
 
-def _make_drive(drive_type_name, level, range_val):
-    """Build a mock CarConnectivity GenericDrive."""
-    from carconnectivity.drive import GenericDrive
-    drive = MagicMock()
-    drive.type.value = GenericDrive.Type[drive_type_name]
-    drive.level.value = level
-    drive.range.value = range_val
-    return drive
 
-
-def _make_vehicle(
-    vin="WAUZZZ4G7EN123456",
-    model="Audi Q4 e-tron",
-    is_electric=True,
-    fuel_level=None,
-    battery_soc=80,
-    range_km=350,
-    odometer=25000,
-    locked=True,
-    doors_open=False,
-    windows_open=False,
-    lat=48.1351,
-    lon=11.5820,
-    clim_state="OFF",
-    charging_state="READY_FOR_CHARGING",
-    plug_connected=True,
-    target_soc=80,
-    outside_temp=18.5,
-    inspection_km=8500,
-):
-    """Build a comprehensive mock vehicle."""
-    from carconnectivity.doors import Doors
-    from carconnectivity.windows import Windows
-    from carconnectivity.charging import Charging
-    from carconnectivity.climatization import Climatization
-    from carconnectivity.charging_connector import ChargingConnector
-
-    v = MagicMock()
-
-    # Identity
-    v.vin.value = vin
-    v.name.value = "Mein Audi"
-    v.model.value = model
-    v.manufacturer.value = "Audi"
-    v.model_year.value = 2023
-
-    # Vehicle type — nötig für EV/PHEV/Verbrenner-Logik
-    type_mock = MagicMock()
-    if is_electric and fuel_level is None:
-        type_mock.name = "ELECTRIC"
-    elif is_electric and fuel_level is not None:
-        type_mock.name = "HYBRID"
-    else:
-        type_mock.name = "GASOLINE"
-    v.type.value = type_mock
-
-    # Odometer
-    v.odometer.value = odometer
-
-    # Drives
-    drives = {}
-    if is_electric:
-        drives["electric"] = _make_drive("ELECTRIC", battery_soc, range_km)
-    else:
-        drives["fuel"] = _make_drive("GASOLINE", fuel_level, range_km)
-    v.drives.drives = drives
-    v.drives.total_range.value = range_km
-
-    # Position
-    v.position.latitude.value = lat
-    v.position.longitude.value = lon
-
-    # Doors
-    v.doors.lock_state.value = (
-        Doors.LockState.LOCKED if locked else Doors.LockState.UNLOCKED
-    )
-    v.doors.open_state.value = (
-        Doors.OpenState.OPEN if doors_open else Doors.OpenState.CLOSED
-    )
-
-    # Windows
-    v.windows.open_state.value = (
-        Windows.OpenState.OPEN if windows_open else Windows.OpenState.CLOSED
-    )
-
-    # Climatisation
-    v.climatization.state.value = Climatization.ClimatizationState[clim_state]
-    v.climatization.settings.target_temperature.value = 21.0
-
-    # Charging
-    v.charging.state.value = Charging.ChargingState[charging_state]
-    v.charging.connector.connection_state.value = (
-        ChargingConnector.ChargingConnectorConnectionState.CONNECTED
-        if plug_connected
-        else ChargingConnector.ChargingConnectorConnectionState.DISCONNECTED
-    )
-    v.charging.settings.target_level.value = target_soc
-
-    # Maintenance
-    v.maintenance.inspection_due_at.value = None
-    v.maintenance.inspection_due_after.value = inspection_km
-    v.maintenance.oil_service_due_at.value = None
-    v.maintenance.oil_service_due_after.value = None
-
-    # Outside temperature
-    v.outside_temperature.value = outside_temp
-
-    return v
-
-
-# ── Tests ─────────────────────────────────────────────────────────────────────
 
 class TestCommands:
     """Test command execution."""

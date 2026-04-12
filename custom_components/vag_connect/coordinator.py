@@ -1,13 +1,13 @@
 # Copyright 2026 Prash Balan (@its-me-prash) — Apache License 2.0
-"""Coordinator for VAG Connect — cloud_push via CarConnectivity observer pattern.
+"""Coordinator for VAG Connect — async polling via own CARIAD API client.
 
 Data flow:
-  CC background thread polls VAG API → observer fires on VALUE_CHANGED
+  CARIAD client polls VAG API → poll_loop pushes to HA via async_set_updated_data
   → asyncio.run_coroutine_threadsafe → async_set_updated_data → entities update.
 
 Thread safety:
   _vehicles_lock (threading.Lock) guards self.vehicles.
-  CC thread writes; HA event loop reads via a dict copy.
+  CARIAD client (async) writes vehicles dict; HA entities read via coordinator data.
 """
 
 import logging
@@ -34,10 +34,10 @@ _CC_MIN_INTERVAL_S = 180
 
 
 class VagConnectCoordinator(DataUpdateCoordinator):
-    """Coordinates vehicle data via CarConnectivity observer push (cloud_push).
+    """Coordinates vehicle data via own CARIAD API client (direct async polling).
 
-    No HA polling — CC background thread owns all API calls.
-    Updates flow: CC thread → Observer → asyncio bridge → async_set_updated_data → Entities.
+    update_interval=None — polling is handled by _poll_loop(), not HA scheduler.
+    Updates flow: CARIAD client → _poll_loop → async_set_updated_data → Entities.
     """
 
     def __init__(self, hass: HomeAssistant, entry: Any) -> None:
@@ -130,7 +130,7 @@ class VagConnectCoordinator(DataUpdateCoordinator):
             return False
 
     async def _poll_loop(self) -> None:
-        """Background polling loop — replaces CC background thread."""
+        """Background polling loop — runs independently of HA scheduler."""
         import asyncio as _asyncio  # noqa: PLC0415
         interval_s = max(
             self.entry.data.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL) * 60,
@@ -172,7 +172,7 @@ class VagConnectCoordinator(DataUpdateCoordinator):
 
     @property
     def is_active(self) -> bool:
-        """Return True if the CC background thread is running."""
+        """Return True if the CARIAD polling loop is active."""
         return self._started
 
     def _tokenstore_path(self) -> str:

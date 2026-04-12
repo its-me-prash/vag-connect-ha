@@ -33,7 +33,7 @@ async def async_get_config_entry_diagnostics(
         vehicles_diag[vin] = {
             k: ("**REDACTED**" if k in _REDACT else v)
             for k, v in vdata.items()
-            if k != "_vehicle"  # never include raw CC objects
+            if k not in ("_client", "_vehicle")  # never include raw objects
         }
 
     return {

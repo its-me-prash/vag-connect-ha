@@ -62,7 +62,6 @@ def _make_coordinator(vehicles=None):
             "connection_state": "ONLINE",
             "battery_temp": 22.0,
             "battery_cap_kwh": 77.0,
-            "firmware_version": "3.2.1",
             "license_plate": "M-AB 1234",
             "last_updated_at": None,
             "service_km": 8000,
@@ -182,7 +181,6 @@ class TestSensor:
 
     def test_sensor_native_value(self):
         from custom_components.vag_connect.sensor import VagConnectSensor, VagSensorDescription
-        from homeassistant.components.sensor import SensorDeviceClass
         coord = _make_coordinator()
         vin = list(coord.data.keys())[0]
         desc = VagSensorDescription(key="battery_soc", data_key="battery_soc")
@@ -199,7 +197,7 @@ class TestSensor:
 
     def test_combustion_sensors_skipped_for_ev(self):
         import asyncio
-        from custom_components.vag_connect.sensor import async_setup_entry, SENSOR_DESCRIPTIONS
+        from custom_components.vag_connect.sensor import async_setup_entry
         coord = _make_coordinator()
         entry = _make_entry(coord)
         added = []
@@ -585,7 +583,6 @@ class TestDiagnostics:
 class TestServiceHelpers:
     def test_get_coordinator_finds_by_vin(self):
         from custom_components.vag_connect.__init__ import _get_coordinator
-        from custom_components.vag_connect.const import DOMAIN
         coord = _make_coordinator()
         vin = list(coord.data.keys())[0]
         entry = MagicMock()
@@ -606,14 +603,12 @@ class TestServiceHelpers:
         assert result is None
 
     def test_require_coordinator_raises_service_validation_error(self):
-        import asyncio
         from homeassistant.exceptions import ServiceValidationError
         hass = MagicMock()
         hass.config_entries.async_entries = MagicMock(return_value=[])
 
         # Inline _require_coordinator logic test
         with pytest.raises((ServiceValidationError, Exception)):
-            from custom_components.vag_connect.__init__ import _register_services
             # We can't easily invoke _require_coordinator directly since it's nested
             # but we verify ServiceValidationError is importable and usable
             raise ServiceValidationError("test error")
@@ -926,7 +921,6 @@ class TestCoordinatorActions:
 
     def test_push_update_success_logs_once_on_reconnect(self):
         import asyncio
-        import logging
         self.coord._was_available = False  # Simulate was offline
         with patch("custom_components.vag_connect.coordinator._LOGGER") as mock_log:
             asyncio.get_event_loop().run_until_complete(
@@ -1319,24 +1313,18 @@ class TestSwitchWritePaths:
         coord.async_request_refresh.assert_called()
 
     def test_window_heating_active_state(self):
-        from carconnectivity.window_heating import WindowHeatings
         from custom_components.vag_connect.switch import VagWindowHeatingSwitch
         coord = _make_coordinator()
         vin = list(coord.data.keys())[0]
-        v_mock = MagicMock()
-        v_mock.window_heatings.heating_state.value = WindowHeatings.HeatingState.ON
-        coord.data[vin]["_vehicle"] = v_mock
+        coord.data[vin]["window_heating_front"] = True
         s = VagWindowHeatingSwitch(coord, vin)
         assert s.is_on is True
 
     def test_window_heating_off_state(self):
-        from carconnectivity.window_heating import WindowHeatings
         from custom_components.vag_connect.switch import VagWindowHeatingSwitch
         coord = _make_coordinator()
         vin = list(coord.data.keys())[0]
-        v_mock = MagicMock()
-        v_mock.window_heatings.heating_state.value = WindowHeatings.HeatingState.OFF
-        coord.data[vin]["_vehicle"] = v_mock
+        coord.data[vin]["window_heating_front"] = False
         s = VagWindowHeatingSwitch(coord, vin)
         assert s.is_on is False
 

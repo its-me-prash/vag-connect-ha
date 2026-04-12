@@ -34,7 +34,6 @@ class TestConfigFlowUser:
     def test_flow_shows_form_when_no_input(self):
         """Step user without input returns a form."""
         import asyncio
-        from homeassistant.data_entry_flow import FlowResultType
 
         hass = MagicMock()
         hass.async_add_executor_job = AsyncMock()
@@ -55,7 +54,6 @@ class TestConfigFlowUser:
     def test_duplicate_entry_aborts(self):
         """Entering same brand+username twice aborts with already_configured."""
         import asyncio
-        from homeassistant.data_entry_flow import FlowResultType
 
         hass = MagicMock()
         hass.async_add_executor_job = AsyncMock()
@@ -66,7 +64,6 @@ class TestConfigFlowUser:
         flow.flow_id = "test"
         flow.async_set_unique_id = AsyncMock()
         # Simulate abort
-        from homeassistant.exceptions import HomeAssistantError
         flow._abort_if_unique_id_configured = MagicMock(
             side_effect=Exception("already_configured")
         )
@@ -185,7 +182,7 @@ class TestErrorMapping:
         from custom_components.vag_connect.config_flow import _map_error
         for code in [
             "terms_and_conditions", "marketing_consent", "two_factor_required",
-            "too_many_requests", "invalid_credentials", "missing_library",
+            "too_many_requests", "invalid_credentials",
         ]:
             assert _map_error(code) == code
 
@@ -232,17 +229,19 @@ class TestOptionsFlow:
 class TestValidateCredentials:
     """Test _validate_credentials error handling."""
 
-    def test_missing_library_raises(self):
+    def test_authentication_error_raises_invalid_credentials(self):
+        """AuthenticationError from CARIAD client maps to invalid_credentials."""
         import asyncio
         from custom_components.vag_connect.config_flow import _validate_credentials
+        from custom_components.vag_connect.cariad.exceptions import AuthenticationError
+        from custom_components.vag_connect.cariad.api.factory import CariadClientFactory
 
         hass = MagicMock()
+        mock_client = MagicMock()
+        mock_client.authenticate = AsyncMock(side_effect=AuthenticationError("bad creds"))
 
-        def _raise_import(*_):
-            raise ImportError("no module")
-
-        with patch("builtins.__import__", side_effect=_raise_import):
-            with pytest.raises(ValueError, match="missing_library|cannot_connect"):
+        with patch.object(CariadClientFactory, "create", return_value=mock_client),              patch("homeassistant.helpers.aiohttp_client.async_get_clientsession", return_value=MagicMock()):
+            with pytest.raises(ValueError, match="invalid_credentials"):
                 asyncio.get_event_loop().run_until_complete(
-                    _validate_credentials(hass, "audi", "u", "p")
+                    _validate_credentials(hass, "audi", "u@t.de", "wrongpass")
                 )

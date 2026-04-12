@@ -11,7 +11,7 @@ CONF_SPIN           = "spin"
 CONF_SCAN_INTERVAL  = "scan_interval"
 CONF_FORCE_ACCESS   = "force_enable_access"
 
-# Supported brands — must match CarConnectivity connector type strings
+# Supported brands — used in config flow and CariadClientFactory.create()
 BRANDS = {
     "audi":           "Audi (myAudi)",
     "volkswagen":     "Volkswagen EU (WeConnect)",

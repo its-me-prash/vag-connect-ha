@@ -31,7 +31,7 @@
 
 Chtěl jsem plně ovládat své Audi v Home Assistant. Tak jsem to postavil.
 
-**VAG Connect** je samostatná integrace Home Assistant pro všechny značky VAG. Bez CarConnectivity, bez Dockeru, bez externích služeb, bez externích závislostí.
+**VAG Connect** je samostatná integrace Home Assistant pro všechny značky VAG. Bez externích závislostí, bez Dockeru, bez externích služeb.
 
 Od v0.14.0 integrace **přímo** komunikuje s CARIAD API — vlastní async klient, plně autonomní.
 

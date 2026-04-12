@@ -29,21 +29,36 @@ _LOGGER = logging.getLogger(__name__)
 async def _validate_credentials(
     hass: HomeAssistant, brand: str, username: str, password: str
 ) -> None:
-    """Try to instantiate the CC connector. Raises ValueError on failure."""
-    def _test() -> None:
-        try:
-            from carconnectivity import CarConnectivity  # noqa: PLC0415
-        except ImportError as exc:
-            raise ValueError("missing_library") from exc
-        # Instantiate only — full connect happens in coordinator startup
-        CarConnectivity(
-            connectors=[{"type": brand, "config": {"username": username, "password": password}}]
-        )
+    """Validate credentials by authenticating with the CARIAD API.
+
+    Uses the own async CARIAD client — no external dependencies.
+    Raises ValueError with a translation key on failure.
+    """
+    from homeassistant.helpers.aiohttp_client import async_get_clientsession  # noqa: PLC0415
+    from .cariad import CariadClientFactory  # noqa: PLC0415
+    from .cariad.exceptions import (  # noqa: PLC0415
+        AuthenticationError,
+        TermsAndConditionsError,
+        MarketingConsentError,
+        TwoFactorRequiredError,
+        RateLimitError,
+    )
+
+    session = async_get_clientsession(hass)
+    client = CariadClientFactory.create(brand, session, username, password)
 
     try:
-        await hass.async_add_executor_job(_test)
-    except ValueError:
-        raise
+        await client.authenticate()
+    except TermsAndConditionsError as err:
+        raise ValueError("terms_and_conditions") from err
+    except MarketingConsentError as err:
+        raise ValueError("marketing_consent") from err
+    except TwoFactorRequiredError as err:
+        raise ValueError("two_factor_required") from err
+    except RateLimitError as err:
+        raise ValueError("too_many_requests") from err
+    except AuthenticationError as err:
+        raise ValueError("invalid_credentials") from err
     except Exception as err:  # noqa: BLE001
         _LOGGER.debug("Credential validation error: %s", err)
         raise ValueError("cannot_connect") from err

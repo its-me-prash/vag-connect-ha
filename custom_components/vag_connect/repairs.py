@@ -72,7 +72,7 @@ def clear_auth_issues(hass: HomeAssistant, entry_id: str) -> None:
 
 
 def raise_issue_requirements_conflict(hass: HomeAssistant) -> None:
-    """Raise a repair issue when CarConnectivity cannot be installed."""
+    """Raise a repair issue for configuration problems."""
     ir.async_create_issue(
         hass,
         DOMAIN,

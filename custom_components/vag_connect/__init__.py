@@ -2,7 +2,7 @@
 """VAG Connect — Home Assistant integration for Audi, VW, Škoda, SEAT and CUPRA.
 
 Architecture:
-  CarConnectivity runs a background thread that polls the VAG API at a
+  The CARIAD API client polls the VAG API at a
   configurable interval.  When data changes, it fires an observer callback
   which bridges to the HA event loop via asyncio.run_coroutine_threadsafe and
   calls async_set_updated_data.  HA never polls itself (update_interval=None).
@@ -86,8 +86,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: VagConnectConfigEntry) -
             from .repairs import raise_issue_requirements_conflict  # noqa: PLC0415
             raise_issue_requirements_conflict(hass)
             raise ConfigEntryNotReady(
-                "CarConnectivity cannot be installed: requests version conflict. "
-                "See Repairs dashboard for details."
+                "VAG Connect setup failed. Check logs for details."
             ) from err
         raise ConfigEntryNotReady(str(err)) from err
 

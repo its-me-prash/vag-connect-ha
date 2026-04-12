@@ -1,5 +1,5 @@
 # Copyright 2026 Prash Balan (@its-me-prash) — Apache License 2.0
-"""VAG Connect CARIAD API client — direct async access, no CarConnectivity."""
+"""VAG Connect CARIAD API client — direct async access, zero external dependencies."""
 
 from .api.factory import CariadClientFactory
 from .exceptions import (
@@ -8,6 +8,7 @@ from .exceptions import (
     RateLimitError,
     SpinError,
     TermsAndConditionsError,
+    TwoFactorRequiredError,
     VehicleCommandError,
     VehicleNotFoundError,
 )
@@ -17,12 +18,13 @@ __all__ = [
     "CariadClientFactory",
     "BrandConfig",
     "VehicleData",
+    "BRANDS",
     "AuthenticationError",
     "MarketingConsentError",
     "RateLimitError",
     "SpinError",
     "TermsAndConditionsError",
+    "TwoFactorRequiredError",
     "VehicleCommandError",
     "VehicleNotFoundError",
-    "BRANDS",
 ]
