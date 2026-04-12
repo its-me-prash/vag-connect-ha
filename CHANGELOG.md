@@ -21,6 +21,46 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ---
 
+## [0.14.25] - 2026-04-12
+
+### Hinzugefügt
+
+#### Neue Marken: Porsche + VW North America (US/CA)
+
+**Porsche (My Porsche)**
+- Auth: Auth0 PKCE (`identity.porsche.com`) — komplett eigenständig, kein IDK
+- API: `api.ppa.porsche.com/app/connect/v1/`
+- Unterstützt: Akkustand, Reichweite, Laden, Klimatisierung, GPS, Türen, Motorhaube,
+  Kofferraum, Schiebedach, Fensterheizung, Abfahrtstimer, Wartungsintervalle
+- Commands: Lock/Unlock, Klimatisierung, Laden, Honk&Flash, Departure Timer
+- Auth-Quelle: CJNE/pyporscheconnectapi (Apache-2.0), clean-room reimplemented mit aiohttp
+
+**Volkswagen US/CA (My VW)**
+- Auth: IDK PKCE gegen `b-h-s.spr.{country}00.p.con-veh.net/oidc/v1/`
+- API: UUID-basiert (Garage liefert VIN → UUID Mapping, alle Commands nutzen UUID)
+- Unterstützt: Akkustand, Tankstand, Reichweite, Laden, Klimatisierung, GPS,
+  Türen, Fenster, Kofferraum, Motorhaube, Ladestrom, Abfahrtstimer
+- Länder: US (`us00`), CA (`ca00`) — über `country`-Parameter in Factory
+- Commands: Lock/Unlock, Klimatisierung, Laden, Window Heating, Wakeup
+- Endpoint-Quelle: matpoulin/CarConnectivity-connector-volkswagen-na (Apache-2.0)
+
+#### Config Flow
+- Brand-Selector: 2 neue Einträge (`volkswagen_na`, `porsche`)
+- Brand-Beschreibung in allen 8 Sprachen aktualisiert
+
+#### Interna
+- `cariad/auth/porsche.py` — Auth0 PKCE Modul
+- `cariad/api/porsche.py` — Porsche API Client
+- `cariad/api/vw_na.py`   — VW NA API Client (UUID-Routing)
+- `cariad/api/factory.py` — unterstützt jetzt 7 Marken
+- `cariad/models.py`      — `BRAND_PORSCHE` + `BRAND_VW_NA_MODEL`
+- `const.py`              — alle 7 Marken in `BRANDS`
+
+**337/337 Tests grün | Lint: sauber**
+
+---
+
+
 ## [0.14.23] - 2026-04-12
 
 ### Geändert

@@ -13,7 +13,7 @@
           "force_enable_access": "Tvinga dörrstatus"
         },
         "data_description": {
-          "brand": "Välj ditt märke.",
+          "brand": "Välj ditt märke — myAudi, WeConnect ID, MyŠkoda, SEAT, CUPRA, VW US/CA eller Porsche.",
           "username": "E-postadress från tillverkarens app.",
           "password": "Lösenord från appen.",
           "spin": "Krävs endast för låsning. App → Säkerhet → S-PIN.",

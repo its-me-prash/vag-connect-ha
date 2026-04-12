@@ -41,11 +41,13 @@ _LOGGER = logging.getLogger(__name__)
 # ── Brand selector options with icons ────────────────────────────────────────
 # HA renders these as a visual select list (not a plain dropdown)
 _BRAND_OPTIONS: list[SelectOptionDict] = [
-    SelectOptionDict(value="audi",       label="Audi (myAudi)"),
-    SelectOptionDict(value="volkswagen", label="Volkswagen (WeConnect ID)"),
-    SelectOptionDict(value="skoda",      label="Škoda (MyŠkoda)"),
-    SelectOptionDict(value="seat",       label="SEAT"),
-    SelectOptionDict(value="cupra",      label="CUPRA"),
+    SelectOptionDict(value="audi",          label="Audi (myAudi)"),
+    SelectOptionDict(value="volkswagen",    label="Volkswagen EU (WeConnect ID)"),
+    SelectOptionDict(value="skoda",         label="Škoda (MyŠkoda)"),
+    SelectOptionDict(value="seat",          label="SEAT"),
+    SelectOptionDict(value="cupra",         label="CUPRA"),
+    SelectOptionDict(value="volkswagen_na", label="Volkswagen US / CA"),
+    SelectOptionDict(value="porsche",       label="Porsche (My Porsche)"),
 ]
 
 _BRAND_SELECTOR = SelectSelector(

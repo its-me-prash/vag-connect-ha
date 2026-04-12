@@ -13,7 +13,7 @@
           "force_enable_access": "Vynutit stav dveří"
         },
         "data_description": {
-          "brand": "Vyberte značku.",
+          "brand": "Vyberte značku — myAudi, WeConnect ID, MyŠkoda, SEAT, CUPRA, VW US/CA nebo Porsche.",
           "username": "E-mailová adresa z aplikace výrobce.",
           "password": "Heslo z aplikace.",
           "spin": "Vyžadováno pouze pro zamykání. App → Zabezpečení → S-PIN.",

@@ -13,7 +13,7 @@
           "force_enable_access": "Forcer l'état des portes"
         },
         "data_description": {
-          "brand": "Choisissez votre marque.",
+          "brand": "Choisissez votre marque — myAudi, WeConnect ID, MyŠkoda, SEAT, CUPRA, VW US/CA ou Porsche.",
           "username": "Adresse e-mail de l'application fabricant.",
           "password": "Mot de passe de l'application.",
           "spin": "Requis uniquement pour le verrouillage. App → Sécurité → S-PIN.",

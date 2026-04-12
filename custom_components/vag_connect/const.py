@@ -11,12 +11,15 @@ CONF_SPIN           = "spin"
 CONF_SCAN_INTERVAL  = "scan_interval"
 CONF_FORCE_ACCESS   = "force_enable_access"
 
-# Supported brands — used in config flow and CariadClientFactory.create()
+# Supported brands — must match CariadClientFactory.create() keys
 BRANDS = {
     "audi":           "Audi (myAudi)",
-    "volkswagen":     "Volkswagen EU (WeConnect)",
-    "skoda":          "Škoda (MySkoda)",
-    "seatcupra":      "SEAT / CUPRA",
+    "volkswagen":     "Volkswagen EU (WeConnect ID)",
+    "skoda":          "Škoda (MyŠkoda)",
+    "seat":           "SEAT",
+    "cupra":          "CUPRA",
+    "volkswagen_na":  "Volkswagen US/CA",
+    "porsche":        "Porsche (My Porsche)",
 }
 
 # Polling interval limits

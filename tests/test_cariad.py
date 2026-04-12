@@ -30,7 +30,10 @@ def _mock_session(status: int = 200, json_data: dict | None = None, text: str = 
 class TestModels:
     def test_brand_configs_all_present(self):
         from custom_components.vag_connect.cariad.models import BRANDS
-        assert set(BRANDS.keys()) == {"volkswagen", "audi", "skoda", "seat", "cupra"}
+        assert set(BRANDS.keys()) == {
+            "volkswagen", "audi", "skoda", "seat", "cupra",
+            "volkswagen_na", "porsche",
+        }
 
     def test_brand_vw_client_id(self):
         from custom_components.vag_connect.cariad.models import BRAND_VW_EU

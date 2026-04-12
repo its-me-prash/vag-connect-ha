@@ -10,6 +10,8 @@ from .vw_eu import VWEUClient
 from .audi import AudiClient
 from .skoda import SkodaClient
 from .seat_cupra import SeatCupraClient
+from .porsche import PorscheClient
+from .vw_na import VWNAClient
 
 
 class CariadClientFactory:
@@ -22,10 +24,18 @@ class CariadClientFactory:
         email: str,
         password: str,
         spin: str = "",
-    ) -> CariadBaseClient:
+        country: str = "us",
+    ) -> CariadBaseClient | PorscheClient | VWNAClient:
         """Return an authenticated-ready client for the given brand.
 
-        Supported brands: volkswagen, audi, skoda, seat, cupra
+        Supported brands:
+          volkswagen    — VW EU (WeConnect ID, EMEA BFF)
+          audi          — Audi EU (myAudi, EMEA BFF)
+          skoda         — Škoda (MyŠkoda, mysmob.api.connect.skoda-auto.cz)
+          seat          — SEAT (OLA server)
+          cupra         — CUPRA (OLA server)
+          volkswagen_na — VW North America (US/CA, b-h-s.spr.{cc}00.p.con-veh.net)
+          porsche       — Porsche Connect (Auth0, api.ppa.porsche.com)
         """
         lower = brand.lower()
         if lower == "volkswagen":
@@ -36,6 +46,11 @@ class CariadClientFactory:
             return SkodaClient(session, email, password, spin)
         if lower in ("seat", "cupra"):
             return SeatCupraClient(session, lower, email, password, spin)
+        if lower == "volkswagen_na":
+            return VWNAClient(session, email, password, spin, country=country)
+        if lower == "porsche":
+            return PorscheClient(session, email, password, spin)
         raise ValueError(
-            f"Unknown brand '{brand}'. Supported: volkswagen, audi, skoda, seat, cupra"
+            f"Unknown brand '{brand}'. Supported: "
+            "volkswagen, audi, skoda, seat, cupra, volkswagen_na, porsche"
         )

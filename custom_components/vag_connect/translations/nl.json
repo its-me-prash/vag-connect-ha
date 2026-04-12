@@ -13,7 +13,7 @@
           "force_enable_access": "Deurstatus forceren"
         },
         "data_description": {
-          "brand": "Kies je merk.",
+          "brand": "Kies je merk — myAudi, WeConnect ID, MyŠkoda, SEAT, CUPRA, VW US/CA of Porsche.",
           "username": "E-mailadres uit de fabrieksapp.",
           "password": "Wachtwoord uit de app.",
           "spin": "Alleen nodig voor vergrendeling. App → Beveiliging → S-PIN.",

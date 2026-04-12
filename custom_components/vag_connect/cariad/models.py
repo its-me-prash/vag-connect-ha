@@ -85,12 +85,32 @@ BRAND_CUPRA = BrandConfig(
     scope="openid profile nickname birthdate phone",
 )
 
+BRAND_VW_NA_MODEL = BrandConfig(
+    name="volkswagen_na",
+    client_id="59992128-69a9-42c3-8621-7942041ba824_MYVW_ANDROID",
+    redirect_uri="kombi:///login",
+    user_agent="MyVW/1.0 Android",
+    api_base="https://b-h-s.spr.us00.p.con-veh.net",
+    scope="openid profile email offline_access mbb vin cars dealers",
+)
+
+BRAND_PORSCHE = BrandConfig(
+    name="porsche",
+    client_id="XhygisuebbrqQ80byOuU5VncxLIm8E6H",
+    redirect_uri="my-porsche-app://auth0/callback",
+    user_agent="My Porsche/2.1.0 (iPhone; iOS 17.0; Scale/3.00)",
+    api_base="https://api.ppa.porsche.com",
+    scope="openid profile email offline_access mbb vin cars charging",
+)
+
 BRANDS: dict[str, BrandConfig] = {
-    "volkswagen": BRAND_VW_EU,
-    "audi": BRAND_AUDI,
-    "skoda": BRAND_SKODA,
-    "seat": BRAND_SEAT,
-    "cupra": BRAND_CUPRA,
+    "volkswagen":    BRAND_VW_EU,
+    "audi":          BRAND_AUDI,
+    "skoda":         BRAND_SKODA,
+    "seat":          BRAND_SEAT,
+    "cupra":         BRAND_CUPRA,
+    "volkswagen_na": BRAND_VW_NA_MODEL,
+    "porsche":       BRAND_PORSCHE,
 }
 
 
