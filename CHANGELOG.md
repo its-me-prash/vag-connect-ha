@@ -21,6 +21,29 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ---
 
+## [1.0.0] - 2026-04-12
+
+### Erstes stabiles Release
+
+VAG Connect ist production-ready für alle 5 EU-Marken.
+VW US/CA und Porsche sind als Beta enthalten und werden mit echten Fahrzeugen verifiziert.
+
+**Warum 1.0.0?**
+- 5 EU-Marken (Audi, VW, Škoda, SEAT, CUPRA) vollständig implementiert und getestet
+- 68 Entities über 7 HA-Plattformen
+- 14 Services
+- 337/337 Tests grün
+- EntityCategory korrekt — DIAGNOSTIC/CONFIG trennt Haupt-Entities von technischen Details
+- Config Flow mit echten Selectors (Passwort maskiert, Brand-Radioliste, Intervall-Slider)
+- CHANGELOG vollständig mit Attributionen
+- 8 Übersetzungen synchron
+
+**Breaking Changes gegenüber 0.x:**
+Keine — alle Entity-IDs und Service-Namen bleiben identisch.
+
+---
+
+
 ## [0.14.25] - 2026-04-12
 
 ### Hinzugefügt
