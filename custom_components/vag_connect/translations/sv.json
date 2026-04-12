@@ -190,6 +190,9 @@
       },
       "last_updated_at": {
         "name": "Senast uppdaterad"
+      },
+      "adblue_range_km": {
+        "name": "AdBlue-räckvidd"
       }
     },
     "binary_sensor": {
@@ -219,6 +222,24 @@
       },
       "connector_locked": {
         "name": "Laddkontakt låst"
+      },
+      "hood_open": {
+        "name": "Motorhuv"
+      },
+      "trunk_open": {
+        "name": "Bagageutrymme öppet"
+      },
+      "trunk_locked": {
+        "name": "Bagageutrymme låst"
+      },
+      "sunroof_open": {
+        "name": "Soltak"
+      },
+      "window_heating_front": {
+        "name": "Värmning frontskiva"
+      },
+      "window_heating_back": {
+        "name": "Värmning bakruta"
       }
     },
     "switch": {

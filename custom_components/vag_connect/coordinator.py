@@ -340,10 +340,10 @@ class VagConnectCoordinator(DataUpdateCoordinator):
         await self.async_request_refresh()
 
     async def async_start_window_heating(self, vin: str) -> None:
-        await self._cariad_cmd(vin, "command_start_climate")
+        await self._cariad_cmd(vin, "command_start_window_heating")
 
     async def async_stop_window_heating(self, vin: str) -> None:
-        await self._cariad_cmd(vin, "command_stop_climate")
+        await self._cariad_cmd(vin, "command_stop_window_heating")
 
     async def async_wake_vehicle(self, vin: str) -> None:
         await self._cariad_cmd(vin, "command_wake")

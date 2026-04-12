@@ -158,6 +158,20 @@ class VWEUClient(CariadBaseClient):
             json={"targetTemperature_C": temp_c},
         )
 
+    async def command_start_window_heating(self, vin: str) -> None:
+        """Start window heating (front windscreen + rear window)."""
+        await self._post(
+            f"{_BASE}/vehicle/v1/vehicles/{vin}/climatisation/windowheating/start-stop",
+            json={"action": "start"},
+        )
+
+    async def command_stop_window_heating(self, vin: str) -> None:
+        """Stop window heating."""
+        await self._post(
+            f"{_BASE}/vehicle/v1/vehicles/{vin}/climatisation/windowheating/start-stop",
+            json={"action": "stop"},
+        )
+
     async def command_set_departure_timer(
         self,
         vin: str,

@@ -190,6 +190,9 @@
       },
       "last_updated_at": {
         "name": "Last Updated"
+      },
+      "adblue_range_km": {
+        "name": "AdBlue Range"
       }
     },
     "binary_sensor": {
@@ -219,6 +222,24 @@
       },
       "connector_locked": {
         "name": "Charging Plug Locked"
+      },
+      "hood_open": {
+        "name": "Hood"
+      },
+      "trunk_open": {
+        "name": "Trunk Open"
+      },
+      "trunk_locked": {
+        "name": "Trunk Locked"
+      },
+      "sunroof_open": {
+        "name": "Sunroof"
+      },
+      "window_heating_front": {
+        "name": "Front Window Heating"
+      },
+      "window_heating_back": {
+        "name": "Rear Window Heating"
       }
     },
     "switch": {

@@ -190,6 +190,9 @@
       },
       "last_updated_at": {
         "name": "Ostatnia aktualizacja"
+      },
+      "adblue_range_km": {
+        "name": "Zasięg AdBlue"
       }
     },
     "binary_sensor": {
@@ -219,6 +222,24 @@
       },
       "connector_locked": {
         "name": "Wtyczka zablokowana"
+      },
+      "hood_open": {
+        "name": "Maska"
+      },
+      "trunk_open": {
+        "name": "Bagażnik otwarty"
+      },
+      "trunk_locked": {
+        "name": "Bagażnik zamknięty"
+      },
+      "sunroof_open": {
+        "name": "Dach przesuwny"
+      },
+      "window_heating_front": {
+        "name": "Ogrzewanie przedniej szyby"
+      },
+      "window_heating_back": {
+        "name": "Ogrzewanie tylnej szyby"
       }
     },
     "switch": {

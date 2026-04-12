@@ -95,6 +95,53 @@ _NEW_BINARY: tuple[VagBinarySensorDescription, ...] = (
         entity_category=EntityCategory.DIAGNOSTIC,
         condition="electric",
     ),
+    VagBinarySensorDescription(
+        key="hood_open",
+        data_key="hood_open",
+        name="Motorhaube",
+        device_class=BinarySensorDeviceClass.DOOR,
+        icon="mdi:car",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    VagBinarySensorDescription(
+        key="trunk_open",
+        data_key="trunk_open",
+        name="Kofferraum offen",
+        device_class=BinarySensorDeviceClass.DOOR,
+        icon="mdi:car-back",
+    ),
+    VagBinarySensorDescription(
+        key="trunk_locked",
+        data_key="trunk_locked",
+        name="Kofferraum verriegelt",
+        device_class=BinarySensorDeviceClass.LOCK,
+        icon="mdi:car-back",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    VagBinarySensorDescription(
+        key="sunroof_open",
+        data_key="sunroof_open",
+        name="Schiebedach",
+        device_class=BinarySensorDeviceClass.WINDOW,
+        icon="mdi:car-convertible",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    VagBinarySensorDescription(
+        key="window_heating_front",
+        data_key="window_heating_front",
+        name="Frontscheibenheizung aktiv",
+        device_class=BinarySensorDeviceClass.RUNNING,
+        icon="mdi:car-windshield",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    VagBinarySensorDescription(
+        key="window_heating_back",
+        data_key="window_heating_back",
+        name="Heckscheibenheizung aktiv",
+        device_class=BinarySensorDeviceClass.RUNNING,
+        icon="mdi:car-windshield",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
 )
 BINARY_DESCRIPTIONS = BINARY_DESCRIPTIONS + _NEW_BINARY
 

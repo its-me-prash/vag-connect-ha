@@ -1063,6 +1063,8 @@ class TestRunCommand:
         coord._cariad_client.command_unlock = AsyncMock()
         coord._cariad_client.command_start_climate = AsyncMock()
         coord._cariad_client.command_stop_climate = AsyncMock()
+        coord._cariad_client.command_start_window_heating = AsyncMock()
+        coord._cariad_client.command_stop_window_heating = AsyncMock()
         coord._cariad_client.command_start_charging = AsyncMock()
         coord._cariad_client.command_stop_charging = AsyncMock()
         coord._cariad_client.command_flash = AsyncMock()
@@ -1129,13 +1131,13 @@ class TestRunCommand:
         import asyncio
         coord, _ = self._make_coord()
         asyncio.get_event_loop().run_until_complete(coord.async_start_window_heating("VIN1"))
-        coord._cariad_client.command_start_climate.assert_awaited()
+        coord._cariad_client.command_start_window_heating.assert_awaited()
 
     def test_async_stop_window_heating(self):
         import asyncio
         coord, _ = self._make_coord()
         asyncio.get_event_loop().run_until_complete(coord.async_stop_window_heating("VIN1"))
-        coord._cariad_client.command_stop_climate.assert_awaited()
+        coord._cariad_client.command_stop_window_heating.assert_awaited()
 
     def test_async_wake_vehicle(self):
         import asyncio

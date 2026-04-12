@@ -190,6 +190,9 @@
       },
       "last_updated_at": {
         "name": "Dernière mise à jour"
+      },
+      "adblue_range_km": {
+        "name": "Autonomie AdBlue"
       }
     },
     "binary_sensor": {
@@ -219,6 +222,24 @@
       },
       "connector_locked": {
         "name": "Prise verrouillée"
+      },
+      "hood_open": {
+        "name": "Capot"
+      },
+      "trunk_open": {
+        "name": "Coffre ouvert"
+      },
+      "trunk_locked": {
+        "name": "Coffre verrouillé"
+      },
+      "sunroof_open": {
+        "name": "Toit ouvrant"
+      },
+      "window_heating_front": {
+        "name": "Chauffage pare-brise"
+      },
+      "window_heating_back": {
+        "name": "Chauffage lunette"
       }
     },
     "switch": {

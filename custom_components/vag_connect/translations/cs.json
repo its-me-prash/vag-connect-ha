@@ -190,6 +190,9 @@
       },
       "last_updated_at": {
         "name": "Naposledy aktualizováno"
+      },
+      "adblue_range_km": {
+        "name": "Dojezd AdBlue"
       }
     },
     "binary_sensor": {
@@ -219,6 +222,24 @@
       },
       "connector_locked": {
         "name": "Konektor uzamčen"
+      },
+      "hood_open": {
+        "name": "Kapota"
+      },
+      "trunk_open": {
+        "name": "Zavazadlový prostor"
+      },
+      "trunk_locked": {
+        "name": "Zavazadlový prostor zamčen"
+      },
+      "sunroof_open": {
+        "name": "Střešní okno"
+      },
+      "window_heating_front": {
+        "name": "Vyhřívání čelního skla"
+      },
+      "window_heating_back": {
+        "name": "Vyhřívání zadního skla"
       }
     },
     "switch": {

@@ -190,6 +190,9 @@
       },
       "last_updated_at": {
         "name": "Laatste update"
+      },
+      "adblue_range_km": {
+        "name": "AdBlue bereik"
       }
     },
     "binary_sensor": {
@@ -219,6 +222,24 @@
       },
       "connector_locked": {
         "name": "Laadstekker vergrendeld"
+      },
+      "hood_open": {
+        "name": "Motorkap"
+      },
+      "trunk_open": {
+        "name": "Kofferruimte open"
+      },
+      "trunk_locked": {
+        "name": "Kofferruimte vergrendeld"
+      },
+      "sunroof_open": {
+        "name": "Schuifdak"
+      },
+      "window_heating_front": {
+        "name": "Voorruit verwarming"
+      },
+      "window_heating_back": {
+        "name": "Achterruit verwarming"
       }
     },
     "switch": {

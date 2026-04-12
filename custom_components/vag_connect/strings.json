@@ -193,6 +193,9 @@
       },
       "last_updated_at": {
         "name": "Zuletzt aktualisiert"
+      },
+      "adblue_range_km": {
+        "name": "AdBlue Reichweite"
       }
     },
     "binary_sensor": {
@@ -222,6 +225,24 @@
       },
       "connector_locked": {
         "name": "Ladestecker gesperrt"
+      },
+      "hood_open": {
+        "name": "Motorhaube"
+      },
+      "trunk_open": {
+        "name": "Kofferraum offen"
+      },
+      "trunk_locked": {
+        "name": "Kofferraum verriegelt"
+      },
+      "sunroof_open": {
+        "name": "Schiebedach"
+      },
+      "window_heating_front": {
+        "name": "Frontscheibenheizung aktiv"
+      },
+      "window_heating_back": {
+        "name": "Heckscheibenheizung aktiv"
       }
     },
     "switch": {

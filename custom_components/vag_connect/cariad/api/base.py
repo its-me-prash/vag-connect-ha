@@ -98,6 +98,14 @@ class CariadBaseClient:
         """Set pre-conditioning target temperature."""
         raise NotImplementedError
 
+    async def command_start_window_heating(self, vin: str) -> None:
+        """Start window (windscreen + rear) heating."""
+        raise NotImplementedError
+
+    async def command_stop_window_heating(self, vin: str) -> None:
+        """Stop window heating."""
+        raise NotImplementedError
+
     # ── HTTP helpers ───────────────────────────────────────────────────────────
 
     async def _get(self, url: str, **kwargs: Any) -> Any:

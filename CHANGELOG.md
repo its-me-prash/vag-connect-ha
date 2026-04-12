@@ -21,6 +21,38 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ---
 
+## [0.14.22] - 2026-04-12
+
+### Behoben
+
+- **Bug: `window_heating` mapped auf `command_start_climate`** — Fensterheizung rief intern
+  `command_start_climate` auf statt eines eigenen Endpoints. Behoben: neuer
+  `command_start/stop_window_heating` in `base.py` und `vw_eu.py`
+  (`/climatisation/windowheating/start-stop`). Koordinator und Switch nutzen jetzt
+  den korrekten Command. _Gefunden durch Audit._
+
+### Hinzugefügt
+
+- **7 neue Entities** aus `VehicleData`-Feldern die bisher keine HA-Entity hatten:
+  - `sensor.{fzg}_adblue_reichweite` — AdBlue-Restreichweite (km, Diesel)
+  - `binary_sensor.{fzg}_motorhaube` — Motorhaube offen (DIAGNOSTIC)
+  - `binary_sensor.{fzg}_kofferraum_offen` — Kofferraum offen
+  - `binary_sensor.{fzg}_kofferraum_verriegelt` — Kofferraum verriegelt (DIAGNOSTIC)
+  - `binary_sensor.{fzg}_schiebedach` — Schiebedach offen (DIAGNOSTIC)
+  - `binary_sensor.{fzg}_frontscheibenheizung_aktiv` — Frontscheibe heizt (DIAGNOSTIC)
+  - `binary_sensor.{fzg}_heckscheibenheizung_aktiv` — Heckscheibe heizt (DIAGNOSTIC)
+
+### Geändert
+
+- **`iot_class`: `cloud_polling` → `cloud_push`** — korrekte Klassifizierung.
+  VAG Connect steuert den Poll-Loop selbst (`update_interval=None`), daher `cloud_push`.
+- 8 Übersetzungen aktualisiert — neue Entity-Keys in DE/EN/FR/NL/ES/PL/CS/SV.
+- 5 Tests korrigiert — Mocks für `command_start/stop_window_heating` ergänzt,
+  Assertions auf korrekten Command umgestellt. **337/337 Tests grün.**
+
+---
+
+
 ## [Unreleased]
 
 ### Added

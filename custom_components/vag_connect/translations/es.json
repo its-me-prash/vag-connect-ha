@@ -190,6 +190,9 @@
       },
       "last_updated_at": {
         "name": "Última actualización"
+      },
+      "adblue_range_km": {
+        "name": "Alcance AdBlue"
       }
     },
     "binary_sensor": {
@@ -219,6 +222,24 @@
       },
       "connector_locked": {
         "name": "Enchufe bloqueado"
+      },
+      "hood_open": {
+        "name": "Capó"
+      },
+      "trunk_open": {
+        "name": "Maletero abierto"
+      },
+      "trunk_locked": {
+        "name": "Maletero bloqueado"
+      },
+      "sunroof_open": {
+        "name": "Techo solar"
+      },
+      "window_heating_front": {
+        "name": "Calef. parabrisas"
+      },
+      "window_heating_back": {
+        "name": "Calef. luneta"
       }
     },
     "switch": {

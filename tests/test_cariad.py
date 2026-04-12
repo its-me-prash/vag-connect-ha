@@ -1390,6 +1390,8 @@ class TestCariadCmd:
         coord._cariad_client.command_unlock = AsyncMock()
         coord._cariad_client.command_start_climate = AsyncMock()
         coord._cariad_client.command_stop_climate = AsyncMock()
+        coord._cariad_client.command_start_window_heating = AsyncMock()
+        coord._cariad_client.command_stop_window_heating = AsyncMock()
         coord._cariad_client.command_start_charging = AsyncMock()
         coord._cariad_client.command_stop_charging = AsyncMock()
         coord._cariad_client.command_flash = AsyncMock()
@@ -1457,9 +1459,9 @@ class TestCariadCmd:
     def test_async_start_stop_window_heating(self):
         coord = self._coord()
         asyncio.get_event_loop().run_until_complete(coord.async_start_window_heating("VIN1"))
-        coord._cariad_client.command_start_climate.assert_awaited()
+        coord._cariad_client.command_start_window_heating.assert_awaited()
         asyncio.get_event_loop().run_until_complete(coord.async_stop_window_heating("VIN1"))
-        coord._cariad_client.command_stop_climate.assert_awaited()
+        coord._cariad_client.command_stop_window_heating.assert_awaited()
 
 
 # ── __init__.py service handlers ──────────────────────────────────────────────
@@ -2558,6 +2560,8 @@ class TestSwitchAdditional:
         coord._cariad_client = MagicMock()
         coord._cariad_client.command_start_climate = AsyncMock()
         coord._cariad_client.command_stop_climate = AsyncMock()
+        coord._cariad_client.command_start_window_heating = AsyncMock()
+        coord._cariad_client.command_stop_window_heating = AsyncMock()
         coord._started = True
         coord._was_available = True
         coord.async_request_refresh = AsyncMock()
@@ -2572,7 +2576,7 @@ class TestSwitchAdditional:
         sw.coordinator = coord
         sw._vin = "VIN1"
         asyncio.get_event_loop().run_until_complete(sw.async_turn_on())
-        coord._cariad_client.command_start_climate.assert_awaited()
+        coord._cariad_client.command_start_window_heating.assert_awaited()
 
     def test_window_heating_switch_turn_off(self):
         from custom_components.vag_connect.switch import VagWindowHeatingSwitch
@@ -2581,7 +2585,7 @@ class TestSwitchAdditional:
         sw.coordinator = coord
         sw._vin = "VIN1"
         asyncio.get_event_loop().run_until_complete(sw.async_turn_off())
-        coord._cariad_client.command_stop_climate.assert_awaited()
+        coord._cariad_client.command_stop_window_heating.assert_awaited()
 
     def test_seat_heating_switch_turn_on(self):
         from custom_components.vag_connect.switch import VagSeatHeatingSwitch
