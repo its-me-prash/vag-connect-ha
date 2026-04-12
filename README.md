@@ -260,7 +260,12 @@ Benötigt aus HACS → Frontend:
    ```
    (Entry-ID steht in der URL wenn du die Integration öffnest)
 
+
 ## Letzte Änderungen
+
+**[v0.9.0](CHANGELOG.md)** — Kritischer Bugfix: Python 3.11 Kompatibilität
+- 500 Internal Server Error im Config Flow behoben (Python 3.12 Syntax entfernt)
+- Alle Nutzer auf HA 2024.x sollten sofort aktualisieren
 
 **[v0.8.0](CHANGELOG.md)** — Gold Quality Scale vollständig
 - `icons.json` — 64 Icon-Definitionen für alle Platforms
@@ -271,11 +276,6 @@ Benötigt aus HACS → Frontend:
 - `entry.runtime_data`, `async_step_reauth`, `async_step_reconfigure`
 - `ServiceValidationError`, `log_when_unavailable`, `parallel_updates=0`
 - 15 DIAGNOSTIC-Sensoren standardmäßig deaktiviert
-
-**[v0.6.0](CHANGELOG.md)** — EntityCategory & neue Sensoren
-- `EntityCategory.DIAGNOSTIC` / `CONFIG` für saubere Entity-Struktur
-- 4 neue Sensoren: Reichweite bei 100%, WLTP, Akkuenergie verfügbar, Zuletzt aktualisiert
-- Typo `Ladziel` → `Ladeziel` behoben
 
 ➜ [Vollständiger Changelog →](CHANGELOG.md)
 

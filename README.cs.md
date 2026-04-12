@@ -56,11 +56,14 @@ Nastavení → Zařízení a služby → Přidat integraci → **VAG Connect**
 
 ---
 
+
+---
+
 ## Poslední změny
 
+**[v0.9.0](CHANGELOG.md)** — Kritická oprava: kompatibilita Python 3.11 (chyba 500 v konfiguračním toku)
 **[v0.8.0](CHANGELOG.md)** — Gold Quality Scale dokončen — icons.json, zastaralá zařízení, 192 testů
 **[v0.7.0](CHANGELOG.md)** — Gold — entry.runtime_data, reauth, reconfigure, ServiceValidationError
-**[v0.6.0](CHANGELOG.md)** — EntityCategory.DIAGNOSTIC / CONFIG, 4 nové senzory
 
 ➜ [Kompletní changelog →](CHANGELOG.md)
 

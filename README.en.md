@@ -206,7 +206,12 @@ After a terms update, a notification appears under **Settings → System → Rep
 | `vag_connect.set_target_soc` | Set charge target (%) |
 | `vag_connect.set_climatisation_temperature` | Set climatisation temperature |
 | `vag_connect.set_departure_timer` | Set departure timer (new in v0.5.0) |
+
 ## Recent Changes
+
+**[v0.9.0](CHANGELOG.md)** — Critical fix: Python 3.11 compatibility
+- Fixed 500 Internal Server Error in config flow (removed Python 3.12-only syntax)
+- All users on HA 2024.x should update immediately
 
 **[v0.8.0](CHANGELOG.md)** — Gold Quality Scale complete
 - `icons.json` — 64 icon definitions across all platforms
@@ -217,11 +222,6 @@ After a terms update, a notification appears under **Settings → System → Rep
 - `entry.runtime_data`, `async_step_reauth`, `async_step_reconfigure`
 - `ServiceValidationError`, `log_when_unavailable`, `parallel_updates=0`
 - 15 DIAGNOSTIC sensors disabled by default
-
-**[v0.6.0](CHANGELOG.md)** — EntityCategory & new sensors
-- `EntityCategory.DIAGNOSTIC` / `CONFIG` for clean entity structure
-- 4 new sensors: range at 100%, WLTP range, available battery energy, last updated
-- Fixed typo `Ladziel` → `Ladeziel`
 
 ➜ [Full Changelog →](CHANGELOG.md)
 

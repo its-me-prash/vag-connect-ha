@@ -56,11 +56,14 @@ Ajustes → Dispositivos y servicios → Añadir integración → **VAG Connect*
 
 ---
 
+
+---
+
 ## Últimos cambios
 
+**[v0.9.0](CHANGELOG.md)** — Corrección crítica: compatibilidad Python 3.11 (error 500 en flujo de configuración)
 **[v0.8.0](CHANGELOG.md)** — Gold Quality Scale completo — icons.json, dispositivos obsoletos, 192 pruebas
 **[v0.7.0](CHANGELOG.md)** — Gold — entry.runtime_data, reauth, reconfigure, ServiceValidationError
-**[v0.6.0](CHANGELOG.md)** — EntityCategory.DIAGNOSTIC / CONFIG, 4 nuevos sensores
 
 ➜ [Registro de cambios completo →](CHANGELOG.md)
 

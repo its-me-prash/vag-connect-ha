@@ -20,10 +20,30 @@ ci:       CI/CD-Änderungen
 
 ## [Unreleased]
 
-Geplant für 0.9.0:
+Geplant für 0.10.0:
 - `strict-typing` vollständig — mypy --strict ohne Upstream-Einschränkungen
 - `test-coverage` >85% — HA Integration Test Framework Setup
 - HACS offizieller Antrag wenn genug Tester
+
+---
+
+## [0.9.0] - 2026-04-12
+
+### Fixes
+
+**Python 3.11 Kompatibilität — Kritischer Bugfix**
+- 500 Internal Server Error im Config Flow auf HA-Instanzen mit Python 3.11 behoben
+- `type X = ...` (Python 3.12+ only) ersetzt durch `TypeAlias` aus `typing` (Python 3.10+)
+- Betrifft alle Nutzer auf HA 2024.x — sofortiges Update empfohlen
+
+**Username aktualisiert**
+- Alle Repository-Referenzen von `Prash1407` → `its-me-prash` aktualisiert
+
+**README**
+- Letzte 3 Versionen in allen 8 Sprachen im README angezeigt
+- HACS Update-Benachrichtigungen zeigen automatisch den Changelog-Abschnitt
+
+_Autor: @its-me-prash_
 
 ---
 
