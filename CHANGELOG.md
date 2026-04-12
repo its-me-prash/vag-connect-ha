@@ -77,6 +77,32 @@ Erst Phase 2/3 wenn CC langfristig inaktiv bleibt.
 
 ---
 
+## [0.11.0] - 2026-04-12
+
+### Platinum-Vorbereitung: strict-typing, Apache 2.0, Prash Balan
+
+**strict-typing — Platinum-Regel erfüllt**
+- 0 mypy-Fehler unter `--disallow-untyped-defs --disallow-incomplete-defs --warn-return-any`
+- Alle 15 Module vollständig typisiert: coordinator, switch, binary_sensor, button, climate, number, entity_base u.a.
+- `Any` nur noch wo CC-Upstream keine py.typed-Stubs hat (explizit dokumentiert)
+- quality_scale.yaml: `strict-typing: done`
+
+**Apache 2.0 Lizenz**
+- MIT → Apache 2.0: Namensnennung verpflichtend, Patent-Klausel, Trademark "VAG Connect" geschützt
+- Copyright 2026 Prash Balan (@its-me-prash) in allen 14 Python-Dateien
+- Disclaimer: keine Affiliation mit VW AG / Audi AG / etc.
+
+**Platinum-Roadmap: 2 von 4 Regeln erledigt**
+
+| Regel | Status |
+|---|---|
+| `strict-typing` | ✅ done |
+| `test-coverage` | ⏳ steigt mit eigenem CARIAD-Client |
+| `async-dependency` | ⏳ gelöst durch CARIAD-Client (aiohttp) |
+| `inject-websession` | ⏳ gelöst durch CARIAD-Client (aiohttp) |
+
+_Autor: Prash Balan (@its-me-prash)_
+
 ## [0.10.0] - 2026-04-12
 
 ### Fix: requests 2.33.x Dependency-Konflikt (HA 2026.x)

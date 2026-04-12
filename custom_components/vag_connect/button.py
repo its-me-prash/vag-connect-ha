@@ -1,4 +1,4 @@
-# Copyright 2026 Prash Nair (@its-me-prash) — Apache License 2.0
+# Copyright 2026 Prash Balan (@its-me-prash) — Apache License 2.0
 """Button entities for VAG Connect (flash lights, force refresh)."""
 
 from homeassistant.components.button import ButtonEntity
@@ -30,7 +30,7 @@ class VagFlashButton(VagConnectEntity, ButtonEntity):
     _attr_name = "Lichtsignal"
     _attr_icon = "mdi:car-light-high"
 
-    def __init__(self, coordinator, vin):
+    def __init__(self, coordinator: VagConnectCoordinator, vin: str) -> None:
         super().__init__(coordinator, vin, "flash_button")
 
     async def async_press(self) -> None:
@@ -43,7 +43,7 @@ class VagRefreshButton(VagConnectEntity, ButtonEntity):
     _attr_name = "Daten aktualisieren"
     _attr_icon = "mdi:refresh"
 
-    def __init__(self, coordinator, vin):
+    def __init__(self, coordinator: VagConnectCoordinator, vin: str) -> None:
         super().__init__(coordinator, vin, "refresh_button")
 
     async def async_press(self) -> None:
@@ -56,7 +56,7 @@ class VagWakeButton(VagConnectEntity, ButtonEntity):
     _attr_name = "Fahrzeug aufwecken"
     _attr_icon = "mdi:car-connected"
 
-    def __init__(self, coordinator, vin):
+    def __init__(self, coordinator: VagConnectCoordinator, vin: str) -> None:
         super().__init__(coordinator, vin, "wake_button")
 
     async def async_press(self) -> None:

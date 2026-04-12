@@ -1,4 +1,4 @@
-# Copyright 2026 Prash Nair (@its-me-prash) — Apache License 2.0
+# Copyright 2026 Prash Balan (@its-me-prash) — Apache License 2.0
 """Coordinator for VAG Connect — cloud_push via CarConnectivity observer pattern.
 
 Data flow:
@@ -43,7 +43,7 @@ class VagConnectCoordinator(DataUpdateCoordinator):
     Updates flow: CC thread → Observer → asyncio bridge → async_set_updated_data → Entities.
     """
 
-    def __init__(self, hass: HomeAssistant, entry) -> None:
+    def __init__(self, hass: HomeAssistant, entry: Any) -> None:
         """Initialise coordinator."""
         self.entry = entry
         self._cc = None
@@ -193,7 +193,7 @@ class VagConnectCoordinator(DataUpdateCoordinator):
             self._observer_registered = False
 
 
-    def _on_cc_update(self, element, flags) -> None:
+    def _on_cc_update(self, element: Any, flags: Any) -> None:
         """
         Wird von CCs Background-Thread aufgerufen wenn Daten geändert wurden.
         Brückt vom CC-Thread in HAs asyncio-Event-Loop.
@@ -282,7 +282,7 @@ class VagConnectCoordinator(DataUpdateCoordinator):
                 device_reg.async_remove_device(device_entry.id)
 
 
-    def _sync_vehicles_unlocked(self, cc) -> None:
+    def _sync_vehicles_unlocked(self, cc: Any) -> None:
         """
         Liest CC-Objekte → self.vehicles.
         MUSS unter _vehicles_lock laufen (oder beim Start vor dem Observer).
@@ -299,7 +299,7 @@ class VagConnectCoordinator(DataUpdateCoordinator):
 
         self.vehicles = result
 
-    def _extract(self, vehicle) -> dict[str, Any]:  # noqa: PLR0912, PLR0915
+    def _extract(self, vehicle: Any) -> dict[str, Any]:  # noqa: PLR0912, PLR0915
         """Extract all CarConnectivity attributes into a plain HA data dict."""
         from carconnectivity.drive import GenericDrive          # noqa: PLC0415
         from carconnectivity.doors import Doors                  # noqa: PLC0415
@@ -307,7 +307,7 @@ class VagConnectCoordinator(DataUpdateCoordinator):
         from carconnectivity.charging import Charging            # noqa: PLC0415
         from carconnectivity.climatization import Climatization  # noqa: PLC0415
 
-        def _val(attr):
+        def _val(attr: Any) -> Any:
             try:
                 v = attr.value
                 return v.name if hasattr(v, "name") else v
@@ -615,7 +615,7 @@ class VagConnectCoordinator(DataUpdateCoordinator):
             with self._vehicles_lock:
                 return dict(self.vehicles)
 
-        def _force_fetch():
+        def _force_fetch() -> dict[str, Any]:
             self._cc.fetch_all()
             with self._vehicles_lock:
                 self._sync_vehicles_unlocked(self._cc)
@@ -653,7 +653,7 @@ class VagConnectCoordinator(DataUpdateCoordinator):
         await self._run_command(vin, "lights", "honk-and-flash", "flash")
 
     async def async_set_target_soc(self, vin: str, target: int) -> None:
-        def _do():
+        def _do() -> None:
             with self._vehicles_lock:
                 v = self.vehicles.get(vin, {}).get("_vehicle")
             if v is None:
@@ -662,7 +662,7 @@ class VagConnectCoordinator(DataUpdateCoordinator):
         await self.hass.async_add_executor_job(_do)
 
     async def async_set_climatisation_temperature(self, vin: str, temp_c: float) -> None:
-        def _do():
+        def _do() -> None:
             with self._vehicles_lock:
                 v = self.vehicles.get(vin, {}).get("_vehicle")
             if v is None:
@@ -683,7 +683,7 @@ class VagConnectCoordinator(DataUpdateCoordinator):
         enabled:        True/False
         departure_time: "HH:MM" oder ISO-Datetime-String, None = nur enabled toggeln
         """
-        def _do():
+        def _do() -> None:
             with self._vehicles_lock:
                 v = self.vehicles.get(vin, {}).get("_vehicle")
             if v is None:
@@ -736,7 +736,7 @@ class VagConnectCoordinator(DataUpdateCoordinator):
         self, vin: str, subsystem: str, command_name: str, value: str
     ) -> None:
         """Führt ein CarConnectivity-Command auf einem beliebigen Subsystem aus."""
-        def _do():
+        def _do() -> None:
             with self._vehicles_lock:
                 vehicle = self.vehicles.get(vin, {}).get("_vehicle")
             if vehicle is None:
@@ -769,7 +769,7 @@ class VagConnectCoordinator(DataUpdateCoordinator):
 
     async def async_set_max_charge_current(self, vin: str, ampere: int) -> None:
         """Max Ladestrom setzen."""
-        def _do():
+        def _do() -> None:
             with self._vehicles_lock:
                 v = self.vehicles.get(vin, {}).get("_vehicle")
             if v is None:
@@ -788,7 +788,7 @@ class VagConnectCoordinator(DataUpdateCoordinator):
 
     async def async_wake_vehicle(self, vin: str) -> None:
         """Fahrzeug aufwecken (wake-sleep Kommando auf Vehicle-Ebene)."""
-        def _do():
+        def _do() -> None:
             with self._vehicles_lock:
                 vehicle = self.vehicles.get(vin, {}).get("_vehicle")
             if vehicle is None:

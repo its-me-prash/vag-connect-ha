@@ -1,4 +1,4 @@
-# Copyright 2026 Prash Nair (@its-me-prash) — Apache License 2.0
+# Copyright 2026 Prash Balan (@its-me-prash) — Apache License 2.0
 """Diagnostics for VAG Connect."""
 
 from __future__ import annotations

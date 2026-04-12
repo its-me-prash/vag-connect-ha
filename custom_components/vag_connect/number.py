@@ -1,4 +1,4 @@
-# Copyright 2026 Prash Nair (@its-me-prash) — Apache License 2.0
+# Copyright 2026 Prash Balan (@its-me-prash) — Apache License 2.0
 """Number entities for VAG Connect (target SOC, climatisation temperature)."""
 
 from dataclasses import dataclass
@@ -89,7 +89,7 @@ async def async_setup_entry(
 class VagConnectNumber(VagConnectEntity, NumberEntity):
     entity_description: VagNumberDescription
 
-    def __init__(self, coordinator, vin, description):
+    def __init__(self, coordinator: VagConnectCoordinator, vin: str, description: VagNumberDescription) -> None:
         super().__init__(coordinator, vin, description.key)
         self.entity_description = description
 

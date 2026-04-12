@@ -1,4 +1,4 @@
-# Copyright 2026 Prash Nair (@its-me-prash) — Apache License 2.0
+# Copyright 2026 Prash Balan (@its-me-prash) — Apache License 2.0
 """
 VAG Connect Repair-Flows für Auth-Probleme.
 
@@ -69,3 +69,17 @@ def clear_auth_issues(hass: HomeAssistant, entry_id: str) -> None:
                    "marketing_consent", "too_many_requests",
                    "invalid_credentials", "auth_failed"]:
         ir.async_delete_issue(hass, DOMAIN, f"{entry_id}_{reason}")
+
+
+def raise_issue_requirements_conflict(hass: HomeAssistant) -> None:
+    """Raise a repair issue when CarConnectivity cannot be installed."""
+    ir.async_create_issue(
+        hass,
+        DOMAIN,
+        "requirements_conflict",
+        is_fixable=False,
+        is_persistent=True,
+        severity=ir.IssueSeverity.ERROR,
+        translation_key="requirements_conflict",
+        learn_more_url="https://github.com/its-me-prash/vag-connect-ha/issues",
+    )

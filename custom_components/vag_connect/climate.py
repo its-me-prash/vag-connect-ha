@@ -1,4 +1,4 @@
-# Copyright 2026 Prash Nair (@its-me-prash) — Apache License 2.0
+# Copyright 2026 Prash Balan (@its-me-prash) — Apache License 2.0
 """Climate entity for VAG Connect — remote pre-conditioning."""
 
 from homeassistant.components.climate import (
@@ -71,8 +71,9 @@ class VagClimate(VagConnectEntity, ClimateEntity):
         else:
             await self.coordinator.async_stop_climatisation(self._vin)
 
-    async def async_set_temperature(self, **kwargs) -> None:
-        temp = kwargs.get("temperature", DEFAULT_TEMP)
+    async def async_set_temperature(self, **kwargs: object) -> None:
+        raw = kwargs.get("temperature", DEFAULT_TEMP)
+        temp = float(raw) if isinstance(raw, (int, float)) else DEFAULT_TEMP
         await self.coordinator.async_set_climatisation_temperature(
-            self._vin, float(temp)
+            self._vin, temp
         )

@@ -1,4 +1,4 @@
-# Copyright 2026 Prash Nair (@its-me-prash) — Apache License 2.0
+# Copyright 2026 Prash Balan (@its-me-prash) — Apache License 2.0
 """Binary sensors for VAG Connect — correct data keys from coordinator."""
 
 from dataclasses import dataclass
@@ -123,7 +123,7 @@ async def async_setup_entry(
 class VagConnectBinarySensor(VagConnectEntity, BinarySensorEntity):
     entity_description: VagBinarySensorDescription
 
-    def __init__(self, coordinator, vin, description):
+    def __init__(self, coordinator: VagConnectCoordinator, vin: str, description: VagBinarySensorDescription) -> None:
         super().__init__(coordinator, vin, description.key)
         self.entity_description = description
 
@@ -166,7 +166,8 @@ class VagDoorSensor(VagConnectEntity, BinarySensorEntity):
     @property
     def is_on(self) -> bool | None:
         doors = self._vehicle.get("doors_individual", {})
-        return doors.get(self._door_id)
+        val = doors.get(self._door_id)
+        return bool(val) if val is not None else None
 
 
 async def _async_setup_door_sensors(

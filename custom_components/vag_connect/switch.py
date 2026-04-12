@@ -1,4 +1,4 @@
-# Copyright 2026 Prash Nair (@its-me-prash) — Apache License 2.0
+# Copyright 2026 Prash Balan (@its-me-prash) — Apache License 2.0
 """Switches for VAG Connect (lock/unlock, charging)."""
 
 from homeassistant.components.switch import SwitchEntity
@@ -38,17 +38,17 @@ class VagLockSwitch(VagConnectEntity, SwitchEntity):
     _attr_name = "Türverriegelung"
     _attr_icon = "mdi:car-door-lock"
 
-    def __init__(self, coordinator, vin):
+    def __init__(self, coordinator: VagConnectCoordinator, vin: str) -> None:
         super().__init__(coordinator, vin, "lock_switch")
 
     @property
     def is_on(self) -> bool | None:
         return self._vehicle.get("doors_locked")
 
-    async def async_turn_on(self, **kwargs) -> None:
+    async def async_turn_on(self, **kwargs: object) -> None:
         await self.coordinator.async_lock(self._vin)
 
-    async def async_turn_off(self, **kwargs) -> None:
+    async def async_turn_off(self, **kwargs: object) -> None:
         await self.coordinator.async_unlock(self._vin)
 
 
@@ -58,7 +58,7 @@ class VagClimatisationSwitch(VagConnectEntity, SwitchEntity):
     _attr_name = "Klimatisierung"
     _attr_icon = "mdi:thermometer"
 
-    def __init__(self, coordinator, vin):
+    def __init__(self, coordinator: VagConnectCoordinator, vin: str) -> None:
         super().__init__(coordinator, vin, "climatisation_switch")
 
     @property
@@ -68,10 +68,10 @@ class VagClimatisationSwitch(VagConnectEntity, SwitchEntity):
             return None
         return str(state).lower() not in ("off", "stopped", "")
 
-    async def async_turn_on(self, **kwargs) -> None:
+    async def async_turn_on(self, **kwargs: object) -> None:
         await self.coordinator.async_start_climatisation(self._vin)
 
-    async def async_turn_off(self, **kwargs) -> None:
+    async def async_turn_off(self, **kwargs: object) -> None:
         await self.coordinator.async_stop_climatisation(self._vin)
 
 
@@ -81,7 +81,7 @@ class VagChargingSwitch(VagConnectEntity, SwitchEntity):
     _attr_name = "Laden"
     _attr_icon = "mdi:ev-plug-type2"
 
-    def __init__(self, coordinator, vin):
+    def __init__(self, coordinator: VagConnectCoordinator, vin: str) -> None:
         super().__init__(coordinator, vin, "charging_switch")
 
     @property
@@ -91,10 +91,10 @@ class VagChargingSwitch(VagConnectEntity, SwitchEntity):
             return None
         return str(state).lower() in ("charging", "conservationcharging")
 
-    async def async_turn_on(self, **kwargs) -> None:
+    async def async_turn_on(self, **kwargs: object) -> None:
         await self.coordinator.async_start_charging(self._vin)
 
-    async def async_turn_off(self, **kwargs) -> None:
+    async def async_turn_off(self, **kwargs: object) -> None:
         await self.coordinator.async_stop_charging(self._vin)
 
 
@@ -104,7 +104,7 @@ class VagWindowHeatingSwitch(VagConnectEntity, SwitchEntity):
     _attr_name = "Fensterheizung"
     _attr_icon = "mdi:car-windshield"
 
-    def __init__(self, coordinator, vin):
+    def __init__(self, coordinator: VagConnectCoordinator, vin: str) -> None:
         super().__init__(coordinator, vin, "window_heating_switch")
 
     @property
@@ -125,10 +125,10 @@ class VagWindowHeatingSwitch(VagConnectEntity, SwitchEntity):
         except Exception:  # noqa: BLE001
             return None
 
-    async def async_turn_on(self, **kwargs) -> None:
+    async def async_turn_on(self, **kwargs: object) -> None:
         await self.coordinator.async_start_window_heating(self._vin)
 
-    async def async_turn_off(self, **kwargs) -> None:
+    async def async_turn_off(self, **kwargs: object) -> None:
         await self.coordinator.async_stop_window_heating(self._vin)
 
 
@@ -138,7 +138,7 @@ class VagSeatHeatingSwitch(VagConnectEntity, SwitchEntity):
     _attr_name = "Sitzheizung"
     _attr_icon = "mdi:car-seat-heater"
 
-    def __init__(self, coordinator, vin):
+    def __init__(self, coordinator: VagConnectCoordinator, vin: str) -> None:
         super().__init__(coordinator, vin, "seat_heating_switch")
 
     @property
@@ -152,16 +152,16 @@ class VagSeatHeatingSwitch(VagConnectEntity, SwitchEntity):
         except Exception:  # noqa: BLE001
             return None
 
-    async def async_turn_on(self, **kwargs) -> None:
-        async def _set():
+    async def async_turn_on(self, **kwargs: object) -> None:
+        def _set() -> None:
             v = self._vehicle.get("_vehicle")
             if v:
                 v.climatization.settings.seat_heating.value = True
         await self.coordinator.hass.async_add_executor_job(_set)
         await self.coordinator.async_request_refresh()
 
-    async def async_turn_off(self, **kwargs) -> None:
-        async def _set():
+    async def async_turn_off(self, **kwargs: object) -> None:
+        def _set() -> None:
             v = self._vehicle.get("_vehicle")
             if v:
                 v.climatization.settings.seat_heating.value = False
@@ -175,21 +175,21 @@ class VagAutoUnlockSwitch(VagConnectEntity, SwitchEntity):
     _attr_name = "Stecker nach Laden entsperren"
     _attr_icon = "mdi:ev-plug-ccs2"
 
-    def __init__(self, coordinator, vin):
+    def __init__(self, coordinator: VagConnectCoordinator, vin: str) -> None:
         super().__init__(coordinator, vin, "auto_unlock_switch")
 
     @property
     def is_on(self) -> bool | None:
         return self._vehicle.get("auto_unlock_charge")
 
-    async def async_turn_on(self, **kwargs) -> None:
+    async def async_turn_on(self, **kwargs: object) -> None:
         await self._set_auto_unlock(True)
 
-    async def async_turn_off(self, **kwargs) -> None:
+    async def async_turn_off(self, **kwargs: object) -> None:
         await self._set_auto_unlock(False)
 
     async def _set_auto_unlock(self, value: bool) -> None:
-        def _do():
+        def _do() -> None:
             v = self._vehicle.get("_vehicle")
             if v:
                 v.charging.settings.auto_unlock.value = value
@@ -202,7 +202,7 @@ class VagDepartureTimerSwitch(VagConnectEntity, SwitchEntity):
 
     _attr_icon = "mdi:clock-time-eight-outline"
 
-    def __init__(self, coordinator, vin, timer_id: int):
+    def __init__(self, coordinator: VagConnectCoordinator, vin: str, timer_id: int) -> None:
         super().__init__(coordinator, vin, f"departure_timer_{timer_id}_switch")
         self._timer_id = timer_id
         self._attr_name = f"Abfahrtstimer {timer_id}"
@@ -211,12 +211,12 @@ class VagDepartureTimerSwitch(VagConnectEntity, SwitchEntity):
     def is_on(self) -> bool | None:
         return self._vehicle.get(f"departure_timer_{self._timer_id}_enabled")
 
-    async def async_turn_on(self, **kwargs) -> None:
+    async def async_turn_on(self, **kwargs: object) -> None:
         await self.coordinator.async_set_departure_timer(
             self._vin, self._timer_id, enabled=True, departure_time=None
         )
 
-    async def async_turn_off(self, **kwargs) -> None:
+    async def async_turn_off(self, **kwargs: object) -> None:
         await self.coordinator.async_set_departure_timer(
             self._vin, self._timer_id, enabled=False, departure_time=None
         )

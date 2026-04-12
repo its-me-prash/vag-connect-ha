@@ -1,7 +1,8 @@
-# Copyright 2026 Prash Nair (@its-me-prash) — Apache License 2.0
+# Copyright 2026 Prash Balan (@its-me-prash) — Apache License 2.0
 """Base entity class for all VAG Connect entities."""
 
 from __future__ import annotations
+from typing import Any
 
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
@@ -43,9 +44,11 @@ class VagConnectEntity(CoordinatorEntity[VagConnectCoordinator]):
         self._attr_unique_id = f"{vin}_{key}"
 
     @property
-    def _vehicle(self) -> dict:
+    def _vehicle(self) -> dict[str, Any]:
         """Current vehicle data dict."""
-        return (self.coordinator.data or {}).get(self._vin, {})
+        data: dict[str, Any] = self.coordinator.data or {}
+        result: dict[str, Any] = data.get(self._vin, {})
+        return result
 
     @property
     def device_info(self) -> DeviceInfo:

@@ -236,6 +236,10 @@ rules:
   async-dependency:
     status: todo
     comment: |
+      Blocked by CarConnectivity using requests (sync). Planned: own CARIAD API client
+      with aiohttp (no requests dependency). This solves async-dependency AND inject-websession
+      in one step. Implementation in progress.
+    comment: |
       UPSTREAM BLOCKER: CarConnectivity (carconnectivity>=0.11.8) uses synchronous
       requests.Session and threading.Thread — it is not an async library.
       We mitigate this via async_add_executor_job() but cannot achieve true async
@@ -244,12 +248,15 @@ rules:
   inject-websession:
     status: todo
     comment: |
+      Requires own async API client. Will use async_get_clientsession(hass) once
+      the CARIAD aiohttp client replaces CarConnectivity dependency.
+    comment: |
       UPSTREAM BLOCKER: CarConnectivity connectors do not accept an aiohttp ClientSession.
       Blocked by the same upstream sync architecture as async-dependency.
 
   strict-typing:
-    status: todo
+    status: done
     comment: |
-      ConfigFlowResult typing fixed (was FlowResult). All public methods have return type
-      annotations. Full mypy --strict blocked by upstream carconnectivity lacking stubs.
-      Inline type: alias VagConnectConfigEntry added in __init__.py.
+      0 errors under mypy --disallow-untyped-defs --disallow-incomplete-defs --warn-return-any.
+      All public and private methods fully annotated. TypeAlias, Any explicitly imported.
+      Remaining gap: --strict-mode blocked by upstream carconnectivity missing py.typed marker.
