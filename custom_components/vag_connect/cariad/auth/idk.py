@@ -21,7 +21,7 @@ from typing import Any
 from urllib.parse import parse_qs, urlparse, urlunparse
 
 
-from aiohttp import ClientSession
+from aiohttp import ClientSession, InvalidURL
 
 from ..exceptions import (
     AuthenticationError,
@@ -212,19 +212,29 @@ class IDKAuth:
             "password": password,
             "state":    auth0_state,
         }
-        post_url = f"{_IDK_BASE}/u/login?state={auth0_state}"
+        # URL-encode state for URL construction (form body is encoded by aiohttp automatically)
+        from urllib.parse import quote as _quote  # noqa: PLC0415
+        post_url = f"{_IDK_BASE}/u/login?state={_quote(auth0_state, safe='')}"
+        _LOGGER.debug(
+            "IDK Auth0: brand=%s post_url=%s",
+            self._brand.name, post_url[:80],
+        )
 
-        async with self._session.post(
-            post_url,
-            data=login_form,
-            headers=self._form_headers(),
-            allow_redirects=False,  # follow manually to preserve cookies
-        ) as resp:
-            status   = resp.status
-            raw_loc  = resp.headers.get("Location", "")
-            # Resolve relative Location → absolute (volkwagencarnet pattern)
-            location = _make_absolute(_IDK_BASE, raw_loc) if raw_loc else ""
-            resp_html = await resp.text(errors="replace")
+        try:
+            async with self._session.post(
+                post_url,
+                data=login_form,
+                headers=self._form_headers(),
+                allow_redirects=False,  # follow manually to preserve cookies
+            ) as resp:
+                status   = resp.status
+                raw_loc  = resp.headers.get("Location", "")
+                # Resolve relative Location → absolute (volkwagencarnet pattern)
+                location = _make_absolute(_IDK_BASE, raw_loc) if raw_loc else ""
+                resp_html = await resp.text(errors="replace")
+        except InvalidURL as exc:
+            _LOGGER.error("IDK Auth0: InvalidURL posting to %s — %s", post_url, exc)
+            raise AuthenticationError(f"Invalid login URL: {post_url[:100]}") from exc
 
         _LOGGER.debug(
             "IDK Auth0 POST: status=%s location=%s",
@@ -272,16 +282,20 @@ class IDKAuth:
                 else:
                     raise TwoFactorRequiredError()
 
-            async with self._session.get(
-                ref,
-                headers=self._base_headers(),
-                allow_redirects=False,
-            ) as redir_resp:
-                raw_next = redir_resp.headers.get("Location", "")
-                if redir_resp.status in (301, 302, 303, 307, 308) and raw_next:
-                    ref = _make_absolute(ref, raw_next)
-                else:
-                    break
+            try:
+                async with self._session.get(
+                    ref,
+                    headers=self._base_headers(),
+                    allow_redirects=False,
+                ) as redir_resp:
+                    raw_next = redir_resp.headers.get("Location", "")
+                    if redir_resp.status in (301, 302, 303, 307, 308) and raw_next:
+                        ref = _make_absolute(ref, raw_next)
+                    else:
+                        break
+            except InvalidURL as exc:
+                _LOGGER.error("IDK Auth0 redirect: InvalidURL '%s' — %s", ref[:100], exc)
+                break
 
         _LOGGER.debug("IDK Auth0: final redirect = %s", ref[:80] if ref else "(none)")
 
