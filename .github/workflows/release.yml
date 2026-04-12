@@ -17,58 +17,104 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Read version from manifest.json
+      - name: Version aus manifest.json lesen
         id: version
         run: |
           VERSION=$(python3 -c "import json; print(json.load(open('custom_components/vag_connect/manifest.json'))['version'])")
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
-      - name: Verify tag matches manifest version
+      - name: Tag mit manifest.json abgleichen
         run: |
           TAG="${GITHUB_REF#refs/tags/v}"
           MANIFEST="${{ steps.version.outputs.version }}"
           if [ "$TAG" != "$MANIFEST" ]; then
-            echo "ERROR: tag v$TAG does not match manifest.json version $MANIFEST"
+            echo "ERROR: Tag v$TAG != manifest.json $MANIFEST"
             exit 1
           fi
 
-      - name: Extract changelog section for this version
-        id: changelog
+      - name: Release-Notes generieren
+        id: notes
         env:
           VERSION: ${{ steps.version.outputs.version }}
         run: |
           python3 << 'PYTHON'
-          import re, os
+          import re, os, json
+
           version = os.environ["VERSION"]
-          with open("CHANGELOG.md") as f:
-              content = f.read()
+          changelog = open("CHANGELOG.md").read()
+          manifest = json.load(open("custom_components/vag_connect/manifest.json"))
+
+          # Extract this version's section from CHANGELOG
           pattern = rf"## \[{re.escape(version)}\].*?(?=\n## \[|\Z)"
-          match = re.search(pattern, content, re.DOTALL)
-          section = match.group(0).strip() if match else f"Release {version}"
-          # Prepend install instructions for HACS users
-          notes = f"""{section}
+          match = re.search(pattern, changelog, re.DOTALL)
+          changelog_section = match.group(0).strip() if match else ""
 
----
+          # Parse sections
+          def extract(section_name, text):
+              m = re.search(rf"### {section_name}\n(.*?)(?=\n### |\Z)", text, re.DOTALL)
+              if not m: return []
+              return [l.strip("- ").strip() for l in m.group(1).strip().split("\n") if l.strip().startswith("-")]
 
-### Installation / Update
+          added   = extract("Added", changelog_section)
+          changed = extract("Changed", changelog_section)
+          fixed   = extract("Fixed", changelog_section)
+          removed = extract("Removed", changelog_section)
 
-**HACS:** Update-Benachrichtigung erscheint automatisch.
-**Manuell:** `custom_components/vag_connect/` ersetzen und HA neu starten.
+          # Previous version for comparison
+          all_versions = re.findall(r"## \[(\d+\.\d+\.\d+)\]", changelog)
+          idx = all_versions.index(version) if version in all_versions else -1
+          prev_version = all_versions[idx + 1] if idx + 1 < len(all_versions) else None
 
-**Repo:** https://github.com/its-me-prash/vag-connect-ha
-"""
+          lines = []
+          lines.append(f"## VAG Connect v{version}\n")
+
+          if added:
+              lines.append("### ✨ Neu\n")
+              for item in added: lines.append(f"- {item}")
+              lines.append("")
+
+          if changed:
+              lines.append("### 🔄 Geändert\n")
+              for item in changed: lines.append(f"- {item}")
+              lines.append("")
+
+          if fixed:
+              lines.append("### 🐛 Behoben\n")
+              for item in fixed: lines.append(f"- {item}")
+              lines.append("")
+
+          if removed:
+              lines.append("### 🗑️ Entfernt\n")
+              for item in removed: lines.append(f"- {item}")
+              lines.append("")
+
+          lines.append("---\n")
+          lines.append("### 📦 Installation / Update\n")
+          lines.append("**HACS:** Update-Hinweis erscheint automatisch (~6h nach Release).\n")
+          lines.append("**Manuell:**")
+          lines.append("```")
+          lines.append("custom_components/vag_connect/  →  ersetzen → HA neu starten")
+          lines.append("```\n")
+          lines.append("### 🚗 Unterstützte Marken\n")
+          lines.append("VW EU · Audi · Škoda · SEAT · CUPRA\n")
+
+          if prev_version:
+              lines.append(f"**Alle Änderungen:** [`v{prev_version}...v{version}`](https://github.com/its-me-prash/vag-connect-ha/compare/v{prev_version}...v{version})")
+
+          notes = "\n".join(lines)
           with open("/tmp/release_notes.md", "w") as f:
               f.write(notes)
-          print(notes[:300])
+          print(notes)
           PYTHON
 
-      - name: Build integration ZIP
+      - name: Integration ZIP bauen
         run: |
           cd custom_components
           zip -r ../vag_connect.zip vag_connect/ \
-            -x "**/__pycache__/*" "**/*.pyc"
+            -x "**/__pycache__/*" "**/*.pyc" "**/.mypy_cache/*"
+          echo "ZIP size: $(du -sh ../vag_connect.zip | cut -f1)"
 
-      - name: Create GitHub Release
+      - name: GitHub Release erstellen
         uses: softprops/action-gh-release@v2
         with:
           files: vag_connect.zip
