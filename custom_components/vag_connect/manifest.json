@@ -9,7 +9,7 @@
   "codeowners": [
     "@its-me-prash"
   ],
-  "iot_class": "cloud_push",
+  "iot_class": "cloud_polling",
   "config_flow": true,
   "integration_type": "hub"
 }

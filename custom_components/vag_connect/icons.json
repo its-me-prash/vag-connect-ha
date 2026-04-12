@@ -206,5 +206,49 @@
         "default": "mdi:thermometer"
       }
     }
+  },
+  "services": {
+    "lock": {
+      "service": "mdi:car-door-lock"
+    },
+    "unlock": {
+      "service": "mdi:car-door-lock-open"
+    },
+    "start_climatisation": {
+      "service": "mdi:thermometer-plus"
+    },
+    "stop_climatisation": {
+      "service": "mdi:thermometer-off"
+    },
+    "start_charging": {
+      "service": "mdi:battery-charging"
+    },
+    "stop_charging": {
+      "service": "mdi:battery-off"
+    },
+    "set_target_soc": {
+      "service": "mdi:battery-charging-high"
+    },
+    "set_climatisation_temperature": {
+      "service": "mdi:thermometer-auto"
+    },
+    "start_window_heating": {
+      "service": "mdi:car-windshield"
+    },
+    "stop_window_heating": {
+      "service": "mdi:car-windshield-outline"
+    },
+    "flash_lights": {
+      "service": "mdi:car-light-high"
+    },
+    "wake_vehicle": {
+      "service": "mdi:car-connected"
+    },
+    "set_departure_timer": {
+      "service": "mdi:clock-time-eight"
+    },
+    "refresh_vehicle": {
+      "service": "mdi:refresh"
+    }
   }
 }

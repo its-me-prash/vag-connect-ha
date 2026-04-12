@@ -8,7 +8,7 @@ on:
 
 jobs:
   lint-and-validate:
-    name: Lint & Validierung
+    name: Lint & Validate
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -21,18 +21,23 @@ jobs:
 
       - name: Abhängigkeiten installieren
         run: |
-          pip install ruff \
-            carconnectivity>=0.11.8 \
-            carconnectivity-connector-audi>=0.3.0 \
-            carconnectivity-connector-volkswagen>=0.10.4 \
-            carconnectivity-connector-skoda>=0.12.4 \
-            carconnectivity-connector-seatcupra>=0.6.1
+          pip install \
+            ruff \
+            mypy \
+            aiohttp \
+            homeassistant
 
       - name: Ruff Lint
         run: ruff check custom_components/
 
-      - name: Python Syntax prüfen
-        run: python3 -m py_compile custom_components/vag_connect/*.py
+      - name: mypy strict
+        run: |
+          mypy custom_components/vag_connect/ \
+            --ignore-missing-imports \
+            --disallow-untyped-defs \
+            --disallow-incomplete-defs \
+            --warn-return-any \
+            --no-error-summary
 
       - name: manifest.json validieren
         run: |
@@ -43,6 +48,10 @@ jobs:
           missing = [k for k in required if k not in m]
           if missing:
               print('FEHLER: Fehlende Felder:', missing); sys.exit(1)
+          if m.get('requirements'):
+              print('FEHLER: requirements muss leer sein!', m['requirements']); sys.exit(1)
+          if m.get('iot_class') != 'cloud_polling':
+              print('FEHLER: iot_class muss cloud_polling sein!'); sys.exit(1)
           print('manifest.json OK — Version:', m['version'])
           "
 
@@ -68,18 +77,17 @@ jobs:
       - name: CHANGELOG.md enthält aktuelle Version
         run: |
           python3 -c "
-          import json, sys, re
+          import json, sys
           version = json.load(open('custom_components/vag_connect/manifest.json'))['version']
           changelog = open('CHANGELOG.md').read()
           if f'[{version}]' not in changelog:
-              print(f'FEHLER: Version {version} nicht im CHANGELOG.md dokumentiert!')
-              print('Bitte CHANGELOG.md aktualisieren bevor du pushst.')
+              print(f'FEHLER: Version {version} nicht im CHANGELOG.md!')
               sys.exit(1)
           print(f'CHANGELOG.md enthält Version {version} — OK')
           "
 
   tests:
-    name: Unit Tests
+    name: Unit Tests + Coverage
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -92,14 +100,18 @@ jobs:
 
       - name: Test-Abhängigkeiten installieren
         run: |
-          pip install pytest \
-            homeassistant \
-            carconnectivity>=0.11.8 \
-            carconnectivity-connector-audi>=0.3.0 \
-            carconnectivity-connector-skoda>=0.12.4
+          pip install \
+            pytest \
+            pytest-cov \
+            aiohttp \
+            homeassistant
 
-      - name: Tests ausführen
-        run: python3 -m pytest tests/ -v --tb=short
+      - name: Tests mit Coverage ausführen
+        run: |
+          python3 -m pytest tests/ -v --tb=short \
+            --cov=custom_components/vag_connect \
+            --cov-report=term-missing \
+            --cov-fail-under=90
 
   hassfest:
     name: HA Hassfest
