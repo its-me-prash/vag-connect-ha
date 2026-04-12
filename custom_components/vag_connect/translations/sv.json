@@ -37,6 +37,16 @@
           "scan_interval": "Uppdateringsintervall (minuter)",
           "force_enable_access": "Tvinga dörråtkomst (äldre modeller)"
         }
+      },
+      "mfa": {
+        "title": "Tvåfaktorsautentisering",
+        "description": "Ange koden som skickats till din e-post eller från din autentiseringsapp.",
+        "data": {
+          "mfa_code": "MFA-kod"
+        },
+        "data_description": {
+          "mfa_code": "6-siffrig kod från e-post eller autentiseringsapp"
+        }
       }
     },
     "error": {

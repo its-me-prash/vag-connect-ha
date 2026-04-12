@@ -40,6 +40,16 @@
           "scan_interval": "Abfrageintervall (Minuten)",
           "force_enable_access": "Zugriff erzwingen"
         }
+      },
+      "mfa": {
+        "title": "Zwei-Faktor-Bestätigung",
+        "description": "Gib den Code ein, den du per E-Mail oder Authenticator-App erhalten hast.",
+        "data": {
+          "mfa_code": "MFA-Code"
+        },
+        "data_description": {
+          "mfa_code": "6-stelliger Code aus E-Mail oder Authenticator-App"
+        }
       }
     },
     "error": {

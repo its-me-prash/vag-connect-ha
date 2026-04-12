@@ -45,7 +45,7 @@ class CariadBaseClient:
         """Brand configuration."""
         return self._brand
 
-    async def authenticate(self) -> None:
+    async def authenticate(self, mfa_code: str | None = None) -> None:
         """Perform full login and store tokens."""
         self._tokens = await self._auth.authenticate(self._email, self._password)
         _LOGGER.debug("Authenticated for brand %s", self._brand.name)

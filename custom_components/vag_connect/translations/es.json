@@ -37,6 +37,16 @@
           "scan_interval": "Intervalo de actualización (minutos)",
           "force_enable_access": "Forzar acceso a puertas (modelos antiguos)"
         }
+      },
+      "mfa": {
+        "title": "Autenticación de dos factores",
+        "description": "Introduce el código recibido por correo o desde tu aplicación autenticadora.",
+        "data": {
+          "mfa_code": "Código MFA"
+        },
+        "data_description": {
+          "mfa_code": "Código de 6 dígitos del correo o app"
+        }
       }
     },
     "error": {

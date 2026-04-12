@@ -37,6 +37,16 @@
           "scan_interval": "Interval aktualizace (minuty)",
           "force_enable_access": "Vynutit přístup ke dveřím (starší modely)"
         }
+      },
+      "mfa": {
+        "title": "Dvoufaktorové ověření",
+        "description": "Zadejte kód obdržený e-mailem nebo z autentizační aplikace.",
+        "data": {
+          "mfa_code": "Kód MFA"
+        },
+        "data_description": {
+          "mfa_code": "6-místný kód z e-mailu nebo aplikace"
+        }
       }
     },
     "error": {

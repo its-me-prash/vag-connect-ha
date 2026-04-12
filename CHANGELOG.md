@@ -29,6 +29,21 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ---
 
+## [0.14.6] - 2026-04-12
+
+### Fixed
+- **Auth0 Universal Login v2**: `connection not found` behoben — VW nutzt `/u/login` Identifier-First Flow, nicht `/usernamepassword/login`
+  - POST `/u/login?state=S` mit `{username, action: default}` → Redirect zu `/u/login/password?state=S2`
+  - POST `/u/login/password?state=S2` mit `{password, action: default}` → Redirect zu callback
+
+### Added
+- **2FA-Unterstützung** (Issue #7 ✅): Wenn MFA erkannt wird, zeigt HA einen neuen Screen "Zwei-Faktor-Bestätigung"
+  - Kein Neustart nötig — einfach Code aus E-Mail oder Authenticator-App eingeben
+  - Alle 8 Sprachen übersetzt
+- `authenticate(mfa_code=...)` Parameter in allen 5 Brand-Clients
+
+---
+
 ## [0.14.5] - 2026-04-12
 
 ### Fixed

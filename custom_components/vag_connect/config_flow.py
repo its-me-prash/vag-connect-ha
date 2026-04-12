@@ -27,7 +27,8 @@ _LOGGER = logging.getLogger(__name__)
 
 
 async def _validate_credentials(
-    hass: HomeAssistant, brand: str, username: str, password: str
+    hass: HomeAssistant, brand: str, username: str, password: str,
+    mfa_code: str | None = None,
 ) -> None:
     """Validate credentials by authenticating with the CARIAD API.
 
@@ -53,13 +54,13 @@ async def _validate_credentials(
     ) as auth_session:
         client = CariadClientFactory.create(brand, auth_session, username, password)
         try:
-            await client.authenticate()
+            await client.authenticate(mfa_code=mfa_code)
         except TermsAndConditionsError as err:
             raise ValueError("terms_and_conditions") from err
         except MarketingConsentError as err:
             raise ValueError("marketing_consent") from err
         except TwoFactorRequiredError as err:
-            raise ValueError("two_factor_required") from err
+            raise ValueError(f"two_factor_required:{err}") from err
         except RateLimitError as err:
             raise ValueError("too_many_requests") from err
         except AuthenticationError as err:
@@ -108,6 +109,12 @@ class VagConnectConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     VERSION = 1
 
+    def __init__(self) -> None:
+        """Initialise — stores pending credentials for MFA step."""
+        self._pending_brand: str = ""
+        self._pending_username: str = ""
+        self._pending_password: str = ""
+        self._pending_entry_data: dict[str, Any] = {}
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
@@ -126,7 +133,25 @@ class VagConnectConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             try:
                 await _validate_credentials(self.hass, brand, username, password)
             except ValueError as err:
-                errors["base"] = _map_error(str(err))
+                err_str = str(err)
+                if err_str.startswith("two_factor_required"):
+                    # Store credentials for MFA step
+                    self._pending_brand    = brand
+                    self._pending_username = username
+                    self._pending_password = password
+                    self._pending_entry_data = {
+                        CONF_BRAND:         brand,
+                        CONF_USERNAME:      username,
+                        CONF_PASSWORD:      password,
+                        CONF_SPIN:          user_input.get(CONF_SPIN, ""),
+                        CONF_SCAN_INTERVAL: max(
+                            user_input.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL),
+                            MIN_SCAN_INTERVAL,
+                        ),
+                        CONF_FORCE_ACCESS:  user_input.get(CONF_FORCE_ACCESS, False),
+                    }
+                    return await self.async_step_mfa()
+                errors["base"] = _map_error(err_str)
             else:
                 return self.async_create_entry(
                     title=f"{BRANDS[brand]} — {username}",
@@ -146,6 +171,38 @@ class VagConnectConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         return self.async_show_form(
             step_id="user",
             data_schema=_user_schema(),
+            errors=errors,
+        )
+
+    async def async_step_mfa(
+        self, user_input: dict[str, Any] | None = None
+    ) -> config_entries.ConfigFlowResult:
+        """Step 2 (optional): enter MFA code sent by email / authenticator app."""
+        errors: dict[str, str] = {}
+
+        if user_input is not None:
+            mfa_code = user_input.get("mfa_code", "").strip()
+            try:
+                await _validate_credentials(
+                    self.hass,
+                    self._pending_brand,
+                    self._pending_username,
+                    self._pending_password,
+                    mfa_code=mfa_code,
+                )
+            except ValueError as err:
+                errors["base"] = _map_error(str(err))
+            else:
+                return self.async_create_entry(
+                    title=f"{BRANDS[self._pending_brand]} — {self._pending_username}",
+                    data=self._pending_entry_data,
+                )
+
+        return self.async_show_form(
+            step_id="mfa",
+            data_schema=vol.Schema({
+                vol.Required("mfa_code"): str,
+            }),
             errors=errors,
         )
 

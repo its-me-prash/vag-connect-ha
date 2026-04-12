@@ -33,7 +33,7 @@ class SeatCupraClient(CariadBaseClient):
         super().__init__(session, brand_cfg, email, password, spin)
         self._user_id: str | None = None
 
-    async def authenticate(self) -> None:
+    async def authenticate(self, mfa_code: str | None = None) -> None:
         """IDK auth + fetch user_id."""
         await super().authenticate()
         await self._fetch_user_id()

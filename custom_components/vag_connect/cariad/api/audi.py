@@ -41,10 +41,10 @@ class AudiClient(VWEUClient):
         self._xclient_id: str | None = None
         self._vw_token: TokenSet | None = None
 
-    async def authenticate(self) -> None:
+    async def authenticate(self, mfa_code: str | None = None) -> None:
         """Full Audi auth: IDK → AZS → MBB register → MBB auth."""
         # Step 1–4: standard IDK PKCE flow
-        self._tokens = await self._auth.authenticate(self._email, self._password)
+        self._tokens = await self._auth.authenticate(self._email, self._password, mfa_code=mfa_code)
         _LOGGER.debug("Audi IDK auth OK")
 
         # Step 5: AZS token exchange

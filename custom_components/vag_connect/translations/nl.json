@@ -37,6 +37,16 @@
           "scan_interval": "Bijwerkinterval (minuten)",
           "force_enable_access": "Deurtoegang forceren (oudere modellen)"
         }
+      },
+      "mfa": {
+        "title": "Twee-factor authenticatie",
+        "description": "Voer de code in die je per e-mail of via je authenticator-app hebt ontvangen.",
+        "data": {
+          "mfa_code": "MFA-code"
+        },
+        "data_description": {
+          "mfa_code": "6-cijferige code uit e-mail of authenticator-app"
+        }
       }
     },
     "error": {

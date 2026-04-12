@@ -37,6 +37,16 @@
           "scan_interval": "Interwał aktualizacji (minuty)",
           "force_enable_access": "Wymusz dostęp do drzwi (starsze modele)"
         }
+      },
+      "mfa": {
+        "title": "Uwierzytelnianie dwuskładnikowe",
+        "description": "Wprowadź kod otrzymany e-mailem lub z aplikacji uwierzytelniającej.",
+        "data": {
+          "mfa_code": "Kod MFA"
+        },
+        "data_description": {
+          "mfa_code": "6-cyfrowy kod z e-maila lub aplikacji"
+        }
       }
     },
     "error": {
