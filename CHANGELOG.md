@@ -29,6 +29,22 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ---
 
+## [0.14.5] - 2026-04-12
+
+### Fixed
+- **Auth0 Universal Login** (KRITISCH): IDK hat 2025 auf Auth0 `/u/login` migriert.
+  Alter Flow (`/signin-service/v1/.../login/identifier`) funktioniert nicht mehr.
+  Neuer Flow:
+  1. GET `/oidc/v1/authorize` → redirect zu `/u/login?state=AUTH0_STATE`
+  2. POST `/usernamepassword/login` (JSON: email, password, auth0_state, _csrf-Cookie)
+  3. Parse `form_post` HTML-Response → POST an `/login/callback`
+  4. Redirect-Chain bis `app://...?code=AUTH_CODE`
+  5. Token-Exchange (PKCE, unverändert)
+- Legacy signin-service Flow bleibt als Fallback (erkennt `/u/login` in URL)
+- CSRF aus Auth0-Cookie `_csrf` oder Regex-Extraktion aus Page
+
+---
+
 ## [0.14.4] - 2026-04-12
 
 ### Added

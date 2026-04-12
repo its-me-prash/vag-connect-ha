@@ -20,6 +20,8 @@ from html.parser import HTMLParser
 from typing import Any
 from urllib.parse import parse_qs, urlparse, urlunparse
 
+from yarl import URL as _URL
+
 from aiohttp import ClientSession
 
 from ..exceptions import (
@@ -99,110 +101,197 @@ class IDKAuth:
     async def authenticate(self, email: str, password: str) -> TokenSet:
         """Full login flow → returns access/refresh/id tokens.
 
-        Steps:
-          1. GET authorize → parse CSRF fields
-          2. POST email identifier
-          3. POST password → follow redirects → get auth code
-          4. POST token exchange with PKCE verifier
+        IDK migrated to Auth0 Universal Login (/u/login) in 2025.
+        New flow:
+          1. GET /oidc/v1/authorize → redirects to /u/login?state=AUTH0_STATE
+          2. POST /usernamepassword/login with email+password (Auth0 API)
+          3. Parse form_post HTML response, POST to /login/callback
+          4. Follow redirects to app:// URI → extract auth code
+          5. Exchange code for tokens (PKCE)
         """
         verifier, challenge = _pkce_pair()
-        state = base64.urlsafe_b64encode(os.urandom(16)).rstrip(b"=").decode()
+        pkce_state = base64.urlsafe_b64encode(os.urandom(16)).rstrip(b"=").decode()
         nonce = base64.urlsafe_b64encode(os.urandom(16)).rstrip(b"=").decode()
 
-        # Step 1 — authorization page
+        # Step 1 — GET authorize, follow to Auth0 /u/login page
         params: dict[str, str] = {
             "client_id": self._brand.client_id,
             "redirect_uri": self._brand.redirect_uri,
             "response_type": "code",
             "scope": self._brand.scope,
-            "state": state,
+            "state": pkce_state,
             "nonce": nonce,
             "prompt": "login",
             "code_challenge": challenge,
             "code_challenge_method": "S256",
         }
-        headers = self._base_headers()
         async with self._session.get(
-            _AUTHORIZE_URL, params=params, headers=headers, allow_redirects=True
+            _AUTHORIZE_URL, params=params, headers=self._base_headers(),
+            allow_redirects=True,
         ) as resp:
-            final_url = str(resp.url)
-            ctype = resp.headers.get("Content-Type", "")
+            login_url = str(resp.url)
             html = await resp.text(errors="replace")
             _LOGGER.debug(
-                "IDK step1: status=%s url=%s ctype=%s html_len=%d",
-                resp.status, final_url[:80], ctype[:40], len(html),
+                "IDK step1: status=%s url=%s html_len=%d",
+                resp.status, login_url[:80], len(html),
             )
             if resp.status != 200:
                 raise AuthenticationError(
-                    f"Authorization page returned HTTP {resp.status} at {final_url}"
+                    f"Authorization page HTTP {resp.status} at {login_url}"
                 )
 
-        if not html.strip():
-            _LOGGER.error(
-                "IDK step1: empty response — url=%s possible bot-detection or app-scheme redirect",
-                final_url,
-            )
-            raise AuthenticationError(
-                "IDK returned empty page. Possible bot detection — retry in a few minutes."
+        # Determine which login variant we landed on
+        if "/u/login" in login_url:
+            # Auth0 Universal Login (new IDK, 2025+)
+            return await self._authenticate_auth0(
+                login_url, html, email, password, verifier
             )
 
+        # Legacy signin-service flow (kept as fallback)
+        return await self._authenticate_legacy(html, email, password, verifier)
+
+    async def _authenticate_auth0(
+        self,
+        login_url: str,
+        html: str,
+        email: str,
+        password: str,
+        verifier: str,
+    ) -> TokenSet:
+        """Auth0 Universal Login flow (/u/login).
+
+        IDK migrated to Auth0 in 2025. The /u/login page is a React SPA;
+        credentials are submitted to /usernamepassword/login as JSON.
+        Reference: audiconnect/audi_connect_ha (MIT), myskoda (MIT).
+        """
+        # Extract Auth0 state from URL: /u/login?state=AUTH0_STATE
+        auth0_state: str = parse_qs(urlparse(login_url).query).get("state", [""])[0]
+        if not auth0_state:
+            raise AuthenticationError("Could not extract Auth0 state from login URL.")
+        _LOGGER.debug("IDK Auth0: state=%s", auth0_state[:20])
+
+        # Extract CSRF token — Auth0 sets a cookie named '_csrf' when the page loads.
+        # We can also find it in the page HTML as a script variable.
+        csrf_cookie = self._session.cookie_jar.filter_cookies(_URL("https://identity.vwgroup.io")).get("_csrf")
+        csrf_token = csrf_cookie.value if csrf_cookie else self._extract_auth0_csrf(html)
+        _LOGGER.debug("IDK Auth0: csrf=%s", csrf_token[:8] + "..." if csrf_token else "(none)")
+
+        # Step 2 — POST credentials to Auth0 /usernamepassword/login
+        login_payload: dict[str, Any] = {
+            "client_id":     self._brand.client_id,
+            "redirect_uri":  self._brand.redirect_uri,
+            "tenant":        "vwgroup",
+            "response_type": "code",
+            "connection":    "Username-Password-Authentication",
+            "username":      email,
+            "password":      password,
+            "state":         auth0_state,
+            "_csrf":         csrf_token or "",
+            "_intstate":     "deprecated",
+            "scope":         self._brand.scope,
+        }
+        headers = {
+            "Content-Type": "application/json",
+            "Accept": "application/json, text/html, */*",
+            "User-Agent": self._brand.user_agent,
+            "Origin": _IDK_BASE,
+            "Referer": f"{_IDK_BASE}/u/login",
+        }
+        async with self._session.post(
+            f"{_IDK_BASE}/usernamepassword/login",
+            json=login_payload,
+            headers=headers,
+            allow_redirects=False,
+        ) as resp:
+            resp_text = await resp.text(errors="replace")
+            _LOGGER.debug(
+                "IDK Auth0 step2: status=%s len=%d",
+                resp.status, len(resp_text),
+            )
+            if resp.status == 401:
+                raise AuthenticationError("Invalid email or password.")
+            if resp.status == 429:
+                raise RateLimitError()
+            if resp.status not in (200, 302):
+                raise AuthenticationError(
+                    f"Auth0 login returned HTTP {resp.status}: {resp_text[:200]}"
+                )
+
+        # Step 3 — handle response
+        if resp.status == 302:
+            # Direct redirect — follow to app URI
+            location = resp.headers.get("Location", "")
+            _LOGGER.debug("IDK Auth0 step3: direct redirect to %s", location[:60])
+        else:
+            # Auth0 returns HTML form_post: parse and POST to /login/callback
+            loc2 = await self._submit_auth0_callback(resp_text)
+            location = loc2 or ""
+            _LOGGER.debug("IDK Auth0 step3: callback location %s", location[:60] if location else "(none)")
+
+        if not location:
+            raise AuthenticationError("Auth0: no redirect location after login.")
+
+        # Step 4 — follow redirect chain to app:// URI
+        final_loc = await self._follow_to_app_redirect_get(location, self._brand.redirect_uri)
+        location = final_loc or ""
+        _LOGGER.debug("IDK Auth0 step4: app redirect = %s", location[:60] if location else "(none)")
+        if not location:
+            raise AuthenticationError("Auth0: no app:// redirect after callback.")
+
+        auth_code = _extract_auth_code(location, self._brand.redirect_uri)
+        if not auth_code:
+            raise AuthenticationError(f"Auth0: no code in redirect: {location}")
+
+        _LOGGER.debug("IDK Auth0: got code, exchanging for tokens")
+        return await self._exchange_code(auth_code, verifier)
+
+    async def _authenticate_legacy(
+        self,
+        html: str,
+        email: str,
+        password: str,
+        verifier: str,
+    ) -> TokenSet:
+        """Legacy signin-service flow (pre-2025 IDK)."""
         csrf = self._parse_csrf_robust(html)
-        _LOGGER.debug(
-            "IDK step1: fields=%s action=%s",
-            list(csrf.fields.keys()),
-            (csrf.form_action[:60] if csrf.form_action else "(none)"),
-        )
         if not csrf.fields.get("_csrf") and not csrf.fields.get("hmac"):
-            _LOGGER.error(
-                "IDK step1: no CSRF fields — url=%s snippet=%r",
-                final_url, html[:800],
-            )
             raise AuthenticationError(
-                "Could not parse IDK login page — IDK may have changed its HTML structure."
+                "Could not parse IDK login page CSRF (legacy flow)."
             )
 
-        # Step 2 — submit email
         email_url = _absolute_url(
             _IDK_BASE,
             csrf.form_action or f"{_SIGNIN_BASE}/{self._brand.client_id}/login/identifier",
         )
-        email_data = {**csrf.fields, "email": email}
         async with self._session.post(
-            email_url, data=email_data, headers=self._form_headers(), allow_redirects=True
+            email_url, data={**csrf.fields, "email": email},
+            headers=self._form_headers(), allow_redirects=True,
         ) as resp:
             if resp.status != 200:
-                raise AuthenticationError(f"Email submission returned HTTP {resp.status}")
-            html = await resp.text()
+                raise AuthenticationError(f"Email submission HTTP {resp.status}")
+            html2 = await resp.text()
 
-        # Extract updated CSRF for password step
-        csrf2 = self._parse_csrf_robust(html)
-        # IDK uses a JavaScript-injected hmac — extract via regex if form parser missed it
+        csrf2 = self._parse_csrf_robust(html2)
         if "hmac" not in csrf2.fields:
-            m = re.search(r'"hmac"\s*:\s*"([0-9a-fA-F]+)"', html)
+            m = re.search(r'"hmac"\s*:\s*"([0-9a-fA-F]+)"', html2)
             if m:
                 csrf2.fields["hmac"] = m.group(1)
 
-        # Step 3 — submit password
         pw_url = _absolute_url(
             _IDK_BASE,
             f"{_SIGNIN_BASE}/{self._brand.client_id}/login/authenticate",
         )
-        pw_data = {**csrf2.fields, "email": email, "password": password}
-        _LOGGER.debug("IDK step3: posting password to %s", pw_url)
         location = await self._follow_to_app_redirect(
-            pw_url, pw_data, self._brand.redirect_uri
+            pw_url, {**csrf2.fields, "email": email, "password": password},
+            self._brand.redirect_uri,
         )
-        _LOGGER.debug("IDK step3: redirect location = %s", location[:80] if location else "(none)")
         if not location:
-            raise AuthenticationError("Password submission did not redirect to app — check credentials.")
+            raise AuthenticationError("Legacy: no redirect after password.")
 
         auth_code = _extract_auth_code(location, self._brand.redirect_uri)
         if not auth_code:
-            _LOGGER.error("IDK: no auth code in location: %s", location)
-            raise AuthenticationError(f"Could not extract authorization code from: {location}")
-        _LOGGER.debug("IDK step4: got auth code, exchanging for tokens")
+            raise AuthenticationError(f"Legacy: no code in redirect: {location}")
 
-        # Step 4 — exchange code for tokens
         return await self._exchange_code(auth_code, verifier)
 
     async def refresh(self, refresh_token: str) -> TokenSet:
@@ -224,7 +313,111 @@ class IDKAuth:
 
         return self._parse_tokens(payload)
 
-    # ── private helpers ────────────────────────────────────────────────────────
+    # ── Auth0 Universal Login helpers ─────────────────────────────────────────
+
+    @staticmethod
+    def _extract_auth0_csrf(html: str) -> str:
+        """Extract Auth0 CSRF token from page HTML (fallback if cookie missing)."""
+        patterns = [
+            r'"csrf"\s*:\s*"([^"]{8,})"',
+            r"_csrf[\"']\s*:\s*[\"']([^\"']{8,})[\"']",
+            r'name=["\']_csrf["\'][^>]+value=["\']([^"\']+)["\']',
+            r'value=["\']([^"\']+)["\'][^>]+name=["\']_csrf["\']',
+        ]
+        for p in patterns:
+            m = re.search(p, html)
+            if m:
+                return m.group(1)
+        return ""
+
+    async def _submit_auth0_callback(self, html: str) -> str | None:
+        """Parse Auth0 form_post response and POST to /login/callback.
+
+        After /usernamepassword/login, Auth0 returns an HTML page with:
+          <form method="post" action="https://identity.vwgroup.io/login/callback">
+            <input name="wctx" value="...">
+            <input name="wresult" value="...">
+          </form>
+        We must POST these fields to continue the flow.
+        """
+        parser = _CSRFParser()
+        parser.feed(html)
+
+        # Also try regex for the hidden fields
+        for tag in re.finditer(r"<input[^>]+>", html, re.IGNORECASE):
+            t = tag.group(0)
+            if 'type="hidden"' not in t.lower() and "type='hidden'" not in t.lower():
+                continue
+            nm = re.search(r'name=["\']([^"\']+)["\']', t)
+            vm = re.search(r'value=["\']([^"\']*)["\']', t)
+            if nm:
+                parser.fields[nm.group(1)] = vm.group(1) if vm else ""
+
+        if not parser.form_action and not parser.fields:
+            # Might be a direct JSON response with location
+            m = re.search(r'"location"\s*:\s*"([^"]+)"', html)
+            if m:
+                return m.group(1)
+            _LOGGER.warning("Auth0 callback: no form fields in response (len=%d)", len(html))
+            return None
+
+        callback_url = parser.form_action or f"{_IDK_BASE}/login/callback"
+        if not callback_url.startswith("http"):
+            callback_url = _IDK_BASE + callback_url
+
+        _LOGGER.debug("IDK Auth0: posting callback to %s fields=%s",
+                      callback_url[:60], list(parser.fields.keys()))
+
+        async with self._session.post(
+            callback_url,
+            data=parser.fields,
+            headers=self._form_headers(),
+            allow_redirects=False,
+        ) as resp:
+            location = resp.headers.get("Location", "")
+            _LOGGER.debug("IDK Auth0: callback status=%s location=%s",
+                          resp.status, location[:60])
+            return location if location else None
+
+    async def _follow_to_app_redirect_get(
+        self, start_url: str, app_prefix_full: str
+    ) -> str | None:
+        """Follow GET redirects from a URL until we reach the app:// URI."""
+        prefix = app_prefix_full.split("://")[0] + "://"
+        location = start_url
+
+        for _ in range(15):
+            if location.startswith(prefix):
+                return location
+            if not location.startswith("http"):
+                # Relative or app:// — return as-is
+                return location if location.startswith(prefix) else None
+
+            async with self._session.get(
+                location,
+                headers=self._base_headers(),
+                allow_redirects=False,
+            ) as resp:
+                new_loc = resp.headers.get("Location", "")
+                if resp.status in (301, 302, 303, 307, 308) and new_loc:
+                    location = new_loc
+                elif location.startswith(prefix):
+                    return location
+                else:
+                    # Read body in case it's another form_post
+                    body = await resp.text(errors="replace")
+                    if "<form" in body.lower():
+                        next_loc = await self._submit_auth0_callback(body)
+                        if next_loc:
+                            location = next_loc
+                            continue
+                    break
+
+        return location if location.startswith(prefix) else None
+
+    # ── Legacy signin-service helpers ─────────────────────────────────────────
+
+
 
     async def _follow_to_app_redirect(
         self, url: str, data: dict[str, str], app_prefix_full: str
