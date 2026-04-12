@@ -71,7 +71,7 @@ software, including but not limited to account suspension.
 
 ## MIT License Text (this project)
 
-Copyright (c) 2026 prash1407 and contributors
+Copyright (c) 2026 its-me-prash and contributors
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

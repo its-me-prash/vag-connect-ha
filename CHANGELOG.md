@@ -72,7 +72,7 @@ Geplant für 0.9.0:
 - `strict-typing`: in progress (Upstream-Blocker dokumentiert)
 - `test-coverage`: todo mit Begründung
 
-_Autor: @Prash1407_
+_Autor: @its-me-prash_
 
 
 
@@ -113,7 +113,7 @@ _Autor: @Prash1407_
 - `strict-typing`, `icon-translations`, `stale-devices`, `test-coverage >95%`
 - Platinum: upstream CarConnectivity muss async werden (nicht in unserer Hand)
 
-_Autor: @Prash1407_
+_Autor: @its-me-prash_
 
 
 
@@ -151,7 +151,7 @@ Technische Sensoren die nicht täglich gebraucht werden, erscheinen jetzt nur no
 - Alle 8 Übersetzungen auf 99/99 Keys synchronisiert
 - 6 neue Tests → **69/69 grün**
 
-_Autor: @Prash1407_
+_Autor: @its-me-prash_
 
 ## [0.5.0] - 2026-04-12
 
@@ -184,7 +184,7 @@ data:
 
 **Tests:** 6 neue Unit-Tests → 63/63 bestanden.
 
-_Autor: @Prash1407_
+_Autor: @its-me-prash_
 
 ## [0.4.6] - 2026-04-11
 
@@ -255,7 +255,7 @@ automatische km/h → mph Konvertierung bei imperialem Einheitensystem.
 
 Alle anderen Sensoren (Leistung kW, Prozent, kWh, Grad) haben keine imperiale
 Entsprechung — bleiben unverändert.
-  **Autor:** @Prash1407
+  **Autor:** @its-me-prash
 
 ### Hinweis
 
@@ -272,7 +272,7 @@ Der Anzeigename in HA bleibt korrekt: **Ladesäule**.
   Tankfüllstand, Verfügbarkeit, fällig, Ölstand, Ölservice, Unterstützte, usw.
 - Feature-Tabellen auf aktuellen Stand 0.4.0 gebracht
 - Ton: sachlich, direkt, für normale Nutzer verständlich
-  **Autor:** @Prash1407
+  **Autor:** @its-me-prash
 
 #### Sensor-Namen
 - `Batterieladestand` → `Akkustand` (wie es Nutzer kennen — z.B. Handy-Akku)
@@ -288,25 +288,25 @@ Der Anzeigename in HA bleibt korrekt: **Ladesäule**.
 - `Ölservicedatum` → `Ölwechseldatum`
 - `Parkadresse` → `Standort` (natürlicher)
 - `Firmware` → `Firmware-Version`
-  **Autor:** @Prash1407
+  **Autor:** @its-me-prash
 
 #### Binary Sensor Namen
 - `Fährt` → `In Fahrt` (natürlicheres Deutsch)
 - `Ladekabel verbunden` → `Ladekabel steckt`
 - `Klimatisierung aktiv` → `Klimatisierung läuft`
 - `Online` → `Erreichbar` (was es für den Nutzer bedeutet)
-  **Autor:** @Prash1407
+  **Autor:** @its-me-prash
 
 #### Switch-Namen
 - `Stecker Auto-Entsperren` → `Stecker nach Laden entsperren`
 - `Fensterheizung` → `Scheibenheizung` (automotive Standard-Begriff)
-  **Autor:** @Prash1407
+  **Autor:** @its-me-prash
 
 #### Translations de.json + en.json
 - Vollständig aktualisiert auf alle 0.4.0-Features (31 neue Entity-Keys)
 - Repair-Issues: natürlicheres Deutsch, klare Handlungsanweisungen
 - en.json: automotive Standard-Englisch (Battery Level statt State of Charge)
-  **Autor:** @Prash1407
+  **Autor:** @its-me-prash
 
 ## [0.4.0] - 2026-04-11
 
@@ -321,34 +321,34 @@ Features die kein anderes VAG Home Assistant Plugin hat.
 - `binary_sensor.*_online` — True wenn Fahrzeug erreichbar
   **Einzigartig:** Kein anderes VAG-HA-Plugin zeigt ob das Auto fährt.
   Nutzbar für Automationen: *„Wenn Auto fährt → Heizung runterdrehen"*
-  **Autor:** @Prash1407
+  **Autor:** @its-me-prash
 
 #### Parkadresse als Text (position.location)
 - `sensor.*_parkadresse` — vollständige Adresse direkt von der API (kein Geocoding)
 - `sensor.*_parkstadt` — Stadt wo das Fahrzeug steht
   **Einzigartig:** myskoda Issue #824 offen seit 2025, nie implementiert.
-  **Autor:** @Prash1407
+  **Autor:** @its-me-prash
 
 #### Fahrtrichtung (position.heading)
 - `sensor.*_fahrtrichtung` — 0–360°, Einheit °
   Nutzbar für Karten-Dashboards mit Richtungspfeil.
-  **Autor:** @Prash1407
+  **Autor:** @its-me-prash
 
 #### Akkutemperatur + Kapazität (battery.temperature, total_capacity)
 - `sensor.*_akkutemperatur` — °C (erklärt Reichweitenverlust im Winter)
 - `sensor.*_akkukapazitat` — kWh (für Degradations-Monitoring)
   **Einzigartig:** Tesla-Integration hat das — nie bei VAG gesehen.
-  **Autor:** @Prash1407
+  **Autor:** @its-me-prash
 
 #### Ladeende-ETA (charging.estimated_date_reached)
 - `sensor.*_ladeende` — Timestamp wann Akku voll (z.B. „heute 22:47 Uhr")
   Nutzbar für: *„Benachrichtige mich wenn Auto voll geladen"*
   **Einzigartig:** Alle anderen zeigen nur %-Stand, niemand den Zeitpunkt.
-  **Autor:** @Prash1407
+  **Autor:** @its-me-prash
 
 #### Ladetyp AC/DC (charging.type)
 - `sensor.*_ladetyp` — OFF / AC / DC
-  **Autor:** @Prash1407
+  **Autor:** @its-me-prash
 
 #### Ladesäulen-Info (charging.charging_station)
 - `sensor.*_ladestaule` — Name der Ladesäule (z.B. „IONITY A9")
@@ -356,31 +356,31 @@ Features die kein anderes VAG Home Assistant Plugin hat.
 - `sensor.*_ladestaule_max_leistung` — Max-kW
 - `sensor.*_ladestaule_betreiber` — Betreibername
   **Einzigartig:** evcc zeigt das — kein HA-Plugin bisher.
-  **Autor:** @Prash1407
+  **Autor:** @its-me-prash
 
 #### Auto-Unlock Switch (charging.settings.auto_unlock)
 - `switch.*_stecker_auto_entsperren` — Stecker nach Ladeende automatisch öffnen
   **Einzigartig:** VW-App kann das — kein HA-Plugin bisher.
-  **Autor:** @Prash1407
+  **Autor:** @its-me-prash
 
 #### Max Ladestrom Slider (charging.settings.maximum_current)
 - `number.*_max_ladestrom` — 6–32A, Slider in HA
   Für schwache Hausinstallationen oder gesteuertes Laden.
   **Einzigartig:** Kein anderes VAG-HA-Plugin.
-  **Autor:** @Prash1407
+  **Autor:** @its-me-prash
 
 #### Stecker-Verriegelung (charging.connector.lock_state)
 - `binary_sensor.*_stecker_verriegelt` — True wenn Kabel mechanisch gesperrt
-  **Autor:** @Prash1407
+  **Autor:** @its-me-prash
 
 #### Kennzeichen + Firmware (vehicle.license_plate, software.version)
 - `sensor.*_kennzeichen` — Kennzeichen
 - `sensor.*_firmware` — Firmware-Version für OTA-Tracking
-  **Autor:** @Prash1407
+  **Autor:** @its-me-prash
 
 ### Tests
 - 57 Unit-Tests (vorher 42) — 15 neue Tests für alle Features
-  **Autor:** @Prash1407
+  **Autor:** @its-me-prash
 
 ## [0.3.4] - 2026-04-11
 
@@ -408,7 +408,7 @@ Features die kein anderes VAG Home Assistant Plugin hat.
 - const.py: 70 → 20 Zeilen (-71%)
 - coordinator.py: -30 Zeilen (redundante Methode)
 - Gesamt: ~80 Zeilen weniger bei gleicher Funktionalität
-  **Autor:** @Prash1407
+  **Autor:** @its-me-prash
 
 ## [0.3.3] - 2026-04-11
 
@@ -431,17 +431,17 @@ Das `is_electric`-Flag war zu simpel und führte zu falschen Sensor-Zuordnungen 
 
 **Fallback:** Wenn `vehicle.type = None` → Flags werden aus den Drive-Typen abgeleitet.
 
-**Autor:** @Prash1407
+**Autor:** @its-me-prash
 
 #### sensor.py: Runtime-Crash `is_electric` nicht definiert
 - `is_electric` wurde nach Refactoring nicht mehr gesetzt → NameError beim Starten
 - Behoben: `has_battery` und `has_combustion` direkt aus vehicle-Dict
-  **Autor:** @Prash1407
+  **Autor:** @its-me-prash
 
 #### Lade-Reichweite/h — Einheit aus HA-Konstante
 - `native_unit_of_measurement=UnitOfSpeed.KILOMETERS_PER_HOUR` statt hartcodiertem `"km/h"`
 - `native_unit_of_measurement=UnitOfPower.KILO_WATT` für Ladeleistung statt `"kW"`
-  **Autor:** @Prash1407
+  **Autor:** @its-me-prash
 
 ### Hinzugefügt
 
@@ -450,7 +450,7 @@ Das `is_electric`-Flag war zu simpel und führte zu falschen Sensor-Zuordnungen 
 - PHEV: `has_battery=True` UND `has_combustion=True`, beides anzeigen
 - Verbrenner: `has_battery=False`, kein Ladestand
 - Fallback aus Drives wenn `vehicle.type = None`
-  **Autor:** @Prash1407
+  **Autor:** @its-me-prash
 
 ## [0.3.2] - 2026-04-11
 
@@ -464,7 +464,7 @@ Das `is_electric`-Flag war zu simpel und führte zu falschen Sensor-Zuordnungen 
 - `_tokenstore_path()` — Pfad korrekt + eindeutig pro Entry
 - `force_enable_access` — Flag im coordinator-Code verifiziert
 - `_device_name()` — alle Naming-Cases (Marke+Modell, Fallback VIN)
-  **Autor:** @Prash1407
+  **Autor:** @its-me-prash
 
 ## [0.3.1] - 2026-04-11
 
@@ -475,7 +475,7 @@ Das `is_electric`-Flag war zu simpel und führte zu falschen Sensor-Zuordnungen 
 - **Nachher:** Name "Lade-Reichweite pro Stunde", Einheit "km/h"
   Bedeutung: Wie viele km Reichweite werden pro Stunde geladen (z.B. 120 km/h = nach 1h Laden hat man 120 km mehr)
   Kein `SensorDeviceClass.SPEED` — das wäre falsch (Fahrzeuggeschwindigkeit)
-  **Autor:** @Prash1407
+  **Autor:** @its-me-prash
 
 ### Hinzugefügt
 
@@ -492,7 +492,7 @@ unter **Einstellungen → System → Reparaturen** mit konkreter Handlungsanweis
 | `auth_failed` | Zugangsdaten prüfen, neu konfigurieren |
 
 Nach erfolgreichem Login werden alle alten Repair-Issues automatisch gelöscht.
-  **Autor:** @Prash1407
+  **Autor:** @its-me-prash
   **Referenz Issue:** #7 (2FA upstream), myskoda#976, myskoda#934
 
 #### Warum 2FA nicht vollständig automatisierbar ist
@@ -513,7 +513,7 @@ Schließt Issues #1, #2, #3, #4, #6 aus der Ökosystem-Analyse.
 - `sensor.*_ladeleistung` — aktuelle Ladeleistung in kW
 - `sensor.*_ladegeschwindigkeit` — Ladegeschwindigkeit in km/h
 - Datenquelle: `vehicle.charging.power.value` + `vehicle.charging.rate.value`
-  **Autor:** @Prash1407
+  **Autor:** @its-me-prash
   **Quell-Issue:** #2
 
 #### Individuelle Tür-Sensoren (Issue #3)
@@ -521,20 +521,20 @@ Schließt Issues #1, #2, #3, #4, #6 aus der Ökosystem-Analyse.
 - `binary_sensor.*_kofferraum` + `binary_sensor.*_motorhaube`
 - Werden automatisch angelegt basierend auf `vehicle.doors.doors`-Dict
 - Deutsch: frontLeft, frontRight, rearLeft, rearRight, trunk, bonnet
-  **Autor:** @Prash1407
+  **Autor:** @its-me-prash
   **Quell-Issue:** #3
 
 #### Sitzheizung Switch (Issue #6)
 - `switch.*_sitzheizung` — Sitzheizung Ein/Aus
 - Nutzt `vehicle.climatization.settings.seat_heating`
-  **Autor:** @Prash1407
+  **Autor:** @its-me-prash
   **Quell-Issue:** #6
 
 #### force_enable_access Option (Issue #1)
 - Neues optionales Feld im Config-Flow: "Türen erzwingen"
 - Für ältere VW/Audi-Modelle die keine 'access' Capability melden
 - Wird als `force_enable_access: true` an den CC-Connector weitergegeben
-  **Autor:** @Prash1407
+  **Autor:** @its-me-prash
   **Quell-Issue:** #1
   **Referenz:** CarConnectivity-connector-volkswagen force_enable_access Option
 
@@ -546,7 +546,7 @@ Schließt Issues #1, #2, #3, #4, #6 aus der Ökosystem-Analyse.
 - `_on_cc_update` übergibt `success=False` bei Exception
 - `_async_push_update(data, success=False)` setzt `last_update_success=False`
   und ruft `async_update_listeners()` auf — HA rendert Entities als unavailable
-  **Autor:** @Prash1407
+  **Autor:** @its-me-prash
   **Quell-Issue:** #4
   **Referenz:** myskoda#731 Wrong/old sensor info when server unavailable
 
@@ -571,13 +571,13 @@ Bei zwei gleichen Modellen (z.B. Firmenwagen + Privat):
 - `sensor.audi_q4_e_tron_2_kilometerstand` (zweites — HA setzt _2 automatisch)
 
 **BREAKING:** Wer bereits Automationen mit entity_id hatte, muss diese anpassen.
-  **Autor:** @Prash1407
+  **Autor:** @its-me-prash
 
 #### Mehrere Fahrzeuge — wie es funktioniert
 - Ein Audi-Konto mit Q4 + A4: beide erscheinen als separate Geräte, automatisch
 - Audi + Skoda: Integration zweimal hinzufügen (je ein Config Entry)
 - Jedes Fahrzeug = ein HA-Gerät mit eigener VIN als Identifier (stabil)
-  **Autor:** @Prash1407
+  **Autor:** @its-me-prash
 
 ## [0.2.1] - 2026-04-11
 
@@ -591,7 +591,7 @@ Hotfix: fehlende Service-Registrierungen nach Cross-Check entdeckt.
 - `vag_connect.wake_vehicle` nicht registriert
 - services.yaml fehlten die drei neuen Einträge
   **Entdeckt durch:** automatisierten Cross-Check (Coordinator-Actions vs. Services)
-  **Autor:** @Prash1407
+  **Autor:** @its-me-prash
 
 ## [0.2.0] - 2026-04-11
 
@@ -604,7 +604,7 @@ CarConnectivity Issues, ioBroker VW-Connect Forum.
 #### Fensterheizung Switch
 - Neuer `switch.vag_*_fensterheizung` für alle Fahrzeuge mit Fensterheizfunktion.
   Nutzt `vehicle.window_heatings.commands`, Command `start-stop`.
-  **Autor:** @Prash1407
+  **Autor:** @its-me-prash
   **Quelle:** [CarConnectivity WindowHeatingStartStopCommand](https://github.com/tillsteinbach/CarConnectivity)
   **Referenz-Issue:** [myskoda #929](https://github.com/skodaconnect/homeassistant-myskoda/issues/929) — Heizung Stop nicht möglich
 
@@ -612,7 +612,7 @@ CarConnectivity Issues, ioBroker VW-Connect Forum.
 - Neuer `button.vag_*_fahrzeug_aufwecken` — weckt schlafende Fahrzeuge auf.
   Verbrenner-Fahrzeuge kommunizieren seltener; Wake erzwingt eine Status-Aktualisierung.
   Nutzt `vehicle.commands`, Command `wake-sleep`.
-  **Autor:** @Prash1407
+  **Autor:** @its-me-prash
   **Quelle:** [CarConnectivity WakeSleepCommand](https://github.com/tillsteinbach/CarConnectivity)
   **Referenz-Issue:** [myskoda #762](https://github.com/skodaconnect/homeassistant-myskoda/issues/762) — Wake car Feature Request
 
@@ -620,7 +620,7 @@ CarConnectivity Issues, ioBroker VW-Connect Forum.
 - CC-Tokens werden in `.storage/vag_connect_tokens_{entry_id}.json` gespeichert.
   Bei HA-Neustart ist kein Re-Auth mehr nötig — Tokens werden wiederverwendet.
   Reduziert Auth-Anfragen und Risiko von Account-Sperrungen.
-  **Autor:** @Prash1407
+  **Autor:** @its-me-prash
   **Quelle:** [CarConnectivity tokenstore_file Parameter](https://github.com/tillsteinbach/CarConnectivity)
 
 #### Bessere Fehlerbehandlung bei Login
@@ -630,7 +630,7 @@ Neue spezifische Fehlermeldungen statt generischem "cannot_connect":
 - `two_factor_required` — 2FA muss einmalig manuell in der App bestätigt werden
 - `too_many_requests` — Account temporär gesperrt, 15 Minuten warten
 - `invalid_credentials` — E-Mail oder Passwort falsch
-  **Autor:** @Prash1407
+  **Autor:** @its-me-prash
   **Referenz:** [myskoda #976 MarketingConsentError](https://github.com/skodaconnect/homeassistant-myskoda/issues/976)
   **Referenz:** [myskoda #934 CSRFError](https://github.com/skodaconnect/homeassistant-myskoda/issues/934)
   **Referenz:** [Audi Connector T&C AuthenticationError](https://github.com/acfischer42/CarConnectivity-connector-audi)
@@ -652,18 +652,18 @@ Bugfix-Release. Alle Fehler die ein Live-HA-System verhindert hätten.
 #### coordinator.data war None beim Entity-Start
 - **Problem:** `async_setup_entry` befüllte `coordinator.data` nicht vor `async_forward_entry_setups`. Entities griffen direkt auf `None.get(vin)` zu → `AttributeError`.
 - **Fix:** `coordinator.async_set_updated_data(vehicles)` wird jetzt explizit nach `async_setup()` aufgerufen, bevor Platforms initialisiert werden.
-- **Autor:** @Prash1407
+- **Autor:** @its-me-prash
 - **Referenz:** HA `DataUpdateCoordinator` Dokumentation — `coordinator.data` muss vor Platform-Setup befüllt sein.
 
 #### Race Condition: CC-Thread vs. HA-Loop
 - **Problem:** CC-Background-Thread schrieb `self.vehicles`, HA asyncio-Loop las es gleichzeitig ohne Synchronisation.
 - **Fix:** `threading.Lock` (`self._vehicles_lock`) schützt alle Lese- und Schreibzugriffe auf `self.vehicles`. Observer-Callback macht `dict(self.vehicles)` für einen thread-safe Snapshot.
-- **Autor:** @Prash1407
+- **Autor:** @its-me-prash
 
 #### entity_base crash bei None coordinator.data
 - **Problem:** `self.coordinator.data.get(self._vin, {})` warf `AttributeError` wenn `data` noch `None` war.
 - **Fix:** `(self.coordinator.data or {}).get(self._vin, {})` — sicher gegen `None` zur Startup-Zeit.
-- **Autor:** @Prash1407
+- **Autor:** @its-me-prash
 
 #### manifest.json: falsche iot_class und ungepinnte Versionen
 - **Problem:** `iot_class: "cloud_polling"` war falsch (wir pushen reaktiv). Package-Versionen nicht an installierte Versionen angepasst.
@@ -673,12 +673,12 @@ Bugfix-Release. Alle Fehler die ein Live-HA-System verhindert hätten.
   - `carconnectivity-connector-volkswagen>=0.10.4`
   - `carconnectivity-connector-skoda>=0.12.4`
   - `carconnectivity-connector-seatcupra>=0.6.1`
-- **Autor:** @Prash1407
+- **Autor:** @its-me-prash
 
 #### _async_update_data machte bei jedem Aufruf einen CC-Fetch
 - **Problem:** `_async_update_data` rief immer `cc.fetch_all()` auf — auch bei reaktiven Updates die bereits frische Daten in `self.vehicles` hatten. Doppelter Netzwerk-Traffic.
 - **Fix:** `_async_update_data` gibt nur `dict(self.vehicles)` zurück. CC-Fetch passiert nur noch bei manuellem Refresh (Button/Service).
-- **Autor:** @Prash1407
+- **Autor:** @its-me-prash
 
 ---
 
@@ -690,12 +690,12 @@ Erste öffentliche Version.
 
 #### Kern-Integration
 - HA Custom Component Struktur (`config_flow`, `coordinator`, alle Plattformen)
-  _Autor: @Prash1407_
+  _Autor: @its-me-prash_
 
 - Reaktiver `DataUpdateCoordinator` mit CarConnectivity Observer-Pattern:
   CC-Background-Thread pollt VAG-API → `VALUE_CHANGED` Observer → `asyncio.run_coroutine_threadsafe` → `async_set_updated_data()` → Entities update sofort.
   `update_interval=None` — kein eigenes HA-Polling.
-  _Autor: @Prash1407_
+  _Autor: @its-me-prash_
   _API-Quelle: CarConnectivity @tillsteinbach — Observer-Pattern, `Observable.ObserverEvent`_
 
 #### Unterstützte Marken
@@ -718,34 +718,34 @@ Erste öffentliche Version.
 
 #### HA-Plattformen
 - `sensor` — 14 Sensoren
-  _Autor: @Prash1407_
+  _Autor: @its-me-prash_
 - `binary_sensor` — 6 Sensoren
-  _Autor: @Prash1407_
+  _Autor: @its-me-prash_
 - `device_tracker` — GPS-Position
-  _Autor: @Prash1407_
+  _Autor: @its-me-prash_
 - `switch` — Verriegelung, Klimatisierung, Laden
-  _Autor: @Prash1407_
+  _Autor: @its-me-prash_
 - `button` — Lichtsignal, Refresh
-  _Autor: @Prash1407_
+  _Autor: @its-me-prash_
 - `climate` — Vorklimatisierung mit Temperatursteuerung
   _Architektur-Referenz: [homeassistant-myskoda](https://github.com/skodaconnect/homeassistant-myskoda) — @skodaconnect_
-  _Autor: @Prash1407_
+  _Autor: @its-me-prash_
 - `number` — Ladziel-Slider, Klimatemperatur-Slider
-  _Autor: @Prash1407_
+  _Autor: @its-me-prash_
 
 #### Services
 - `vag_connect.lock`, `unlock`, `start/stop_climatisation`, `start/stop_charging`, `flash_lights`, `refresh_vehicle`
-  _Autor: @Prash1407_
+  _Autor: @its-me-prash_
 
 #### Übersetzungen
 - 8 Sprachen: DE, EN, FR, NL, ES, PL, CS, SV
-  _Autor: @Prash1407_
+  _Autor: @its-me-prash_
 
 #### Entwicklung
 - 18 Unit-Tests (18/18 bestanden)
-  _Autor: @Prash1407_
+  _Autor: @its-me-prash_
 - Ruff-Linting, Diagnostics-Endpoint, Issue-Templates, HACS-Kompatibilität
-  _Autor: @Prash1407_
+  _Autor: @its-me-prash_
 
 ### Bekannte Einschränkungen in 0.1.0 / 0.1.1
 - Porsche nicht unterstützt (CARIAD-API vorhanden, kein Tester)

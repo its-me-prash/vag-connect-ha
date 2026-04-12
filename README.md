@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/Prash1407/vag-connect-ha/main/custom_components/vag_connect/logo.png" alt="VAG Connect" width="180">
+  <img src="https://raw.githubusercontent.com/its-me-prash/vag-connect-ha/main/custom_components/vag_connect/logo.png" alt="VAG Connect" width="180">
 </p>
 
 <h1 align="center">VAG Connect</h1>
@@ -10,7 +10,7 @@
 
 <p align="center">
   <a href="https://hacs.xyz"><img src="https://img.shields.io/badge/HACS-Custom-orange.svg?style=for-the-badge" alt="HACS"></a>
-  <a href="https://github.com/Prash1407/vag-connect-ha/releases"><img src="https://img.shields.io/github/v/release/Prash1407/vag-connect-ha?style=for-the-badge" alt="Version"></a>
+  <a href="https://github.com/its-me-prash/vag-connect-ha/releases"><img src="https://img.shields.io/github/v/release/its-me-prash/vag-connect-ha?style=for-the-badge" alt="Version"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/Lizenz-MIT-yellow.svg?style=for-the-badge" alt="Lizenz"></a>
   <a href="https://www.home-assistant.io"><img src="https://img.shields.io/badge/Home%20Assistant-2024.1%2B-blue?style=for-the-badge" alt="Home Assistant"></a>
   <a href="tests/"><img src="https://img.shields.io/badge/Tests-192%2F192-brightgreen?style=for-the-badge" alt="Tests"></a>
@@ -125,7 +125,7 @@ Falls der Account trotzdem kurz gesperrt wird (passiert selten): Die Sperre hebt
 ### Via HACS (empfohlen)
 
 1. HACS öffnen → Integrationen → ⋮ → Benutzerdefinierte Repositories
-2. URL eingeben: `https://github.com/Prash1407/vag-connect-ha`
+2. URL eingeben: `https://github.com/its-me-prash/vag-connect-ha`
 3. Kategorie: **Integration**
 4. Hinzufügen → In HACS suchen: **VAG Connect** → Installieren
 5. Home Assistant neu starten

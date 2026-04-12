@@ -57,7 +57,7 @@ def raise_issue_auth_required(hass: HomeAssistant, entry_id: str, reason: str) -
         is_persistent=False,
         severity=severity,
         translation_key=translation_key,
-        learn_more_url="https://github.com/Prash1407/vag-connect-ha/blob/main/README.md",
+        learn_more_url="https://github.com/its-me-prash/vag-connect-ha/blob/main/README.md",
     )
     _LOGGER.warning("VAG Connect Repair-Issue erstellt: %s", reason)
 

@@ -5,7 +5,7 @@ Danke dass du zum Projekt beitragen möchtest! Hier sind die wichtigsten Regeln.
 ## Schnellstart
 
 ```bash
-git clone https://github.com/prash1407/vag-connect-ha
+git clone https://github.com/its-me-prash/vag-connect-ha
 cd vag-connect-ha
 pip install carconnectivity carconnectivity-connector-audi \
             carconnectivity-connector-volkswagen \

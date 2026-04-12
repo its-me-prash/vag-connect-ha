@@ -2,8 +2,8 @@
   "domain": "vag_connect",
   "name": "VAG Connect",
   "version": "0.8.0",
-  "documentation": "https://github.com/Prash1407/vag-connect-ha",
-  "issue_tracker": "https://github.com/Prash1407/vag-connect-ha/issues",
+  "documentation": "https://github.com/its-me-prash/vag-connect-ha",
+  "issue_tracker": "https://github.com/its-me-prash/vag-connect-ha/issues",
   "requirements": [
     "carconnectivity>=0.11.8",
     "carconnectivity-connector-audi>=0.3.0",
@@ -13,7 +13,7 @@
   ],
   "dependencies": [],
   "codeowners": [
-    "@Prash1407"
+    "@its-me-prash"
   ],
   "iot_class": "cloud_push",
   "config_flow": true,

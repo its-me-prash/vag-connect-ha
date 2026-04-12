@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/Prash1407/vag-connect-ha/main/custom_components/vag_connect/logo.png" alt="VAG Connect" width="180">
+  <img src="https://raw.githubusercontent.com/its-me-prash/vag-connect-ha/main/custom_components/vag_connect/logo.png" alt="VAG Connect" width="180">
 </p>
 
 <h1 align="center">VAG Connect</h1>
@@ -10,7 +10,7 @@
 
 <p align="center">
   <a href="https://hacs.xyz"><img src="https://img.shields.io/badge/HACS-Custom-orange.svg?style=for-the-badge" alt="HACS"></a>
-  <a href="https://github.com/Prash1407/vag-connect-ha/releases"><img src="https://img.shields.io/github/v/release/Prash1407/vag-connect-ha?style=for-the-badge" alt="Version"></a>
+  <a href="https://github.com/its-me-prash/vag-connect-ha/releases"><img src="https://img.shields.io/github/v/release/its-me-prash/vag-connect-ha?style=for-the-badge" alt="Version"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge" alt="License"></a>
   <a href="https://www.home-assistant.io"><img src="https://img.shields.io/badge/Home%20Assistant-2024.1%2B-blue?style=for-the-badge" alt="Home Assistant"></a>
   <a href="tests/"><img src="https://img.shields.io/badge/Tests-192%2F192-brightgreen?style=for-the-badge" alt="Tests"></a>
@@ -117,7 +117,7 @@ CUPRA Leon e-Hybrid · Formentor e-Hybrid · SEAT Leon e-Hybrid
 ### Via HACS (recommended)
 
 1. Open HACS → Integrations → ⋮ → Custom repositories
-2. Enter URL: `https://github.com/Prash1407/vag-connect-ha`
+2. Enter URL: `https://github.com/its-me-prash/vag-connect-ha`
 3. Category: **Integration**
 4. Add → Search in HACS: **VAG Connect** → Install
 5. Restart Home Assistant

@@ -106,7 +106,7 @@ rules:
 
   integration-owner:
     status: done
-    comment: "@Prash1407 listed in manifest.json codeowners."
+    comment: "@its-me-prash listed in manifest.json codeowners."
 
   log-when-unavailable:
     status: done
