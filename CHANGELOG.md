@@ -21,6 +21,39 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ---
 
+## [1.1.0] - 2026-04-12
+
+### Hinzugefügt
+
+#### Universelle Felder für alle Marken — `coordinator._enrich()`
+
+Nach jedem `get_status()` Call reichert der Coordinator die Daten automatisch an:
+
+**`last_updated_at`** — immer gesetzt (UTC Timestamp), unabhängig von der Marke.
+War nur bei VW EU vorhanden. Jetzt bei allen 7 Marken verfügbar.
+
+**`vehicle_state`** — automatisch abgeleitet wenn nicht vom Client gesetzt:
+- `OFFLINE` wenn `is_online == False`
+- `CHARGING` wenn Ladevorgang aktiv
+- `DRIVING` wenn `is_driving == True`
+- `PARKED` als Standard
+
+**Reverse Geocoding** — `parking_address` + `parking_city` aus GPS-Koordinaten.
+Via Nominatim (OpenStreetMap), nur wenn lat/lon vorhanden und noch keine Adresse gesetzt.
+Best-effort: Fehler werden still ignoriert, nie ein Update-Fehler wegen Geocoding.
+
+#### Code-Qualität
+- Imports auf Top-Level verschoben: `asyncio`, `datetime`, `os`, `device_registry`,
+  `VehicleData` in `coordinator.py`, `vw_na.py`, `skoda.py`, `vw_eu.py`, `porsche.py`
+- `noqa` Suppressionen: 39 → 24
+
+#### Tests
+- 8 neue Tests für `_enrich()`: last_updated_at, vehicle_state Ableitungslogik,
+  Geocoding-Aufruf, Geocoding-Fehlerresistenz — **345/345 Tests grün**
+
+---
+
+
 ## [1.0.0] - 2026-04-12
 
 ### Erstes stabiles Release

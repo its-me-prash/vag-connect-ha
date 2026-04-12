@@ -120,3 +120,98 @@ class TestEntityBaseName:
         assert "AABBCC" in name
 
 
+
+
+# ── _enrich() universal enrichment ─────────────────────────────────────────
+
+class TestEnrich:
+    """Tests for coordinator._enrich() universal post-processing."""
+
+    def _make_coord(self):
+        from unittest.mock import MagicMock, AsyncMock
+        from custom_components.vag_connect.coordinator import VagConnectCoordinator
+        coord = VagConnectCoordinator.__new__(VagConnectCoordinator)
+        coord.hass = MagicMock()
+        coord.hass.async_add_executor_job = AsyncMock(return_value=None)
+        coord.entry = MagicMock()
+        coord.entry.data = {"brand": "audi", "username": "t@t.com",
+                            "password": "x", "spin": "", "update_interval": 300}
+        coord._vehicles_lock = __import__("threading").Lock()
+        coord._cariad_client = MagicMock()
+        coord._was_available = True
+        coord.data = None
+        return coord
+
+    def test_last_updated_at_always_set(self):
+        import asyncio
+        from datetime import datetime, timezone
+        coord = self._make_coord()
+        data = {"latitude": None, "longitude": None}
+        result = asyncio.get_event_loop().run_until_complete(coord._enrich(data))
+        assert result["last_updated_at"] is not None
+        assert isinstance(result["last_updated_at"], datetime)
+        assert result["last_updated_at"].tzinfo == timezone.utc
+
+    def test_vehicle_state_parked_default(self):
+        import asyncio
+        coord = self._make_coord()
+        data = {"is_online": True, "is_driving": False, "is_charging": False,
+                "latitude": None, "longitude": None}
+        result = asyncio.get_event_loop().run_until_complete(coord._enrich(data))
+        assert result["vehicle_state"] == "PARKED"
+
+    def test_vehicle_state_offline(self):
+        import asyncio
+        coord = self._make_coord()
+        data = {"is_online": False, "latitude": None, "longitude": None}
+        result = asyncio.get_event_loop().run_until_complete(coord._enrich(data))
+        assert result["vehicle_state"] == "OFFLINE"
+
+    def test_vehicle_state_charging(self):
+        import asyncio
+        coord = self._make_coord()
+        data = {"is_online": True, "is_driving": False, "is_charging": True,
+                "latitude": None, "longitude": None}
+        result = asyncio.get_event_loop().run_until_complete(coord._enrich(data))
+        assert result["vehicle_state"] == "CHARGING"
+
+    def test_existing_vehicle_state_preserved(self):
+        """Client-set vehicle_state must not be overwritten."""
+        import asyncio
+        coord = self._make_coord()
+        data = {"vehicle_state": "DRIVING", "latitude": None, "longitude": None}
+        result = asyncio.get_event_loop().run_until_complete(coord._enrich(data))
+        assert result["vehicle_state"] == "DRIVING"
+
+    def test_geocoding_skipped_when_address_already_set(self):
+        """If client already set parking_address, don't call geocoder."""
+        import asyncio
+        coord = self._make_coord()
+        data = {"latitude": 48.1, "longitude": 11.5,
+                "parking_address": "Existierende Straße 1, München"}
+        asyncio.get_event_loop().run_until_complete(coord._enrich(data))
+        coord.hass.async_add_executor_job.assert_not_called()
+
+    def test_geocoding_called_when_gps_available(self):
+        """When lat/lon present and no address, geocoder is called."""
+        import asyncio
+        from unittest.mock import AsyncMock
+        coord = self._make_coord()
+        coord.hass.async_add_executor_job = AsyncMock(
+            return_value={"address": "Teststraße 1, München", "city": "München"}
+        )
+        data = {"latitude": 48.1351, "longitude": 11.5820, "parking_address": None}
+        result = asyncio.get_event_loop().run_until_complete(coord._enrich(data))
+        coord.hass.async_add_executor_job.assert_called_once()
+        assert result["parking_address"] == "Teststraße 1, München"
+        assert result["parking_city"] == "München"
+
+    def test_geocoding_failure_does_not_crash(self):
+        """Geocoding exception → silently ignored, address stays None."""
+        import asyncio
+        from unittest.mock import AsyncMock
+        coord = self._make_coord()
+        coord.hass.async_add_executor_job = AsyncMock(side_effect=Exception("Network error"))
+        data = {"latitude": 48.1, "longitude": 11.5, "parking_address": None}
+        result = asyncio.get_event_loop().run_until_complete(coord._enrich(data))
+        assert result.get("parking_address") is None  # no crash, address stays None

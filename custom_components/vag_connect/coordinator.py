@@ -11,6 +11,7 @@ Thread safety:
 """
 
 import asyncio
+from datetime import datetime, timezone
 import logging
 import threading
 from typing import Any
@@ -105,7 +106,7 @@ class VagConnectCoordinator(DataUpdateCoordinator):
                     if isinstance(result, VehicleData):
                         data = result.to_dict()
                         data["_client"] = self._cariad_client
-                        self.vehicles[vin] = data
+                        self.vehicles[vin] = await self._enrich(data)
 
             self._started = True
             found = len(self.vehicles)
@@ -156,7 +157,7 @@ class VagConnectCoordinator(DataUpdateCoordinator):
                             if isinstance(result, VehicleData):
                                 data = result.to_dict()
                                 data["_client"] = self._cariad_client
-                                fresh[vin] = data
+                                fresh[vin] = await self._enrich(data)
                 with self._vehicles_lock:
                     self.vehicles.update(fresh)
                 await self._async_push_update(fresh, success=True)
@@ -243,6 +244,82 @@ class VagConnectCoordinator(DataUpdateCoordinator):
                 device_reg.async_remove_device(device_entry.id)
 
 
+
+    async def _enrich(self, data: dict) -> dict:
+        """Universal post-processing after every get_status() call.
+
+        Sets fields that every brand should have but individual clients may omit:
+        - last_updated_at: always UTC now
+        - vehicle_state: derived from is_driving / charging_state / connection
+        - is_driving: if not set by client, derive from vehicle_state
+        - parking_address / parking_city: reverse geocode if lat/lon available (best-effort)
+        """
+
+        # Always stamp when we fetched
+        data["last_updated_at"] = datetime.now(tz=timezone.utc)
+
+        # Derive vehicle_state if not set by client
+        if not data.get("vehicle_state"):
+            if not data.get("is_online", True):
+                data["vehicle_state"] = "OFFLINE"
+            elif data.get("is_driving"):
+                data["vehicle_state"] = "DRIVING"
+            elif data.get("is_charging"):
+                data["vehicle_state"] = "CHARGING"
+            else:
+                data["vehicle_state"] = "PARKED"
+
+        # Derive is_driving from vehicle_state if client didn't set it
+        if not data.get("is_driving") and data.get("vehicle_state") == "DRIVING":
+            data["is_driving"] = True
+
+        # Reverse geocode parking position (best-effort, only if not already set)
+        lat = data.get("latitude")
+        lon = data.get("longitude")
+        if lat and lon and not data.get("parking_address"):
+            try:
+                result = await self.hass.async_add_executor_job(
+                    self._reverse_geocode, lat, lon
+                )
+                if result:
+                    data["parking_address"] = result.get("address")
+                    data["parking_city"] = result.get("city")
+            except Exception:  # noqa: BLE001
+                pass  # geocoding is optional — never fail an update because of it
+
+        return data
+
+
+    @staticmethod
+    def _reverse_geocode(lat: float, lon: float) -> dict | None:
+        """Reverse geocode lat/lon via Nominatim (OSM).
+
+        Uses HA's built-in reverse geocoding convention:
+        User-Agent required by Nominatim ToS.
+        Returns dict with 'address' and 'city' keys.
+        """
+        import urllib.request  # noqa: PLC0415
+        import json as _json  # noqa: PLC0415
+
+        url = (
+            f"https://nominatim.openstreetmap.org/reverse"
+            f"?lat={lat}&lon={lon}&format=json&addressdetails=1"
+        )
+        req = urllib.request.Request(url, headers={"User-Agent": "VAGConnect/1.0 HomeAssistant"})
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            data = _json.loads(resp.read())
+
+        addr = data.get("address", {})
+        road = addr.get("road") or addr.get("pedestrian") or addr.get("path", "")
+        house = addr.get("house_number", "")
+        city = addr.get("city") or addr.get("town") or addr.get("village") or addr.get("municipality", "")
+        display = data.get("display_name", "")
+
+        street = f"{road} {house}".strip() if house else road
+        address = f"{street}, {city}".strip(", ") if street and city else (city or display[:60])
+
+        return {"address": address or None, "city": city or None}
+
     async def _async_update_data(self) -> dict[str, Any]:
         """Manual refresh — fetches fresh status for all known VINs."""
         if not self._started or self._cariad_client is None:
@@ -262,7 +339,7 @@ class VagConnectCoordinator(DataUpdateCoordinator):
                     if isinstance(result, VehicleData):
                         data = result.to_dict()
                         data["_client"] = self._cariad_client
-                        self.vehicles[vin] = data
+                        self.vehicles[vin] = await self._enrich(data)
             _LOGGER.debug("VAG Connect: Manual refresh OK")
             return dict(self.vehicles)
         except Exception as err:  # noqa: BLE001
