@@ -3,49 +3,52 @@
     "step": {
       "user": {
         "title": "Konfigurera VAG Connect",
-        "description": "Anslut ditt fordon till Home Assistant. Välj ditt märke och ange inloggningsuppgifterna från appen.",
+        "description": "Anslut ditt fordon till Home Assistant.\n\nVälj ditt märke och ange inloggningsuppgifterna från tillverkarens app.",
         "data": {
           "brand": "Fordonsvarumärke",
           "username": "E-postadress",
           "password": "Lösenord",
-          "spin": "S-PIN (valfritt, krävs för dörrlåsning)",
-          "scan_interval": "Uppdateringsintervall (minuter)",
-          "force_enable_access": "Tvinga dörråtkomst (äldre modeller)"
+          "spin": "S-PIN",
+          "scan_interval": "Uppdateringsintervall",
+          "force_enable_access": "Tvinga dörrstatus"
         },
         "data_description": {
-          "spin": "Krävs för dörrlåsning. Kan lämnas tomt.",
-          "scan_interval": "Hur ofta API:et avfrågas (minuter). Standard: 5. Minimum: 3.",
-          "force_enable_access": "Aktivera om dörrstatus inte visas trots att det syns i appen."
+          "brand": "Välj ditt märke.",
+          "username": "E-postadress från tillverkarens app.",
+          "password": "Lösenord från appen.",
+          "spin": "Krävs endast för låsning. App → Säkerhet → S-PIN.",
+          "scan_interval": "Hur ofta data hämtas. Standard: 5 min. Minimum: 3 min.",
+          "force_enable_access": "För äldre fordon som inte klarar kapabilitetskontrollen."
         }
       },
       "reauth_confirm": {
-        "title": "Autentisera igen",
-        "description": "Ange ditt lösenord för {brand} ({username}) igen.",
+        "title": "Logga in igen — {brand}",
+        "description": "Sessionen för **{username}** har gått ut.\n\nAnge ditt lösenord igen.",
         "data": {
           "password": "Lösenord",
-          "spin": "S-PIN (valfritt, krävs för dörrlåsning)"
+          "spin": "S-PIN"
         }
       },
       "reconfigure": {
-        "title": "Konfigurera om VAG Connect",
-        "description": "Ändra inloggningsuppgifter utan att ta bort integrationen.",
+        "title": "Omkonfigurera VAG Connect",
+        "description": "Ändra inloggningsuppgifter eller inställningar utan att ta bort integrationen.",
         "data": {
           "brand": "Fordonsvarumärke",
           "username": "E-postadress",
           "password": "Lösenord",
-          "spin": "S-PIN (valfritt, krävs för dörrlåsning)",
-          "scan_interval": "Uppdateringsintervall (minuter)",
-          "force_enable_access": "Tvinga dörråtkomst (äldre modeller)"
+          "spin": "S-PIN",
+          "scan_interval": "Uppdateringsintervall",
+          "force_enable_access": "Tvinga dörrstatus"
         }
       },
       "mfa": {
-        "title": "Tvåfaktorsautentisering",
-        "description": "Ange koden som skickats till din e-post eller från din autentiseringsapp.",
+        "title": "Tvåstegsverifiering",
+        "description": "En bekräftelsekod skickades till **{username}**.\n\nAnge koden från din e-post eller autentiseringsapp.",
         "data": {
-          "mfa_code": "MFA-kod"
+          "mfa_code": "Bekräftelsekod"
         },
         "data_description": {
-          "mfa_code": "6-siffrig kod från e-post eller autentiseringsapp"
+          "mfa_code": "6-siffrig kod — giltig i några minuter."
         }
       }
     },
@@ -69,8 +72,12 @@
       "init": {
         "title": "VAG Connect — Inställningar",
         "data": {
-          "scan_interval": "Uppdateringsintervall (minuter)",
+          "scan_interval": "Uppdateringsintervall",
           "spin": "S-PIN"
+        },
+        "data_description": {
+          "scan_interval": "Hur ofta data hämtas (minuter). Minimum: 3.",
+          "spin": "S-PIN för dörrlåsning."
         }
       }
     }

@@ -2,50 +2,53 @@
   "config": {
     "step": {
       "user": {
-        "title": "Nastavení VAG Connect",
-        "description": "Připojte svůj vůz k Home Assistant. Vyberte značku a zadejte přihlašovací údaje z aplikace.",
+        "title": "Nastavit VAG Connect",
+        "description": "Připojte své vozidlo k Home Assistant.\n\nVyberte značku a zadejte přihlašovací údaje z aplikace výrobce.",
         "data": {
           "brand": "Značka vozidla",
           "username": "E-mailová adresa",
           "password": "Heslo",
-          "spin": "S-PIN (volitelné, nutné pro zamykání dveří)",
-          "scan_interval": "Interval aktualizace (minuty)",
-          "force_enable_access": "Vynutit přístup ke dveřím (starší modely)"
+          "spin": "S-PIN",
+          "scan_interval": "Interval aktualizace",
+          "force_enable_access": "Vynutit stav dveří"
         },
         "data_description": {
-          "spin": "Nutné pro zamykání dveří. Lze ponechat prázdné.",
-          "scan_interval": "Jak často je API dotazováno (minuty). Výchozí: 5. Minimum: 3.",
-          "force_enable_access": "Zapněte pokud se stav dveří nezobrazuje, přestože je viditelný v aplikaci."
+          "brand": "Vyberte značku.",
+          "username": "E-mailová adresa z aplikace výrobce.",
+          "password": "Heslo z aplikace.",
+          "spin": "Vyžadováno pouze pro zamykání. App → Zabezpečení → S-PIN.",
+          "scan_interval": "Jak často se stahují data. Výchozí: 5 min. Minimum: 3 min.",
+          "force_enable_access": "Pro starší vozidla, která nesplňují kontrolu schopností."
         }
       },
       "reauth_confirm": {
-        "title": "Opětovné ověření",
-        "description": "Zadejte prosím heslo pro {brand} ({username}).",
+        "title": "Znovu se přihlásit — {brand}",
+        "description": "Relace pro **{username}** vypršela.\n\nZadejte prosím heslo znovu.",
         "data": {
           "password": "Heslo",
-          "spin": "S-PIN (volitelné, nutné pro zamykání dveří)"
+          "spin": "S-PIN"
         }
       },
       "reconfigure": {
-        "title": "Překonfigurovat VAG Connect",
-        "description": "Změňte přihlašovací údaje bez odebrání integrace.",
+        "title": "Znovu nakonfigurovat VAG Connect",
+        "description": "Změňte přihlašovací údaje nebo nastavení bez odebrání integrace.",
         "data": {
           "brand": "Značka vozidla",
           "username": "E-mailová adresa",
           "password": "Heslo",
-          "spin": "S-PIN (volitelné, nutné pro zamykání dveří)",
-          "scan_interval": "Interval aktualizace (minuty)",
-          "force_enable_access": "Vynutit přístup ke dveřím (starší modely)"
+          "spin": "S-PIN",
+          "scan_interval": "Interval aktualizace",
+          "force_enable_access": "Vynutit stav dveří"
         }
       },
       "mfa": {
         "title": "Dvoufaktorové ověření",
-        "description": "Zadejte kód obdržený e-mailem nebo z autentizační aplikace.",
+        "description": "Potvrzovací kód byl odeslán na **{username}**.\n\nZadejte kód z e-mailu nebo ověřovací aplikace.",
         "data": {
-          "mfa_code": "Kód MFA"
+          "mfa_code": "Potvrzovací kód"
         },
         "data_description": {
-          "mfa_code": "6-místný kód z e-mailu nebo aplikace"
+          "mfa_code": "6místný kód — platný několik minut."
         }
       }
     },
@@ -69,8 +72,12 @@
       "init": {
         "title": "VAG Connect — Nastavení",
         "data": {
-          "scan_interval": "Interval aktualizace (minuty)",
+          "scan_interval": "Interval aktualizace",
           "spin": "S-PIN"
+        },
+        "data_description": {
+          "scan_interval": "Jak často se stahují data (minuty). Minimum: 3.",
+          "spin": "S-PIN pro zamykání dveří."
         }
       }
     }

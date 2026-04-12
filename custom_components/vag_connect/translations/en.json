@@ -3,49 +3,52 @@
     "step": {
       "user": {
         "title": "Set up VAG Connect",
-        "description": "Connect your vehicle to Home Assistant. Select your brand and enter the login credentials from the corresponding app.",
+        "description": "Connect your vehicle to Home Assistant.\n\nChoose your brand and enter the credentials from your manufacturer's app.",
         "data": {
-          "brand": "Vehicle brand",
-          "username": "Email address",
+          "brand": "Vehicle Brand",
+          "username": "Email Address",
           "password": "Password",
-          "spin": "S-PIN (optional, required for door locking)",
-          "scan_interval": "Update interval (minutes)",
-          "force_enable_access": "Force door access (for older models)"
+          "spin": "S-PIN",
+          "scan_interval": "Update Interval",
+          "force_enable_access": "Force Door Status"
         },
         "data_description": {
-          "spin": "Required for door locking and some other actions. Can be left empty.",
-          "scan_interval": "How often the API is polled (minutes). Default: 5. Minimum: 3.",
-          "force_enable_access": "Enable if door and window status is not shown, even though it's visible in the app."
+          "brand": "Choose your brand — myAudi, WeConnect ID, MyŠkoda, SEAT or CUPRA.",
+          "username": "Email address from the manufacturer app.",
+          "password": "Password from the app.",
+          "spin": "Only needed for locking. App → Security → S-PIN.",
+          "scan_interval": "How often data is fetched. Default: 5 min. Minimum: 3 min.",
+          "force_enable_access": "For older vehicles that fail the capability check."
         }
       },
       "reauth_confirm": {
-        "title": "Re-authenticate",
-        "description": "Please re-enter your password for {brand} ({username}).",
+        "title": "Sign in again — {brand}",
+        "description": "The session for **{username}** has expired.\n\nPlease enter your password again.",
         "data": {
           "password": "Password",
-          "spin": "S-PIN (optional, required for door locking)"
+          "spin": "S-PIN"
         }
       },
       "reconfigure": {
         "title": "Reconfigure VAG Connect",
         "description": "Change credentials or settings without removing the integration.",
         "data": {
-          "brand": "Vehicle brand",
-          "username": "Email address",
+          "brand": "Vehicle Brand",
+          "username": "Email Address",
           "password": "Password",
-          "spin": "S-PIN (optional, required for door locking)",
-          "scan_interval": "Update interval (minutes)",
-          "force_enable_access": "Force door access (for older models)"
+          "spin": "S-PIN",
+          "scan_interval": "Update Interval",
+          "force_enable_access": "Force Door Status"
         }
       },
       "mfa": {
-        "title": "Two-Factor Authentication",
-        "description": "Enter the code sent to your email or from your authenticator app.",
+        "title": "Two-factor confirmation",
+        "description": "A confirmation code was sent to **{username}**.\n\nEnter the code from your email or authenticator app.",
         "data": {
-          "mfa_code": "MFA Code"
+          "mfa_code": "Confirmation Code"
         },
         "data_description": {
-          "mfa_code": "6-digit code from email or authenticator app"
+          "mfa_code": "6-digit code — valid for a few minutes."
         }
       }
     },
@@ -69,8 +72,12 @@
       "init": {
         "title": "VAG Connect — Settings",
         "data": {
-          "scan_interval": "Update interval (minutes)",
+          "scan_interval": "Update Interval",
           "spin": "S-PIN"
+        },
+        "data_description": {
+          "scan_interval": "How often data is fetched (minutes). Minimum: 3.",
+          "spin": "S-PIN for door locking. App → Security → S-PIN."
         }
       }
     }

@@ -3,49 +3,52 @@
     "step": {
       "user": {
         "title": "Configurer VAG Connect",
-        "description": "Connectez votre véhicule à Home Assistant. Sélectionnez votre marque et saisissez les identifiants de l'application.",
+        "description": "Connectez votre véhicule à Home Assistant.\n\nChoisissez votre marque et entrez les identifiants de l'application fabricant.",
         "data": {
           "brand": "Marque du véhicule",
           "username": "Adresse e-mail",
           "password": "Mot de passe",
-          "spin": "S-PIN (optionnel, requis pour le verrouillage)",
-          "scan_interval": "Intervalle de mise à jour (minutes)",
-          "force_enable_access": "Forcer l'accès aux portes (anciens modèles)"
+          "spin": "S-PIN",
+          "scan_interval": "Intervalle de mise à jour",
+          "force_enable_access": "Forcer l'état des portes"
         },
         "data_description": {
-          "spin": "Requis pour le verrouillage des portes. Peut être laissé vide.",
-          "scan_interval": "Fréquence d'interrogation de l'API (minutes). Défaut: 5. Minimum: 3.",
-          "force_enable_access": "Activer si l'état des portes ne s'affiche pas, bien que visible dans l'app."
+          "brand": "Choisissez votre marque.",
+          "username": "Adresse e-mail de l'application fabricant.",
+          "password": "Mot de passe de l'application.",
+          "spin": "Requis uniquement pour le verrouillage. App → Sécurité → S-PIN.",
+          "scan_interval": "Fréquence de mise à jour. Par défaut: 5 min. Minimum: 3 min.",
+          "force_enable_access": "Pour les véhicules anciens qui échouent la vérification des capacités."
         }
       },
       "reauth_confirm": {
-        "title": "Ré-authentification",
-        "description": "Veuillez saisir à nouveau votre mot de passe pour {brand} ({username}).",
+        "title": "Se reconnecter — {brand}",
+        "description": "La session de **{username}** a expiré.\n\nVeuillez entrer votre mot de passe à nouveau.",
         "data": {
           "password": "Mot de passe",
-          "spin": "S-PIN (optionnel, requis pour le verrouillage)"
+          "spin": "S-PIN"
         }
       },
       "reconfigure": {
         "title": "Reconfigurer VAG Connect",
-        "description": "Modifiez les identifiants ou les paramètres sans supprimer l'intégration.",
+        "description": "Modifiez les identifiants ou paramètres sans supprimer l'intégration.",
         "data": {
           "brand": "Marque du véhicule",
           "username": "Adresse e-mail",
           "password": "Mot de passe",
-          "spin": "S-PIN (optionnel, requis pour le verrouillage)",
-          "scan_interval": "Intervalle de mise à jour (minutes)",
-          "force_enable_access": "Forcer l'accès aux portes (anciens modèles)"
+          "spin": "S-PIN",
+          "scan_interval": "Intervalle de mise à jour",
+          "force_enable_access": "Forcer l'état des portes"
         }
       },
       "mfa": {
-        "title": "Authentification à deux facteurs",
-        "description": "Entrez le code reçu par e-mail ou depuis votre application d'authentification.",
+        "title": "Confirmation en deux étapes",
+        "description": "Un code de confirmation a été envoyé à **{username}**.\n\nSaisissez le code de votre e-mail ou application d'authentification.",
         "data": {
-          "mfa_code": "Code MFA"
+          "mfa_code": "Code de confirmation"
         },
         "data_description": {
-          "mfa_code": "Code à 6 chiffres par e-mail ou application"
+          "mfa_code": "Code à 6 chiffres — valide quelques minutes."
         }
       }
     },
@@ -69,8 +72,12 @@
       "init": {
         "title": "VAG Connect — Paramètres",
         "data": {
-          "scan_interval": "Intervalle de mise à jour (minutes)",
+          "scan_interval": "Intervalle de mise à jour",
           "spin": "S-PIN"
+        },
+        "data_description": {
+          "scan_interval": "Fréquence de mise à jour (minutes). Minimum: 3.",
+          "spin": "S-PIN pour le verrouillage des portes."
         }
       }
     }

@@ -2,50 +2,53 @@
   "config": {
     "step": {
       "user": {
-        "title": "Konfiguracja VAG Connect",
-        "description": "Połącz swój pojazd z Home Assistant. Wybierz markę i wprowadź dane logowania z aplikacji.",
+        "title": "Skonfiguruj VAG Connect",
+        "description": "Połącz swój pojazd z Home Assistant.\n\nWybierz markę i wprowadź dane logowania z aplikacji producenta.",
         "data": {
           "brand": "Marka pojazdu",
           "username": "Adres e-mail",
           "password": "Hasło",
-          "spin": "S-PIN (opcjonalny, wymagany do blokowania drzwi)",
-          "scan_interval": "Interwał aktualizacji (minuty)",
-          "force_enable_access": "Wymusz dostęp do drzwi (starsze modele)"
+          "spin": "S-PIN",
+          "scan_interval": "Interwał aktualizacji",
+          "force_enable_access": "Wymuś stan drzwi"
         },
         "data_description": {
-          "spin": "Wymagany do blokowania drzwi. Można pozostawić puste.",
-          "scan_interval": "Jak często API jest odpytywane (minuty). Domyślnie: 5. Minimum: 3.",
-          "force_enable_access": "Włącz jeśli stan drzwi nie jest wyświetlany mimo że jest widoczny w aplikacji."
+          "brand": "Wybierz markę.",
+          "username": "Adres e-mail z aplikacji producenta.",
+          "password": "Hasło z aplikacji.",
+          "spin": "Wymagany tylko do blokowania. App → Bezpieczeństwo → S-PIN.",
+          "scan_interval": "Jak często pobierane są dane. Domyślnie: 5 min. Minimum: 3 min.",
+          "force_enable_access": "Dla starszych pojazdów, które nie przechodzą sprawdzania możliwości."
         }
       },
       "reauth_confirm": {
-        "title": "Ponowne uwierzytelnianie",
-        "description": "Wprowadź ponownie hasło dla {brand} ({username}).",
+        "title": "Zaloguj się ponownie — {brand}",
+        "description": "Sesja dla **{username}** wygasła.\n\nWprowadź hasło ponownie.",
         "data": {
           "password": "Hasło",
-          "spin": "S-PIN (opcjonalny, wymagany do blokowania drzwi)"
+          "spin": "S-PIN"
         }
       },
       "reconfigure": {
-        "title": "Ponowna konfiguracja VAG Connect",
-        "description": "Zmień dane logowania bez usuwania integracji.",
+        "title": "Skonfiguruj ponownie VAG Connect",
+        "description": "Zmień dane logowania lub ustawienia bez usuwania integracji.",
         "data": {
           "brand": "Marka pojazdu",
           "username": "Adres e-mail",
           "password": "Hasło",
-          "spin": "S-PIN (opcjonalny, wymagany do blokowania drzwi)",
-          "scan_interval": "Interwał aktualizacji (minuty)",
-          "force_enable_access": "Wymusz dostęp do drzwi (starsze modele)"
+          "spin": "S-PIN",
+          "scan_interval": "Interwał aktualizacji",
+          "force_enable_access": "Wymuś stan drzwi"
         }
       },
       "mfa": {
-        "title": "Uwierzytelnianie dwuskładnikowe",
-        "description": "Wprowadź kod otrzymany e-mailem lub z aplikacji uwierzytelniającej.",
+        "title": "Weryfikacja dwuetapowa",
+        "description": "Kod potwierdzający został wysłany na **{username}**.\n\nWprowadź kod z e-maila lub aplikacji uwierzytelniającej.",
         "data": {
-          "mfa_code": "Kod MFA"
+          "mfa_code": "Kod potwierdzający"
         },
         "data_description": {
-          "mfa_code": "6-cyfrowy kod z e-maila lub aplikacji"
+          "mfa_code": "6-cyfrowy kod — ważny przez kilka minut."
         }
       }
     },
@@ -69,8 +72,12 @@
       "init": {
         "title": "VAG Connect — Ustawienia",
         "data": {
-          "scan_interval": "Interwał aktualizacji (minuty)",
+          "scan_interval": "Interwał aktualizacji",
           "spin": "S-PIN"
+        },
+        "data_description": {
+          "scan_interval": "Jak często pobierane są dane (minuty). Minimum: 3.",
+          "spin": "S-PIN do blokowania drzwi."
         }
       }
     }

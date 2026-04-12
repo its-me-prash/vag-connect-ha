@@ -3,27 +3,30 @@
     "step": {
       "user": {
         "title": "VAG Connect instellen",
-        "description": "Verbind uw voertuig met Home Assistant. Kies uw merk en voer de inloggegevens van de app in.",
+        "description": "Verbind je voertuig met Home Assistant.\n\nKies je merk en voer de inloggegevens van de fabrieksapp in.",
         "data": {
           "brand": "Voertuigmerk",
           "username": "E-mailadres",
           "password": "Wachtwoord",
-          "spin": "S-PIN (optioneel, vereist voor vergrendeling)",
-          "scan_interval": "Bijwerkinterval (minuten)",
-          "force_enable_access": "Deurtoegang forceren (oudere modellen)"
+          "spin": "S-PIN",
+          "scan_interval": "Update-interval",
+          "force_enable_access": "Deurstatus forceren"
         },
         "data_description": {
-          "spin": "Vereist voor deurvergrendeling. Kan leeg worden gelaten.",
-          "scan_interval": "Hoe vaak de API wordt geraadpleegd (minuten). Standaard: 5. Minimum: 3.",
-          "force_enable_access": "Inschakelen als deurstatus ontbreekt maar zichtbaar is in de app."
+          "brand": "Kies je merk.",
+          "username": "E-mailadres uit de fabrieksapp.",
+          "password": "Wachtwoord uit de app.",
+          "spin": "Alleen nodig voor vergrendeling. App → Beveiliging → S-PIN.",
+          "scan_interval": "Hoe vaak gegevens worden opgehaald. Standaard: 5 min. Minimum: 3 min.",
+          "force_enable_access": "Voor oudere voertuigen die de capabiliteitscheck niet doorstaan."
         }
       },
       "reauth_confirm": {
-        "title": "Opnieuw authenticeren",
-        "description": "Voer uw wachtwoord opnieuw in voor {brand} ({username}).",
+        "title": "Opnieuw inloggen — {brand}",
+        "description": "De sessie voor **{username}** is verlopen.\n\nVoer je wachtwoord opnieuw in.",
         "data": {
           "password": "Wachtwoord",
-          "spin": "S-PIN (optioneel, vereist voor vergrendeling)"
+          "spin": "S-PIN"
         }
       },
       "reconfigure": {
@@ -33,19 +36,19 @@
           "brand": "Voertuigmerk",
           "username": "E-mailadres",
           "password": "Wachtwoord",
-          "spin": "S-PIN (optioneel, vereist voor vergrendeling)",
-          "scan_interval": "Bijwerkinterval (minuten)",
-          "force_enable_access": "Deurtoegang forceren (oudere modellen)"
+          "spin": "S-PIN",
+          "scan_interval": "Update-interval",
+          "force_enable_access": "Deurstatus forceren"
         }
       },
       "mfa": {
-        "title": "Twee-factor authenticatie",
-        "description": "Voer de code in die je per e-mail of via je authenticator-app hebt ontvangen.",
+        "title": "Tweestapsverificatie",
+        "description": "Een bevestigingscode is verzonden naar **{username}**.\n\nVoer de code in uit je e-mail of authenticator-app.",
         "data": {
-          "mfa_code": "MFA-code"
+          "mfa_code": "Bevestigingscode"
         },
         "data_description": {
-          "mfa_code": "6-cijferige code uit e-mail of authenticator-app"
+          "mfa_code": "6-cijferige code — geldig een paar minuten."
         }
       }
     },
@@ -69,8 +72,12 @@
       "init": {
         "title": "VAG Connect — Instellingen",
         "data": {
-          "scan_interval": "Bijwerkinterval (minuten)",
+          "scan_interval": "Update-interval",
           "spin": "S-PIN"
+        },
+        "data_description": {
+          "scan_interval": "Hoe vaak gegevens worden opgehaald (minuten). Minimum: 3.",
+          "spin": "S-PIN voor deurvergrendeling."
         }
       }
     }

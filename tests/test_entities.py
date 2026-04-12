@@ -860,8 +860,8 @@ class TestConfigFlowExtended:
         assert result["step_id"] == "reconfigure"
 
     def test_user_schema_prefilled(self):
-        from custom_components.vag_connect.config_flow import _user_schema
-        schema = _user_schema(brand="skoda", username="u@s.cz", scan_interval=10)
+        from custom_components.vag_connect.config_flow import _credentials_schema
+        schema = _credentials_schema(brand="skoda", username="u@s.cz", scan_interval=10)
         assert schema is not None
 
 

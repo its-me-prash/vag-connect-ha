@@ -3,27 +3,27 @@
     "step": {
       "user": {
         "title": "VAG Connect einrichten",
-        "description": "Verbinde dein Fahrzeug mit Home Assistant. Wähle deine Marke und gib die Zugangsdaten aus der jeweiligen App ein.",
+        "description": "Verbinde dein Fahrzeug mit Home Assistant.\n\nWähle deine Marke und gib die Zugangsdaten aus der jeweiligen Hersteller-App ein.",
         "data": {
           "brand": "Fahrzeugmarke",
           "username": "E-Mail-Adresse",
           "password": "Passwort",
-          "spin": "S-PIN (optional, für Türverriegelung)",
-          "scan_interval": "Aktualisierungsintervall (Minuten)",
-          "force_enable_access": "Türzustand erzwingen (für ältere Modelle)"
+          "spin": "S-PIN",
+          "scan_interval": "Aktualisierungsintervall",
+          "force_enable_access": "Türzustand erzwingen"
         },
         "data_description": {
-          "brand": "Wähle deine Fahrzeugmarke.",
-          "username": "Die E-Mail-Adresse aus der Hersteller-App (myAudi, WeConnect, etc.).",
-          "password": "Das Passwort aus der App.",
-          "spin": "Nur erforderlich für Verriegelung. Steht in der App unter Sicherheit → S-PIN.",
-          "scan_interval": "Wie oft die API abgefragt wird (Minuten). Standard: 5. Minimum: 3.",
-          "force_enable_access": "Für ältere Fahrzeuge die den 'access' Capability-Check nicht bestehen."
+          "brand": "Wähle deine Marke — myAudi, WeConnect ID, MyŠkoda, SEAT oder CUPRA.",
+          "username": "E-Mail-Adresse aus der Hersteller-App.",
+          "password": "Passwort aus der App.",
+          "spin": "Nur für Verriegelung nötig. App → Sicherheit → S-PIN.",
+          "scan_interval": "Wie oft Daten abgerufen werden. Standard: 5 Min. Minimum: 3 Min.",
+          "force_enable_access": "Für ältere Modelle die den Capability-Check nicht bestehen."
         }
       },
       "reauth_confirm": {
-        "title": "Erneut anmelden",
-        "description": "Bitte gib dein Passwort für {brand} ({username}) erneut ein.",
+        "title": "Erneut anmelden — {brand}",
+        "description": "Die Anmeldung für **{username}** ist abgelaufen.\n\nBitte Passwort erneut eingeben.",
         "data": {
           "password": "Passwort",
           "spin": "S-PIN (optional)"
@@ -31,24 +31,24 @@
       },
       "reconfigure": {
         "title": "VAG Connect neu konfigurieren",
-        "description": "Ändere Zugangsdaten oder Einstellungen ohne die Integration zu entfernen.",
+        "description": "Zugangsdaten oder Einstellungen ändern — ohne die Integration zu entfernen.",
         "data": {
           "brand": "Fahrzeugmarke",
           "username": "E-Mail",
-          "password": "Neues Passwort",
+          "password": "Passwort",
           "spin": "S-PIN",
-          "scan_interval": "Abfrageintervall (Minuten)",
-          "force_enable_access": "Zugriff erzwingen"
+          "scan_interval": "Aktualisierungsintervall",
+          "force_enable_access": "Türzustand erzwingen"
         }
       },
       "mfa": {
         "title": "Zwei-Faktor-Bestätigung",
-        "description": "Gib den Code ein, den du per E-Mail oder Authenticator-App erhalten hast.",
+        "description": "Ein Bestätigungscode wurde an **{username}** gesendet.\n\nGib den Code aus deiner E-Mail oder Authenticator-App ein.",
         "data": {
-          "mfa_code": "MFA-Code"
+          "mfa_code": "Bestätigungscode"
         },
         "data_description": {
-          "mfa_code": "6-stelliger Code aus E-Mail oder Authenticator-App"
+          "mfa_code": "6-stelliger Code — gültig für wenige Minuten."
         }
       }
     },
@@ -72,8 +72,12 @@
       "init": {
         "title": "VAG Connect — Einstellungen",
         "data": {
-          "scan_interval": "Aktualisierungsintervall (Minuten)",
+          "scan_interval": "Aktualisierungsintervall",
           "spin": "S-PIN"
+        },
+        "data_description": {
+          "scan_interval": "Wie oft Daten abgerufen werden (Minuten). Minimum: 3.",
+          "spin": "S-PIN für Türverriegelung. App → Sicherheit → S-PIN."
         }
       }
     }

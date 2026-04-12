@@ -3,49 +3,52 @@
     "step": {
       "user": {
         "title": "Configurar VAG Connect",
-        "description": "Conecta tu vehículo con Home Assistant. Selecciona tu marca e introduce las credenciales de la aplicación.",
+        "description": "Conecta tu vehículo a Home Assistant.\n\nElige tu marca e introduce las credenciales de la app del fabricante.",
         "data": {
           "brand": "Marca del vehículo",
           "username": "Correo electrónico",
           "password": "Contraseña",
-          "spin": "S-PIN (opcional, necesario para el bloqueo)",
-          "scan_interval": "Intervalo de actualización (minutos)",
-          "force_enable_access": "Forzar acceso a puertas (modelos antiguos)"
+          "spin": "S-PIN",
+          "scan_interval": "Intervalo de actualización",
+          "force_enable_access": "Forzar estado de puertas"
         },
         "data_description": {
-          "spin": "Necesario para el bloqueo de puertas. Se puede dejar vacío.",
-          "scan_interval": "Frecuencia de consulta a la API (minutos). Predeterminado: 5. Mínimo: 3.",
-          "force_enable_access": "Activar si el estado de puertas no se muestra aunque sea visible en la app."
+          "brand": "Elige tu marca.",
+          "username": "Dirección de e-mail de la app del fabricante.",
+          "password": "Contraseña de la app.",
+          "spin": "Solo necesario para bloqueo. App → Seguridad → S-PIN.",
+          "scan_interval": "Frecuencia de actualización. Por defecto: 5 min. Mínimo: 3 min.",
+          "force_enable_access": "Para vehículos antiguos que fallan la verificación de capacidades."
         }
       },
       "reauth_confirm": {
-        "title": "Volver a autenticarse",
-        "description": "Introduce tu contraseña de {brand} ({username}) de nuevo.",
+        "title": "Volver a iniciar sesión — {brand}",
+        "description": "La sesión de **{username}** ha expirado.\n\nPor favor introduce tu contraseña de nuevo.",
         "data": {
           "password": "Contraseña",
-          "spin": "S-PIN (opcional, necesario para el bloqueo)"
+          "spin": "S-PIN"
         }
       },
       "reconfigure": {
         "title": "Reconfigurar VAG Connect",
-        "description": "Cambia credenciales o ajustes sin eliminar la integración.",
+        "description": "Cambia credenciales o configuración sin eliminar la integración.",
         "data": {
           "brand": "Marca del vehículo",
           "username": "Correo electrónico",
           "password": "Contraseña",
-          "spin": "S-PIN (opcional, necesario para el bloqueo)",
-          "scan_interval": "Intervalo de actualización (minutos)",
-          "force_enable_access": "Forzar acceso a puertas (modelos antiguos)"
+          "spin": "S-PIN",
+          "scan_interval": "Intervalo de actualización",
+          "force_enable_access": "Forzar estado de puertas"
         }
       },
       "mfa": {
-        "title": "Autenticación de dos factores",
-        "description": "Introduce el código recibido por correo o desde tu aplicación autenticadora.",
+        "title": "Confirmación en dos pasos",
+        "description": "Se ha enviado un código de confirmación a **{username}**.\n\nIntroduce el código de tu e-mail o app de autenticación.",
         "data": {
-          "mfa_code": "Código MFA"
+          "mfa_code": "Código de confirmación"
         },
         "data_description": {
-          "mfa_code": "Código de 6 dígitos del correo o app"
+          "mfa_code": "Código de 6 dígitos — válido unos minutos."
         }
       }
     },
@@ -67,10 +70,14 @@
   "options": {
     "step": {
       "init": {
-        "title": "VAG Connect — Ajustes",
+        "title": "VAG Connect — Configuración",
         "data": {
-          "scan_interval": "Intervalo de actualización (minutos)",
+          "scan_interval": "Intervalo de actualización",
           "spin": "S-PIN"
+        },
+        "data_description": {
+          "scan_interval": "Frecuencia de actualización (minutos). Mínimo: 3.",
+          "spin": "S-PIN para bloqueo de puertas."
         }
       }
     }

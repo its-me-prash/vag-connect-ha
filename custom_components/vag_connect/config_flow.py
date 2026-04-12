@@ -11,6 +11,19 @@ import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.const import CONF_PASSWORD, CONF_USERNAME
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers.selector import (
+    BooleanSelector,
+    NumberSelector,
+    NumberSelectorConfig,
+    NumberSelectorMode,
+    SelectOptionDict,
+    SelectSelector,
+    SelectSelectorConfig,
+    SelectSelectorMode,
+    TextSelector,
+    TextSelectorConfig,
+    TextSelectorType,
+)
 
 from .const import (
     BRANDS,
@@ -25,28 +38,73 @@ from .const import (
 
 _LOGGER = logging.getLogger(__name__)
 
+# ── Brand selector options with icons ────────────────────────────────────────
+# HA renders these as a visual select list (not a plain dropdown)
+_BRAND_OPTIONS: list[SelectOptionDict] = [
+    SelectOptionDict(value="audi",       label="Audi (myAudi)"),
+    SelectOptionDict(value="volkswagen", label="Volkswagen (WeConnect ID)"),
+    SelectOptionDict(value="skoda",      label="Škoda (MyŠkoda)"),
+    SelectOptionDict(value="seat",       label="SEAT"),
+    SelectOptionDict(value="cupra",      label="CUPRA"),
+]
+
+_BRAND_SELECTOR = SelectSelector(
+    SelectSelectorConfig(
+        options=_BRAND_OPTIONS,
+        mode=SelectSelectorMode.LIST,   # visual radio-button list, not dropdown
+        translation_key="brand",
+    )
+)
+
+_USERNAME_SELECTOR = TextSelector(
+    TextSelectorConfig(type=TextSelectorType.EMAIL, autocomplete="email")
+)
+
+_PASSWORD_SELECTOR = TextSelector(
+    TextSelectorConfig(type=TextSelectorType.PASSWORD, autocomplete="current-password")
+)
+
+_SPIN_SELECTOR = TextSelector(
+    TextSelectorConfig(type=TextSelectorType.PASSWORD, autocomplete="off")
+)
+
+_MFA_SELECTOR = TextSelector(
+    TextSelectorConfig(
+        type=TextSelectorType.NUMBER,
+        autocomplete="one-time-code",
+    )
+)
+
+_INTERVAL_SELECTOR = NumberSelector(
+    NumberSelectorConfig(
+        min=MIN_SCAN_INTERVAL,
+        max=60,
+        step=1,
+        mode=NumberSelectorMode.SLIDER,
+        unit_of_measurement="min",
+    )
+)
+
+_BOOL_SELECTOR = BooleanSelector()
+
+
+# ── Credential validation ─────────────────────────────────────────────────────
 
 async def _validate_credentials(
     hass: HomeAssistant, brand: str, username: str, password: str,
     mfa_code: str | None = None,
 ) -> None:
-    """Validate credentials by authenticating with the CARIAD API.
-
-    Creates a dedicated aiohttp session with a fresh CookieJar for auth —
-    the IDK login flow is stateful (cookies between steps) and must not
-    share the HA-wide session which may have cookies from other integrations.
-    """
+    """Validate credentials by authenticating with the CARIAD API."""
     import aiohttp  # noqa: PLC0415
     from .cariad import CariadClientFactory  # noqa: PLC0415
     from .cariad.exceptions import (  # noqa: PLC0415
         AuthenticationError,
-        TermsAndConditionsError,
         MarketingConsentError,
-        TwoFactorRequiredError,
         RateLimitError,
+        TermsAndConditionsError,
+        TwoFactorRequiredError,
     )
 
-    # Dedicated session with fresh CookieJar — required for IDK multi-step auth
     connector = aiohttp.TCPConnector(ssl=True)
     async with aiohttp.ClientSession(
         connector=connector,
@@ -76,28 +134,6 @@ async def _validate_credentials(
             raise ValueError("cannot_connect") from err
 
 
-def _user_schema(
-    brand: str = "",
-    username: str = "",
-    scan_interval: int = DEFAULT_SCAN_INTERVAL,
-    spin: str = "",
-    force_access: bool = False,
-) -> vol.Schema:
-    """Build the user-step schema, pre-filled with current values for reconfigure."""
-    return vol.Schema(
-        {
-            vol.Required(CONF_BRAND, default=brand or vol.UNDEFINED): vol.In(BRANDS),
-            vol.Required(CONF_USERNAME, default=username or vol.UNDEFINED): str,
-            vol.Required(CONF_PASSWORD): str,
-            vol.Optional(CONF_SPIN, default=spin): str,
-            vol.Optional(CONF_SCAN_INTERVAL, default=scan_interval): vol.All(
-                vol.Coerce(int), vol.Range(min=MIN_SCAN_INTERVAL)
-            ),
-            vol.Optional(CONF_FORCE_ACCESS, default=force_access): bool,
-        }
-    )
-
-
 def _map_error(err_code: str) -> str:
     """Map ValueError string to strings.json error key."""
     return err_code if err_code in {
@@ -106,13 +142,35 @@ def _map_error(err_code: str) -> str:
     } else "cannot_connect"
 
 
+# ── Schema builders ───────────────────────────────────────────────────────────
+
+def _credentials_schema(
+    brand: str = "",
+    username: str = "",
+    scan_interval: int = DEFAULT_SCAN_INTERVAL,
+    spin: str = "",
+    force_access: bool = False,
+) -> vol.Schema:
+    """Credentials + advanced settings schema with proper selectors."""
+    schema: dict[vol.Marker, Any] = {
+        vol.Required(CONF_BRAND, default=brand or vol.UNDEFINED): _BRAND_SELECTOR,
+        vol.Required(CONF_USERNAME, default=username or vol.UNDEFINED): _USERNAME_SELECTOR,
+        vol.Required(CONF_PASSWORD): _PASSWORD_SELECTOR,
+        vol.Optional(CONF_SPIN, default=spin): _SPIN_SELECTOR,
+        vol.Optional(CONF_SCAN_INTERVAL, default=scan_interval): _INTERVAL_SELECTOR,
+        vol.Optional(CONF_FORCE_ACCESS, default=force_access): _BOOL_SELECTOR,
+    }
+    return vol.Schema(schema)
+
+
+# ── Config Flow ───────────────────────────────────────────────────────────────
+
 class VagConnectConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle a config flow for VAG Connect."""
 
     VERSION = 1
 
     def __init__(self) -> None:
-        """Initialise — stores pending credentials for MFA step."""
         self._pending_brand: str = ""
         self._pending_username: str = ""
         self._pending_password: str = ""
@@ -121,7 +179,7 @@ class VagConnectConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
     ) -> config_entries.ConfigFlowResult:
-        """Step 1: choose brand + enter credentials."""
+        """Step 1: brand + credentials."""
         errors: dict[str, str] = {}
 
         if user_input is not None:
@@ -137,53 +195,32 @@ class VagConnectConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             except ValueError as err:
                 err_str = str(err)
                 if err_str.startswith("two_factor_required"):
-                    # Store credentials for MFA step
                     self._pending_brand    = brand
                     self._pending_username = username
                     self._pending_password = password
-                    self._pending_entry_data = {
-                        CONF_BRAND:         brand,
-                        CONF_USERNAME:      username,
-                        CONF_PASSWORD:      password,
-                        CONF_SPIN:          user_input.get(CONF_SPIN, ""),
-                        CONF_SCAN_INTERVAL: max(
-                            user_input.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL),
-                            MIN_SCAN_INTERVAL,
-                        ),
-                        CONF_FORCE_ACCESS:  user_input.get(CONF_FORCE_ACCESS, False),
-                    }
+                    self._pending_entry_data = self._build_entry_data(brand, username, password, user_input)
                     return await self.async_step_mfa()
                 errors["base"] = _map_error(err_str)
             else:
                 return self.async_create_entry(
                     title=f"{BRANDS[brand]} — {username}",
-                    data={
-                        CONF_BRAND:         brand,
-                        CONF_USERNAME:      username,
-                        CONF_PASSWORD:      password,
-                        CONF_SPIN:          user_input.get(CONF_SPIN, ""),
-                        CONF_SCAN_INTERVAL: max(
-                            user_input.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL),
-                            MIN_SCAN_INTERVAL,
-                        ),
-                        CONF_FORCE_ACCESS:  user_input.get(CONF_FORCE_ACCESS, False),
-                    },
+                    data=self._build_entry_data(brand, username, password, user_input),
                 )
 
         return self.async_show_form(
             step_id="user",
-            data_schema=_user_schema(),
+            data_schema=_credentials_schema(),
             errors=errors,
         )
 
     async def async_step_mfa(
         self, user_input: dict[str, Any] | None = None
     ) -> config_entries.ConfigFlowResult:
-        """Step 2 (optional): enter MFA code sent by email / authenticator app."""
+        """Step 2 (optional): MFA code."""
         errors: dict[str, str] = {}
 
         if user_input is not None:
-            mfa_code = user_input.get("mfa_code", "").strip()
+            mfa_code = str(user_input.get("mfa_code", "")).strip()
             try:
                 await _validate_credentials(
                     self.hass,
@@ -203,23 +240,22 @@ class VagConnectConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         return self.async_show_form(
             step_id="mfa",
             data_schema=vol.Schema({
-                vol.Required("mfa_code"): str,
+                vol.Required("mfa_code"): _MFA_SELECTOR,
             }),
+            description_placeholders={"username": self._pending_username},
             errors=errors,
         )
-
-    # Triggered automatically when coordinator raises ConfigEntryAuthFailed
 
     async def async_step_reauth(
         self, entry_data: dict[str, Any]
     ) -> config_entries.ConfigFlowResult:
-        """Initiate re-auth when credentials expire or are rejected."""
+        """Re-auth when credentials expire."""
         return await self.async_step_reauth_confirm()
 
     async def async_step_reauth_confirm(
         self, user_input: dict[str, Any] | None = None
     ) -> config_entries.ConfigFlowResult:
-        """Re-enter credentials to regain access."""
+        """Re-enter credentials."""
         errors: dict[str, str] = {}
         reauth_entry = self.hass.config_entries.async_get_entry(
             self.context["entry_id"]
@@ -245,30 +281,24 @@ class VagConnectConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         return self.async_show_form(
             step_id="reauth_confirm",
-            data_schema=vol.Schema(
-                {
-                    vol.Required(CONF_PASSWORD): str,
-                    vol.Optional(
-                        CONF_SPIN,
-                        default=reauth_entry.data.get(CONF_SPIN, "") if reauth_entry else "",
-                    ): str,
-                }
-            ),
+            data_schema=vol.Schema({
+                vol.Required(CONF_PASSWORD): _PASSWORD_SELECTOR,
+                vol.Optional(
+                    CONF_SPIN,
+                    default=reauth_entry.data.get(CONF_SPIN, "") if reauth_entry else "",
+                ): _SPIN_SELECTOR,
+            }),
             errors=errors,
             description_placeholders={
-                "brand": BRANDS.get(
-                    reauth_entry.data.get(CONF_BRAND, ""), ""
-                ) if reauth_entry else "",
+                "brand":    BRANDS.get(reauth_entry.data.get(CONF_BRAND, ""), "") if reauth_entry else "",
                 "username": reauth_entry.data.get(CONF_USERNAME, "") if reauth_entry else "",
             },
         )
 
-    # Allows changing ALL settings without removing and re-adding the integration
-
     async def async_step_reconfigure(
         self, user_input: dict[str, Any] | None = None
     ) -> config_entries.ConfigFlowResult:
-        """Reconfigure credentials and settings for an existing entry."""
+        """Reconfigure without removing the integration."""
         errors: dict[str, str] = {}
         entry = self.hass.config_entries.async_get_entry(self.context["entry_id"])
 
@@ -290,17 +320,7 @@ class VagConnectConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     entry,
                     title=f"{BRANDS[brand]} — {username}",
                     unique_id=new_unique_id,
-                    data={
-                        CONF_BRAND:         brand,
-                        CONF_USERNAME:      username,
-                        CONF_PASSWORD:      password,
-                        CONF_SPIN:          user_input.get(CONF_SPIN, ""),
-                        CONF_SCAN_INTERVAL: max(
-                            user_input.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL),
-                            MIN_SCAN_INTERVAL,
-                        ),
-                        CONF_FORCE_ACCESS:  user_input.get(CONF_FORCE_ACCESS, False),
-                    },
+                    data=self._build_entry_data(brand, username, password, user_input),
                 )
                 await self.hass.config_entries.async_reload(entry.entry_id)
                 return self.async_abort(reason="reconfigure_successful")
@@ -308,7 +328,7 @@ class VagConnectConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         current = entry.data if entry else {}
         return self.async_show_form(
             step_id="reconfigure",
-            data_schema=_user_schema(
+            data_schema=_credentials_schema(
                 brand=current.get(CONF_BRAND, ""),
                 username=current.get(CONF_USERNAME, ""),
                 scan_interval=current.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL),
@@ -318,7 +338,6 @@ class VagConnectConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             errors=errors,
         )
 
-
     @staticmethod
     @callback
     def async_get_options_flow(
@@ -327,12 +346,30 @@ class VagConnectConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         """Return options flow handler."""
         return VagConnectOptionsFlow(config_entry)
 
+    @staticmethod
+    def _build_entry_data(
+        brand: str, username: str, password: str, user_input: dict[str, Any]
+    ) -> dict[str, Any]:
+        """Build the config entry data dict from validated user input."""
+        return {
+            CONF_BRAND:         brand,
+            CONF_USERNAME:      username,
+            CONF_PASSWORD:      password,
+            CONF_SPIN:          user_input.get(CONF_SPIN, ""),
+            CONF_SCAN_INTERVAL: max(
+                int(user_input.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)),
+                MIN_SCAN_INTERVAL,
+            ),
+            CONF_FORCE_ACCESS:  user_input.get(CONF_FORCE_ACCESS, False),
+        }
+
+
+# ── Options Flow ──────────────────────────────────────────────────────────────
 
 class VagConnectOptionsFlow(config_entries.OptionsFlow):
-    """Handle options changes (scan interval + S-PIN) without full reconfigure."""
+    """Scan interval + S-PIN without full reconfigure."""
 
     def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
-        """Initialise options flow."""
         self._config_entry = config_entry
 
     async def async_step_init(
@@ -345,15 +382,13 @@ class VagConnectOptionsFlow(config_entries.OptionsFlow):
         current = self._config_entry.data
         return self.async_show_form(
             step_id="init",
-            data_schema=vol.Schema(
-                {
-                    vol.Optional(
-                        CONF_SCAN_INTERVAL,
-                        default=current.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL),
-                    ): vol.All(vol.Coerce(int), vol.Range(min=MIN_SCAN_INTERVAL)),
-                    vol.Optional(
-                        CONF_SPIN, default=current.get(CONF_SPIN, "")
-                    ): str,
-                }
-            ),
+            data_schema=vol.Schema({
+                vol.Optional(
+                    CONF_SCAN_INTERVAL,
+                    default=current.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL),
+                ): _INTERVAL_SELECTOR,
+                vol.Optional(
+                    CONF_SPIN, default=current.get(CONF_SPIN, "")
+                ): _SPIN_SELECTOR,
+            }),
         )
