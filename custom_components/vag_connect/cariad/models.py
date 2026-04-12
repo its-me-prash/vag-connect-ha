@@ -37,6 +37,8 @@ BRAND_VW_EU = BrandConfig(
     redirect_uri="weconnect://authenticated",
     user_agent="Volkswagen/3.51.1-android/14",
     api_base="https://emea.bff.cariad.digital",
+    # scope from volkswagencarnet (robinostlund/volkswagencarnet, MIT) — confirmed working
+    scope="openid profile badge cars dealers vin",
 )
 
 BRAND_AUDI = BrandConfig(

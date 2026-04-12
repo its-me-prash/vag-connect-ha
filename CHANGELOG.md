@@ -29,6 +29,22 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ---
 
+## [0.14.10] - 2026-04-12
+
+### Fixed
+- **VW EU Scope** (KRITISCH): Scope auf `"openid profile badge cars dealers vin"` geändert
+  — exakt identisch mit volkswagencarnet (robinostlund, MIT), dem anderen funktionierenden
+  VW-Integration. Unser langer Scope enthielt Werte die Auth0 VW nicht kennt → 500 Server Error.
+- **BRAND_AUDI client_id**: `09b6cbec-...` von audiconnect übernommen (bereits v0.14.9)
+
+### Research-Ergebnis
+  volkswagencarnet (gleicher client_id `a24fba63-...`, gleiche redirect_uri) funktioniert mit:
+  - scope: `openid profile badge cars dealers vin` (kurz!)
+  - POST {username, password, state} an `/u/login?state=S` mit `allow_redirects=False`
+  - State aus `<input name="state">` im HTML extrahiert
+  
+---
+
 ## [0.14.9] - 2026-04-12
 
 ### Fixed — basierend auf volkswagencarnet (MIT) Analyse
