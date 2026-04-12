@@ -48,10 +48,12 @@ jobs:
           missing = [k for k in required if k not in m]
           if missing:
               print('FEHLER: Fehlende Felder:', missing); sys.exit(1)
-          if m.get('requirements'):
-              print('FEHLER: requirements muss leer sein!', m['requirements']); sys.exit(1)
-          if m.get('iot_class') != 'cloud_polling':
-              print('FEHLER: iot_class muss cloud_polling sein!'); sys.exit(1)
+          # requirements can be empty (we bundle our own client) or contain pypi packages
+          print('requirements:', m.get('requirements', []))
+          valid_iot = ('cloud_push', 'cloud_polling', 'local_push', 'local_polling')
+          if m.get('iot_class') not in valid_iot:
+              print('FEHLER: iot_class ungültig:', m.get('iot_class')); sys.exit(1)
+          print('iot_class:', m['iot_class'])
           print('manifest.json OK — Version:', m['version'])
           "
 

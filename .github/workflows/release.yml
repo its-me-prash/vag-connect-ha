@@ -96,7 +96,7 @@ jobs:
           lines.append("custom_components/vag_connect/  →  ersetzen → HA neu starten")
           lines.append("```\n")
           lines.append("### 🚗 Unterstützte Marken\n")
-          lines.append("VW EU · Audi · Škoda · SEAT · CUPRA\n")
+          lines.append("VW EU · Audi · Škoda · SEAT · CUPRA · VW US/CA (Beta) · Porsche (Beta)\n")
 
           if prev_version:
               lines.append(f"**Alle Änderungen:** [`v{prev_version}...v{version}`](https://github.com/its-me-prash/vag-connect-ha/compare/v{prev_version}...v{version})")
@@ -121,6 +121,6 @@ jobs:
           body_path: /tmp/release_notes.md
           name: "VAG Connect v${{ steps.version.outputs.version }}"
           draft: false
-          prerelease: ${{ contains(github.ref, 'alpha') || contains(github.ref, 'beta') || contains(github.ref, 'rc') }}
+          prerelease: ${{ contains(github.ref, 'alpha') || contains(github.ref, 'beta') || contains(github.ref, 'rc') || contains(github.ref, 'pre') }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
