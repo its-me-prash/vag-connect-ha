@@ -550,7 +550,9 @@ class IDKAuth:
                 raise AuthenticationError("Unexpected non-redirect after password submission.")
             if resp.status == 429:
                 raise RateLimitError()
-            location = resp.headers.get("Location", "")
+            raw_loc = resp.headers.get("Location", "")
+            location = _make_absolute(url, raw_loc) if raw_loc else ""
+            current_base = url
 
         # Follow redirect chain until app:// or max 10 hops
         for _ in range(10):
@@ -564,7 +566,9 @@ class IDKAuth:
                 location, headers=self._base_headers(), allow_redirects=False
             ) as resp:
                 if resp.status in (301, 302, 303, 307, 308):
-                    location = resp.headers.get("Location", "")
+                    raw_next = resp.headers.get("Location", "")
+                    current_base = location
+                    location = _make_absolute(current_base, raw_next) if raw_next else ""
                 elif location.startswith(prefix):
                     return location
                 else:
