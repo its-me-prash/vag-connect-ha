@@ -55,7 +55,7 @@ class _CSRFParser(HTMLParser):
             if name:
                 self.fields[name] = value or ""
         if tag == "form" and not self.form_action:
-            self.form_action = attr.get("action", "")
+            self.form_action = attr.get("action") or ""
 
 
 def _pkce_pair() -> tuple[str, str]:

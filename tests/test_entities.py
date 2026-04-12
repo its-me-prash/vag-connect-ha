@@ -883,7 +883,7 @@ class TestCoordinatorActions:
         self.coord = VagConnectCoordinator.__new__(VagConnectCoordinator)
         self.coord.hass = hass
         self.coord.entry = MagicMock()
-        self.coord.entry.data = {"brand": "audi", "username": "t@t.de"}
+        self.coord.entry.data = {"brand": "audi", "username": "t@t.de", "spin": ""}
         self.coord.vehicles = {
             "VIN123": {
                 "_vehicle": MagicMock(),
@@ -891,6 +891,18 @@ class TestCoordinatorActions:
             }
         }
         self.coord._vehicles_lock = __import__("threading").Lock()
+        self.coord._cariad_client = MagicMock()
+        self.coord._cariad_client.command_lock = AsyncMock()
+        self.coord._cariad_client.command_unlock = AsyncMock()
+        self.coord._cariad_client.command_start_climate = AsyncMock()
+        self.coord._cariad_client.command_stop_climate = AsyncMock()
+        self.coord._cariad_client.command_start_charging = AsyncMock()
+        self.coord._cariad_client.command_stop_charging = AsyncMock()
+        self.coord._cariad_client.command_flash = AsyncMock()
+        self.coord._cariad_client.command_wake = AsyncMock()
+        self.coord._cariad_client.command_set_target_soc = AsyncMock()
+        self.coord._cariad_client.command_set_climate_temperature = AsyncMock()
+        self.coord._started = True
         self.coord.data = None
         self.coord._was_available = True
         self.coord.last_update_success = True
@@ -903,14 +915,14 @@ class TestCoordinatorActions:
         asyncio.get_event_loop().run_until_complete(
             self.coord.async_set_target_soc("VIN123", 90)
         )
-        self.coord.hass.async_add_executor_job.assert_called()
+        self.coord._cariad_client.command_set_target_soc.assert_awaited()
 
     def test_async_set_climatisation_temperature_calls_executor(self):
         import asyncio
         asyncio.get_event_loop().run_until_complete(
             self.coord.async_set_climatisation_temperature("VIN123", 22.0)
         )
-        self.coord.hass.async_add_executor_job.assert_called()
+        self.coord._cariad_client.command_set_climate_temperature.assert_awaited()
 
     def test_push_update_success_logs_once_on_reconnect(self):
         import asyncio
@@ -1050,13 +1062,24 @@ class TestRunCommand:
         coord.hass = MagicMock()
         coord.hass.async_add_executor_job = AsyncMock(return_value=None)
         coord.entry = MagicMock()
-        coord.entry.data = {"brand": "audi"}
+        coord.entry.data = {"brand": "audi", "spin": ""}
         coord._vehicles_lock = threading.Lock()
+        coord._cariad_client = MagicMock()
+        coord._cariad_client.command_lock = AsyncMock()
+        coord._cariad_client.command_unlock = AsyncMock()
+        coord._cariad_client.command_start_climate = AsyncMock()
+        coord._cariad_client.command_stop_climate = AsyncMock()
+        coord._cariad_client.command_start_charging = AsyncMock()
+        coord._cariad_client.command_stop_charging = AsyncMock()
+        coord._cariad_client.command_flash = AsyncMock()
+        coord._cariad_client.command_wake = AsyncMock()
+        coord._cariad_client.command_set_target_soc = AsyncMock()
+        coord._cariad_client.command_set_climate_temperature = AsyncMock()
+        coord._started = True
         coord.data = None
         coord._was_available = True
         coord.async_request_refresh = AsyncMock()
         v = vehicle_mock or MagicMock()
-        # Make commands.contains_command return True
         v.doors.commands.contains_command.return_value = True
         v.charging.commands.contains_command.return_value = True
         v.climatization.commands.contains_command.return_value = True
@@ -1066,87 +1089,65 @@ class TestRunCommand:
         coord.vehicles = {"VIN1": {"_vehicle": v}}
         return coord, v
 
-    def test_run_command_calls_executor(self):
-        import asyncio
-        coord, _ = self._make_coord()
-        asyncio.get_event_loop().run_until_complete(
-            coord._run_command("VIN1", "doors", "lock-unlock", "lock")
-        )
-        coord.hass.async_add_executor_job.assert_called()
-
-    def test_run_command_vehicle_not_found_raises(self):
-        import asyncio
-        coord, _ = self._make_coord()
-        coord.vehicles = {}
-        # The executor job raises RuntimeError internally
-        # async_add_executor_job propagates it
-        coord.hass.async_add_executor_job = AsyncMock(
-            side_effect=RuntimeError("Fahrzeug VIN1 nicht gefunden")
-        )
-        with pytest.raises(RuntimeError, match="nicht gefunden"):
-            asyncio.get_event_loop().run_until_complete(
-                coord._run_command("VIN1", "doors", "lock-unlock", "lock")
-            )
-
     def test_async_lock_dispatches_to_run_command(self):
         import asyncio
         coord, _ = self._make_coord()
         asyncio.get_event_loop().run_until_complete(coord.async_lock("VIN1"))
-        coord.hass.async_add_executor_job.assert_called()
+        coord._cariad_client.command_lock.assert_awaited_once_with("VIN1")
 
     def test_async_unlock_dispatches(self):
         import asyncio
         coord, _ = self._make_coord()
         asyncio.get_event_loop().run_until_complete(coord.async_unlock("VIN1"))
-        coord.hass.async_add_executor_job.assert_called()
+        coord._cariad_client.command_unlock.assert_awaited()
 
     def test_async_start_climatisation(self):
         import asyncio
         coord, _ = self._make_coord()
         asyncio.get_event_loop().run_until_complete(coord.async_start_climatisation("VIN1"))
-        coord.hass.async_add_executor_job.assert_called()
+        coord._cariad_client.command_start_climate.assert_awaited()
 
     def test_async_stop_climatisation(self):
         import asyncio
         coord, _ = self._make_coord()
         asyncio.get_event_loop().run_until_complete(coord.async_stop_climatisation("VIN1"))
-        coord.hass.async_add_executor_job.assert_called()
+        coord._cariad_client.command_stop_climate.assert_awaited()
 
     def test_async_start_charging(self):
         import asyncio
         coord, _ = self._make_coord()
         asyncio.get_event_loop().run_until_complete(coord.async_start_charging("VIN1"))
-        coord.hass.async_add_executor_job.assert_called()
+        coord._cariad_client.command_start_charging.assert_awaited()
 
     def test_async_stop_charging(self):
         import asyncio
         coord, _ = self._make_coord()
         asyncio.get_event_loop().run_until_complete(coord.async_stop_charging("VIN1"))
-        coord.hass.async_add_executor_job.assert_called()
+        coord._cariad_client.command_stop_charging.assert_awaited()
 
     def test_async_flash_lights(self):
         import asyncio
         coord, _ = self._make_coord()
         asyncio.get_event_loop().run_until_complete(coord.async_flash_lights("VIN1"))
-        coord.hass.async_add_executor_job.assert_called()
+        coord._cariad_client.command_flash.assert_awaited()
 
     def test_async_start_window_heating(self):
         import asyncio
         coord, _ = self._make_coord()
         asyncio.get_event_loop().run_until_complete(coord.async_start_window_heating("VIN1"))
-        coord.hass.async_add_executor_job.assert_called()
+        coord._cariad_client.command_start_climate.assert_awaited()
 
     def test_async_stop_window_heating(self):
         import asyncio
         coord, _ = self._make_coord()
         asyncio.get_event_loop().run_until_complete(coord.async_stop_window_heating("VIN1"))
-        coord.hass.async_add_executor_job.assert_called()
+        coord._cariad_client.command_stop_climate.assert_awaited()
 
     def test_async_wake_vehicle(self):
         import asyncio
         coord, _ = self._make_coord()
         asyncio.get_event_loop().run_until_complete(coord.async_wake_vehicle("VIN1"))
-        coord.hass.async_add_executor_job.assert_called()
+        coord._cariad_client.command_wake.assert_awaited()
 
     def test_async_set_max_charge_current(self):
         import asyncio
@@ -1154,7 +1155,7 @@ class TestRunCommand:
         asyncio.get_event_loop().run_until_complete(
             coord.async_set_max_charge_current("VIN1", 16)
         )
-        coord.hass.async_add_executor_job.assert_called()
+        coord.async_request_refresh.assert_awaited()
 
     def test_async_update_data_returns_vehicles_when_not_started(self):
         import asyncio
@@ -1379,17 +1380,14 @@ class TestDepartureTimerAction:
         asyncio.get_event_loop().run_until_complete(
             coord.async_set_departure_timer("VIN1", 1, True, "07:30")
         )
-        coord.hass.async_add_executor_job.assert_called()
-        coord.async_request_refresh.assert_called()
+        coord.async_request_refresh.assert_awaited()
 
     def test_set_departure_timer_vehicle_not_found(self):
         import asyncio
         coord, _, _ = self._make_coord()
         coord.vehicles = {}
-        coord.hass.async_add_executor_job = AsyncMock(
-            side_effect=RuntimeError("Fahrzeug VIN1 nicht gefunden")
+        # Departure timer is now informational-only — no longer raises
+        asyncio.get_event_loop().run_until_complete(
+            coord.async_set_departure_timer("VIN1", 1, True, None)
         )
-        with pytest.raises(RuntimeError, match="nicht gefunden"):
-            asyncio.get_event_loop().run_until_complete(
-                coord.async_set_departure_timer("VIN1", 1, True, None)
-            )
+        coord.async_request_refresh.assert_awaited()

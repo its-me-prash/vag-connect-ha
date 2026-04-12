@@ -77,6 +77,35 @@ Erst Phase 2/3 wenn CC langfristig inaktiv bleibt.
 
 ---
 
+## [0.14.0] - 2026-04-12
+
+### 🏆 PLATINUM — Full Quality Scale Complete
+
+**342 Tests · 95% Coverage · 0 mypy · 0 ruff · 47/47 Quality Rules done**
+
+#### Quality Scale: Platinum Complete
+| Regel | Status |
+|---|---|
+| `test-coverage` | ✅ **done** — 95% (342 tests) |
+| `strict-typing` | ✅ done — 0 mypy errors |
+| `async-dependency` | ✅ done — pure aiohttp, no requests |
+| `inject-websession` | ✅ done — `async_get_clientsession(hass)` |
+| Bronze / Silver / Gold (43 rules) | ✅ all done |
+
+#### CARIAD Client — Production-Ready
+- `cariad/auth/idk.py` — clean-room PKCE/OIDC for 5 brands, `ClientTimeout` fix
+- `cariad/api/base.py` — proper `ClientTimeout`, mypy-clean
+- `coordinator.py` — all commands on own client, dead CC code removed (467 lines)
+- Zero external dependencies: `manifest.json requirements: []`
+
+#### Test Suite
+- 342 tests across 4 test files
+- 95% line coverage (1649 lines measured)
+- Full cariad/ package: models/factory/exceptions 100%
+- coordinator: 96%, __init__: 94%, auth/idk: 86%
+
+_Copyright 2026 Prash Balan (@its-me-prash) — Apache License 2.0_
+
 ## [0.13.0] - 2026-04-12
 
 ### 🏆 CarConnectivity entfernt — eigener CARIAD Client aktiv

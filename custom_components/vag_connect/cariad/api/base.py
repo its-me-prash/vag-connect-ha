@@ -6,7 +6,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from aiohttp import ClientSession
+from aiohttp import ClientSession, ClientTimeout
 
 from ..auth.idk import IDKAuth
 from ..exceptions import APIError, AuthenticationError, TokenExpiredError
@@ -119,7 +119,7 @@ class CariadBaseClient:
         headers["User-Agent"] = self._brand.user_agent
 
         async with self._session.request(
-            method, url, headers=headers, timeout=_REQUEST_TIMEOUT, **kwargs
+            method, url, headers=headers, timeout=ClientTimeout(total=_REQUEST_TIMEOUT), **kwargs
         ) as resp:
             if resp.status == 401 and retry:
                 await self._refresh_tokens()
