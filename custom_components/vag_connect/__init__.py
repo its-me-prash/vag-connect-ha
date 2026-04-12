@@ -10,6 +10,7 @@ Architecture:
 from __future__ import annotations
 
 import logging
+from typing import TypeAlias
 
 import voluptuous as vol
 
@@ -36,7 +37,7 @@ PLATFORMS: list[Platform] = [
 
 SERVICE_VIN_SCHEMA = vol.Schema({vol.Required("vin"): cv.string})
 
-type VagConnectConfigEntry = ConfigEntry[VagConnectCoordinator]
+VagConnectConfigEntry: TypeAlias = ConfigEntry[VagConnectCoordinator]
 
 _SETUP_ERRORS: dict[str, str] = {
     "terms_and_conditions": (
