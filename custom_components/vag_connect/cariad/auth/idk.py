@@ -132,7 +132,10 @@ class IDKAuth:
             html = await resp.text()
 
         csrf = self._parse_csrf(html)
+        _LOGGER.debug("IDK step1: parsed form fields=%s action=%s",
+                      list(csrf.fields.keys()), csrf.form_action[:60] if csrf.form_action else "(none)")
         if not csrf.fields.get("_csrf") and not csrf.fields.get("hmac"):
+            _LOGGER.error("IDK login page has no CSRF fields — page snippet: %s", html[:500])
             raise AuthenticationError("Could not parse login page — IDK may have changed.")
 
         # Step 2 — submit email
@@ -162,15 +165,19 @@ class IDKAuth:
             f"{_SIGNIN_BASE}/{self._brand.client_id}/login/authenticate",
         )
         pw_data = {**csrf2.fields, "email": email, "password": password}
+        _LOGGER.debug("IDK step3: posting password to %s", pw_url)
         location = await self._follow_to_app_redirect(
             pw_url, pw_data, self._brand.redirect_uri
         )
+        _LOGGER.debug("IDK step3: redirect location = %s", location[:80] if location else "(none)")
         if not location:
             raise AuthenticationError("Password submission did not redirect to app — check credentials.")
 
         auth_code = _extract_auth_code(location, self._brand.redirect_uri)
         if not auth_code:
+            _LOGGER.error("IDK: no auth code in location: %s", location)
             raise AuthenticationError(f"Could not extract authorization code from: {location}")
+        _LOGGER.debug("IDK step4: got auth code, exchanging for tokens")
 
         # Step 4 — exchange code for tokens
         return await self._exchange_code(auth_code, verifier)

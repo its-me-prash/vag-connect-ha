@@ -31,10 +31,11 @@ async def _validate_credentials(
 ) -> None:
     """Validate credentials by authenticating with the CARIAD API.
 
-    Uses the own async CARIAD client — no external dependencies.
-    Raises ValueError with a translation key on failure.
+    Creates a dedicated aiohttp session with a fresh CookieJar for auth —
+    the IDK login flow is stateful (cookies between steps) and must not
+    share the HA-wide session which may have cookies from other integrations.
     """
-    from homeassistant.helpers.aiohttp_client import async_get_clientsession  # noqa: PLC0415
+    import aiohttp  # noqa: PLC0415
     from .cariad import CariadClientFactory  # noqa: PLC0415
     from .cariad.exceptions import (  # noqa: PLC0415
         AuthenticationError,
@@ -44,24 +45,32 @@ async def _validate_credentials(
         RateLimitError,
     )
 
-    session = async_get_clientsession(hass)
-    client = CariadClientFactory.create(brand, session, username, password)
-
-    try:
-        await client.authenticate()
-    except TermsAndConditionsError as err:
-        raise ValueError("terms_and_conditions") from err
-    except MarketingConsentError as err:
-        raise ValueError("marketing_consent") from err
-    except TwoFactorRequiredError as err:
-        raise ValueError("two_factor_required") from err
-    except RateLimitError as err:
-        raise ValueError("too_many_requests") from err
-    except AuthenticationError as err:
-        raise ValueError("invalid_credentials") from err
-    except Exception as err:  # noqa: BLE001
-        _LOGGER.debug("Credential validation error: %s", err)
-        raise ValueError("cannot_connect") from err
+    # Dedicated session with fresh CookieJar — required for IDK multi-step auth
+    connector = aiohttp.TCPConnector(ssl=True)
+    async with aiohttp.ClientSession(
+        connector=connector,
+        cookie_jar=aiohttp.CookieJar(unsafe=True),
+    ) as auth_session:
+        client = CariadClientFactory.create(brand, auth_session, username, password)
+        try:
+            await client.authenticate()
+        except TermsAndConditionsError as err:
+            raise ValueError("terms_and_conditions") from err
+        except MarketingConsentError as err:
+            raise ValueError("marketing_consent") from err
+        except TwoFactorRequiredError as err:
+            raise ValueError("two_factor_required") from err
+        except RateLimitError as err:
+            raise ValueError("too_many_requests") from err
+        except AuthenticationError as err:
+            _LOGGER.warning("VAG Connect auth failed (%s): %s", brand, err)
+            raise ValueError("invalid_credentials") from err
+        except Exception as err:  # noqa: BLE001
+            _LOGGER.error(
+                "VAG Connect unexpected error during %s auth: %s — %s",
+                brand, type(err).__name__, err,
+            )
+            raise ValueError("cannot_connect") from err
 
 
 def _user_schema(

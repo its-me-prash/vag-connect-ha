@@ -66,8 +66,10 @@ class AudiClient(VWEUClient):
             "User-Agent": self._brand.user_agent,
             "Content-Type": "application/json; charset=utf-8",
         }
+        # AZS expects the id_token (JWT), not the access_token
+        # Confirmed via audiconnect (MIT): token field = id_token when grant_type = "id_token"
         payload = {
-            "token": self._tokens.access_token,
+            "token": self._tokens.id_token or self._tokens.access_token,
             "grant_type": "id_token",
             "stage": "live",
             "config": "myaudi",

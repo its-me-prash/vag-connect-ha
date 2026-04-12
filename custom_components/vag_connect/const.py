@@ -15,7 +15,6 @@ CONF_FORCE_ACCESS   = "force_enable_access"
 BRANDS = {
     "audi":           "Audi (myAudi)",
     "volkswagen":     "Volkswagen EU (WeConnect)",
-    "volkswagen_na":  "Volkswagen US/CA",
     "skoda":          "Škoda (MySkoda)",
     "seatcupra":      "SEAT / CUPRA",
 }
