@@ -29,6 +29,17 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ---
 
+## [0.14.7] - 2026-04-12
+
+### Fixed
+- **Auth0 UL v2: 400 Bad Request behoben** — `state` gehört in die URL (`/u/login?state=S`), NICHT in den Form-Body
+  - `_auth0_post_form()`: `state` Parameter entfernt aus Methode
+  - Email-Step: POST an `/u/login?state=AUTH0_STATE` (state im Query)
+  - Password-Step: POST an der URL die Auth0 nach Email-Redirect zurückgibt (enthält neuen state)
+  - MFA-Step: analog
+
+---
+
 ## [0.14.6] - 2026-04-12
 
 ### Fixed

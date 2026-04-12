@@ -174,36 +174,31 @@ class IDKAuth:
             raise AuthenticationError("Auth0: no state in login URL.")
         _LOGGER.debug("IDK Auth0 v2: state=%s...", auth0_state[:20])
 
-        # Step 2 — POST email (identifier-first step)
+        # Step 2 — POST email (identifier-first)
+        # Auth0 UL v2: state goes in URL query, NOT in form body
         email_resp_url, email_resp_html = await self._auth0_post_form(
-            f"{_IDK_BASE}/u/login",
-            state=auth0_state,
+            f"{_IDK_BASE}/u/login?state={auth0_state}",
             extra={"username": email, "action": "default"},
         )
-        _LOGGER.debug("IDK Auth0: email step → %s", email_resp_url[:60])
+        _LOGGER.debug("IDK Auth0: email step → %s", email_resp_url[:80])
 
-        # If already at password page, extract new state
-        pw_state = parse_qs(urlparse(email_resp_url).query).get("state", [auth0_state])[0]
-
-        # Step 3 — POST password
+        # Step 3 — POST password to wherever Auth0 redirected us
+        # The redirect URL already contains the new state
         pw_resp_url, pw_resp_html = await self._auth0_post_form(
             email_resp_url,
-            state=pw_state,
             extra={"password": password, "action": "default"},
         )
-        _LOGGER.debug("IDK Auth0: password step → %s", pw_resp_url[:60])
+        _LOGGER.debug("IDK Auth0: password step → %s", pw_resp_url[:80])
 
         # Check for MFA challenge
-        if "/u/mfa" in pw_resp_url or "/u/email-challenge" in pw_resp_url:
-            _LOGGER.debug("IDK Auth0: MFA challenge detected at %s", pw_resp_url[:60])
+        if "/u/mfa" in pw_resp_url or "/u/email-challenge" in pw_resp_url or "/u/mfa-otp" in pw_resp_url:
+            _LOGGER.debug("IDK Auth0: MFA challenge at %s", pw_resp_url[:80])
             if mfa_code:
-                mfa_state = parse_qs(urlparse(pw_resp_url).query).get("state", [pw_state])[0]
                 pw_resp_url, pw_resp_html = await self._auth0_post_form(
                     pw_resp_url,
-                    state=mfa_state,
                     extra={"code": mfa_code, "action": "default"},
                 )
-                _LOGGER.debug("IDK Auth0: MFA submitted → %s", pw_resp_url[:60])
+                _LOGGER.debug("IDK Auth0: MFA submitted → %s", pw_resp_url[:80])
             else:
                 raise TwoFactorRequiredError()
 
@@ -236,16 +231,15 @@ class IDKAuth:
     async def _auth0_post_form(
         self,
         url: str,
-        state: str,
         extra: dict[str, str],
     ) -> tuple[str, str]:
         """POST a form step in Auth0 Universal Login v2.
 
-        Auth0 UL v2 uses simple form POSTs with state in the URL.
-        CSRF protection is via the Auth0 session cookie (set on page load).
+        Auth0 UL v2: state is in the URL query string, NOT in the body.
+        CSRF is handled automatically via session cookies (set on page GET).
         Returns (final_url, response_html).
         """
-        data = {"state": state, **extra}
+        data = {**extra}  # NO state in body — Auth0 reads it from URL
         headers = {
             "Content-Type": "application/x-www-form-urlencoded",
             "Accept": "text/html,application/xhtml+xml,*/*",
