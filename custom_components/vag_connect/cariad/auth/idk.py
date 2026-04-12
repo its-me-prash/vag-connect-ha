@@ -380,6 +380,10 @@ class IDKAuth:
     ) -> TokenSet:
         """Legacy signin-service flow (pre-2025 IDK)."""
         csrf = self._parse_csrf_robust(html)
+        _LOGGER.debug(
+            "IDK legacy: step1 fields=%s action=%s",
+            list(csrf.fields.keys()), csrf.form_action[:60] if csrf.form_action else "(none)",
+        )
         if not csrf.fields.get("_csrf") and not csrf.fields.get("hmac"):
             raise AuthenticationError(
                 "Could not parse IDK login page CSRF (legacy flow)."
@@ -389,6 +393,7 @@ class IDKAuth:
             _IDK_BASE,
             csrf.form_action or f"{_SIGNIN_BASE}/{self._brand.client_id}/login/identifier",
         )
+        _LOGGER.debug("IDK legacy: posting email to %s", email_url[:80])
         async with self._session.post(
             email_url, data={**csrf.fields, "email": email},
             headers=self._form_headers(), allow_redirects=True,
@@ -398,14 +403,23 @@ class IDKAuth:
             html2 = await resp.text()
 
         csrf2 = self._parse_csrf_robust(html2)
+        _LOGGER.debug(
+            "IDK legacy: step2 fields=%s",
+            list(csrf2.fields.keys()),
+        )
         if "hmac" not in csrf2.fields:
             m = re.search(r'"hmac"\s*:\s*"([0-9a-fA-F]+)"', html2)
             if m:
                 csrf2.fields["hmac"] = m.group(1)
+                _LOGGER.debug("IDK legacy: hmac extracted from JS")
 
         pw_url = _absolute_url(
             _IDK_BASE,
             f"{_SIGNIN_BASE}/{self._brand.client_id}/login/authenticate",
+        )
+        _LOGGER.debug(
+            "IDK legacy: posting password to %s fields=%s",
+            pw_url[:80], list(csrf2.fields.keys()),
         )
         location = await self._follow_to_app_redirect(
             pw_url, {**csrf2.fields, "email": email, "password": password},
@@ -564,18 +578,37 @@ class IDKAuth:
                 raise AuthenticationError("Unexpected non-redirect after password submission.")
             if resp.status == 429:
                 raise RateLimitError()
+            if resp.status == 401:
+                raise AuthenticationError("Password rejected — wrong credentials.")
+            if resp.status not in (302, 303, 301, 307, 308):
+                body = await resp.text()
+                raise AuthenticationError(
+                    f"Password POST returned HTTP {resp.status}: {body[:200]}"
+                )
             raw_loc = resp.headers.get("Location", "")
             location = _make_absolute(url, raw_loc) if raw_loc else ""
             current_base = url
+            _LOGGER.debug(
+                "IDK legacy: password POST status=%s location=%s",
+                resp.status, location[:80] if location else "(none)",
+            )
+            if not location:
+                raise AuthenticationError(
+                    f"Password POST returned {resp.status} but no Location header."
+                )
 
         # Follow redirect chain until app:// or max 10 hops
         for _ in range(10):
+            if not location:
+                _LOGGER.warning("IDK legacy: empty location in redirect chain")
+                break
             if location.startswith(prefix):
                 return location
             if "terms-and-conditions" in location:
                 raise TermsAndConditionsError()
             if "consent/marketing" in location:
                 raise MarketingConsentError()
+            _LOGGER.debug("IDK legacy: following redirect → %s", location[:80])
             async with self._session.get(
                 location, headers=self._base_headers(), allow_redirects=False
             ) as resp:
@@ -586,6 +619,10 @@ class IDKAuth:
                 elif location.startswith(prefix):
                     return location
                 else:
+                    _LOGGER.debug(
+                        "IDK legacy: redirect chain ended — status=%s url=%s",
+                        resp.status, location[:80],
+                    )
                     break
 
         return location if location.startswith(prefix) else None
