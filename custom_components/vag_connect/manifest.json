@@ -1,7 +1,7 @@
 {
   "domain": "vag_connect",
   "name": "VAG Connect",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "documentation": "https://github.com/its-me-prash/vag-connect-ha",
   "issue_tracker": "https://github.com/its-me-prash/vag-connect-ha/issues",
   "requirements": [],

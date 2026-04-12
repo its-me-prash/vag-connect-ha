@@ -21,6 +21,40 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ---
 
+## [1.1.1] - 2026-04-12
+
+### Behoben
+
+#### #917 — Ladegeschwindigkeit/Ladeleistung zeigt "unavailable" wenn nicht geladen wird
+
+`charging_rate_kmh` und `charging_power_kw` gaben `None` zurück wenn die API
+keinen Wert liefert (bei angestecktem aber nicht ladendem Fahrzeug).
+HA interpretiert `None` als `unavailable`.
+
+**Fix:** Wenn Stecker verbunden (`plug_connected == True`) aber API liefert `None`
+→ Sensor zeigt `0 kW / 0 km/h` statt `unavailable`.
+Wenn Stecker **nicht** verbunden → `unavailable` ist korrekt und bleibt so.
+
+_Analoges Problem gemeldet in [robinostlund/homeassistant-volkswagencarnet#917](https://github.com/robinostlund/homeassistant-volkswagencarnet/issues/917)._
+
+#### #927 — Options-Flow triggert kompletten Integration-Neustart
+
+Änderung von `scan_interval` oder `spin` via Einstellungen → Integration neu starten
+reloaded alle Entities (kurzer Verbindungsunterbruch, Historian-Lücke).
+
+**Fix:**
+- `_poll_loop()` liest Intervall jetzt **pro Loop-Iteration** aus `entry.options`
+  → Intervall-Änderung wirkt beim nächsten Poll-Zyklus, kein Reload nötig
+- `_async_update_listener()` triggert Reload nur noch wenn Brand/Username/Passwort
+  geändert wurde (neue Auth nötig). Reine Einstellungs-Änderungen → live übernommen
+
+_Analoges Problem gemeldet in [robinostlund/homeassistant-volkswagencarnet#927](https://github.com/robinostlund/homeassistant-volkswagencarnet/issues/927)._
+
+**Tests:** 6 neue Tests → **351/351 grün**
+
+---
+
+
 ## [1.1.0] - 2026-04-12
 
 ### Hinzugefügt

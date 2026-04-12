@@ -133,12 +133,20 @@ class VagConnectCoordinator(DataUpdateCoordinator):
             return False
 
     async def _poll_loop(self) -> None:
-        """Background polling loop — runs independently of HA scheduler."""
-        interval_s = max(
-            self.entry.data.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL) * 60,
-            _CC_MIN_INTERVAL_S,
-        )
+        """Background polling loop — runs independently of HA scheduler.
+
+        Re-reads scan_interval from entry.options on every iteration so that
+        Options-Flow changes take effect without a full integration reload.
+        """
         while self._started:
+            # Re-read interval every iteration — picks up Options-Flow changes live
+            interval_s = max(
+                int(
+                    self.entry.options.get(CONF_SCAN_INTERVAL)
+                    or self.entry.data.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
+                ) * 60,
+                _CC_MIN_INTERVAL_S,
+            )
             await asyncio.sleep(interval_s)
             if not self._started:
                 break

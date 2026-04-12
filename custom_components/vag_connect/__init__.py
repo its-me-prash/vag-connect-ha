@@ -21,7 +21,7 @@ from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.exceptions import ConfigEntryNotReady, ServiceValidationError
 from homeassistant.helpers import config_validation as cv
 
-from .const import DOMAIN
+from .const import DOMAIN, CONF_BRAND, CONF_USERNAME, CONF_PASSWORD
 from .coordinator import VagConnectCoordinator
 
 _LOGGER = logging.getLogger(__name__)
@@ -233,5 +233,35 @@ async def async_unload_entry(hass: HomeAssistant, entry: VagConnectConfigEntry) 
 async def _async_update_listener(
     hass: HomeAssistant, entry: VagConnectConfigEntry
 ) -> None:
-    """Reload when options change."""
-    await hass.config_entries.async_reload(entry.entry_id)
+    """Handle options changes — reload only when credentials change.
+
+    scan_interval and spin are applied live without a full reload:
+    - scan_interval: _poll_loop re-reads it on every iteration
+    - spin: coordinator reads it directly from entry.data at command time
+
+    A full reload is only triggered when brand, username or password changes
+    (those require a new authenticated API client).
+    """
+    coordinator: VagConnectCoordinator = hass.data.get(DOMAIN, {}).get(entry.entry_id)
+
+    # Fields that require a full reload (new auth client needed)
+    _RELOAD_KEYS = {CONF_BRAND, CONF_USERNAME, CONF_PASSWORD}
+
+    changed = {
+        k for k in _RELOAD_KEYS
+        if entry.data.get(k) != (entry.options or {}).get(k, entry.data.get(k))
+    }
+
+    if changed:
+        _LOGGER.info("VAG Connect: Konfiguration geändert (%s) — Neustart", changed)
+        await hass.config_entries.async_reload(entry.entry_id)
+    else:
+        # Soft update: merge options into entry data so coordinator picks them up
+        new_data = {**entry.data, **(entry.options or {})}
+        hass.config_entries.async_update_entry(entry, data=new_data, options={})
+        if coordinator:
+            _LOGGER.debug(
+                "VAG Connect: Einstellungen live übernommen (kein Neustart nötig)"
+            )
+            # Trigger one immediate refresh so users see the effect
+            await coordinator.async_request_refresh()

@@ -419,6 +419,14 @@ async def async_setup_entry(
     async_add_entities(entities)
 
 
+# Keys that return 0 instead of None when not charging/driving
+# This prevents the sensor showing "unavailable" while connected but idle
+_ZERO_WHEN_IDLE: frozenset[str] = frozenset({
+    "charging_power_kw",
+    "charging_rate_kmh",
+})
+
+
 class VagConnectSensor(VagConnectEntity, SensorEntity):
     entity_description: VagSensorDescription
 
@@ -433,4 +441,11 @@ class VagConnectSensor(VagConnectEntity, SensorEntity):
 
     @property
     def native_value(self) -> Any:
-        return self._vehicle.get(self.entity_description.data_key)
+        val = self._vehicle.get(self.entity_description.data_key)
+        # charging_power_kw + charging_rate_kmh: API omits these when not charging.
+        # Return 0 so the entity shows "0 kW / 0 km/h" instead of "unavailable".
+        if val is None and self.entity_description.key in _ZERO_WHEN_IDLE:
+            # Only return 0 if plug is connected (makes sense to show 0 kW)
+            if self._vehicle.get("plug_connected"):
+                return 0
+        return val

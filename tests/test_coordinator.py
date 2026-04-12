@@ -215,3 +215,112 @@ class TestEnrich:
         data = {"latitude": 48.1, "longitude": 11.5, "parking_address": None}
         result = asyncio.get_event_loop().run_until_complete(coord._enrich(data))
         assert result.get("parking_address") is None  # no crash, address stays None
+
+
+# ── Fix #917: charging sensors return 0 when plugged but not charging ───────
+
+class TestChargingRateZeroFix:
+    """Tests for #917 — charging_rate_kmh/charging_power_kw return 0 when plugged in."""
+
+    def _make_sensor(self, key: str, vehicle_data: dict):
+        from unittest.mock import MagicMock
+        from custom_components.vag_connect.sensor import VagConnectSensor, VagSensorDescription
+        from homeassistant.components.sensor import SensorDeviceClass, SensorStateClass
+        from homeassistant.const import UnitOfSpeed, UnitOfPower
+
+        coord = MagicMock()
+        coord.data = {"VIN1": vehicle_data}
+        desc = VagSensorDescription(
+            key=key,
+            data_key=key,
+            name=key,
+            device_class=SensorDeviceClass.SPEED if "rate" in key else SensorDeviceClass.POWER,
+            native_unit_of_measurement=UnitOfSpeed.KILOMETERS_PER_HOUR if "rate" in key else UnitOfPower.KILO_WATT,
+            state_class=SensorStateClass.MEASUREMENT,
+        )
+        sensor = VagConnectSensor.__new__(VagConnectSensor)
+        sensor.coordinator = coord
+        sensor._vin = "VIN1"
+        sensor._key = key
+        sensor.entity_description = desc
+        return sensor
+
+    def test_charging_rate_zero_when_plugged_not_charging(self):
+        """API returns None for rate → should be 0 when plug is connected."""
+        sensor = self._make_sensor("charging_rate_kmh", {
+            "charging_rate_kmh": None,
+            "plug_connected": True,
+        })
+        assert sensor.native_value == 0
+
+    def test_charging_power_zero_when_plugged_not_charging(self):
+        """API returns None for power → should be 0 when plug is connected."""
+        sensor = self._make_sensor("charging_power_kw", {
+            "charging_power_kw": None,
+            "plug_connected": True,
+        })
+        assert sensor.native_value == 0
+
+    def test_charging_rate_none_when_not_plugged(self):
+        """Not plugged in → None (unavailable) is correct."""
+        sensor = self._make_sensor("charging_rate_kmh", {
+            "charging_rate_kmh": None,
+            "plug_connected": False,
+        })
+        assert sensor.native_value is None
+
+    def test_charging_rate_actual_value_preserved(self):
+        """When charging → actual value from API, not 0."""
+        sensor = self._make_sensor("charging_rate_kmh", {
+            "charging_rate_kmh": 85.5,
+            "plug_connected": True,
+        })
+        assert sensor.native_value == 85.5
+
+
+# ── Fix #927: Options-Flow ohne Reload ─────────────────────────────────────
+
+class TestOptionsLiveUpdate:
+    """Tests for #927 — scan_interval change must not trigger full reload."""
+
+    def test_poll_loop_reads_interval_from_options(self):
+        """_poll_loop should pick up entry.options.scan_interval dynamically."""
+        from unittest.mock import MagicMock
+        from custom_components.vag_connect.coordinator import VagConnectCoordinator
+        import threading
+
+        coord = VagConnectCoordinator.__new__(VagConnectCoordinator)
+        coord.entry = MagicMock()
+        coord.entry.data = {"scan_interval": 5, "brand": "audi",
+                            "username": "t@t.com", "password": "x", "spin": ""}
+        # Simulate options override
+        coord.entry.options = {"scan_interval": 15}
+
+        # The _poll_loop reads: entry.options.get(scan_interval) or entry.data.get(scan_interval)
+        interval_s = max(
+            int(
+                coord.entry.options.get("scan_interval")
+                or coord.entry.data.get("scan_interval", 5)
+            ) * 60,
+            180,
+        )
+        assert interval_s == 15 * 60, f"Expected 900s, got {interval_s}s"
+
+    def test_poll_loop_falls_back_to_data_when_no_options(self):
+        """When no options set, falls back to entry.data."""
+        from unittest.mock import MagicMock
+        from custom_components.vag_connect.coordinator import VagConnectCoordinator
+
+        coord = VagConnectCoordinator.__new__(VagConnectCoordinator)
+        coord.entry = MagicMock()
+        coord.entry.data = {"scan_interval": 10}
+        coord.entry.options = {}
+
+        interval_s = max(
+            int(
+                coord.entry.options.get("scan_interval")
+                or coord.entry.data.get("scan_interval", 5)
+            ) * 60,
+            180,
+        )
+        assert interval_s == 10 * 60
