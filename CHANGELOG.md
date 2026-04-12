@@ -77,6 +77,31 @@ Erst Phase 2/3 wenn CC langfristig inaktiv bleibt.
 
 ---
 
+## [0.12.0] - 2026-04-12
+
+### 🚀 Eigener CARIAD API Client — MVP aller 5 IDK-Marken
+
+**Komplett neues `cariad/` Package — kein CarConnectivity mehr benötigt:**
+
+- `cariad/auth/idk.py` — async PKCE/OIDC, pure aiohttp, clean-room (kein GPL-Code)
+- `cariad/api/vw_eu.py` — VW EU: selectivestatus + alle Commands
+- `cariad/api/audi.py` — Audi EU: VW EU + AZS/MBB Auth-Chain
+- `cariad/api/skoda.py` — Škoda: mysmob.api.connect.skoda-auto.cz + parallele Fetches
+- `cariad/api/seat_cupra.py` — SEAT/CUPRA: ola.prod.code.seat.cloud.vwgroup.com
+- `cariad/api/factory.py` — Brand-Factory: CariadClientFactory.create(brand, session, ...)
+- `cariad/models.py` — 70-Felder VehicleData dataclass, BrandConfig, TokenSet
+- `cariad/exceptions.py` — typisierte Error-Hierarchie
+
+**Platinum-Regeln:**
+- `async-dependency`: ✅ kein requests mehr
+- `inject-websession`: ✅ aiohttp.ClientSession wird injiziert
+- `test-coverage`: ⏳ Tests folgen in 0.13.0
+
+**Noch aktiv (wird in 0.13.0 entfernt):**
+CarConnectivity bleibt als Fallback bis eigener Client live-getestet ist.
+
+_Autor: Prash Balan (@its-me-prash)_
+
 ## [0.11.0] - 2026-04-12
 
 ### Platinum-Vorbereitung: strict-typing, Apache 2.0, Prash Balan
