@@ -13,7 +13,7 @@
   <a href="https://github.com/its-me-prash/vag-connect-ha/releases"><img src="https://img.shields.io/github/v/release/its-me-prash/vag-connect-ha?style=for-the-badge" alt="Version"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/Lizenz-Apache%202.0-blue.svg?style=for-the-badge" alt="Lizenz"></a>
   <a href="https://www.home-assistant.io"><img src="https://img.shields.io/badge/Home%20Assistant-2024.1%2B-blue?style=for-the-badge" alt="Home Assistant"></a>
-  <a href="tests/"><img src="https://img.shields.io/badge/Tests-342%2F342-brightgreen?style=for-the-badge" alt="Tests"></a>
+  <a href="tests/"><img src="https://img.shields.io/badge/Tests-337%2F337-brightgreen?style=for-the-badge" alt="Tests"></a>
   <a href="custom_components/vag_connect/quality_scale.yaml"><img src="https://img.shields.io/badge/Quality%20Scale-Platinum%20%F0%9F%8F%86-gold?style=for-the-badge" alt="Platinum"></a>
 </p>
 
@@ -47,15 +47,15 @@ sensor  |  binary_sensor  |  device_tracker  |  switch  |  button  |  climate  |
 
 | Marke | Auth-System | API | Status |
 |---|---|---|---|
-| **Volkswagen EU** | IDK | emea.bff.cariad.digital | ✅ Vollständig |
-| **Audi** | IDK + AZS + MBB | emea.bff.cariad.digital | ✅ Vollständig |
-| **Škoda** | IDK | mysmob.api.connect.skoda-auto.cz | ✅ Vollständig |
-| **SEAT** | IDK | ola.prod.code.seat.cloud.vwgroup.com | ✅ Vollständig |
-| **CUPRA** | IDK | ola.prod.code.seat.cloud.vwgroup.com | ✅ Vollständig |
-| Porsche | Auth0 (identity.porsche.com) | api.ppa.porsche.com | 🔜 v0.15.0 |
-| VW NA (US/CA) | VW NA Auth | b-h-s.spr.*.p.con-veh.net | 🔜 v0.16.0 |
+| **Volkswagen EU** | IDK PKCE | emea.bff.cariad.digital | ✅ |
+| **Audi** | IDK PKCE | emea.bff.cariad.digital | ✅ |
+| **Škoda** | IDK PKCE | mysmob.api.connect.skoda-auto.cz | ✅ |
+| **SEAT** | IDK PKCE | ola.prod.code.seat.cloud.vwgroup.com | ✅ |
+| **CUPRA** | IDK PKCE | ola.prod.code.seat.cloud.vwgroup.com | ✅ |
+| **Volkswagen US/CA** | IDK PKCE (NA) | b-h-s.spr.{cc}00.p.con-veh.net | ✅ Beta — Tester gesucht |
+| **Porsche** | Auth0 PKCE | api.ppa.porsche.com | ✅ Beta — Tester gesucht |
 
-> **Porsche:** Porsche verwendet ein vollständig eigenständiges Auth0-Authentifizierungssystem — getrennt vom VAG IDK der anderen Marken. Die Integration ist technisch vollständig dokumentiert und in v0.15.0 geplant. Wer Porsche bereits heute steuern möchte: [ha-porscheconnect](https://github.com/CJNE/ha-porscheconnect) (MIT, aktiv) parallel installieren.
+> **Beta-Marken (VW US/CA + Porsche):** Die Integration ist vollständig implementiert und wurde gegen die dokumentierten APIs entwickelt — aber noch ohne echten Live-Test mit einem echten Fahrzeug. Feedback und Bug-Reports unter [Issues](https://github.com/its-me-prash/vag-connect-ha/issues) sehr willkommen.
 
 ---
 
@@ -63,39 +63,40 @@ sensor  |  binary_sensor  |  device_tracker  |  switch  |  button  |  climate  |
 
 ### Alle Fahrzeuge
 
-| Feature | Audi | VW EU | Škoda | SEAT/CUPRA |
-|---|:---:|:---:|:---:|:---:|
-| Tankstand / Akkustand | ✓ | ✓ | ✓ | ✓ |
-| Reichweite | ✓ | ✓ | ✓ | ✓ |
-| Kilometerstand | ✓ | ✓ | ✓ | ✓ |
-| GPS-Position | ✓ | ✓ | ✓ | ✓ |
-| Türen gesamt + einzeln | ✓ | ✓ | ✓ | ✓ |
-| Fenster | ✓ | ✓ | ✓ | ✓ |
-| Klimatisierung start/stop | ✓ | ✓ | ✓ | ✓ |
-| Zieltemperatur setzen | ✓ | ✓ | ✓ | ✓ |
-| Verriegeln / Entriegeln | ✓ | ✓ | ✓ | ✓ |
-| Lichter blinken | ✓ | ✓ | ✓ | ✓ |
-| Fahrzeug aufwecken | ✓ | ✓ | ✓ | ✓ |
-| Servicefälligkeit km/Tage | ✓ | ✓ | ✓ | ✓ |
-| Online-Status | ✓ | ✓ | ✓ | ✓ |
+| Feature | Audi | VW EU | Škoda | SEAT/CUPRA | VW US/CA | Porsche |
+|---|:---:|:---:|:---:|:---:|:---:|:---:|
+| Tankstand / Akkustand | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Reichweite | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Kilometerstand | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| GPS-Position | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Türen gesamt + einzeln | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Fenster | ✓ | ✓ | ✓ | ✓ | ✓ | — |
+| Motorhaube / Kofferraum | ✓ | ✓ | — | — | ✓ | ✓ |
+| Klimatisierung start/stop | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Zieltemperatur setzen | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Verriegeln / Entriegeln | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Lichter blinken | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Fahrzeug aufwecken | ✓ | ✓ | ✓ | ✓ | ✓ | — |
+| Servicefälligkeit km/Tage | ✓ | ✓ | ✓ | ✓ | — | ✓ |
+| Online-Status | ✓ | ✓ | ✓ | ✓ | ✓ | — |
 
 ### Elektro- & Hybridfahrzeuge
 
-| Feature | Audi | VW EU | Škoda | SEAT/CUPRA |
-|---|:---:|:---:|:---:|:---:|
-| Akkustand % | ✓ | ✓ | ✓ | ✓ |
-| Elektrische Reichweite | ✓ | ✓ | ✓ | ✓ |
-| Ladezustand | ✓ | ✓ | ✓ | ✓ |
-| Ladeleistung kW | ✓ | ✓ | ✓ | ✓ |
-| Ladegeschwindigkeit km/h | ✓ | ✓ | ✓ | ✓ |
-| Ladeende-ETA | ✓ | ✓ | ✓ | ✓ |
-| Stecker-Status | ✓ | ✓ | ✓ | ✓ |
-| Laden start/stop | ✓ | ✓ | ✓ | ✓ |
-| Ladziel % setzen | ✓ | ✓ | ✓ | ✓ |
-| Fensterheizung | ✓ | ✓ | ✓ | ✓ |
-| Abfahrtstimer 1–3 | ✓ | ✓ | — | — |
-| Akkutemperatur | ✓ | ✓ | — | — |
-| AdBlue-Reichweite | ✓ | ✓ | — | — |
+| Feature | Audi | VW EU | Škoda | SEAT/CUPRA | VW US/CA | Porsche |
+|---|:---:|:---:|:---:|:---:|:---:|:---:|
+| Akkustand % | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Elektrische Reichweite | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Ladezustand | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Ladeleistung kW | ✓ | ✓ | ✓ | ✓ | ✓ | — |
+| Ladegeschwindigkeit km/h | ✓ | ✓ | ✓ | ✓ | — | — |
+| Ladeende-ETA | ✓ | ✓ | ✓ | ✓ | ✓ | — |
+| Stecker-Status | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Laden start/stop | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Ladeziel % setzen | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Fensterheizung | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Abfahrtstimer 1–3 | ✓ | ✓ | — | — | ✓ | ✓ |
+| Akkutemperatur | ✓ | ✓ | — | — | — | — |
+| AdBlue-Reichweite | ✓ | ✓ | — | — | — | — |
 
 ---
 
@@ -122,7 +123,7 @@ Home Assistant neu starten.
 
 | Feld | Pflicht | Beschreibung |
 |---|---|---|
-| Fahrzeugmarke | ✓ | Audi / Volkswagen / Škoda / SEAT / CUPRA |
+| Fahrzeugmarke | ✓ | Audi / VW EU / Škoda / SEAT / CUPRA / VW US/CA / Porsche |
 | E-Mail | ✓ | Anmelde-E-Mail aus der Hersteller-App |
 | Passwort | ✓ | Passwort aus der App |
 | S-PIN | — | Nur für Verriegelung (unter Sicherheit in der App) |

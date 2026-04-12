@@ -110,9 +110,9 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ## [Unreleased]
 
-### Added
-- Porsche-Unterstützung: `cariad/auth/porsche.py` (Auth0) + `cariad/api/porsche.py` — geplant v0.15.0, Issue #9
-- VW North America (US/CA): separates Auth-System — geplant v0.16.0, Issue #10
+### Geplant für v0.15.0+
+- Porsche + VW US/CA Live-Tests mit echten Fahrzeugen
+- HACS offizieller Antrag (benötigt 3+ Tester pro Marke)
 
 ---
 
