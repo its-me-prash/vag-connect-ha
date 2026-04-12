@@ -311,12 +311,14 @@ class VagConnectCoordinator(DataUpdateCoordinator):
         enabled: bool,
         departure_time: str | None,
     ) -> None:
-        """Set a departure timer — not yet implemented in CARIAD client."""
-        _LOGGER.info(
-            "VAG departure timer: VIN=%s timer=%d enabled=%s time=%s (pending CARIAD API)",
-            vin, timer_id, enabled, departure_time,
+        """Set a departure timer via CARIAD API."""
+        await self._cariad_cmd(
+            vin,
+            "command_set_departure_timer",
+            timer_id=timer_id,
+            enabled=enabled,
+            departure_time=departure_time,
         )
-        await self.async_request_refresh()
 
     async def _cariad_cmd(self, vin: str, method: str, **kwargs: Any) -> None:
         """Dispatch a command to the CARIAD client then refresh state."""

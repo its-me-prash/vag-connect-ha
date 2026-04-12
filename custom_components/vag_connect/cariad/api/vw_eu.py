@@ -133,6 +133,29 @@ class VWEUClient(CariadBaseClient):
             json={"targetTemperature_C": temp_c},
         )
 
+    async def command_set_departure_timer(
+        self,
+        vin: str,
+        timer_id: int,
+        enabled: bool,
+        departure_time: str | None,
+    ) -> None:
+        """Set a departure timer (1–3).
+
+        Args:
+            vin:            Vehicle VIN
+            timer_id:       1, 2 or 3
+            enabled:        True to enable, False to disable
+            departure_time: "HH:MM" format, e.g. "07:30" (None = keep existing)
+        """
+        payload: dict[str, Any] = {"id": timer_id, "enabled": enabled}
+        if departure_time:
+            payload["departureTime"] = {"time": departure_time}
+        await self._post(
+            f"{_BASE}/vehicle/v1/vehicles/{vin}/climatisation/timers",
+            json=payload,
+        )
+
     # ── data parsing ───────────────────────────────────────────────────────────
 
     def _parse_status(

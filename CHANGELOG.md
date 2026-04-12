@@ -29,6 +29,17 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ---
 
+## [0.14.4] - 2026-04-12
+
+### Added
+- **Abfahrtstimer schreiben** (Issue #14 ✅): `command_set_departure_timer()` in `vw_eu.py` — POSTet an `vehicle/v1/vehicles/{vin}/climatisation/timers`
+- Coordinator `async_set_departure_timer` nutzt jetzt den CARIAD-Client direkt statt als no-op
+
+### Fixed
+- Tests: `command_set_departure_timer` als `AsyncMock` in Service-Test-Fixtures ergänzt
+
+---
+
 ## [0.14.3] - 2026-04-12
 
 ### Fixed

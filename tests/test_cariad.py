@@ -1520,7 +1520,8 @@ class TestRegisterServices:
         coord._cariad_client = MagicMock()
         for cmd in ["command_lock","command_unlock","command_start_climate",
                     "command_stop_climate","command_start_charging","command_stop_charging",
-                    "command_flash","command_wake","command_set_target_soc","command_set_climate_temperature"]:
+                    "command_flash","command_wake","command_set_target_soc",
+                    "command_set_climate_temperature","command_set_departure_timer"]:
             setattr(coord._cariad_client, cmd, AsyncMock())
         coord._started = True
         coord._was_available = True

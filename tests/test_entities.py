@@ -1353,29 +1353,28 @@ class TestDepartureTimerAction:
         coord.entry = MagicMock()
         coord._vehicles_lock = threading.Lock()
         coord.async_request_refresh = AsyncMock()
-        # Build vehicle mock with timer support
-        v = MagicMock()
-        t1 = MagicMock()
-        t1.enabled.value = False
-        t1.target_datetime.value = None
-        v.climatization.timers.timer_1 = t1
-        coord.vehicles = {"VIN1": {"_vehicle": v}}
-        return coord, v, t1
+        coord._cariad_client = MagicMock()
+        coord._cariad_client.command_set_departure_timer = AsyncMock()
+        coord.vehicles = {"VIN1": {}}
+        return coord
 
-    def test_set_departure_timer_calls_executor(self):
+    def test_set_departure_timer_calls_cariad(self):
         import asyncio
-        coord, v, t1 = self._make_coord()
+        coord = self._make_coord()
         asyncio.get_event_loop().run_until_complete(
             coord.async_set_departure_timer("VIN1", 1, True, "07:30")
         )
-        coord.async_request_refresh.assert_awaited()
-
-    def test_set_departure_timer_vehicle_not_found(self):
-        import asyncio
-        coord, _, _ = self._make_coord()
-        coord.vehicles = {}
-        # Departure timer is now informational-only — no longer raises
-        asyncio.get_event_loop().run_until_complete(
-            coord.async_set_departure_timer("VIN1", 1, True, None)
+        coord._cariad_client.command_set_departure_timer.assert_awaited_once_with(
+            "VIN1", timer_id=1, enabled=True, departure_time="07:30"
         )
         coord.async_request_refresh.assert_awaited()
+
+    def test_set_departure_timer_no_time(self):
+        import asyncio
+        coord = self._make_coord()
+        asyncio.get_event_loop().run_until_complete(
+            coord.async_set_departure_timer("VIN1", 2, False, None)
+        )
+        coord._cariad_client.command_set_departure_timer.assert_awaited_once_with(
+            "VIN1", timer_id=2, enabled=False, departure_time=None
+        )
