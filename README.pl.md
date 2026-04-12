@@ -56,6 +56,16 @@ Ustawienia → Urządzenia i usługi → Dodaj integrację → **VAG Connect**
 
 ---
 
+## Ostatnie zmiany
+
+**[v0.8.0](CHANGELOG.md)** — Gold Quality Scale ukończony — icons.json, stare urządzenia, 192 testy
+**[v0.7.0](CHANGELOG.md)** — Gold — entry.runtime_data, reauth, reconfigure, ServiceValidationError
+**[v0.6.0](CHANGELOG.md)** — EntityCategory.DIAGNOSTIC / CONFIG, 4 nowe sensory
+
+➜ [Pełny dziennik zmian →](CHANGELOG.md)
+
+---
+
 ## Lizenz / License
 
 MIT — [GitHub](https://github.com/its-me-prash/vag-connect-ha)

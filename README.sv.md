@@ -56,6 +56,16 @@ Inställningar → Enheter och tjänster → Lägg till integration → **VAG Co
 
 ---
 
+## Senaste ändringar
+
+**[v0.8.0](CHANGELOG.md)** — Gold Quality Scale klart — icons.json, inaktuella enheter, 192 tester
+**[v0.7.0](CHANGELOG.md)** — Gold — entry.runtime_data, reauth, reconfigure, ServiceValidationError
+**[v0.6.0](CHANGELOG.md)** — EntityCategory.DIAGNOSTIC / CONFIG, 4 nya sensorer
+
+➜ [Fullständig ändringslogg →](CHANGELOG.md)
+
+---
+
 ## Lizenz / License
 
 MIT — [GitHub](https://github.com/its-me-prash/vag-connect-ha)

@@ -56,6 +56,16 @@ Instellingen → Apparaten en diensten → Integratie toevoegen → **VAG Connec
 
 ---
 
+## Recente wijzigingen
+
+**[v0.8.0](CHANGELOG.md)** — Gold Quality Scale volledig — icons.json, verouderde apparaten, 192 tests
+**[v0.7.0](CHANGELOG.md)** — Gold — entry.runtime_data, reauth, reconfigure, ServiceValidationError
+**[v0.6.0](CHANGELOG.md)** — EntityCategory.DIAGNOSTIC / CONFIG, 4 nieuwe sensoren
+
+➜ [Volledig changelog →](CHANGELOG.md)
+
+---
+
 ## Lizenz / License
 
 MIT — [GitHub](https://github.com/its-me-prash/vag-connect-ha)
