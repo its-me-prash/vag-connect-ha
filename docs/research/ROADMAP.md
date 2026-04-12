@@ -4,7 +4,7 @@
 
 ---
 
-## Current State (v0.11.0) — PLATINUM 🏆
+## Current State (v0.14.1) — PLATINUM 🏆
 
 ```
 Engine:         Own CARIAD API Client (aiohttp, zero external deps)
@@ -17,7 +17,7 @@ Dependencies:   requirements: []
 
 ---
 
-## v0.12.0 — Porsche Support
+## v0.15.0 — Porsche Support
 
 **Goal:** Add Porsche as a 6th supported brand.
 
@@ -39,7 +39,7 @@ Dependencies:   requirements: []
 
 ---
 
-## v0.13.0 — VW North America (US/CA)
+## v0.16.0 — VW North America (US/CA)
 
 **Goal:** VW US and Canada users.
 

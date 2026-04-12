@@ -24,15 +24,15 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 ## [Unreleased]
 
 ### Added
-- Porsche-Unterstützung: `cariad/auth/porsche.py` (Auth0) + `cariad/api/porsche.py` — Issue #9
-- VW North America (US/CA): separates Auth-System — Issue #10
+- Porsche-Unterstützung: `cariad/auth/porsche.py` (Auth0) + `cariad/api/porsche.py` — geplant v0.15.0, Issue #9
+- VW North America (US/CA): separates Auth-System — geplant v0.16.0, Issue #10
 
 ---
 
 ## [0.14.1] - 2026-04-12
 
 ### Changed
-- Semver retroaktiv korrigiert: 0.9.0–0.14.0 → 0.8.1–0.11.0 (Dokumentation/Tags)
+- Semver retroaktiv korrigiert: 0.9.0–0.14.0 → 0.8.1–0.11.0 (Dokumentation/Tags, intern)
 - `iot_class`: `cloud_push` → `cloud_polling` (wir pollen, kein Push-Protokoll)
 - CI: CarConnectivity-Dependencies entfernt, mypy + coverage-threshold hinzugefügt
 - `icons.json`: Service-Icons für alle 14 Actions ergänzt

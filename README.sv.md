@@ -33,7 +33,7 @@ Jag ville styra min Audi i Home Assistant — fullständigt. Så jag byggde dett
 
 **VAG Connect** är en fristående Home Assistant-integration för alla VAG-märken. Inga externa beroenden, ingen Docker, inga externa tjänster.
 
-Från v0.11.0 kommunicerar integrationen **direkt** med CARIAD API — egen async-klient, helt fristående.
+Från v0.14.1 kommunicerar integrationen **direkt** med CARIAD API — egen async-klient, helt fristående.
 
 ---
 
@@ -46,10 +46,10 @@ Från v0.11.0 kommunicerar integrationen **direkt** med CARIAD API — egen asyn
 | **Škoda** | IDK | mysmob.api.connect.skoda-auto.cz | ✅ |
 | **SEAT** | IDK | ola.prod.code.seat.cloud.vwgroup.com | ✅ |
 | **CUPRA** | IDK | ola.prod.code.seat.cloud.vwgroup.com | ✅ |
-| Porsche | Auth0 | api.ppa.porsche.com | 🔜 v0.12.0 |
-| VW NA (US/CA) | VW NA Auth | b-h-s.spr.*.p.con-veh.net | 🔜 v0.13.0 |
+| Porsche | Auth0 | api.ppa.porsche.com | 🔜 v0.15.0 |
+| VW NA (US/CA) | VW NA Auth | b-h-s.spr.*.p.con-veh.net | 🔜 v0.16.0 |
 
-> **Porsche:** Porsche använder ett helt separat Auth0-system. Planerat för v0.12.0. För Porsche nu: [ha-porscheconnect](https://github.com/CJNE/ha-porscheconnect) (MIT).
+> **Porsche:** Porsche använder ett helt separat Auth0-system. Planerat för v0.15.0. För Porsche nu: [ha-porscheconnect](https://github.com/CJNE/ha-porscheconnect) (MIT).
 
 ---
 
@@ -120,8 +120,8 @@ Starta om Home Assistant.
 - **S-PIN** krävs för låsning
 - **Intervall** minst 5 minuter
 - **2FA** — bekräfta en gång manuellt i appen
-- **Porsche** — separat Auth0-system, planerat v0.12.0
-- **VW Nordamerika** — separat auth-server, planerat v0.13.0
+- **Porsche** — separat Auth0-system, planerat v0.15.0
+- **VW Nordamerika** — separat auth-server, planerat v0.16.0
 
 ---
 
@@ -129,9 +129,9 @@ Starta om Home Assistant.
 
 | Version | Content |
 |---|---|
-| ✅ v0.11.0 | Platinum, own CARIAD client |
-| 🔜 v0.12.0 | Porsche (Auth0 + PPA API) |
-| 🔜 v0.13.0 | VW North America |
+| ✅ v0.14.1 | Platinum, own CARIAD client |
+| 🔜 v0.15.0 | Porsche (Auth0 + PPA API) |
+| 🔜 v0.16.0 | VW North America |
 | 🎯 v1.0.0 | HACS Official |
 
 ---

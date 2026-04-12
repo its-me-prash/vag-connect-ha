@@ -45,8 +45,8 @@ MAJOR erst ab v1.0.0 bei echter Inkompatibilität.
 
 ```bash
 # Datei: custom_components/vag_connect/manifest.json
-# Beispiel: 0.11.0 → 0.11.1 (Bugfix) oder 0.12.0 (Feature)
-"version": "0.12.0"
+# Beispiel: 0.14.1 → 0.14.2 (Bugfix) oder 0.15.0 (Feature)
+"version": "0.15.0"
 ```
 
 ### 2. CHANGELOG.md finalisieren
@@ -105,10 +105,6 @@ Vollständige History: [CHANGELOG.md](CHANGELOG.md)
 
 | Version | Datum | Typ | Inhalt |
 |---|---|---|---|
-| **0.11.0** | 2026-04-12 | MINOR | Platinum, 95% Coverage, 342 Tests |
-| 0.10.1 | 2026-04-12 | PATCH | CC aus manifest entfernt |
-| 0.10.0 | 2026-04-12 | MINOR | Eigener CARIAD-Client |
-| 0.9.0 | 2026-04-12 | MINOR | Apache 2.0, strict-typing |
-| 0.8.2 | 2026-04-12 | PATCH | requests-Konflikt Erkennung |
-| 0.8.1 | 2026-04-11 | PATCH | Python 3.11 fix |
+| **0.14.1** | 2026-04-12 | PATCH | iot_class, CI, icons, HACS-Update-Fix |
+| 0.11.0–0.14.0 | 2026-04-12 | — | Intern (retroaktiv zu 0.8.1–0.11.0 korrigiert) |
 | 0.8.0 | 2026-04-11 | MINOR | Diagnostics, Gold Quality Scale |
