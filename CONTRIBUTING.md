@@ -1,80 +1,37 @@
-# Mitmachen bei VAG Connect
+# Contributing to VAG Connect
 
-Danke dass du zum Projekt beitragen möchtest!
+## Bug Reports
+→ [Issue Template](https://github.com/its-me-prash/vag-connect-ha/issues/new/choose)
 
-## Schnellstart
+Bitte immer: Version, Marke, HA-Version und Logs mitschicken.
+
+## Pull Requests
 
 ```bash
 git clone https://github.com/its-me-prash/vag-connect-ha
 cd vag-connect-ha
-pip install homeassistant ruff mypy pytest pytest-cov
-pip install -r requirements_dev.txt 2>/dev/null || true
+pip install pytest pytest-asyncio ruff
+python -m pytest tests/        # alle Tests grün
+python -m ruff check custom_components/vag_connect/  # Lint sauber
 ```
 
-## Tests ausführen
+**Regeln:**
+- Alle neuen Features brauchen Tests
+- Lint muss sauber sein (`ruff check`)
+- CHANGELOG.md aktualisieren
+- Neue Marken oder API-Endpoints brauchen eine Quelle (Link zu MIT/Apache-2.0 Referenzprojekt)
 
-```bash
-python3 -m pytest tests/           # 342 Tests müssen grün sein
-python3 -m ruff check custom_components/vag_connect/
-python3 -m mypy custom_components/vag_connect/ --ignore-missing-imports
-python3 -m pytest tests/ --cov=custom_components/vag_connect  # 95%+
-```
+## Neue Marke hinzufügen
 
-## Was besonders gesucht wird
+1. `cariad/api/{marke}.py` — API-Client (von `CariadBaseClient` ableiten oder eigene Klasse)
+2. `cariad/models.py` — `BrandConfig` + `BRANDS` dict ergänzen
+3. `cariad/api/factory.py` — Routing ergänzen
+4. `const.py` — BRANDS dict
+5. `config_flow.py` — `_BRAND_OPTIONS` ergänzen
+6. Tests in `tests/test_cariad.py`
+7. README Feature-Tabelle ergänzen
 
-| Aufgabe | Schwierigkeit |
-|---|---|
-| Neue Übersetzung hinzufügen (`translations/xx.json`) | ⭐ Einfach |
-| Neue Sensoren aus VehicleData mappen | ⭐⭐ Mittel |
-| Porsche-Support (Auth0 + api.ppa.porsche.com) | ⭐⭐⭐ Schwer |
-| VW North America (US/CA) testen | ⭐⭐⭐ Schwer |
-| Live-Test auf echten Fahrzeugen | ⭐⭐ Mittel |
+## Tester gesucht
 
-## Neue Übersetzung hinzufügen
-
-1. `custom_components/vag_connect/translations/de.json` kopieren
-2. Dateiname = [ISO 639-1 Sprachcode](https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes) (z.B. `ja.json`, `ko.json`)
-3. Alle Strings übersetzen
-4. PR öffnen — wird schnell gemerged
-
-## Neue Marke / API hinzufügen
-
-Die Architektur ist klar:
-
-```
-caridad/auth/      ← Auth-Module (idk.py für 5 Marken, porsche.py geplant)
-cariad/api/        ← API-Clients (einer pro Marke/Backend)
-cariad/models.py   ← VehicleData dataclass (70 Felder, einfach erweiterbar)
-cariad/api/factory.py ← CariadClientFactory.create(brand, session, ...)
-```
-
-Neue Marke = neue Datei in `cariad/api/`, Factory-Eintrag, Tests.
-
-## Porsche mitentwickeln? (v0.15.0)
-
-Auth-System: `identity.porsche.com` (Auth0, PKCE)
-API: `https://api.ppa.porsche.com/app`
-Client-ID: `XhygisuebbrqQ80byOuU5VncxLIm8E6H`
-Referenz: [pyporscheconnectapi](https://github.com/CJNE/pyporscheconnectapi) (MIT)
-
-Wenn du ein Porsche-Fahrzeug hast und testen möchtest → Issue öffnen.
-
-## Code-Standards
-
-- Python 3.12+
-- `ruff check` ohne Fehler
-- `mypy --disallow-untyped-defs` ohne Fehler
-- Alle neuen Funktionen mit Tests (Ziel: Coverage bleibt bei 95%+)
-- Keine Credentials, VINs oder persönliche Daten in Tests oder Logs
-
-## PR-Checkliste
-
-- [ ] Tests laufen durch (`pytest tests/`)
-- [ ] Lint clean (`ruff check`)
-- [ ] Typen sauber (`mypy`)
-- [ ] CHANGELOG.md Eintrag hinzugefügt
-- [ ] Keine Credentials/VINs im Code
-
----
-
-*Copyright 2026 Prash Balan (@its-me-prash) · Apache License 2.0*
+Porsche und VW US/CA sind implementiert aber ohne echten Live-Test. Wenn du eines dieser Fahrzeuge hast:
+→ [Tester-Issue öffnen](https://github.com/its-me-prash/vag-connect-ha/issues/new?template=new_brand.yml)

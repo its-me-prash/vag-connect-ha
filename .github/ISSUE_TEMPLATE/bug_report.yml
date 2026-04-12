@@ -5,7 +5,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Danke für deinen Bug-Report! Bitte fülle alle Felder aus — das hilft uns enorm.
+        Danke für dein Feedback! Bitte fülle so viele Felder wie möglich aus — das spart Zeit.
 
   - type: dropdown
     id: brand
@@ -13,18 +13,20 @@ body:
       label: Fahrzeugmarke
       options:
         - Audi
-        - Volkswagen (EU)
-        - Volkswagen (US/CA)
+        - Volkswagen EU
         - Škoda
-        - SEAT / CUPRA
+        - SEAT
+        - CUPRA
+        - Volkswagen US/CA
+        - Porsche
     validations:
       required: true
 
   - type: input
-    id: model
+    id: version
     attributes:
-      label: Fahrzeugmodell
-      placeholder: "z.B. Audi Q4 e-tron 2023"
+      label: VAG Connect Version
+      placeholder: "z.B. 1.0.0"
     validations:
       required: true
 
@@ -32,23 +34,15 @@ body:
     id: ha_version
     attributes:
       label: Home Assistant Version
-      placeholder: "z.B. 2024.12.0"
-    validations:
-      required: true
-
-  - type: input
-    id: integration_version
-    attributes:
-      label: VAG Connect Version
-      placeholder: "z.B. 0.1.0"
+      placeholder: "z.B. 2025.1.0"
     validations:
       required: true
 
   - type: textarea
     id: description
     attributes:
-      label: Was passiert?
-      description: Beschreibe das Problem so genau wie möglich.
+      label: Was ist passiert?
+      description: Klarer, konkreter Fehlerbeschreibung.
     validations:
       required: true
 
@@ -62,20 +56,17 @@ body:
   - type: textarea
     id: logs
     attributes:
-      label: Logs (optional aber sehr hilfreich)
+      label: Logs
       description: |
-        Aktiviere Debug-Logging in configuration.yaml:
-        ```yaml
-        logger:
-          logs:
-            custom_components.vag_connect: debug
-        ```
+        HA → Einstellungen → System → Logs → nach "vag_connect" filtern.
+        Debug-Logging aktivieren unter Einstellungen → Integrationen → VAG Connect → "Debug-Logging aktivieren".
       render: text
 
   - type: textarea
     id: diagnostics
     attributes:
-      label: Diagnostics
+      label: Diagnose-Daten (optional)
       description: |
-        Einstellungen → Geräte & Dienste → VAG Connect → ⋮ → Diagnose herunterladen
+        HA → Einstellungen → Integrationen → VAG Connect → 3-Punkte-Menü → Diagnose herunterladen.
+        Sensible Daten (GPS, Passwort) sind automatisch geschwärzt.
       render: json

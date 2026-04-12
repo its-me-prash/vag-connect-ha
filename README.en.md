@@ -29,13 +29,11 @@
 
 ---
 
-I wanted to control my Audi in Home Assistant — fully, not half-heartedly. So I built this.
+**VAG Connect** connects Home Assistant directly to your Audi, VW, Škoda, SEAT, CUPRA, Porsche or VW US/CA — no middleware, no Docker, no extra service. Enter your app credentials, done.
 
-**VAG Connect** is a self-contained Home Assistant integration for all VAG brands. No external dependencies, no Docker, no separate service. Install the integration, enter credentials, done.
+68 entities across 7 platforms, 14 services, cloud-push architecture. All 7 VAG Group brands in one integration — no separate plugin per brand needed.
 
-From v0.14.1, the integration talks **directly** to the CARIAD API — its own async client, fully self-contained, no upstream blockers.
-
----
+Since v0.14.1, VAG Connect speaks **directly** to the CARIAD API via its own async client. No external dependencies, no upstream blockers.
 
 ## Supported Brands
 

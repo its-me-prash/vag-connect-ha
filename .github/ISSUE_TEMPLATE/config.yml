@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 💬 Diskussionen & Fragen
+    url: https://github.com/its-me-prash/vag-connect-ha/discussions
+    about: Allgemeine Fragen, Dashboard-Beispiele und Community-Austausch
+  - name: 📖 HA Community Forum
+    url: https://community.home-assistant.io
+    about: Allgemeine Home Assistant Fragen

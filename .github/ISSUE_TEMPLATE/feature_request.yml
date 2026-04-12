@@ -1,5 +1,5 @@
-name: ✨ Feature Request
-description: Neue Funktion oder Verbesserung vorschlagen
+name: 💡 Feature Request
+description: Idee für eine neue Funktion
 labels: ["enhancement"]
 body:
   - type: dropdown
@@ -10,30 +10,33 @@ body:
       options:
         - Alle
         - Audi
-        - Volkswagen (EU)
-        - Volkswagen (US/CA)
+        - Volkswagen EU
         - Škoda
-        - SEAT / CUPRA
+        - SEAT
+        - CUPRA
+        - Volkswagen US/CA
+        - Porsche
     validations:
       required: true
 
   - type: textarea
-    id: description
+    id: feature
     attributes:
-      label: Was soll die neue Funktion tun?
+      label: Was soll das Feature tun?
+      description: Kurze, klare Beschreibung.
     validations:
       required: true
 
   - type: textarea
     id: usecase
     attributes:
-      label: Warum ist das nützlich?
-      description: Welche Automation / welchen Use Case ermöglicht das?
+      label: Welches Problem löst es?
+      description: "z.B. 'Ich möchte eine Automation wenn der Akku unter 20% fällt, aber der Sensor fehlt.'"
     validations:
       required: true
 
   - type: textarea
-    id: api_info
+    id: api
     attributes:
-      label: Gibt es bereits API-Informationen dazu?
-      description: Links zu ioBroker-Forum, CarConnectivity Issues, etc. sehr willkommen!
+      label: API-Hinweise (optional)
+      description: Weißt du ob die VAG-API das unterstützt? Link zu Dokumentation oder ähnlichen Projekten?

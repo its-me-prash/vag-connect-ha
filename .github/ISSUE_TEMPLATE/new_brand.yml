@@ -1,0 +1,50 @@
+name: 🚗 Neue Marke / Neues Modell
+description: Porsche/VW NA Live-Test oder neue Marke vorschlagen
+labels: ["new-brand", "testing"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Tester gesucht — Porsche & VW US/CA
+        Porsche und VW North America sind als Beta implementiert aber noch ohne echten Live-Test.
+        Wenn du eines dieser Fahrzeuge hast, hilf uns mit einem kurzen Bericht!
+
+  - type: dropdown
+    id: brand
+    attributes:
+      label: Marke / Modell
+      options:
+        - Porsche (My Porsche App)
+        - Volkswagen US (MyVW App)
+        - Volkswagen CA (MyVW App)
+        - Andere (bitte unten beschreiben)
+    validations:
+      required: true
+
+  - type: input
+    id: model
+    attributes:
+      label: Fahrzeugmodell
+      placeholder: "z.B. Porsche Taycan, VW ID.4 (US)"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: result
+    attributes:
+      label: Ergebnis
+      options:
+        - ✅ Funktioniert vollständig
+        - ⚠️ Teilweise — bestimmte Features fehlen
+        - ❌ Authentifizierung schlägt fehl
+        - ❌ Fahrzeug wird nicht erkannt
+    validations:
+      required: true
+
+  - type: textarea
+    id: details
+    attributes:
+      label: Details / Logs
+      description: Was genau funktioniert oder fehlt?
+    validations:
+      required: true
