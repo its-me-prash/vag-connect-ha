@@ -21,6 +21,41 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ---
 
+## [1.5.1] - 2026-04-13
+
+### Behoben — Sensor-Qualität
+
+#### 11 tote Sensoren entfernt (zeigten immer "Unbekannt")
+
+CARIAD BFF liefert diese Felder nicht oder nicht mehr:
+
+| Entfernt | Grund |
+|---|---|
+| Ladesäule (Name, Adresse, Max-kW, Betreiber) | CARIAD BFF hat diese 4 Felder entfernt |
+| Firmware-Version | Nur in Diagnose-Daten, nicht im Status |
+| Kennzeichen | Nicht in garage/status Response |
+| Reichweite bei 100% | Kein Live-API-Feld |
+| WLTP-Reichweite | Statischer Wert, kein Endpoint |
+| Akkukapazität gesamt | Nicht in CARIAD BFF Response |
+| Akkuenergie verfügbar | Nicht in CARIAD BFF Response |
+| Fahrtrichtung | Nicht im parkingposition Endpoint |
+
+**Vorher:** 39 Sensoren — 14 zeigten immer „Unbekannt"  
+**Nachher:** 28 Sensoren — alle liefern echte Werte
+
+#### Abfahrtstimer Zeitanzeige repariert
+
+`departure_timer_{1/2/3}_time` hatte `device_class=TIMESTAMP` aber die API
+liefert einen Uhrzeit-String (`"07:30"`). Würde zu AttributeError führen
+wie beim `service_due_at` Bug (v1.3.4).
+
+Fix: `device_class` entfernt → Sensor zeigt Uhrzeit direkt als String.
+
+**363/363 Tests ✓ | mypy 32/32 ✓ | Ruff ✓**
+
+---
+
+
 ## [1.5.0] - 2026-04-13
 
 ### v1.5.0 — Bugs & Stabilität
