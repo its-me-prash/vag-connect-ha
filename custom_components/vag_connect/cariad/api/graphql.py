@@ -177,13 +177,14 @@ class VehicleImageFetcher:
         self._session = session
 
     async def fetch_image_data(
-        self, access_token: str, brand: str
+        self, access_token: str, brand: str, graphql_url: str | None = None
     ) -> dict[str, VehicleImageData]:
         """Return {vin: VehicleImageData} for all vehicles in the account.
 
+        graphql_url: override the default endpoint for this brand.
         Returns empty dict on any error — images are optional, never block startup.
         """
-        endpoint = _GRAPHQL_ENDPOINTS.get(brand.lower())
+        endpoint = graphql_url or _GRAPHQL_ENDPOINTS.get(brand.lower())
         if not endpoint:
             _LOGGER.debug("No GraphQL endpoint configured for brand '%s'", brand)
             return {}

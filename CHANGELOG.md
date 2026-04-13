@@ -21,6 +21,55 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ---
 
+## [1.3.6] - 2026-04-13
+
+### Behoben (aus drittem HA-Log)
+
+#### Audi Render Images — AZS Token Exchange (endgültiger Fix)
+
+**v1.3.5 Versuch:** Zweite IDK-PKCE-Authentifizierung mit Portal-Client `ea73e952-...`
+→ HTTP 400 weil Scopes falsch/erfunden waren.
+
+**Root Cause (jetzt klar):** Das vgql-Endpoint für die Audi-App ist nicht der
+myAudi-Web-Portal-Proxy, sondern `app-api.live-my.audi.com/vgql/v1/graphql`.
+Dieses Endpoint erwartet einen **AZS-Token** (Audi Authorization Server),
+nicht den IDK-Bearer-Token.
+
+**Fix — AZS Token Exchange:**
+```
+POST https://emea.bff.cariad.digital/login/v1/audi/token
+Body: {
+  "token": <idk_access_token>,   ← unser vorhandener IDK-Bearer
+  "grant_type": "id_token",
+  "stage": "live",
+  "config": "myaudi"
+}
+→ access_token für app-api.live-my.audi.com/vgql/v1/graphql
+```
+
+Kein zweiter PKCE-Login nötig — ein einziger HTTP-POST aus dem vorhandenen
+IDK-Token. AZS-Token wird gecacht (Reset bei leerem Response → Re-Exchange
+beim nächsten Poll-Zyklus).
+
+**Erwartetes Log nach Update:**
+```
+INFO [vag_connect] Audi AZS token acquired for image fetching
+INFO [vag_connect] Audi images: render URLs for 1 vehicle(s)
+```
+
+#### `graphql.py` — `graphql_url` Override-Parameter
+
+`fetch_image_data(token, brand, graphql_url=None)` akzeptiert jetzt eine
+optionale URL — ermöglicht brand-spezifische Endpoints ohne den zentralen
+Endpoint-Dict zu ändern.
+
+**Quelle:** arjenvrh/audi_connect_ha (MIT) — Token-Exchange-Pattern
+
+**360/360 Tests ✓ | mypy 32/32 ✓ | Ruff ✓**
+
+---
+
+
 ## [1.3.5] - 2026-04-13
 
 ### Behoben (aus zweitem HA-Log, 13. April 2026)
