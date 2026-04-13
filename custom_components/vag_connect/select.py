@@ -56,7 +56,8 @@ class VagChargeModeSelect(VagConnectEntity, SelectEntity):
         raw = self._vehicle.get("charge_mode")
         if raw is None:
             return None
-        return _CHARGE_MODES.get(str(raw).upper(), raw)
+        result = _CHARGE_MODES.get(str(raw).upper(), str(raw))
+        return str(result) if result else None
 
     async def async_select_option(self, option: str) -> None:
         """Set the charging mode — translates label back to API key."""

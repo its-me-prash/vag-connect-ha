@@ -82,8 +82,8 @@ class AudiClient(VWEUClient):
                 data = await resp.json()
                 token = data.get("access_token")
                 if token:
-                    _LOGGER.warning("Audi AZS token acquired for image fetching ✓")
-                return token
+                    _LOGGER.info("Audi AZS token acquired for image fetching")
+                return str(token) if token else None
         except Exception as err:  # noqa: BLE001
             _LOGGER.warning("AZS token exchange error: %s", err)
             return None
