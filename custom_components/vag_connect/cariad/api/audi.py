@@ -82,7 +82,7 @@ class AudiClient(VWEUClient):
                 data = await resp.json()
                 token = data.get("access_token")
                 if token:
-                    _LOGGER.info("Audi AZS token acquired for image fetching")
+                    _LOGGER.warning("Audi AZS token acquired for image fetching ✓")
                 return token
         except Exception as err:  # noqa: BLE001
             _LOGGER.warning("AZS token exchange error: %s", err)
@@ -94,7 +94,7 @@ class AudiClient(VWEUClient):
             self._azs_token = await self._exchange_azs_token()
 
         if not self._azs_token:
-            _LOGGER.debug("No AZS token — Audi images unavailable")
+            _LOGGER.warning("Audi images: no AZS token available (exchange failed or not run)")
             self._image_data = {}
             return
 
@@ -105,13 +105,13 @@ class AudiClient(VWEUClient):
             )
             if data:
                 self._image_data = data
-                _LOGGER.info(
-                    "Audi images: render URLs for %d vehicle(s)", len(data)
+                _LOGGER.warning(
+                    "Audi images: ✓ render URLs for %d vehicle(s)", len(data)
                 )
             else:
                 # AZS token might have expired — reset to force re-exchange next time
                 self._azs_token = None
-                _LOGGER.debug("Audi images: empty response — AZS token reset for next poll")
+                _LOGGER.warning("Audi images: empty response from vgql — AZS token reset for retry")
         except Exception as err:  # noqa: BLE001
             _LOGGER.warning("Audi image fetch failed: %s", err)
             self._azs_token = None
