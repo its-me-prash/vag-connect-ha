@@ -21,6 +21,35 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ---
 
+## [1.5.2] - 2026-04-13
+
+### Behoben — Binary Sensor Audit
+
+#### 5 tote Binary-Sensor-Entities entfernt
+
+Nach vollständigem Audit aller Binary-Sensor-Definitionen gegen tatsächliche API-Responses:
+
+**Entfernt — API liefert diese Daten nie zuverlässig:**
+
+| Entity | Grund |
+|---|---|
+| `connection_state` | Nirgends im Code gesetzt |
+| `trunk_open` | CARIAD BFF liefert Kofferraum nicht als garantiertes Feld |
+| `hood_open` | CARIAD BFF liefert Motorhaube nicht als garantiertes Feld |
+| `sunroof_open` | CARIAD BFF liefert Schiebedach nicht als garantiertes Feld |
+| `trunk_locked` | Kein separater Lock-State für Kofferraum in API |
+
+**Hintergrund:** CARIAD BFF liefert Türen als dynamische Liste mit `name`-Feld.
+`trunk`, `hood`, `sunroof` können theoretisch darin vorkommen, sind aber nicht
+garantiert und kommen modellabhängig. Echte Nutzung über `doors_individual`-Dict.
+
+**Translations bereinigt (5 Keys, 8 Sprachen)**
+
+**363/363 Tests ✓ | mypy 32/32 ✓ | Ruff ✓**
+
+---
+
+
 ## [1.5.1] - 2026-04-13
 
 ### Behoben — Sensor-Audit

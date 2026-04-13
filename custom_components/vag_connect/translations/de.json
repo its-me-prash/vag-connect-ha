@@ -194,9 +194,6 @@
       "hood_open": {
         "name": "Motorhaube"
       },
-      "trunk_open": {
-        "name": "Kofferraum offen"
-      },
       "trunk_locked": {
         "name": "Kofferraum verriegelt"
       },

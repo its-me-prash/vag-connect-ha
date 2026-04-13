@@ -200,9 +200,6 @@
       "hood_open": {
         "name": "Maska"
       },
-      "trunk_open": {
-        "name": "Bagażnik otwarty"
-      },
       "trunk_locked": {
         "name": "Bagażnik zamknięty"
       },

@@ -200,9 +200,6 @@
       "hood_open": {
         "name": "Motorhuv"
       },
-      "trunk_open": {
-        "name": "Bagageutrymme öppet"
-      },
       "trunk_locked": {
         "name": "Bagageutrymme låst"
       },

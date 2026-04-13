@@ -200,9 +200,6 @@
       "hood_open": {
         "name": "Capot"
       },
-      "trunk_open": {
-        "name": "Coffre ouvert"
-      },
       "trunk_locked": {
         "name": "Coffre verrouillé"
       },

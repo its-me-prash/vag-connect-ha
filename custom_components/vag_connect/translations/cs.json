@@ -200,9 +200,6 @@
       "hood_open": {
         "name": "Kapota"
       },
-      "trunk_open": {
-        "name": "Zavazadlový prostor"
-      },
       "trunk_locked": {
         "name": "Zavazadlový prostor zamčen"
       },

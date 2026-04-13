@@ -200,9 +200,6 @@
       "hood_open": {
         "name": "Hood"
       },
-      "trunk_open": {
-        "name": "Trunk Open"
-      },
       "trunk_locked": {
         "name": "Trunk Locked"
       },

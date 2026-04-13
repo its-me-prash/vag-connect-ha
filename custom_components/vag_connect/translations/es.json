@@ -200,9 +200,6 @@
       "hood_open": {
         "name": "Capó"
       },
-      "trunk_open": {
-        "name": "Maletero abierto"
-      },
       "trunk_locked": {
         "name": "Maletero bloqueado"
       },

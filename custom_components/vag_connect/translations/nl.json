@@ -200,9 +200,6 @@
       "hood_open": {
         "name": "Motorkap"
       },
-      "trunk_open": {
-        "name": "Kofferruimte open"
-      },
       "trunk_locked": {
         "name": "Kofferruimte vergrendeld"
       },

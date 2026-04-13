@@ -197,18 +197,6 @@
       "connector_locked": {
         "name": "Ladestecker gesperrt"
       },
-      "hood_open": {
-        "name": "Motorhaube"
-      },
-      "trunk_open": {
-        "name": "Kofferraum offen"
-      },
-      "trunk_locked": {
-        "name": "Kofferraum verriegelt"
-      },
-      "sunroof_open": {
-        "name": "Schiebedach"
-      },
       "window_heating_front": {
         "name": "Frontscheibenheizung aktiv"
       },
