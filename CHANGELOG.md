@@ -23,6 +23,31 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ## [1.5.3] - 2026-04-13
 
+### Behoben — Log-Auswertung (13. April 2026, 12:00 Uhr)
+
+#### ✅ Bestätigt funktionierend
+
+- **Audi Images**: AZS Token funktioniert — `render URLs for 4 vehicle(s)`
+  → 7 Image-Entities × 4 Fahrzeuge = 28 Render-Bilder geladen
+- **GDC Filter**: vag_connect fragt `GDC_MISSING`/`UNKNOWN` VINs nicht mehr an
+  (Die 400-Errors im Log kommen vom parallel installierten `audiconnect`-Plugin)
+
+#### VW EU GraphQL deaktiviert
+
+VW EU hat keinen bestätigten `vgql` Endpoint. Der wiederholte
+`GraphQL image fetch failed for volkswagen:` (leerer Fehler = Connection Reset)
+wurde durch Entfernen des VW EU Endpoints aus `_GRAPHQL_ENDPOINTS` behoben.
+
+VW EU Fahrzeugbilder sind **nicht implementiert** bis ein funktionsfähiger
+Endpoint durch Community-Tests gefunden wird (→ Issue #8).
+
+Derzeit mit Bildern unterstützt: **Audi** ✅, Škoda/SEAT/CUPRA (experimentell)
+
+---
+
+
+## [1.5.3] - 2026-04-13
+
 ### Behoben — Log-Rauschen (aus Live-HA-Log Analyse)
 
 #### AZS Token / Audi Images funktioniert ✅
