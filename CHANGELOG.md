@@ -21,6 +21,34 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ---
 
+## [1.5.3] - 2026-04-13
+
+### Behoben — Log-Rauschen (aus Live-HA-Log Analyse)
+
+#### AZS Token / Audi Images funktioniert ✅
+
+Log vom 13. April 2026 bestätigt: **`Audi images: render URLs for 4 vehicle(s)`**
+Der AZS Token Exchange (v1.3.6) funktioniert korrekt.
+
+**Log-Level Korrekturen:**
+- `Audi images: render URLs for N vehicle(s)` — `WARNING` → `INFO` (kein Fehler)
+- IDK Auth Steps (4 Zeilen pro Login) — `WARNING` → `DEBUG` (Routine, kein Fehler)
+- VW EU `raw fields` Debug-Dump — `WARNING` → `DEBUG` (Entwickler-Detail)
+- VW GraphQL leerer Connection Reset — `WARNING` → `DEBUG` (Server blockt Non-Browser, erwartet)
+
+**Erwartetes Log-Bild nach Update (sauber, kein Rauschen):**
+```
+INFO  [vag_connect] Audi AZS token acquired for image fetching
+INFO  [vag_connect] Audi images: ✅ render URLs for N vehicle(s)
+INFO  [vag_connect] VAG: skipping N vehicle(s) with unsupported platform: ...
+INFO  [vag_connect] VAG Connect: setup complete — N vehicle(s)
+```
+
+**363/363 Tests ✓ | mypy 32/32 ✓ | Ruff ✓**
+
+---
+
+
 ## [1.5.2] - 2026-04-13
 
 ### Behoben — Kompletter Entity-Audit: API-Realität vs. Erwartungen

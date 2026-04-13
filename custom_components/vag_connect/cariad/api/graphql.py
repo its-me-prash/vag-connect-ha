@@ -215,7 +215,15 @@ class VehicleImageFetcher:
                 data = await resp.json()
 
         except Exception as err:  # noqa: BLE001
-            _LOGGER.warning("GraphQL image fetch failed for %s: %s", brand, err)
+            err_str = str(err)
+            if err_str:
+                _LOGGER.warning("GraphQL image fetch failed for %s: %s", brand, err_str)
+            else:
+                # Empty error = connection reset / server blocked request (common for non-Audi brands)
+                _LOGGER.debug(
+                    "GraphQL images unavailable for %s (connection reset — server may block non-browser requests)",
+                    brand,
+                )
             return {}
 
         return self._parse_response(data)

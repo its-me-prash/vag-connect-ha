@@ -94,7 +94,7 @@ class AudiClient(VWEUClient):
             self._azs_token = await self._exchange_azs_token()
 
         if not self._azs_token:
-            _LOGGER.warning("Audi images: no AZS token available (exchange failed or not run)")
+            _LOGGER.debug("Audi images: no AZS token yet — will exchange on next call")
             self._image_data = {}
             return
 
@@ -105,8 +105,8 @@ class AudiClient(VWEUClient):
             )
             if data:
                 self._image_data = data
-                _LOGGER.warning(
-                    "Audi images: ✓ render URLs for %d vehicle(s)", len(data)
+                _LOGGER.info(
+                    "Audi images: ✅ render URLs for %d vehicle(s)", len(data)
                 )
             else:
                 # AZS token might have expired — reset to force re-exchange next time

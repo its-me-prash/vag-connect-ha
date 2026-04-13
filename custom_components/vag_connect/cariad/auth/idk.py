@@ -411,7 +411,7 @@ class IDKAuth:
         submit_data: dict[str, str] = {**csrf1.fields, "email": email}
 
         # Step 2 — POST email (audiconnect: cookies=step1_cookies, allow_redirects=True)
-        _LOGGER.warning("IDK legacy: posting email to %s", email_url[:100])
+        _LOGGER.debug("IDK legacy: posting email to %s", email_url[:100])
         async with self._session.post(
             email_url, data=submit_data,
             headers=self._form_headers(), allow_redirects=True,
@@ -494,7 +494,7 @@ class IDKAuth:
         prefix = self._brand.redirect_uri.split("://")[0] + "://"
         ref = pw_loc
         for hop in range(10):
-            _LOGGER.warning("IDK legacy: redirect hop %d → %s", hop + 1, ref[:100])
+            _LOGGER.debug("IDK legacy: redirect hop %d → %s", hop + 1, ref[:100])
             if ref.startswith(prefix):
                 break
             if "terms-and-conditions" in ref:
@@ -508,7 +508,7 @@ class IDKAuth:
                 else:
                     break
 
-        _LOGGER.warning("IDK legacy: final ref=%s", ref[:100])
+        _LOGGER.debug("IDK legacy: final ref=%s", ref[:100])
         auth_code = _extract_auth_code(ref, self._brand.redirect_uri)
         if not auth_code:
             raise AuthenticationError(f"Legacy: no code in: {ref[:100]}")
@@ -681,7 +681,7 @@ class IDKAuth:
         # Follow redirect chain until app:// or max 10 hops
         for _ in range(10):
             if not location:
-                _LOGGER.warning("IDK legacy: empty location in redirect chain")
+                _LOGGER.debug("IDK legacy: empty location in redirect chain")
                 break
             if location.startswith(prefix):
                 return location
