@@ -21,6 +21,20 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ---
 
+## [1.3.8] - 2026-04-13
+
+### Behoben
+
+#### CI mypy `no-any-return` Fehler
+
+- `audi.py:86` — `data.get("access_token")` gibt `Any` zurück → explizites `str(token) if token else None`
+- `select.py:59` — `_CHARGE_MODES.get()` gibt `Any` zurück → explizites `str(result) if result else None`
+
+**360/360 Tests ✓ | mypy 32/32 + warn-return-any ✓ | Ruff ✓**
+
+---
+
+
 ## [1.3.7] - 2026-04-13
 
 ### Behoben
