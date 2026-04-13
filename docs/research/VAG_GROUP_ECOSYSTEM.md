@@ -342,3 +342,15 @@ GET  /core/api/v3/sp/vehicles/{vin}/tripstatistics/{type}    # trips
 ---
 
 *Last updated: 2026-04-12 | Prash Balan (@its-me-prash)*
+
+---
+
+## GraphQL & Vehicle Images (April 2026)
+
+Die vollständige API-Knowledge-Base für den VW-Group GraphQL Layer (`vgql`)
+und das `mediaservice.audi.com` Fahrzeugbilder-System ist dokumentiert in:
+
+→ **[GRAPHQL_IMAGE_API.md](./GRAPHQL_IMAGE_API.md)**
+
+Enthält: Auth-Flow, alle API-Endpoints, GraphQL-Schema, Response-Beispiele,
+7 MediaTypes, Cross-Brand Endpoint-Matrix, Implementierungsstand.
