@@ -366,7 +366,7 @@
   },
   "exceptions": {
     "vehicle_not_found": {
-      "message": "Fahrzeug mit VIN '{vin}' nicht gefunden. Prüfe ob die Integration gestartet ist."
+      "message": "Fahrzeug mit VIN {vin} nicht gefunden. Prüfe ob die Integration gestartet ist."
     }
   }
 }

@@ -372,7 +372,7 @@
   },
   "exceptions": {
     "vehicle_not_found": {
-      "message": "Vehicle with VIN '{vin}' not found. Check that the integration is started."
+      "message": "Vehicle with VIN {vin} not found. Check that the integration is started."
     }
   }
 }

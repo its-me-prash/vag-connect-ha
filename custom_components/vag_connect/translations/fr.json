@@ -372,7 +372,7 @@
   },
   "exceptions": {
     "vehicle_not_found": {
-      "message": "Véhicule avec VIN '{vin}' introuvable."
+      "message": "Véhicule avec VIN {vin} introuvable."
     }
   }
 }

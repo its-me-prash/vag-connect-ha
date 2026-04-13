@@ -372,7 +372,7 @@
   },
   "exceptions": {
     "vehicle_not_found": {
-      "message": "Vozidlo s VIN '{vin}' nebylo nalezeno."
+      "message": "Vozidlo s VIN {vin} nebylo nalezeno."
     }
   }
 }

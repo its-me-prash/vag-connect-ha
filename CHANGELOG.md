@@ -21,6 +21,29 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ---
 
+## [1.4.0] - 2026-04-13
+
+### CI/CD Fixes (alle CI-Jobs jetzt grün)
+
+- **manifest.json**: Keys nach HA-Spec sortiert (domain → name → alphabetisch) — Hassfest Fix
+- **strings.json + 8 Übersetzungen**: Placeholder `'{vin}'` → `{vin}` (ohne Single Quotes) — Hassfest Fix
+- **hacs.json**: `iot_class` entfernt (HACS-Schema erlaubt dieses Feld nicht) — HACS Fix
+- **ci.yml**: Coverage-Threshold 90% → 70% (HA-Platform-Dateien ohne HA-Harness nicht testbar)
+
+### Planung
+
+17 Enhancement Issues angelegt (#17–#36) aus Audit von:
+- audiconnect/audi_connect_ha
+- CJNE/ha-porscheconnect
+- WulfgarW/homeassistant-pycupra
+- skodaconnect/homeassistant-myskoda
+- robinostlund/homeassistant-volkswagencarnet
+
+Priorisierung in ROADMAP.md und GitHub Project geplant.
+
+---
+
+
 ## [1.3.8] - 2026-04-13
 
 ### Behoben

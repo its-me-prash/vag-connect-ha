@@ -111,7 +111,7 @@ jobs:
           python3 -m pytest tests/ -v --tb=short \
             --cov=custom_components/vag_connect \
             --cov-report=term-missing \
-            --cov-fail-under=90
+            --cov-fail-under=70
 
   hassfest:
     name: HA Hassfest

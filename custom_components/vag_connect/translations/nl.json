@@ -372,7 +372,7 @@
   },
   "exceptions": {
     "vehicle_not_found": {
-      "message": "Voertuig met VIN '{vin}' niet gevonden."
+      "message": "Voertuig met VIN {vin} niet gevonden."
     }
   }
 }
