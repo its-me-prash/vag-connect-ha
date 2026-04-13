@@ -21,6 +21,42 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ---
 
+## [1.3.7] - 2026-04-13
+
+### Behoben
+
+#### Nicht-unterstützte Fahrzeugplattformen überspringen — Issue #709 (audiconnect)
+
+In Garages mit mehreren Fahrzeugen unterschiedlicher Generationen liefert
+der CARIAD BFF für ältere/nicht-digitale Fahrzeuge `400 Bad Request`:
+
+```
+error: unsupported device platform (code 2105)
+enrollmentStatus: GDC_MISSING | devicePlatform: UNKNOWN
+```
+
+Bisher wurden ALLE VINs aus dem Garage-Endpoint abgefragt — auch solche
+ohne digitale Services. Das führte zu:
+- Wiederholten 400-Fehlern im Log
+- Unnötigen API-Calls bei jedem Poll-Zyklus
+
+**Fix:** VINs mit `enrollmentStatus ∈ {GDC_MISSING, UNKNOWN, NOT_ENROLLED}`
+oder `devicePlatform = UNKNOWN` werden beim Garage-Load ausgeblendet und
+nie abgefragt. Log-Zeile informiert einmalig beim Setup:
+
+```
+INFO [vag_connect] VAG: skipping 2 vehicle(s) with unsupported platform:
+  012765 [GDC_MISSING/UNKNOWN], 011893 [GDC_MISSING/UNKNOWN]
+```
+
+Analoges Problem gemeldet in
+[audiconnect #709](https://github.com/audiconnect/audi_connect_ha/issues/709).
+
+**360/360 Tests ✓ | mypy 32/32 ✓ | Ruff ✓**
+
+---
+
+
 ## [1.3.6] - 2026-04-13
 
 ### Behoben (aus drittem HA-Log)

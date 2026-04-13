@@ -61,7 +61,32 @@ class VWEUClient(CariadBaseClient):
             }
             for v in vehicles if v.get("vin")
         }
-        vins = [v["vin"] for v in vehicles if v.get("vin")]
+        # Filter unsupported platforms — prevents repeated 400 errors for legacy/PPC vehicles
+        # enrollmentStatus: GDC_MISSING = vehicle not enrolled in digital services
+        # devicePlatform: UNKNOWN = platform not supported by CARIAD BFF
+        _UNSUPPORTED_ENROLLMENT = {"GDC_MISSING", "UNKNOWN", "NOT_ENROLLED"}
+        _UNSUPPORTED_PLATFORM   = {"UNKNOWN"}
+
+        supported: list[dict] = []
+        skipped:   list[str]  = []
+        for v in vehicles:
+            vin = v.get("vin")
+            if not vin:
+                continue
+            enrollment = v.get("enrollmentStatus", "")
+            platform   = v.get("devicePlatform", "")
+            if enrollment in _UNSUPPORTED_ENROLLMENT or platform in _UNSUPPORTED_PLATFORM:
+                skipped.append(f"{vin[-6:]} [{enrollment}/{platform}]")
+            else:
+                supported.append(v)
+
+        if skipped:
+            _LOGGER.info(
+                "VAG: skipping %d vehicle(s) with unsupported platform: %s",
+                len(skipped), ", ".join(skipped),
+            )
+
+        vins = [v["vin"] for v in supported if v.get("vin")]
         if vehicles:
             _LOGGER.warning(
                 "VAG vehicles raw fields (first car): %s",
