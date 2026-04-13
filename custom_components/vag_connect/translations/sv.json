@@ -141,9 +141,6 @@
       "vehicle_state": {
         "name": "Fordonsstatus"
       },
-      "connection_state": {
-        "name": "Anslutning"
-      },
       "parking_address": {
         "name": "Plats"
       },

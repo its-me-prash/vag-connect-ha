@@ -141,9 +141,6 @@
       "vehicle_state": {
         "name": "Voertuigstatus"
       },
-      "connection_state": {
-        "name": "Verbinding"
-      },
       "parking_address": {
         "name": "Locatie"
       },

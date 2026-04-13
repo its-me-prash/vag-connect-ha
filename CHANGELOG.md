@@ -21,6 +21,45 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ---
 
+## [1.5.4] - 2026-04-13
+
+### Bereinigung — README, Issues, letzter toter Sensor
+
+#### `connection_state` Sensor entfernt
+
+Beim Entity-Audit in v1.5.2 übersehen: `connection_state` wurde in sensor.py
+als `data_key="connection_state"` definiert, dieses Feld wird aber von keiner
+Marke befüllt. Entfernt. Übersetzungen aktualisiert.
+
+**Endstand: 27 Sensoren + 16 Binary Sensors = 43 Daten-Entities, alle befüllt.**
+(Plus Device Tracker, 7+ Switch, 4 Number, 1 Select, 1 Climate, 3 Button, 7 Image × N Fahrzeuge)
+
+#### README komplett neu geschrieben
+
+Alle veralteten und falschen Angaben korrigiert:
+
+| Was | Vorher (falsch) | Nachher (korrekt) |
+|---|---|---|
+| Test-Badge | 337/337 | 363/363 |
+| Entity-Anzahl | "68 Entities" | 44 Entities |
+| Plattformen | 7 (fehlten select + image) | 9 |
+| Motorhaube/Kofferraum | als Feature gelistet | entfernt (API liefert es nicht) |
+| Image Entity Namen | `_render_icon`, `_render_small` | `_icon`, `_small`, ... |
+| Lovelace-Beispiel | sensor entity in picture-card | image entity direkt |
+| Roadmap | v0.15.0 Porsche, v0.16.0 VW NA | v1.6.0 EV, v1.7.0 Nav, v2.0.0 HACS |
+| Bekannte Einschränkungen | Porsche/VW NA "geplant" | korrekt: Beta-Status |
+
+#### GitHub Issues bereinigt
+
+Geschlossen: #9 (Porsche), #10 (VW NA), #12 (Motorhaube/Kofferraum),
+#18–#21 (Duplikate), #22 (Reifendruck), #30 (Fensterheizung)
+— alle implementiert oder API-bedingt nicht umsetzbar.
+
+**363/363 Tests ✓ | mypy 32/32 ✓ | Ruff ✓**
+
+---
+
+
 ## [1.5.3] - 2026-04-13
 
 ### Behoben — Log-Auswertung (13. April 2026, 12:00 Uhr)

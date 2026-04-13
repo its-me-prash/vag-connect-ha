@@ -141,9 +141,6 @@
       "vehicle_state": {
         "name": "Stav vozidla"
       },
-      "connection_state": {
-        "name": "Připojení"
-      },
       "parking_address": {
         "name": "Poloha"
       },

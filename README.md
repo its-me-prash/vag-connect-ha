@@ -5,7 +5,7 @@
 <h1 align="center">VAG Connect</h1>
 
 <p align="center">
-  <strong>Home Assistant Integration für Audi · VW · Škoda · SEAT · CUPRA</strong>
+  <strong>Home Assistant Integration für Audi · VW · Škoda · SEAT · CUPRA · Porsche · VW US/CA</strong>
 </p>
 
 <p align="center">
@@ -13,8 +13,7 @@
   <a href="https://github.com/its-me-prash/vag-connect-ha/releases"><img src="https://img.shields.io/github/v/release/its-me-prash/vag-connect-ha?style=for-the-badge" alt="Version"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/Lizenz-Apache%202.0-blue.svg?style=for-the-badge" alt="Lizenz"></a>
   <a href="https://www.home-assistant.io"><img src="https://img.shields.io/badge/Home%20Assistant-2024.1%2B-blue?style=for-the-badge" alt="Home Assistant"></a>
-  <a href="tests/"><img src="https://img.shields.io/badge/Tests-337%2F337-brightgreen?style=for-the-badge" alt="Tests"></a>
-  <a href="custom_components/vag_connect/quality_scale.yaml"><img src="https://img.shields.io/badge/Quality%20Scale-Platinum%20%F0%9F%8F%86-gold?style=for-the-badge" alt="Platinum"></a>
+  <a href="tests/"><img src="https://img.shields.io/badge/Tests-363%2F363-brightgreen?style=for-the-badge" alt="Tests"></a>
 </p>
 
 <p align="center">
@@ -29,143 +28,196 @@
 
 ---
 
-**VAG Connect** verbindet Home Assistant direkt mit deinem Audi, VW, Škoda, SEAT, CUPRA, Porsche oder VW US/CA — ohne Middleware, ohne Docker, ohne extra Dienst. App-Zugangsdaten eingeben, fertig.
+**VAG Connect** verbindet Home Assistant direkt mit deinem Fahrzeug — ohne Middleware, ohne Docker, ohne extra Dienst. App-Zugangsdaten eingeben, fertig.
 
-68 Entities über 7 Plattformen, 14 Services, cloud-push Architektur. Alle 7 VAG-Marken in einer Integration — kein separates Plugin pro Marke nötig.
-
-Ab v0.14.1 spricht VAG Connect **direkt** mit der CARIAD-API über einen eigenen async-Client. Kein CarConnectivity, keine externe Abhängigkeit, kein Upstream-Blocker.
+**44 Entities** über **9 Plattformen**, **14 Services**. Alle 7 VAG-Marken in einer Integration — kein separates Plugin nötig.
 
 ## Unterstützte Plattformen
 
 ```
-sensor  |  binary_sensor  |  device_tracker  |  switch  |  button  |  climate  |  number
+sensor  |  binary_sensor  |  device_tracker  |  switch  |  button  |  climate  |  number  |  select  |  image
 ```
 
 ---
 
 ## Unterstützte Marken
 
-| Marke | Auth-System | API | Status |
+| Marke | Auth-System | API-Basis | Status |
 |---|---|---|---|
-| **Volkswagen EU** | IDK PKCE | emea.bff.cariad.digital | ✅ |
-| **Audi** | IDK PKCE | emea.bff.cariad.digital | ✅ |
-| **Škoda** | IDK PKCE | mysmob.api.connect.skoda-auto.cz | ✅ |
-| **SEAT** | IDK PKCE | ola.prod.code.seat.cloud.vwgroup.com | ✅ |
-| **CUPRA** | IDK PKCE | ola.prod.code.seat.cloud.vwgroup.com | ✅ |
-| **Volkswagen US/CA** | IDK PKCE (NA) | b-h-s.spr.{cc}00.p.con-veh.net | ✅ Beta — Tester gesucht |
-| **Porsche** | Auth0 PKCE | api.ppa.porsche.com | ✅ Beta — Tester gesucht |
+| **Volkswagen EU** | IDK PKCE | emea.bff.cariad.digital | ✅ Getestet |
+| **Audi** | IDK PKCE + AZS | emea.bff.cariad.digital | ✅ Getestet |
+| **Škoda** | IDK PKCE | mysmob.api.connect.skoda-auto.cz | ✅ Getestet |
+| **SEAT** | IDK PKCE | ola.prod.code.seat.cloud.vwgroup.com | ✅ Getestet |
+| **CUPRA** | IDK PKCE | ola.prod.code.seat.cloud.vwgroup.com | ✅ Getestet |
+| **Volkswagen US/CA** | IDK PKCE (NA) | b-h-s.spr.{cc}00.p.con-veh.net | ⚗️ Beta — Tester gesucht |
+| **Porsche** | Auth0 PKCE | api.ppa.porsche.com | ⚗️ Beta — Tester gesucht |
 
-> **Beta-Marken (VW US/CA + Porsche):** Die Integration ist vollständig implementiert und wurde gegen die dokumentierten APIs entwickelt — aber noch ohne echten Live-Test mit einem echten Fahrzeug. Feedback und Bug-Reports unter [Issues](https://github.com/its-me-prash/vag-connect-ha/issues) sehr willkommen.
-
----
-
-## Features
-
-### Alle Fahrzeuge
-
-| Feature | Audi | VW EU | Škoda | SEAT/CUPRA | VW US/CA | Porsche |
-|---|:---:|:---:|:---:|:---:|:---:|:---:|
-| Tankstand / Akkustand | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| Reichweite | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| Kilometerstand | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| GPS-Position | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| Türen gesamt + einzeln | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| Fenster | ✓ | ✓ | ✓ | ✓ | ✓ | — |
-| Motorhaube / Kofferraum | ✓ | ✓ | — | — | ✓ | ✓ |
-| Klimatisierung start/stop | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| Zieltemperatur setzen | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| Verriegeln / Entriegeln | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| Lichter blinken | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| Fahrzeug aufwecken | ✓ | ✓ | ✓ | ✓ | ✓ | — |
-| Servicefälligkeit km/Tage | ✓ | ✓ | ✓ | ✓ | — | ✓ |
-| Online-Status | ✓ | ✓ | ✓ | ✓ | ✓ | — |
-
-### Elektro- & Hybridfahrzeuge
-
-| Feature | Audi | VW EU | Škoda | SEAT/CUPRA | VW US/CA | Porsche |
-|---|:---:|:---:|:---:|:---:|:---:|:---:|
-| Akkustand % | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| Elektrische Reichweite | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| Ladezustand | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| Ladeleistung kW | ✓ | ✓ | ✓ | ✓ | ✓ | — |
-| Ladegeschwindigkeit km/h | ✓ | ✓ | ✓ | ✓ | — | — |
-| Ladeende-ETA | ✓ | ✓ | ✓ | ✓ | ✓ | — |
-| Stecker-Status | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| Laden start/stop | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| Ladeziel % setzen | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| Fensterheizung | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| Abfahrtstimer 1–3 | ✓ | ✓ | — | — | ✓ | ✓ |
-| Akkutemperatur | ✓ | ✓ | — | — | — | — |
-| AdBlue-Reichweite | ✓ | ✓ | — | — | — | — |
+> **Beta-Marken:** Vollständig implementiert, noch ohne Live-Tester bestätigt. Feedback unter [Issues](https://github.com/its-me-prash/vag-connect-ha/issues) willkommen.
 
 ---
 
-## Fahrzeugbilder in Lovelace
+## Entities & Features
 
-VAG Connect lädt automatisch bis zu 7 Render-Bilder pro Fahrzeug (PNG, transparenter Hintergrund).
-Die Bilder werden lokal unter `/config/www/vehicles/` gecacht.
+### Sensoren (27)
 
-### Verfügbare Bildvarianten
+| Sensor | Beschreibung | Audi | VW EU | Škoda | SEAT/CUPRA |
+|---|---|:---:|:---:|:---:|:---:|
+| `odometer_km` | Kilometerstand | ✓ | ✓ | ✓ | ✓ |
+| `fuel_level` | Tankstand % | ✓ | ✓ | — | ✓ |
+| `battery_soc` | Akkustand % | ✓ | ✓ | ✓ | ✓ |
+| `range_km` | Reichweite km | ✓ | ✓ | ✓ | — |
+| `vehicle_state` | PARKED / DRIVING / CHARGING / OFFLINE | ✓ | ✓ | ✓ | ✓ |
+| `charging_state` | CHARGING / READY_FOR_CHARGING / OFF | ✓ | ✓ | ✓ | ✓ |
+| `plug_state` | CONNECTED / DISCONNECTED | ✓ | ✓ | ✓ | ✓ |
+| `target_soc` | Ladziel % | ✓ | ✓ | ✓ | ✓ |
+| `charging_power_kw` | Ladeleistung kW | ✓ | ✓ | ✓ | ✓ |
+| `charging_rate_kmh` | Ladegeschwindigkeit km/h | ✓ | ✓ | ✓ | — |
+| `charge_complete_eta` | Ladeende (Uhrzeit) | ✓ | ✓ | ✓ | — |
+| `charging_type` | AC / DC | ✓ | ✓ | — | — |
+| `climatisation_state` | Klimatisierungsstatus | ✓ | ✓ | ✓ | ✓ |
+| `target_temperature` | Zieltemperatur °C | ✓ | ✓ | ✓ | ✓ |
+| `outside_temp` | Außentemperatur °C | ✓ | ✓ | — | — |
+| `service_km` | Nächste Inspektion km | ✓ | ✓ | ✓ | ✓ |
+| `service_due_at` | Nächste Inspektion Tage | ✓ | ✓ | ✓ | — |
+| `oil_service_km` | Ölwechsel km | ✓ | ✓ | ✓ | ✓ |
+| `oil_service_at` | Ölwechsel Tage | ✓ | ✓ | — | — |
+| `battery_temp` | Akkutemperatur °C | ✓ | ✓ | — | — |
+| `adblue_range_km` | AdBlue-Reichweite km | ✓ | ✓ | — | — |
+| `parking_address` | Standort-Adresse (Reverse Geocoding) | ✓ | ✓ | ✓ | ✓ |
+| `parking_city` | Standort-Stadt | ✓ | ✓ | ✓ | ✓ |
+| `last_updated_at` | Letztes API-Update | ✓ | ✓ | ✓ | ✓ |
+| `departure_timer_1_time` | Abfahrtstimer 1 Uhrzeit | ✓ | ✓ | — | — |
+| `departure_timer_2_time` | Abfahrtstimer 2 Uhrzeit | ✓ | ✓ | — | — |
+| `departure_timer_3_time` | Abfahrtstimer 3 Uhrzeit | ✓ | ✓ | — | — |
 
-| Entity-Suffix | MediaType | Ansicht | Größe | Empfehlung |
+### Binary Sensors (16)
+
+| Binary Sensor | Beschreibung |
+|---|---|
+| `doors_locked` | Alle Türen verriegelt |
+| `doors_open` | Mindestens eine Tür offen |
+| `windows_open` | Mindestens ein Fenster offen |
+| `connector_locked` | Ladekabel verriegelt |
+| `plug_connected` | Ladekabel eingesteckt |
+| `is_charging` | Lädt gerade |
+| `is_driving` | Fährt gerade |
+| `is_online` | Fahrzeug online |
+| `climatisation_active` | Klimatisierung aktiv |
+| `window_heating_front` | Frontscheibenheizung an |
+| `window_heating_back` | Heckscheibenheizung an |
+| `warning_active` | Mindestens eine Warnleuchte aktiv *(diagnostisch)* |
+| `warning_engine` | Motorwarnung *(diagnostisch)* |
+| `warning_oil` | Ölstandwarnung *(diagnostisch)* |
+| `warning_tyre` | Reifendruckwarnung TPMS *(diagnostisch)* |
+| `warning_brakes` | Bremswarnung *(diagnostisch)* |
+
+### Schalter, Steuerung & Buttons
+
+| Entity | Typ | Beschreibung |
+|---|---|---|
+| `lock_switch` | Switch | Verriegeln / Entriegeln |
+| `climatisation_switch` | Switch | Klimatisierung an/aus |
+| `charging_switch` | Switch | Laden an/aus |
+| `window_heating_switch` | Switch | Fensterheizung an/aus |
+| `seat_heating_switch` | Switch | Sitzheizung an/aus |
+| `auto_unlock_switch` | Switch | Auto-Entriegelung beim Laden |
+| `departure_timer_{1,2,3}_switch` | Switch | Abfahrtstimer 1–3 aktivieren |
+| `target_soc` | Number | Ladziel 20–100 % |
+| `min_soc` | Number | Mindest-SoC 0–100 % |
+| `max_charge_current` | Number | Max. Ladestrom (A) |
+| `target_temperature` | Number | Klimatisierungs-Zieltemperatur 16–30 °C |
+| `charge_mode` | Select | MANUAL / TIMER / PREFERRED_CHARGING_TIMES |
+| `climate.vorklimatisierung` | Climate | Vorklimatisierung mit Temperatursteuerung |
+| `button.aufwecken` | Button | Fahrzeug aufwecken |
+| `button.daten_aktualisieren` | Button | Sofortaktualisierung |
+| `button.lichtsignal` | Button | Lichter blinken lassen |
+
+---
+
+## Fahrzeugbilder (Image-Plattform)
+
+VAG Connect registriert **7 native `image`-Entities** pro Fahrzeug in Home Assistant.
+Die Render-Bilder werden beim ersten Zugriff heruntergeladen und lokal unter `/config/www/vehicles/` gecacht (PNG, transparenter Hintergrund).
+
+> **Aktuell mit Bildern:** Audi ✅ (AZS-Token bestätigt) | Škoda/SEAT/CUPRA experimentell | VW EU: kein bestätigter Endpoint ([Issue #37](https://github.com/its-me-prash/vag-connect-ha/issues/37))
+
+### Verfügbare Image-Entities pro Fahrzeug
+
+| Entity | Dateipfad | Ansicht | Größe | Empfohlen für |
 |---|---|---|---|---|
-| `render_icon` | MS_MYP3 | 3/4-Ansicht | ~76 KB | Mini-Icons, Badges, Chip-Cards |
-| `render_small` | MS_MYP4 | 3/4-Ansicht | ~117 KB | Kleine Karten, Sidebar |
-| `render_medium` | MS_MYP5 | 3/4-Ansicht | ~196 KB | Standard-Karten, Grid |
-| `render_side_sm` | MYAPN3NB | Seitenprofil | ~158 KB | Kompakte Seitenansicht |
-| `render_side_lg` | MYAPN8NB | Seitenprofil | ~309 KB | ⭐ **Lovelace-Karten (empfohlen)** |
-| `render_angle_hd` | MYAAN3NB | 3/4-Ansicht | ~1.7 MB | Hero-Banner, Vollbild |
-| `render_angle_lg` | MYAAN8NB | 3/4-Ansicht | ~879 KB | Dashboard-Karten |
+| `image.{auto}_icon` | `{VIN}_icon.png` | 3/4-Ansicht | ~76 KB | Badges, Chip-Cards |
+| `image.{auto}_small` | `{VIN}_small.png` | 3/4-Ansicht | ~117 KB | Kleine Karten, Sidebar |
+| `image.{auto}_medium` | `{VIN}_medium.png` | 3/4-Ansicht | ~196 KB | Standard-Karten |
+| `image.{auto}_side_small` | `{VIN}_side_small.png` | Seitenprofil | ~158 KB | Kompakte Seitenansicht |
+| `image.{auto}_side_large` | `{VIN}_side_large.png` | Seitenprofil | ~309 KB | ⭐ **Lovelace-Karten** |
+| `image.{auto}_angle_hd` | `{VIN}_angle_hd.png` | 3/4-Ansicht HD | ~1.7 MB | Hero-Banner, Vollbild |
+| `image.{auto}_angle_large` | `{VIN}_angle_large.png` | 3/4-Ansicht groß | ~879 KB | Dashboard-Hauptkarte |
 
-### Picture-Entity Card
+Alle Bilder auch als lokaler Pfad nutzbar: `/local/vehicles/{VIN}_{tag}.png`
 
+### Lovelace-Beispiele
+
+**Direktanzeige als Picture Entity (empfohlen):**
 ```yaml
 type: picture-entity
-entity: sensor.audi_s6_avant_kilometerstand
-image: /local/vehicles/WAUZZZF29MN0XXXXX_side_large.png
+entity: image.audi_s6_avant_side_large
+show_name: false
+show_state: false
+```
+
+**Mit Sensor-Daten-Overlay:**
+```yaml
+type: picture-entity
+entity: sensor.audi_s6_avant_akkustand
+image_entity: image.audi_s6_avant_angle_hd
 name: "S6 Avant"
 ```
 
-### Button Card mit Fahrzeugbild
-
+**Custom Button Card mit Hintergrundbild:**
 ```yaml
 type: custom:button-card
-entity: sensor.audi_s6_avant_tankstand
+entity: sensor.audi_s6_avant_reichweite
 show_icon: false
 styles:
   card:
-    - background-image: url('/local/vehicles/WAUZZZF29MN0XXXXX_side_large.png')
+    - background-image: url('/local/vehicles/WAUZZZF29MN024037_side_large.png')
     - background-size: contain
-    - background-position: center
     - background-repeat: no-repeat
-    - height: 200px
+    - height: 180px
 ```
 
-### Mushroom Card
-
-```yaml
-type: custom:mushroom-entity-card
-entity: sensor.audi_s6_avant_kilometerstand
-icon: ''
-picture: /local/vehicles/WAUZZZF29MN0XXXXX_icon.png
-name: "S6 Avant"
-```
-
-### Garage-View (mehrere Fahrzeuge)
-
+**Garage-View (mehrere Fahrzeuge):**
 ```yaml
 type: horizontal-stack
 cards:
   - type: picture-entity
-    entity: sensor.audi_s6_avant_kilometerstand
-    image: /local/vehicles/VIN1_side_large.png
+    entity: image.audi_s6_avant_side_large
   - type: picture-entity
-    entity: sensor.vw_id4_kilometerstand
-    image: /local/vehicles/VIN2_side_large.png
+    entity: image.vw_golf_gte_side_large
 ```
 
-> **Tipp:** Die VIN findest du als Attribut auf jeder Image-Entity (`vin` in den Entitäts-Attributen) oder im Fahrzeugschein.
+> Die VIN eines Fahrzeugs findest du als Attribut auf jeder Image-Entity (Developer Tools → Zustände → Attribut `vin`).
 
+---
+
+## Services / Aktionen
+
+| Service | Beschreibung | Parameter |
+|---|---|---|
+| `vag_connect.lock` | Fahrzeug verriegeln | `vin` |
+| `vag_connect.unlock` | Entriegeln (S-PIN erforderlich) | `vin` |
+| `vag_connect.start_climatisation` | Klimatisierung starten | `vin` |
+| `vag_connect.stop_climatisation` | Klimatisierung stoppen | `vin` |
+| `vag_connect.start_charging` | Laden starten | `vin` |
+| `vag_connect.stop_charging` | Laden stoppen | `vin` |
+| `vag_connect.start_window_heating` | Fensterheizung starten | `vin` |
+| `vag_connect.stop_window_heating` | Fensterheizung stoppen | `vin` |
+| `vag_connect.wake_vehicle` | Fahrzeug aufwecken | `vin` |
+| `vag_connect.flash_lights` | Lichter blinken lassen | `vin` |
+| `vag_connect.refresh_vehicle` | Sofortaktualisierung | — |
+| `vag_connect.set_target_soc` | Ladziel setzen (20–100 %) | `vin`, `target_soc` |
+| `vag_connect.set_climatisation_temperature` | Zieltemperatur (16–30 °C) | `vin`, `temperature` |
+| `vag_connect.set_departure_timer` | Abfahrtstimer setzen | `vin`, `timer_id`, `enabled`, `time` |
 
 ---
 
@@ -174,7 +226,7 @@ cards:
 ### HACS (empfohlen)
 
 1. HACS → Integrationen → ⋮ → Benutzerdefinierte Repositories
-2. URL: `https://github.com/its-me-prash/vag-connect-ha` — Kategorie: Integration
+2. URL: `https://github.com/its-me-prash/vag-connect-ha` → Kategorie: Integration
 3. **VAG Connect** installieren → Home Assistant neu starten
 4. Einstellungen → Integrationen → **+ Integration** → **VAG Connect**
 
@@ -193,95 +245,66 @@ Home Assistant neu starten.
 | Feld | Pflicht | Beschreibung |
 |---|---|---|
 | Fahrzeugmarke | ✓ | Audi / VW EU / Škoda / SEAT / CUPRA / VW US/CA / Porsche |
-| E-Mail | ✓ | Anmelde-E-Mail aus der Hersteller-App |
-| Passwort | ✓ | Passwort aus der App |
+| E-Mail | ✓ | Anmelde-E-Mail der Hersteller-App |
+| Passwort | ✓ | App-Passwort |
 | S-PIN | — | Nur für Verriegelung (unter Sicherheit in der App) |
-| Abfrageintervall | — | Minuten zwischen Aktualisierungen (Standard: 5) |
+| Abfrageintervall | — | Minuten (Standard: 5, Minimum: 5) |
 
 **Welche App?** Audi → myAudi · VW → WeConnect · Škoda → MyŠkoda · SEAT → My SEAT · CUPRA → MyCupra
 
 ---
 
-## Services / Aktionen
+## Bekannte Einschränkungen
 
-| Aktion | Beschreibung |
-|---|---|
-| `vag_connect.lock` | Fahrzeug verriegeln |
-| `vag_connect.unlock` | Entriegeln (S-PIN erforderlich) |
-| `vag_connect.start_climatisation` | Klimatisierung starten |
-| `vag_connect.stop_climatisation` | Klimatisierung stoppen |
-| `vag_connect.start_charging` | Laden starten |
-| `vag_connect.stop_charging` | Laden stoppen |
-| `vag_connect.set_target_soc` | Ladziel setzen (20–100 %) |
-| `vag_connect.set_climatisation_temperature` | Zieltemperatur (16–30 °C) |
-| `vag_connect.start_window_heating` | Fensterheizung starten |
-| `vag_connect.stop_window_heating` | Fensterheizung stoppen |
-| `vag_connect.flash_lights` | Lichter blinken lassen |
-| `vag_connect.wake_vehicle` | Fahrzeug aufwecken |
-| `vag_connect.set_departure_timer` | Abfahrtstimer setzen |
-| `vag_connect.refresh_vehicle` | Sofortaktualisierung |
+- **S-PIN** für Verriegelung erforderlich — einmalig in der App unter Sicherheit eintragen
+- **Polling** mindestens 5 Minuten — kürzere Intervalle riskieren temporäre Account-Sperren
+- **2FA** — einmalig manuell in der App bestätigen, danach automatisch
+- **VW EU Fahrzeugbilder** — kein bestätigter `vgql`-Endpoint bekannt; Audi-Bilder funktionieren
+- **Alte Fahrzeuge** (kein CARIAD-Support, `GDC_MISSING`) — werden automatisch übersprungen
+- **Warnleuchten** — derzeit nur VW EU / Audi; andere Marken in Arbeit
+- **Nicht verfügbar:** Ladesäulen-Infos, Kennzeichen, WLTP-Reichweite, Akkukapazität, Fahrtrichtung (diese Daten liefert die CARIAD API generell nicht)
 
 ---
 
 ## Technischer Hintergrund
 
-### Eigener CARIAD-Client (seit v0.10.0)
+### Eigener CARIAD-Client
 
 ```
 cariad/
-  auth/idk.py      ← PKCE/OIDC für alle IDK-Marken (clean-room)
-  api/vw_eu.py     ← Volkswagen EU
-  api/audi.py      ← Audi (VW EU + AZS/MBB)
-  api/skoda.py     ← Škoda
-  api/seat_cupra.py← SEAT / CUPRA
-  models.py        ← VehicleData (70 Felder), BrandConfig
-  exceptions.py    ← Typisierte Fehlerhierarchie
+  auth/idk.py        ← IDK PKCE/OIDC (VW, Audi, Škoda, SEAT, CUPRA, VW NA)
+  auth/porsche.py    ← Auth0 PKCE (Porsche)
+  api/vw_eu.py       ← VW EU (CARIAD BFF emea.bff.cariad.digital)
+  api/audi.py        ← Audi: CARIAD BFF + AZS Token für Fahrzeugbilder
+  api/skoda.py       ← Škoda (mysmob API)
+  api/seat_cupra.py  ← SEAT / CUPRA (OLA API)
+  api/porsche.py     ← Porsche (PPA API)
+  api/vw_na.py       ← VW US/CA (NA Auth-Server)
+  api/graphql.py     ← Fahrzeugbilder via vgql (Audi bestätigt)
+  models.py          ← VehicleData, BrandConfig
+  exceptions.py      ← Typisierte Fehlerhierarchie
 ```
 
 - **Keine externen Abhängigkeiten** — `requirements: []`
-- **Pure aiohttp** — HA's Session wird injiziert (`inject-websession` ✅)
-- **Clean-room** — kein GPL-Code kopiert, alle Endpoints aus MIT/Apache-Projekten
-
-### Platinum Quality Scale — alle 47 Regeln erfüllt
-
-| Ebene | Status |
-|---|---|
-| Bronze (16) | ✅ |
-| Silver (13) | ✅ |
-| Gold (14) | ✅ |
-| **Platinum (4)** | ✅ |
-
-`strict-typing` · `async-dependency` · `inject-websession` · `test-coverage` (95 %, 342 Tests)
-
----
-
-## Bekannte Einschränkungen
-
-- **S-PIN** für Verriegelung notwendig — in der App unter Sicherheit eintragen
-- **Polling-Intervall** mindestens 5 Minuten — zu kurz führt zur temporären Account-Sperre
-- **2FA** — einmalig manuell in der App bestätigen, danach automatisch
-- **Porsche** — eigenständiges Auth0-System, geplant für v0.15.0
-- **VW North America** — separater Auth-Server, geplant für v0.16.0
-- **VW China 2026+** — neue CEA/XPeng-Plattform, API nicht öffentlich, kein ETA
+- **Pure aiohttp** — HA-Session wird injiziert
+- **Clean-room** — kein GPL-Code, Endpoints aus MIT/Apache-Projekten
 
 ---
 
 ## Roadmap
 
-| Version | Inhalt |
-|---|---|
-| ✅ v0.14.1 | Platinum, eigener CARIAD-Client |
-| 🔜 v0.15.0 | Porsche (Auth0 + PPA-API) |
-| 🔜 v0.16.0 | VW North America (US/CA) |
-| 🎯 v1.0.0 | HACS Official |
+| Version | Inhalt | Status |
+|---|---|---|
+| v1.0–v1.5 | 9 Plattformen, 7 Marken, Bugs & Entity-Audit | ✅ Done |
+| v1.6.0 | Ladeprofile, Alarm, Verbrauch, Klimatimer | 🔜 |
+| v1.7.0 | Navigation → Fahrzeug, Remote Start, PPC-Plattform 2025 | 🔜 |
+| v2.0.0 | HACS Official (Live-Tests alle 7 Marken) | 🎯 |
 
 ---
 
 ## Lizenz
 
 Apache License 2.0 — [LICENSE](LICENSE)
-
-**VAG Connect™** ist ein Markenzeichen (™, nicht ®, nicht registriert). Forks sollten diesen Namen nicht verwenden, um Verwechslungen zu vermeiden.
 
 Diese Integration ist ein unabhängiges Community-Projekt ohne Verbindung zu Volkswagen AG, Audi AG, Škoda Auto, SEAT S.A., CUPRA, Porsche AG oder anderen VAG-Tochtergesellschaften.
 

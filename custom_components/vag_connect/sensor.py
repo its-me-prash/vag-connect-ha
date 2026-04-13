@@ -220,13 +220,6 @@ SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
         name="Fahrzeugzustand",
         icon="mdi:car-info",
     ),
-    VagSensorDescription(
-        key="connection_state",
-        data_key="connection_state",
-        name="Verbindung",
-        icon="mdi:car-wireless",
-        entity_category=EntityCategory.DIAGNOSTIC,
-    ),
 
     VagSensorDescription(
         key="parking_address",
