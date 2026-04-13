@@ -197,9 +197,6 @@
       "connector_locked": {
         "name": "Konektor uzamčen"
       },
-      "hood_open": {
-        "name": "Kapota"
-      },
       "trunk_locked": {
         "name": "Zavazadlový prostor zamčen"
       },

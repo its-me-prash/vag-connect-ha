@@ -197,9 +197,6 @@
       "connector_locked": {
         "name": "Charging Plug Locked"
       },
-      "hood_open": {
-        "name": "Hood"
-      },
       "trunk_locked": {
         "name": "Trunk Locked"
       },

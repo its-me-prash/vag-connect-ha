@@ -197,9 +197,6 @@
       "connector_locked": {
         "name": "Laddkontakt låst"
       },
-      "hood_open": {
-        "name": "Motorhuv"
-      },
       "trunk_locked": {
         "name": "Bagageutrymme låst"
       },

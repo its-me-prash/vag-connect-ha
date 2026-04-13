@@ -191,9 +191,6 @@
       "connector_locked": {
         "name": "Ladestecker gesperrt"
       },
-      "hood_open": {
-        "name": "Motorhaube"
-      },
       "trunk_locked": {
         "name": "Kofferraum verriegelt"
       },

@@ -197,9 +197,6 @@
       "connector_locked": {
         "name": "Enchufe bloqueado"
       },
-      "hood_open": {
-        "name": "Capó"
-      },
       "trunk_locked": {
         "name": "Maletero bloqueado"
       },

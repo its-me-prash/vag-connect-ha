@@ -197,9 +197,6 @@
       "connector_locked": {
         "name": "Wtyczka zablokowana"
       },
-      "hood_open": {
-        "name": "Maska"
-      },
       "trunk_locked": {
         "name": "Bagażnik zamknięty"
       },

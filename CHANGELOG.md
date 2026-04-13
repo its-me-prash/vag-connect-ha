@@ -23,6 +23,50 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ## [1.5.2] - 2026-04-13
 
+### Behoben — Kompletter Entity-Audit: API-Realität vs. Erwartungen
+
+Vollständige Prüfung aller ~55 Entity-Definitionen gegen echte CARIAD BFF Responses.
+
+#### Entfernte Dead Entities (zeigten immer "Unbekannt")
+
+**Binary Sensors (5 entfernt):**
+- `connection_state` — nirgends gesetzt, kein API-Feld
+- `trunk_open`, `hood_open`, `sunroof_open` — CARIAD liefert diese als dynamische `doors_individual` Keys, keine garantierten Felder
+- `trunk_locked` — kommt nicht separat, nur `doorLockStatus` overall
+
+**Sensoren (11 entfernt in v1.5.1):**
+Ladesäulen-Info, firmware_version, license_plate, range_estimated_full_km, range_wltp_km, battery_cap_kwh, battery_available_kwh, heading
+
+#### API-Wahrheit: Was CARIAD BFF wirklich liefert
+
+| Kategorie | Felder | Marken |
+|---|---|---|
+| Fahrzeug-Basis | odometer, fuel_level, battery_soc, range_km | Alle ✅ |
+| Laden | state, power_kw, rate_kmh, eta, plug, target_soc | VW/Audi/Škoda ✅ |
+| Klimatisierung | state, temperature, window_heating | Alle ✅ |
+| Türen/Fenster | locked (overall), open (overall), doors_individual | VW/Audi ✅ |
+| GPS | latitude, longitude → reverse geocoded | Alle ✅ |
+| Service | service_km/date, oil_km/date | VW/Audi/Škoda ✅ |
+| Warnleuchten | engine, oil, tyre, brakes | VW/Audi ✅ |
+| Status | vehicle_state, last_updated_at, is_online | VW/Audi/Škoda ✅ |
+
+#### Nicht verfügbar (API liefert es schlicht nicht)
+- Ladesäulen-Infos (Name, Adresse, kW, Betreiber)
+- Firmware-Version im Status-Endpoint
+- Kennzeichen im Status-Endpoint
+- WLTP-Reichweite, Akkukapazität als Live-Daten
+- Fahrtrichtung (Heading)
+- Motorhaube/Kofferraum/Schiebedach als eigene garantierte Felder
+
+**Ergebnis: 28 Sensoren + 16 Binary Sensors = 44 Entities — alle mit echten Daten**
+
+**363/363 Tests ✓ | mypy 32/32 ✓ | Ruff ✓**
+
+---
+
+
+## [1.5.2] - 2026-04-13
+
 ### Behoben — Binary Sensor Audit
 
 #### 5 tote Binary-Sensor-Entities entfernt

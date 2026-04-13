@@ -197,9 +197,6 @@
       "connector_locked": {
         "name": "Laadstekker vergrendeld"
       },
-      "hood_open": {
-        "name": "Motorkap"
-      },
       "trunk_locked": {
         "name": "Kofferruimte vergrendeld"
       },
