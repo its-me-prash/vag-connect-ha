@@ -23,6 +23,40 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ## [1.5.1] - 2026-04-13
 
+### Behoben — Sensor-Audit
+
+#### 11 tote Sensoren entfernt (zeigten immer "Unbekannt")
+
+Nach vollständigem Audit aller 40 Sensor-Definitionen gegen tatsächliche API-Responses:
+
+**Entfernt — API liefert diese Daten nie:**
+
+| Sensor | Grund |
+|---|---|
+| Ladesäule Name/Adresse/kW/Betreiber (4×) | CARIAD BFF liefert keine Ladesäulen-Infos mehr |
+| Firmware-Version | Nur in Diagnose-Daten, nicht im Status-Endpoint |
+| Kennzeichen | Nicht im Garage/Status-Response |
+| Reichweite bei 100% / WLTP-Reichweite | Kein Live-API Endpoint, nur statische Fahrzeugdaten |
+| Akkukapazität / Akkuenergie verfügbar | Nicht in CARIAD BFF Response |
+| Fahrtrichtung (Heading) | Nicht im Parkposition-Endpoint |
+
+→ Diese Sensoren haben seit Beginn immer "Unbekannt" angezeigt.
+
+#### Abfahrtstimer-Sensoren repariert
+
+`departure_timer_{1,2,3}_time` hatten `device_class=SensorDeviceClass.TIMESTAMP`
+aber die API liefert eine Uhrzeit-String (`"07:30"`), kein Datetime-Objekt.
+→ `device_class` entfernt → Sensor zeigt Uhrzeit direkt an (z.B. `07:30`)
+
+**Aktueller Stand: ~28 funktionierende Sensoren**
+
+**363/363 Tests ✓ | mypy 32/32 ✓ | Ruff ✓**
+
+---
+
+
+## [1.5.1] - 2026-04-13
+
 ### Behoben — Sensor-Qualität
 
 #### 11 tote Sensoren entfernt (zeigten immer "Unbekannt")

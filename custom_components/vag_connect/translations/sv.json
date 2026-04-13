@@ -117,18 +117,6 @@
       "charging_type": {
         "name": "Laddningstyp"
       },
-      "charging_station_name": {
-        "name": "Laddpunkt"
-      },
-      "charging_station_address": {
-        "name": "Laddpunktens adress"
-      },
-      "charging_station_kw": {
-        "name": "Laddpunktens effekt"
-      },
-      "charging_station_operator": {
-        "name": "Laddpunktens operatör"
-      },
       "climatisation_state": {
         "name": "Klimatisering"
       },
@@ -162,20 +150,8 @@
       "parking_city": {
         "name": "Stad"
       },
-      "heading": {
-        "name": "Körriktning"
-      },
       "battery_temp": {
         "name": "Batteritemperatur"
-      },
-      "battery_cap_kwh": {
-        "name": "Batterikapacitet"
-      },
-      "firmware_version": {
-        "name": "Firmware-version"
-      },
-      "license_plate": {
-        "name": "Registreringsnummer"
       },
       "departure_timer_1_time": {
         "name": "Avgångstimer 1"
@@ -185,15 +161,6 @@
       },
       "departure_timer_3_time": {
         "name": "Avgångstimer 3"
-      },
-      "range_estimated_full_km": {
-        "name": "Räckvidd vid 100%"
-      },
-      "range_wltp_km": {
-        "name": "WLTP-räckvidd"
-      },
-      "battery_available_kwh": {
-        "name": "Tillgänglig batterienergi"
       },
       "last_updated_at": {
         "name": "Senast uppdaterad"

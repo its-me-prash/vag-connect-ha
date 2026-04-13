@@ -117,18 +117,6 @@
       "charging_type": {
         "name": "Laadtype"
       },
-      "charging_station_name": {
-        "name": "Laadpaal"
-      },
-      "charging_station_address": {
-        "name": "Laadpaal adres"
-      },
-      "charging_station_kw": {
-        "name": "Laadpaal vermogen"
-      },
-      "charging_station_operator": {
-        "name": "Laadpaal exploitant"
-      },
       "climatisation_state": {
         "name": "Klimaatregeling"
       },
@@ -162,20 +150,8 @@
       "parking_city": {
         "name": "Stad"
       },
-      "heading": {
-        "name": "Rijrichting"
-      },
       "battery_temp": {
         "name": "Accu temperatuur"
-      },
-      "battery_cap_kwh": {
-        "name": "Accucapaciteit"
-      },
-      "firmware_version": {
-        "name": "Firmwareversie"
-      },
-      "license_plate": {
-        "name": "Kenteken"
       },
       "departure_timer_1_time": {
         "name": "Vertrektimer 1"
@@ -185,15 +161,6 @@
       },
       "departure_timer_3_time": {
         "name": "Vertrektimer 3"
-      },
-      "range_estimated_full_km": {
-        "name": "Bereik bij 100%"
-      },
-      "range_wltp_km": {
-        "name": "WLTP-bereik"
-      },
-      "battery_available_kwh": {
-        "name": "Beschikbare accuenergie"
       },
       "last_updated_at": {
         "name": "Laatste update"

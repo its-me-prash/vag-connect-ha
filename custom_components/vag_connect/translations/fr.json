@@ -117,18 +117,6 @@
       "charging_type": {
         "name": "Type de charge"
       },
-      "charging_station_name": {
-        "name": "Borne de recharge"
-      },
-      "charging_station_address": {
-        "name": "Adresse de la borne"
-      },
-      "charging_station_kw": {
-        "name": "Puissance de la borne"
-      },
-      "charging_station_operator": {
-        "name": "Opérateur de la borne"
-      },
       "climatisation_state": {
         "name": "Climatisation"
       },
@@ -162,20 +150,8 @@
       "parking_city": {
         "name": "Ville"
       },
-      "heading": {
-        "name": "Direction"
-      },
       "battery_temp": {
         "name": "Température batterie"
-      },
-      "battery_cap_kwh": {
-        "name": "Capacité batterie"
-      },
-      "firmware_version": {
-        "name": "Version firmware"
-      },
-      "license_plate": {
-        "name": "Immatriculation"
       },
       "departure_timer_1_time": {
         "name": "Minuterie de départ 1"
@@ -185,15 +161,6 @@
       },
       "departure_timer_3_time": {
         "name": "Minuterie de départ 3"
-      },
-      "range_estimated_full_km": {
-        "name": "Autonomie à 100%"
-      },
-      "range_wltp_km": {
-        "name": "Autonomie WLTP"
-      },
-      "battery_available_kwh": {
-        "name": "Énergie batterie disponible"
       },
       "last_updated_at": {
         "name": "Dernière mise à jour"

@@ -117,18 +117,6 @@
       "charging_type": {
         "name": "Charge Type"
       },
-      "charging_station_name": {
-        "name": "Charging Station"
-      },
-      "charging_station_address": {
-        "name": "Charging Station Address"
-      },
-      "charging_station_kw": {
-        "name": "Charging Station Power"
-      },
-      "charging_station_operator": {
-        "name": "Charging Station Operator"
-      },
       "climatisation_state": {
         "name": "Climatisation"
       },
@@ -162,20 +150,8 @@
       "parking_city": {
         "name": "City"
       },
-      "heading": {
-        "name": "Heading"
-      },
       "battery_temp": {
         "name": "Battery Temperature"
-      },
-      "battery_cap_kwh": {
-        "name": "Battery Capacity"
-      },
-      "firmware_version": {
-        "name": "Firmware Version"
-      },
-      "license_plate": {
-        "name": "License Plate"
       },
       "departure_timer_1_time": {
         "name": "Departure Timer 1"
@@ -185,15 +161,6 @@
       },
       "departure_timer_3_time": {
         "name": "Departure Timer 3"
-      },
-      "range_estimated_full_km": {
-        "name": "Range at 100%"
-      },
-      "range_wltp_km": {
-        "name": "WLTP Range"
-      },
-      "battery_available_kwh": {
-        "name": "Battery Energy Available"
       },
       "last_updated_at": {
         "name": "Last Updated"

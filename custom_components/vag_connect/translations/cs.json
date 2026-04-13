@@ -117,18 +117,6 @@
       "charging_type": {
         "name": "Typ nabíjení"
       },
-      "charging_station_name": {
-        "name": "Nabíjecí stanice"
-      },
-      "charging_station_address": {
-        "name": "Adresa nabíjecí stanice"
-      },
-      "charging_station_kw": {
-        "name": "Výkon nabíjecí stanice"
-      },
-      "charging_station_operator": {
-        "name": "Provozovatel stanice"
-      },
       "climatisation_state": {
         "name": "Klimatizace"
       },
@@ -162,20 +150,8 @@
       "parking_city": {
         "name": "Město"
       },
-      "heading": {
-        "name": "Směr jízdy"
-      },
       "battery_temp": {
         "name": "Teplota baterie"
-      },
-      "battery_cap_kwh": {
-        "name": "Kapacita baterie"
-      },
-      "firmware_version": {
-        "name": "Verze firmwaru"
-      },
-      "license_plate": {
-        "name": "Registrační značka"
       },
       "departure_timer_1_time": {
         "name": "Časovač odjezdu 1"
@@ -185,15 +161,6 @@
       },
       "departure_timer_3_time": {
         "name": "Časovač odjezdu 3"
-      },
-      "range_estimated_full_km": {
-        "name": "Dojezd při 100%"
-      },
-      "range_wltp_km": {
-        "name": "Dojezd WLTP"
-      },
-      "battery_available_kwh": {
-        "name": "Dostupná energie baterie"
       },
       "last_updated_at": {
         "name": "Naposledy aktualizováno"

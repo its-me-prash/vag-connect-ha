@@ -117,18 +117,6 @@
       "charging_type": {
         "name": "Tipo de carga"
       },
-      "charging_station_name": {
-        "name": "Punto de carga"
-      },
-      "charging_station_address": {
-        "name": "Dirección del punto de carga"
-      },
-      "charging_station_kw": {
-        "name": "Potencia del punto de carga"
-      },
-      "charging_station_operator": {
-        "name": "Operador del punto de carga"
-      },
       "climatisation_state": {
         "name": "Climatización"
       },
@@ -162,20 +150,8 @@
       "parking_city": {
         "name": "Ciudad"
       },
-      "heading": {
-        "name": "Rumbo"
-      },
       "battery_temp": {
         "name": "Temperatura de la batería"
-      },
-      "battery_cap_kwh": {
-        "name": "Capacidad de la batería"
-      },
-      "firmware_version": {
-        "name": "Versión de firmware"
-      },
-      "license_plate": {
-        "name": "Matrícula"
       },
       "departure_timer_1_time": {
         "name": "Temporizador de salida 1"
@@ -185,15 +161,6 @@
       },
       "departure_timer_3_time": {
         "name": "Temporizador de salida 3"
-      },
-      "range_estimated_full_km": {
-        "name": "Alcance al 100%"
-      },
-      "range_wltp_km": {
-        "name": "Alcance WLTP"
-      },
-      "battery_available_kwh": {
-        "name": "Energía batería disponible"
       },
       "last_updated_at": {
         "name": "Última actualización"
