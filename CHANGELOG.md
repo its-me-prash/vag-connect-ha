@@ -21,6 +21,26 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ---
 
+## [1.4.1] - 2026-04-13
+
+### Docs
+
+- docs/SESSION_HANDOFF.md — Übergabedokument für nächste Entwicklungs-Session
+- docs/ROADMAP.md — Aktualisiert mit v1.5–v2.0 Meilensteinen und Issue-Mapping
+
+---
+
+
+## [1.4.1] - 2026-04-13
+
+### Docs
+
+-  — Übergabedokument für nächste Entwicklungs-Session
+-  — Aktualisiert mit v1.5–v2.0 Meilensteinen
+
+---
+
+
 ## [1.4.0] - 2026-04-13
 
 ### CI/CD Fixes (alle CI-Jobs jetzt grün)
