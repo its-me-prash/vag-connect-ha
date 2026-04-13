@@ -247,6 +247,21 @@
       },
       "window_heating_back": {
         "name": "Achterruit verwarming"
+      },
+      "warning_active": {
+        "name": "Voertuigwaarschuwing actief"
+      },
+      "warning_engine": {
+        "name": "Motorwaarschuwing"
+      },
+      "warning_oil": {
+        "name": "Oliepeilwaarschuwing"
+      },
+      "warning_tyre": {
+        "name": "Bandenspanning waarschuwing"
+      },
+      "warning_brakes": {
+        "name": "Remwaarschuwing"
       }
     },
     "switch": {

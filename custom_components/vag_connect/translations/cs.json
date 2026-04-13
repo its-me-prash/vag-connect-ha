@@ -247,6 +247,21 @@
       },
       "window_heating_back": {
         "name": "Vyhřívání zadního skla"
+      },
+      "warning_active": {
+        "name": "Aktivní varování vozidla"
+      },
+      "warning_engine": {
+        "name": "Varování motoru"
+      },
+      "warning_oil": {
+        "name": "Varování hladiny oleje"
+      },
+      "warning_tyre": {
+        "name": "Varování tlaku pneumatik"
+      },
+      "warning_brakes": {
+        "name": "Varování brzd"
       }
     },
     "switch": {

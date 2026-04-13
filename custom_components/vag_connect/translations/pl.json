@@ -247,6 +247,21 @@
       },
       "window_heating_back": {
         "name": "Ogrzewanie tylnej szyby"
+      },
+      "warning_active": {
+        "name": "Ostrzeżenie pojazdu"
+      },
+      "warning_engine": {
+        "name": "Ostrzeżenie silnika"
+      },
+      "warning_oil": {
+        "name": "Ostrzeżenie poziomu oleju"
+      },
+      "warning_tyre": {
+        "name": "Ostrzeżenie ciśnienia opon"
+      },
+      "warning_brakes": {
+        "name": "Ostrzeżenie hamulców"
       }
     },
     "switch": {

@@ -21,6 +21,56 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ---
 
+## [1.5.0] - 2026-04-13
+
+### v1.5.0 — Bugs & Stabilität
+
+#### Bug #32 — `is_charging` stuck nach Ladeende (CUPRA/SEAT/alle Marken)
+
+Wenn das Fahrzeug vom Ladekabel getrennt wird, liefert die API manchmal
+nicht sofort den neuen `chargingState`. Der Sensor blieb auf `True` stecken.
+
+**Fix in `coordinator._enrich()`:** Wenn `plug_connected = False`, wird
+`is_charging` immer auf `False` gesetzt — unabhängig davon was die API liefert.
+Physikalisch: ohne Stecker kein Ladevorgang möglich.
+
+```
+Vorher: plug=False, is_charging=True  → Sensor stuck "lädt"
+Nachher: plug=False, is_charging=True → Sensor korrigiert auf "lädt nicht"
+```
+
+Analoges Problem: [WulfgarW/homeassistant-pycupra#68](https://github.com/WulfgarW/homeassistant-pycupra/issues/68)
+
+**3 neue Tests → closes #32**
+
+#### #34 — Warnleuchten als binary_sensor (5 neue Entities)
+
+Neue `EntityCategory.DIAGNOSTIC` Entities für Fahrzeug-Warnleuchten:
+
+| Entity | Beschreibung |
+|---|---|
+| `binary_sensor.{auto}_fahrzeugwarnung_aktiv` | Mindestens eine Warnung aktiv |
+| `binary_sensor.{auto}_motorwarnung` | Motorwarnung (Check Engine) |
+| `binary_sensor.{auto}_olstandwarnung` | Ölstandwarnung |
+| `binary_sensor.{auto}_reifendruckwarnung` | TPMS Reifendruckwarnung |
+| `binary_sensor.{auto}_bremswarnung` | Bremswarnung |
+
+Alle `device_class=PROBLEM` → HA zeigt rot/grün, Alert-Automationen möglich.
+
+Datenquelle: CARIAD BFF `vehicleHealthWarnings` (neu im selectivestatus-Job).
+8 Übersetzungen aktualisiert.
+
+Analoges Problem: [skodaconnect/homeassistant-myskoda#1069](https://github.com/skodaconnect/homeassistant-myskoda/issues/1069)
+
+#### #30 — Fensterheizung Switch ✅ bereits vorhanden
+
+`VagWindowHeatingSwitch` war bereits in v1.x implementiert — kein neuer Code nötig.
+
+**363/363 Tests ✓ | mypy 32/32 ✓ | Ruff ✓**
+
+---
+
+
 ## [1.4.1] - 2026-04-13
 
 ### Docs

@@ -171,6 +171,7 @@ class TestEnrich:
         import asyncio
         coord = self._make_coord()
         data = {"is_online": True, "is_driving": False, "is_charging": True,
+                "plug_connected": True,  # must be True for is_charging to hold
                 "latitude": None, "longitude": None}
         result = asyncio.get_event_loop().run_until_complete(coord._enrich(data))
         assert result["vehicle_state"] == "CHARGING"
@@ -324,3 +325,45 @@ class TestOptionsLiveUpdate:
             180,
         )
         assert interval_s == 10 * 60
+
+
+# ── Bug #32: is_charging defensive reset ────────────────────────────────────
+
+class TestIsChargingReset:
+    """Tests for Bug #32 — is_charging stays True after charging ends."""
+
+    def _make_coord(self):
+        from unittest.mock import MagicMock, AsyncMock
+        from custom_components.vag_connect.coordinator import VagConnectCoordinator
+        coord = VagConnectCoordinator.__new__(VagConnectCoordinator)
+        coord.hass = MagicMock()
+        coord.hass.async_add_executor_job = AsyncMock(return_value=None)
+        coord.entry = MagicMock()
+        coord.entry.data = {"brand":"audi","username":"t@t.com","password":"x","spin":"","update_interval":300}
+        coord._vehicles_lock = __import__("threading").Lock()
+        coord._cariad_client = MagicMock()
+        return coord
+
+    def test_is_charging_reset_when_unplugged(self):
+        """is_charging=True + plug_connected=False → reset to False."""
+        import asyncio
+        coord = self._make_coord()
+        data = {"is_charging": True, "plug_connected": False, "latitude": None, "longitude": None}
+        result = asyncio.get_event_loop().run_until_complete(coord._enrich(data))
+        assert result["is_charging"] is False
+
+    def test_is_charging_preserved_when_plugged(self):
+        """is_charging=True + plug_connected=True → stays True."""
+        import asyncio
+        coord = self._make_coord()
+        data = {"is_charging": True, "plug_connected": True, "latitude": None, "longitude": None}
+        result = asyncio.get_event_loop().run_until_complete(coord._enrich(data))
+        assert result["is_charging"] is True
+
+    def test_is_charging_false_stays_false(self):
+        """is_charging=False → untouched."""
+        import asyncio
+        coord = self._make_coord()
+        data = {"is_charging": False, "plug_connected": True, "latitude": None, "longitude": None}
+        result = asyncio.get_event_loop().run_until_complete(coord._enrich(data))
+        assert result["is_charging"] is False

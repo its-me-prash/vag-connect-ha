@@ -247,6 +247,21 @@
       },
       "window_heating_back": {
         "name": "Chauffage lunette"
+      },
+      "warning_active": {
+        "name": "Avertissement véhicule actif"
+      },
+      "warning_engine": {
+        "name": "Avertissement moteur"
+      },
+      "warning_oil": {
+        "name": "Avertissement niveau d'huile"
+      },
+      "warning_tyre": {
+        "name": "Avertissement pression pneus"
+      },
+      "warning_brakes": {
+        "name": "Avertissement freins"
       }
     },
     "switch": {

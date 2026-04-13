@@ -146,6 +146,14 @@ class VehicleData:
     # e.g. {"MYAPN8NB": "https://mediaservice.audi.com/media/fast/v3_...", ...}
     image_urls: dict = None  # type: ignore[assignment]
     # Vehicle media names from GraphQL (vehicle.media.shortName/longName)
+    # Warning lights
+    warning_active: bool = False
+    warning_count: int = 0
+    warning_oil: bool = False
+    warning_engine: bool = False
+    warning_tyre: bool = False
+    warning_brakes: bool = False
+
     media_short_name: str | None = None  # e.g. "Q4 e-tron"
     media_long_name: str | None = None   # e.g. "Audi Q4 50 e-tron quattro"
     media_exterior_color: str | None = None

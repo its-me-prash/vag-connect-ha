@@ -247,6 +247,21 @@
       },
       "window_heating_back": {
         "name": "Rear Window Heating"
+      },
+      "warning_active": {
+        "name": "Vehicle Warning Active"
+      },
+      "warning_engine": {
+        "name": "Engine Warning"
+      },
+      "warning_oil": {
+        "name": "Oil Level Warning"
+      },
+      "warning_tyre": {
+        "name": "Tyre Pressure Warning"
+      },
+      "warning_brakes": {
+        "name": "Brake Warning"
       }
     },
     "switch": {

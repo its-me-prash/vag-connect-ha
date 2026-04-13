@@ -247,6 +247,21 @@
       },
       "window_heating_back": {
         "name": "Calef. luneta"
+      },
+      "warning_active": {
+        "name": "Advertencia activa"
+      },
+      "warning_engine": {
+        "name": "Advertencia motor"
+      },
+      "warning_oil": {
+        "name": "Advertencia nivel aceite"
+      },
+      "warning_tyre": {
+        "name": "Advertencia presión neumáticos"
+      },
+      "warning_brakes": {
+        "name": "Advertencia frenos"
       }
     },
     "switch": {

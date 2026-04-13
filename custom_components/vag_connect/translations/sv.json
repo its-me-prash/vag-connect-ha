@@ -247,6 +247,21 @@
       },
       "window_heating_back": {
         "name": "Värmning bakruta"
+      },
+      "warning_active": {
+        "name": "Fordonsvarning aktiv"
+      },
+      "warning_engine": {
+        "name": "Motorvarning"
+      },
+      "warning_oil": {
+        "name": "Oljenivåvarning"
+      },
+      "warning_tyre": {
+        "name": "Däcktrycksvarning"
+      },
+      "warning_brakes": {
+        "name": "Bromsvarning"
       }
     },
     "switch": {

@@ -29,6 +29,7 @@ _SELECTIVE_STATUS_JOBS = ",".join([
     "userCapabilities",
     "vehicleLights",
     "vehicleHealthInspection",
+    "vehicleHealthWarnings",
 ])
 
 
@@ -392,6 +393,18 @@ class VWEUClient(CariadBaseClient):
         d.is_online = v(raw, "readiness", "readinessStatus", "value", "connectionState", "isOnline") is True
 
         # ── Vehicle health / service ──────────────────────────────────────────
+        # ── Warning lights ────────────────────────────────────────────────────
+        warnings = v(raw, "vehicleHealthWarnings", "warningLights", "value") or []
+        if isinstance(warnings, list):
+            # Each warning: {warningType, iconId, text}
+            warning_types = {w.get("warningType", "").upper() for w in warnings if w.get("warningType")}
+            d.warning_oil     = "OIL" in warning_types or "OIL_LEVEL" in warning_types
+            d.warning_engine  = "ENGINE" in warning_types or "CHECK_ENGINE" in warning_types
+            d.warning_tyre    = any("TYR" in t or "TIRE" in t for t in warning_types)
+            d.warning_brakes  = "BRAKE" in warning_types
+            d.warning_count   = len(warnings)
+            d.warning_active  = len(warnings) > 0
+
         d.service_km = v(raw, "vehicleHealthInspection", "maintenanceStatus", "value", "inspectionDue_km")
         d.service_due_at = v(raw, "vehicleHealthInspection", "maintenanceStatus", "value", "inspectionDue_days")
         d.oil_service_km = v(raw, "vehicleHealthInspection", "maintenanceStatus", "value", "oilServiceDue_km")

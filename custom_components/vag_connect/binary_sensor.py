@@ -68,6 +68,46 @@ BINARY_DESCRIPTIONS: tuple[VagBinarySensorDescription, ...] = (
         device_class=BinarySensorDeviceClass.RUNNING,
         icon="mdi:thermometer",
     ),
+    VagBinarySensorDescription(
+        key="warning_active",
+        data_key="warning_active",
+        name="Fahrzeugwarnung aktiv",
+        device_class=BinarySensorDeviceClass.PROBLEM,
+        icon="mdi:alert-circle",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    VagBinarySensorDescription(
+        key="warning_engine",
+        data_key="warning_engine",
+        name="Motorwarnung",
+        device_class=BinarySensorDeviceClass.PROBLEM,
+        icon="mdi:engine",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    VagBinarySensorDescription(
+        key="warning_oil",
+        data_key="warning_oil",
+        name="Ölstandwarnung",
+        device_class=BinarySensorDeviceClass.PROBLEM,
+        icon="mdi:oil",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    VagBinarySensorDescription(
+        key="warning_tyre",
+        data_key="warning_tyre",
+        name="Reifendruckwarnung",
+        device_class=BinarySensorDeviceClass.PROBLEM,
+        icon="mdi:tire",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    VagBinarySensorDescription(
+        key="warning_brakes",
+        data_key="warning_brakes",
+        name="Bremswarnung",
+        device_class=BinarySensorDeviceClass.PROBLEM,
+        icon="mdi:car-brake-alert",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
 )
 
 _NEW_BINARY: tuple[VagBinarySensorDescription, ...] = (

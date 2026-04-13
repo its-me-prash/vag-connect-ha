@@ -241,6 +241,21 @@
       },
       "window_heating_back": {
         "name": "Heckscheibenheizung aktiv"
+      },
+      "warning_active": {
+        "name": "Fahrzeugwarnung aktiv"
+      },
+      "warning_engine": {
+        "name": "Motorwarnung"
+      },
+      "warning_oil": {
+        "name": "Ölstandwarnung"
+      },
+      "warning_tyre": {
+        "name": "Reifendruckwarnung"
+      },
+      "warning_brakes": {
+        "name": "Bremswarnung"
       }
     },
     "switch": {
