@@ -54,32 +54,65 @@ async def async_setup_entry(
     entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Set up image entities — 7 per vehicle that has render images."""
+    """Set up image entities — 7 per vehicle that has render images.
+
+    If image_urls are not yet available at setup time (GraphQL fetch pending
+    or failed), a coordinator listener will retry once data arrives.
+    """
     coordinator: VagConnectCoordinator = hass.data[DOMAIN][entry.entry_id]
-    entities: list[ImageEntity] = []
+    added_vins: set[str] = set()
 
-    for vin, vehicle in coordinator.vehicles.items():
+    # Ensure cache dir exists
+    www_dir = hass.config.path("www", _CACHE_SUBDIR)
+    await hass.async_add_executor_job(os.makedirs, www_dir, 0o755, True)
+
+    def _add_entities_for_vin(vin: str, vehicle: dict) -> list:
         image_urls: dict[str, str] = vehicle.get("image_urls") or {}
-        if not image_urls:
-            continue
-
-        # Ensure cache directory exists
-        www_dir = hass.config.path("www", _CACHE_SUBDIR)
-        await hass.async_add_executor_job(os.makedirs, www_dir, 0o755, True)
-
+        entities = []
         for meta in RENDER_IMAGE_TYPES:
             url = image_urls.get(meta["media_type"])
             if url:
-                entities.append(
-                    VagRenderImageEntity(hass, coordinator, vin, meta, url)
-                )
+                entities.append(VagRenderImageEntity(hass, coordinator, vin, meta, url))
+        return entities
+
+    # Initial setup — add entities for vehicles that already have image_urls
+    entities = []
+    for vin, vehicle in coordinator.vehicles.items():
+        if vehicle.get("image_urls"):
+            new = _add_entities_for_vin(vin, vehicle)
+            if new:
+                entities.extend(new)
+                added_vins.add(vin)
+                _LOGGER.debug("Image entities created for %s (%d entities)", vin, len(new))
+        else:
+            _LOGGER.debug(
+                "No image_urls for %s at setup — will retry on next coordinator update", vin
+            )
 
     if entities:
         async_add_entities(entities)
-        # Trigger background cache of all images (fire-and-forget)
-        asyncio.ensure_future(
-            _cache_all_images(hass, coordinator)
-        )
+        asyncio.ensure_future(_cache_all_images(hass, coordinator))
+
+    # Listener: create entities if image_urls arrive on a subsequent poll
+    def _on_coordinator_update() -> None:
+        new_entities = []
+        for vin, vehicle in coordinator.vehicles.items():
+            if vin in added_vins:
+                continue
+            if vehicle.get("image_urls"):
+                new = _add_entities_for_vin(vin, vehicle)
+                if new:
+                    new_entities.extend(new)
+                    added_vins.add(vin)
+                    _LOGGER.info(
+                        "Image entities created for %s on coordinator update (%d entities)",
+                        vin, len(new),
+                    )
+        if new_entities:
+            async_add_entities(new_entities)
+            asyncio.ensure_future(_cache_all_images(hass, coordinator))
+
+    entry.async_on_unload(coordinator.async_add_listener(_on_coordinator_update))
 
 
 async def _cache_all_images(

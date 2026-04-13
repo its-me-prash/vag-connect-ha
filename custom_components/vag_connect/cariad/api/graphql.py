@@ -21,13 +21,22 @@ from aiohttp import ClientSession, ClientTimeout
 
 _LOGGER = logging.getLogger(__name__)
 
-# GraphQL endpoints per brand (proxy path differs, vgql layer is shared VW Group)
+# GraphQL endpoints per brand
 _GRAPHQL_ENDPOINTS: dict[str, str] = {
     "audi":       "https://www.audi.de/userinfo-emea/v2/myaudi/proxy/vgql/v1/graphql",
     "volkswagen": "https://www.volkswagen.de/app/proxy/vgql/v1/graphql",
     "skoda":      "https://www.skoda-auto.com/myskoda/proxy/vgql/v1/graphql",
     "seat":       "https://www.seat.com/myway/proxy/vgql/v1/graphql",
     "cupra":      "https://www.cupraofficial.com/mycupra/proxy/vgql/v1/graphql",
+}
+
+# Brand-specific client IDs for the vgql proxy (X-App-ID header)
+_BRAND_APP_IDS: dict[str, str] = {
+    "audi":       "de.audi.myaudi",
+    "volkswagen": "de.volkswagen.myvw",
+    "skoda":      "cz.skodaauto.myskoda",
+    "seat":       "es.seat.myseat",
+    "cupra":      "com.cupraofficial.mycupra",
 }
 
 # Complete metadata for all 7 render image types
@@ -174,19 +183,23 @@ class VehicleImageFetcher:
                     "Authorization": f"Bearer {access_token}",
                     "Content-Type":  "application/json",
                     "Accept":        "application/json",
+                    "X-App-ID":      _BRAND_APP_IDS.get(brand.lower(), "de.audi.myaudi"),
+                    "X-App-Version": "4.18.0",
+                    "User-Agent":    "myAudi/4.18.0 Android/34",
                 },
                 timeout=ClientTimeout(total=15),
             ) as resp:
                 if resp.status != 200:
-                    _LOGGER.debug(
-                        "GraphQL %s returned %d — images unavailable for %s",
-                        endpoint, resp.status, brand,
+                    body = await resp.text()
+                    _LOGGER.warning(
+                        "GraphQL images failed for %s: HTTP %d @ %s — %s",
+                        brand, resp.status, endpoint, body[:200],
                     )
                     return {}
                 data = await resp.json()
 
         except Exception as err:  # noqa: BLE001
-            _LOGGER.debug("GraphQL image fetch failed for %s: %s", brand, err)
+            _LOGGER.warning("GraphQL image fetch failed for %s: %s", brand, err)
             return {}
 
         return self._parse_response(data)

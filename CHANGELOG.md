@@ -21,6 +21,53 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ---
 
+## [1.3.3] - 2026-04-13
+
+### Behoben + Hinzugefügt
+
+#### Fahrzeugbild als Geräte-Icon und Entity-Bild
+
+Das offizielle Render-Bild des Fahrzeugs erscheint jetzt:
+- **Auf der Geräteseite** (oben rechts, ersetzt das generische VAG Connect Icon)
+- **Auf jeder Entity** als `entity_picture` (sichtbar in Lovelace-Karten,
+  Mushroom Cards, Entity-Detail-Seite)
+
+Sobald Image-URLs aus der GraphQL-API geladen sind, zeigt Home Assistant
+automatisch das Fahrzeug-Render-Bild überall wo `entity_picture` ausgewertet wird.
+
+#### Diagnose für fehlende Image-Entities
+
+Image-Platform hatte fehlerhafte Silent-Failures — der GraphQL-Call schlug
+still fehl, kein Hinweis im Log. Jetzt sichtbar als `WARNING` in den HA-Logs:
+
+```
+WARNING [vag_connect] GraphQL images failed for audi: HTTP 403 @ ...
+```
+
+oder bei Erfolg:
+```
+INFO [vag_connect] VAG images (audi): render URLs for 1 vehicle(s)
+```
+
+#### Korrekte Request-Header für vgql-Proxy
+
+Der myAudi-GraphQL-Proxy (`vgql`) erwartet zusätzlich:
+- `X-App-ID`: z.B. `de.audi.myaudi` (Brand-spezifisch)
+- `X-App-Version`: `4.18.0`
+- `User-Agent`: `myAudi/4.18.0 Android/34`
+
+#### Retry-Listener in Image-Platform
+
+Falls `image_urls` beim Startup leer sind (z.B. GraphQL-Timeout beim ersten
+Start), registriert die Image-Platform jetzt einen Coordinator-Listener.
+Sobald URLs bei einem nachfolgenden Poll eintreffen, werden die Entities
+automatisch nachträglich erstellt — ohne HA-Neustart.
+
+**360/360 Tests ✓ | mypy 32/32 ✓ | Ruff ✓**
+
+---
+
+
 ## [1.3.2] - 2026-04-12
 
 ### Hinzugefügt

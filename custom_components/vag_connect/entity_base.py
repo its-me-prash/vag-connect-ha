@@ -7,6 +7,7 @@ from typing import Any
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
+from .cariad.api.graphql import VehicleImageFetcher
 from .const import DOMAIN
 from .coordinator import VagConnectCoordinator
 
@@ -52,12 +53,20 @@ class VagConnectEntity(CoordinatorEntity[VagConnectCoordinator]):
 
     @property
     def device_info(self) -> DeviceInfo:
-        """Return HA DeviceInfo keyed by VIN."""
+        """Return HA DeviceInfo keyed by VIN.
+
+        Sets entity_picture to the vehicle render image (side_large preferred)
+        so the car photo appears on the device page in HA.
+        """
         vehicle = self._vehicle
         brand = self.coordinator.entry.data.get("brand", "vag")
         name = _device_name(vehicle, brand)
 
-        return DeviceInfo(
+        # Use vehicle render image as device picture
+        image_urls: dict = vehicle.get("image_urls") or {}
+        picture = VehicleImageFetcher.best_url(image_urls) if image_urls else None
+
+        info = DeviceInfo(
             identifiers={(DOMAIN, self._vin)},
             name=name,
             model=vehicle.get("model") or "VAG Vehicle",
@@ -70,3 +79,18 @@ class VagConnectEntity(CoordinatorEntity[VagConnectCoordinator]):
             ),
             sw_version=vehicle.get("firmware_version"),
         )
+        if picture:
+            info["entity_picture"] = picture  # type: ignore[typeddict-unknown-key]
+        return info
+
+    @property
+    def entity_picture(self) -> str | None:
+        """Return vehicle render image URL as entity picture.
+
+        Shows the car photo on the entity detail page and in dashboards
+        that display entity pictures (e.g. mushroom cards).
+        Falls back to None so HA uses the entity's icon instead.
+        """
+        vehicle = self._vehicle
+        image_urls: dict = vehicle.get("image_urls") or {}
+        return VehicleImageFetcher.best_url(image_urls) if image_urls else None
