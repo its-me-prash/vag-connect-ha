@@ -21,6 +21,45 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ---
 
+## [1.3.5] - 2026-04-13
+
+### Behoben (aus zweitem HA-Log, 13. April 2026)
+
+#### GraphQL 403 Audi — korrekter Portal-Client (Root Cause behoben)
+
+Aus dem HA-Log: HTTP 403 blieb auch nach Portal-Session-Ansatz bestehen.
+
+**Root Cause:** Der IDK-Client `09b6cbec-...` liefert ein Token für die CARIAD BFF.
+Der vgql-Proxy erfordert ein Token vom **myAudi App-Client** `ea73e952-...` —
+zwei verschiedene OAuth-Clients mit verschiedenen Scopes.
+
+**Fix in `audi.py`:** `AudiClient.fetch_images()` überschreibt die Base-Methode
+und führt eine zweite IDK-Authentifizierung mit dem Portal-Client durch:
+- Client: `ea73e952-ecd9-4b44-aa39-8acc33f3ff9b@apps_vw-dilab_com`
+- Token wird gecacht (kein erneuter Login bei jedem Poll)
+- Fehler beim Portal-Login → Bilder nicht verfügbar, CARIAD-Daten unberührt
+
+Erwartetes Log nach Update:
+```
+INFO [vag_connect] Audi portal token acquired for image fetching
+INFO [vag_connect] Audi images: render URLs for 1 vehicle(s)
+```
+
+#### VW EU GraphQL 404 — korrigierte Domain
+
+`www.volkswagen.de` → `myvw.volkswagen.de` (das ist die echte Portal-Domain)
+
+`https://myvw.volkswagen.de/userinfo-emea/v2/myvw/proxy/vgql/v1/graphql`
+
+#### graphql.py vereinfacht
+
+Portal-Session-Ansatz entfernt (funktionierte nicht, AudiClient macht es jetzt richtig).
+
+**360/360 Tests ✓ | mypy 32/32 ✓ | Ruff ✓**
+
+---
+
+
 ## [1.3.4] - 2026-04-13
 
 ### Behoben (aus HA-Log-Analyse, Audi S6 Avant live)

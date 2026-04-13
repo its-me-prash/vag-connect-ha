@@ -3,11 +3,15 @@
 
 The audiconnect client_id (09b6cbec-...) uses the old IDK signin-service
 flow instead of Auth0. After successful PKCE login, the IDK access_token
-is used directly with the CARIAD BFF — same as VW EU.
+is used directly against the CARIAD BFF (same endpoints as VW EU).
 
-The AZS/MBB exchange used by the old audiconnect integration is for the
-legacy fs-car API, which we do not use. CARIAD BFF requires the IDK
-access_token directly (jtt: access).
+Image fetching requires a *separate* token from the myAudi portal client
+(ea73e952-...). AudiClient.fetch_images() performs a lightweight second
+IDK auth with that client to obtain a portal-scoped Bearer token, then
+uses that for the vgql GraphQL call.
+
+Source for audiconnect client_id: arjenvrh/audi_connect_ha (MIT)
+Source for portal client_id: Issue #15 research (April 2026)
 """
 
 from __future__ import annotations
@@ -17,32 +21,80 @@ import logging
 from aiohttp import ClientSession
 
 from ..auth.idk import IDKAuth
-from ..models import BRAND_AUDI
+from ..models import BRAND_AUDI, BrandConfig
+from .graphql import VehicleImageFetcher, VehicleImageData
 from .vw_eu import VWEUClient
 
 _LOGGER = logging.getLogger(__name__)
 
+# The myAudi portal app client ID — gives token accepted by vgql proxy
+# Different from the CARIAD BFF client (09b6cbec-...) used for vehicle data
+_PORTAL_CLIENT_ID = "ea73e952-ecd9-4b44-aa39-8acc33f3ff9b@apps_vw-dilab_com"
+_PORTAL_REDIRECT  = "myaudi:///"
+_PORTAL_SCOPE = (
+    "openid profile email mbb offline_access mbbuserid"
+    " myaudi_proxy_vin myaudi_proxy_garage"
+)
+
+_PORTAL_BRAND = BrandConfig(
+    name="audi",
+    client_id=_PORTAL_CLIENT_ID,
+    redirect_uri=_PORTAL_REDIRECT,
+    user_agent="Android/4.31.0 (Build 800341641.root project 'myaudi_android'.ext.buildTime) Android/13",
+    api_base="https://www.audi.de",
+    scope=_PORTAL_SCOPE,
+)
+
 
 class AudiClient(VWEUClient):
-    """Audi EU client — same CARIAD BFF endpoints as VW EU.
+    """Audi EU client — identical to VW EU plus portal-token image fetching."""
 
-    Auth uses the legacy IDK signin-service flow (client 09b6cbec-...)
-    which returns a standard PKCE access_token usable with CARIAD BFF.
-    No AZS/MBB exchange needed — those are for the old fs-car API.
-    """
+    def __init__(self, session: ClientSession, email: str, password: str, spin: str = "") -> None:
+        # Call CariadBaseClient directly with BRAND_AUDI (not VWEUClient which hardcodes BRAND_VW_EU)
+        from .base import CariadBaseClient  # noqa: PLC0415
+        CariadBaseClient.__init__(self, session, BRAND_AUDI, email, password, spin)
+        self._portal_token: str | None = None
+        self._portal_auth = IDKAuth(session, _PORTAL_BRAND)
 
-    def __init__(
-        self, session: ClientSession, email: str, password: str, spin: str = ""
-    ) -> None:
-        super().__init__(session, email, password, spin)
-        self._brand = BRAND_AUDI
-        self._auth = IDKAuth(session, BRAND_AUDI)
+    async def fetch_images(self) -> None:
+        """Override: use the myAudi portal client token for vgql.
 
-    async def authenticate(self, mfa_code: str | None = None) -> None:
-        """IDK PKCE login → CARIAD BFF access_token. No AZS/MBB needed."""
-        self._tokens = await self._auth.authenticate(
-            self._email, self._password, mfa_code=mfa_code
-        )
-        _LOGGER.debug(
-            "Audi IDK auth complete — using access_token directly with CARIAD BFF"
-        )
+        The CARIAD-BFF token (09b6cbec-...) is rejected by the vgql proxy
+        with HTTP 403. The portal token (ea73e952-...) has the correct scopes.
+
+        We cache the portal token — it is refreshed when expired.
+        """
+        # Obtain portal token (separate IDK auth with myAudi portal client ID)
+        if not self._portal_token:
+            try:
+                portal_tokens = await self._portal_auth.authenticate(
+                    self._email, self._password
+                )
+                self._portal_token = portal_tokens.access_token
+                _LOGGER.info("Audi portal token acquired for image fetching")
+            except Exception as err:  # noqa: BLE001
+                _LOGGER.warning(
+                    "Audi portal auth failed (images will be unavailable): %s", err
+                )
+                self._image_data = {}
+                return
+
+        # Fetch images with portal token
+        try:
+            fetcher = VehicleImageFetcher(self._session)
+            data: dict[str, VehicleImageData] = await fetcher.fetch_image_data(
+                self._portal_token, "audi"
+            )
+            if data:
+                self._image_data = data
+                _LOGGER.info(
+                    "Audi images: render URLs for %d vehicle(s)", len(data)
+                )
+            else:
+                # Portal token may have expired — reset to force re-auth next time
+                self._portal_token = None
+                _LOGGER.debug("Audi images: empty response, portal token reset")
+        except Exception as err:  # noqa: BLE001
+            _LOGGER.warning("Audi image fetch failed: %s", err)
+            self._portal_token = None  # force refresh next attempt
+            self._image_data = {}
