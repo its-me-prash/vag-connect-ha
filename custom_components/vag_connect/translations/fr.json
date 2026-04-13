@@ -22,8 +22,8 @@
         }
       },
       "reauth_confirm": {
-        "title": "Se reconnecter — {brand}",
-        "description": "La session de **{username}** a expiré.\n\nVeuillez entrer votre mot de passe à nouveau.",
+        "title": "Reconnexion — {brand}",
+        "description": "La session pour **{username}** a expiré.\n\nVeuillez saisir à nouveau votre mot de passe.",
         "data": {
           "password": "Mot de passe",
           "spin": "S-PIN"

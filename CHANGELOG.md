@@ -21,6 +21,65 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ---
 
+## [1.3.4] - 2026-04-13
+
+### Behoben (aus HA-Log-Analyse, Audi S6 Avant live)
+
+#### Sensor-Crash: Inspektionsdatum + Ölwechseldatum (AttributeError)
+
+```
+AttributeError: 'int' object has no attribute 'isoformat'
+```
+
+`service_due_at` und `oil_service_at` bekamen von der API einen `int` (verbleibende Tage),
+aber `SensorDeviceClass.DATE` erwartet ein `datetime.date`-Objekt. Fix: automatische
+Konvertierung in `native_value`:
+- `int` → `date.today() + timedelta(days=val)` 
+- `str` → `date.fromisoformat(val[:10])`
+
+#### Kilometerangaben ohne Dezimalstellen — Issue #17
+
+`suggested_display_precision=0` auf allen Distanz-Sensoren gesetzt:
+`odometer_km`, `range_km`, `service_km`, `oil_service_km`, `adblue_range_km`, `charging_rate_kmh`
+
+Vorher: `138.435,00 km` → Jetzt: `138.435 km`
+
+#### Translation-Placeholder-Fehler (3 Keys)
+
+```
+Validation of translation placeholders for ... failed
+```
+
+Alle 8 Sprachen korrigiert:
+- `reauth_confirm.title` → enthält jetzt `{brand}` in allen Übersetzungen
+- `reauth_confirm.description` → enthält jetzt nur `{username}` (kein `{brand}`)
+- `mfa.description` → enthält jetzt `{username}` in allen Übersetzungen
+
+#### GraphQL 403 → Portal-Session vor vgql-Request
+
+Der myAudi-Proxy (`vgql`) lehnte den IDK-Bearer-Token mit HTTP 403 ab.
+Fix: Vor dem GraphQL-Call wird die Portal-Session über `/authenticated`
+hergestellt. Dabei werden Portal-Session-Cookies gesetzt, die dann beim
+eigentlichen GraphQL-Request mitgesendet werden. CSRF-Token wird aus den
+Cookies extrahiert und als `X-CSRF-Token` Header hinzugefügt.
+
+**Neue Log-Zeile wenn erfolgreich:**
+```
+INFO [vag_connect] VAG images (audi): render URLs for 1 vehicle(s)
+```
+
+#### VW EU GraphQL-Endpoint 404 → korrigierte URL
+
+```
+HTTP 404 @ https://www.volkswagen.de/app/proxy/vgql/v1/graphql
+```
+Korrigiert auf: `https://www.volkswagen.de/userinfo-emea/v2/myvw/proxy/vgql/v1/graphql`
+
+**360/360 Tests ✓ | mypy 32/32 ✓ | Ruff ✓**
+
+---
+
+
 ## [1.3.3] - 2026-04-13
 
 ### Behoben + Hinzugefügt

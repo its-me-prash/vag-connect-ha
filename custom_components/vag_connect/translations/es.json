@@ -23,7 +23,7 @@
       },
       "reauth_confirm": {
         "title": "Volver a iniciar sesión — {brand}",
-        "description": "La sesión de **{username}** ha expirado.\n\nPor favor introduce tu contraseña de nuevo.",
+        "description": "La sesión para **{username}** ha caducado.\n\nVuelve a introducir tu contraseña.",
         "data": {
           "password": "Contraseña",
           "spin": "S-PIN"
@@ -43,7 +43,7 @@
       },
       "mfa": {
         "title": "Confirmación en dos pasos",
-        "description": "Se ha enviado un código de confirmación a **{username}**.\n\nIntroduce el código de tu e-mail o app de autenticación.",
+        "description": "Se ha enviado un código de confirmación a **{username}**.\n\nIntroduce el código de tu correo o app de autenticación.",
         "data": {
           "mfa_code": "Código de confirmación"
         },

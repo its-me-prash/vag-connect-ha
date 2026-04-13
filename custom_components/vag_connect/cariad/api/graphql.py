@@ -30,6 +30,18 @@ _GRAPHQL_ENDPOINTS: dict[str, str] = {
     "cupra":      "https://www.cupraofficial.com/mycupra/proxy/vgql/v1/graphql",
 }
 
+# Portal base URLs — used to establish session before GraphQL call
+_PORTAL_AUTH_URLS: dict[str, str] = {
+    "audi":       "https://www.audi.de/userinfo-emea/v2/myaudi/authenticated",
+    "volkswagen": "https://www.volkswagen.de/userinfo-emea/v2/myvw/authenticated",
+    "skoda":      "https://www.skoda-auto.com/userinfo-emea/v2/myskoda/authenticated",
+    "seat":       "https://www.seat.com/userinfo-emea/v2/myseat/authenticated",
+    "cupra":      "https://www.cupraofficial.com/userinfo-emea/v2/mycupra/authenticated",
+}
+
+# Corrected VW EU GraphQL endpoint (verified via network inspection)
+_GRAPHQL_ENDPOINTS["volkswagen"] = "https://www.volkswagen.de/userinfo-emea/v2/myvw/proxy/vgql/v1/graphql"
+
 # Brand-specific client IDs for the vgql proxy (X-App-ID header)
 _BRAND_APP_IDS: dict[str, str] = {
     "audi":       "de.audi.myaudi",
@@ -176,17 +188,48 @@ class VehicleImageFetcher:
             return {}
 
         try:
+            # Step 1: Establish portal session so vgql proxy accepts our request.
+            # The myAudi proxy requires a valid portal session (csrf_token cookie)
+            # in addition to the Bearer token. Hitting /authenticated sets cookies.
+            portal_url = _PORTAL_AUTH_URLS.get(brand.lower())
+            if portal_url:
+                try:
+                    async with self._session.get(
+                        portal_url,
+                        headers={"Authorization": f"Bearer {access_token}"},
+                        timeout=ClientTimeout(total=8),
+                        allow_redirects=True,
+                    ) as portal_resp:
+                        _LOGGER.debug(
+                            "Portal session for %s: HTTP %d (cookies: %s)",
+                            brand, portal_resp.status,
+                            [c.key for c in self._session.cookie_jar],
+                        )
+                except Exception as portal_err:  # noqa: BLE001
+                    _LOGGER.debug("Portal session setup failed for %s: %s", brand, portal_err)
+
+            # Step 2: GraphQL request — Bearer token + any portal session cookies
+            headers = {
+                "Authorization": f"Bearer {access_token}",
+                "Content-Type":  "application/json",
+                "Accept":        "application/json",
+                "X-App-ID":      _BRAND_APP_IDS.get(brand.lower(), "de.audi.myaudi"),
+                "X-App-Version": "4.18.0",
+                "User-Agent":    "myAudi/4.18.0 Android/34",
+            }
+            # Add CSRF token from cookies if available
+            csrf = next(
+                (c.value for c in self._session.cookie_jar if c.key == "csrf_token"),
+                None,
+            )
+            if csrf:
+                headers["X-CSRF-Token"] = csrf
+                _LOGGER.debug("GraphQL: CSRF token found, including in request")
+
             async with self._session.post(
                 endpoint,
                 json={"query": _GQL_QUERY},
-                headers={
-                    "Authorization": f"Bearer {access_token}",
-                    "Content-Type":  "application/json",
-                    "Accept":        "application/json",
-                    "X-App-ID":      _BRAND_APP_IDS.get(brand.lower(), "de.audi.myaudi"),
-                    "X-App-Version": "4.18.0",
-                    "User-Agent":    "myAudi/4.18.0 Android/34",
-                },
+                headers=headers,
                 timeout=ClientTimeout(total=15),
             ) as resp:
                 if resp.status != 200:

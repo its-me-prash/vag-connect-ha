@@ -23,7 +23,7 @@
       },
       "reauth_confirm": {
         "title": "Opnieuw inloggen — {brand}",
-        "description": "De sessie voor **{username}** is verlopen.\n\nVoer je wachtwoord opnieuw in.",
+        "description": "De sessie voor **{username}** is verlopen.\n\nVoer uw wachtwoord opnieuw in.",
         "data": {
           "password": "Wachtwoord",
           "spin": "S-PIN"
@@ -43,7 +43,7 @@
       },
       "mfa": {
         "title": "Tweestapsverificatie",
-        "description": "Een bevestigingscode is verzonden naar **{username}**.\n\nVoer de code in uit je e-mail of authenticator-app.",
+        "description": "Er is een bevestigingscode verzonden naar **{username}**.\n\nVoer de code in uit uw e-mail of authenticator-app.",
         "data": {
           "mfa_code": "Bevestigingscode"
         },

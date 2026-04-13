@@ -20,8 +20,8 @@
         }
       },
       "reauth_confirm": {
-        "title": "Erneut anmelden",
-        "description": "Bitte gib dein Passwort für {brand} ({username}) erneut ein.",
+        "title": "Erneut anmelden — {brand}",
+        "description": "Die Anmeldung für **{username}** ist abgelaufen.\n\nBitte Passwort erneut eingeben.",
         "data": {
           "password": "Passwort",
           "spin": "S-PIN (optional, für Türverriegelung)"
@@ -41,7 +41,7 @@
       },
       "mfa": {
         "title": "Zwei-Faktor-Bestätigung",
-        "description": "Gib den Code ein, den du per E-Mail oder Authenticator-App erhalten hast.",
+        "description": "Ein Bestätigungscode wurde an **{username}** gesendet.\n\nGib den Code aus deiner E-Mail oder Authenticator-App ein.",
         "data": {
           "mfa_code": "MFA-Code"
         },

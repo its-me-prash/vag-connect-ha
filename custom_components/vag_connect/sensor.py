@@ -41,6 +41,7 @@ class VagSensorDescription(SensorEntityDescription):
 
     data_key: str = ""
     condition: str | None = None  # "electric" | "combustion" | None
+    suggested_display_precision: int | None = None
 
 
 SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
@@ -72,6 +73,7 @@ SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
         device_class=SensorDeviceClass.DISTANCE,
         state_class=SensorStateClass.MEASUREMENT,
         icon="mdi:map-marker-distance",
+        suggested_display_precision=0,
     ),
     VagSensorDescription(
         key="range_estimated_full_km",
@@ -103,6 +105,7 @@ SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
         device_class=SensorDeviceClass.DISTANCE,
         state_class=SensorStateClass.TOTAL_INCREASING,
         icon="mdi:counter",
+        suggested_display_precision=0,
     ),
 
     VagSensorDescription(
@@ -148,6 +151,7 @@ SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
         state_class=SensorStateClass.MEASUREMENT,
         icon="mdi:battery-charging-outline",
         condition="electric",
+        suggested_display_precision=0,
     ),
     VagSensorDescription(
         key="charge_complete_eta",
@@ -235,6 +239,7 @@ SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
         device_class=SensorDeviceClass.DISTANCE,
         state_class=SensorStateClass.MEASUREMENT,
         icon="mdi:wrench-clock",
+        suggested_display_precision=0,
     ),
     VagSensorDescription(
         key="service_due_at",
@@ -253,6 +258,7 @@ SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
         state_class=SensorStateClass.MEASUREMENT,
         icon="mdi:oil",
         condition="combustion",
+        suggested_display_precision=0,
     ),
     VagSensorDescription(
         key="oil_service_at",
@@ -392,6 +398,7 @@ SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
         state_class=SensorStateClass.MEASUREMENT,
         icon="mdi:water-check",
         condition="combustion",
+        suggested_display_precision=0,
     ),
 )
 
@@ -438,6 +445,8 @@ class VagConnectSensor(VagConnectEntity, SensorEntity):
     ) -> None:
         super().__init__(coordinator, vin, description.key)
         self.entity_description = description
+        if description.suggested_display_precision is not None:
+            self._attr_suggested_display_precision = description.suggested_display_precision
 
     @property
     def native_value(self) -> Any:
@@ -448,4 +457,21 @@ class VagConnectSensor(VagConnectEntity, SensorEntity):
             # Only return 0 if plug is connected (makes sense to show 0 kW)
             if self._vehicle.get("plug_connected"):
                 return 0
+
+        # DATE sensors: API may return int (days until event) or a date string.
+        # HA SensorDeviceClass.DATE requires datetime.date — convert if needed.
+        if (
+            self.entity_description.device_class == SensorDeviceClass.DATE
+            and val is not None
+        ):
+            if isinstance(val, int):
+                from datetime import date, timedelta  # noqa: PLC0415
+                return date.today() + timedelta(days=val)
+            if isinstance(val, str):
+                try:
+                    from datetime import date as _date  # noqa: PLC0415
+                    return _date.fromisoformat(val[:10])
+                except ValueError:
+                    return None
+
         return val

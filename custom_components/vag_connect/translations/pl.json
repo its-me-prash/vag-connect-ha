@@ -22,8 +22,8 @@
         }
       },
       "reauth_confirm": {
-        "title": "Zaloguj się ponownie — {brand}",
-        "description": "Sesja dla **{username}** wygasła.\n\nWprowadź hasło ponownie.",
+        "title": "Ponowne logowanie — {brand}",
+        "description": "Sesja dla **{username}** wygasła.\n\nWprowadź ponownie swoje hasło.",
         "data": {
           "password": "Hasło",
           "spin": "S-PIN"
@@ -43,7 +43,7 @@
       },
       "mfa": {
         "title": "Weryfikacja dwuetapowa",
-        "description": "Kod potwierdzający został wysłany na **{username}**.\n\nWprowadź kod z e-maila lub aplikacji uwierzytelniającej.",
+        "description": "Kod potwierdzający został wysłany do **{username}**.\n\nWprowadź kod z e-maila lub aplikacji uwierzytelniającej.",
         "data": {
           "mfa_code": "Kod potwierdzający"
         },

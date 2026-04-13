@@ -23,7 +23,7 @@
       },
       "reauth_confirm": {
         "title": "Logga in igen — {brand}",
-        "description": "Sessionen för **{username}** har gått ut.\n\nAnge ditt lösenord igen.",
+        "description": "Sessionen för **{username}** har löpt ut.\n\nAnge lösenordet igen.",
         "data": {
           "password": "Lösenord",
           "spin": "S-PIN"
@@ -43,7 +43,7 @@
       },
       "mfa": {
         "title": "Tvåstegsverifiering",
-        "description": "En bekräftelsekod skickades till **{username}**.\n\nAnge koden från din e-post eller autentiseringsapp.",
+        "description": "En bekräftelsekod har skickats till **{username}**.\n\nAnge koden från din e-post eller autentiseringsapp.",
         "data": {
           "mfa_code": "Bekräftelsekod"
         },
