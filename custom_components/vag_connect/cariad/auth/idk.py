@@ -391,7 +391,7 @@ class IDKAuth:
         """
         # Step 1 — parse initial login page
         csrf1 = self._parse_csrf_robust(html)
-        _LOGGER.warning(
+        _LOGGER.debug(
             "IDK legacy: step1 fields=%s action=%s",
             list(csrf1.fields.keys()),
             csrf1.form_action[:80] if csrf1.form_action else "(none)",
@@ -446,7 +446,7 @@ class IDKAuth:
                         _IDK_BASE,
                         f"{_SIGNIN_BASE}/{self._brand.client_id}/login/authenticate",
                     )
-            _LOGGER.warning(
+            _LOGGER.debug(
                 "IDK legacy: no hmac in JS, using form fields=%s pw_url=%s",
                 list(csrf2.fields.keys()), pw_url[:100],
             )
@@ -454,7 +454,7 @@ class IDKAuth:
         submit_data["password"] = password
 
         # Step 4 — POST password (audiconnect: allow_redirects=False, manual redirects)
-        _LOGGER.warning(
+        _LOGGER.debug(
             "IDK legacy: posting password to %s fields=%s",
             pw_url[:100], list(submit_data.keys()),
         )
@@ -466,7 +466,7 @@ class IDKAuth:
             pw_loc = _make_absolute(pw_url, resp.headers.get("Location", ""))
             pw_body = await resp.text() if pw_status != 302 else ""
 
-        _LOGGER.warning(
+        _LOGGER.debug(
             "IDK legacy: password POST status=%s location=%s",
             pw_status, pw_loc[:80] if pw_loc else "(none)",
         )

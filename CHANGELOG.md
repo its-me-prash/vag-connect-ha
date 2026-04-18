@@ -21,6 +21,29 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ---
 
+## [1.5.5] - 2026-04-18
+
+### Behoben — IDK Auth-Logs erschienen als "Fehler" in HA
+
+HA zeigt alle `WARNING`-Einträge von Custom Integrations im Notification-Center
+als Fehler an. Die IDK Auth-Flow Schritte waren mit `_LOGGER.warning()` geloggt —
+obwohl es sich um normale Trace-Informationen handelt.
+
+**4 Logs von WARNING → DEBUG heruntergestuft:**
+- `IDK legacy: step1 fields=...` — normaler Auth-Schritt
+- `IDK legacy: hmac from JS...` — normaler Auth-Schritt
+- `IDK legacy: posting password to...` — normaler Auth-Schritt
+- `IDK legacy: password POST status=302...` — erwartetes Ergebnis
+
+Diese 4 Einträge erscheinen nicht mehr in der HA Notification-UI.
+Weiterhin als WARNING (legitime Probleme):
+Auth-Fehler (400/401), Token-Exchange-Fehler, GraphQL-Failures, SEAT/CUPRA User-ID.
+
+**363/363 Tests ✓ | mypy 32/32 ✓ | Ruff ✓**
+
+---
+
+
 ## [1.5.4] - 2026-04-13
 
 ### Bereinigung — README, Issues, letzter toter Sensor
