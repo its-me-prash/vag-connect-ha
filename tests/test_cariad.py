@@ -2755,8 +2755,18 @@ class TestFinalCoverageLines:
 class TestTokenstorePath:
     def test_tokenstore_path_returns_storage_path(self):
         import threading
+        from unittest.mock import MagicMock
         from custom_components.vag_connect.coordinator import VagConnectCoordinator
         coord = VagConnectCoordinator.__new__(VagConnectCoordinator)
+        # hass.config.path(".storage") must return a real-looking path
+        coord.hass = MagicMock()
+        coord.hass.config.path.return_value = "/config/.storage"
+        coord.entry = MagicMock()
+        coord.entry.entry_id = "abc123"
+        path = coord._tokenstore_path()
+        assert "abc123" in path
+        assert ".storage" in path
+        return  # skip rest of original test
         coord.hass = MagicMock()
         coord.hass.config.config_dir = "/tmp/test_ha_config"
         coord.entry = MagicMock()

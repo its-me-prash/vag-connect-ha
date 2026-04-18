@@ -21,6 +21,42 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ---
 
+## [1.5.6] - 2026-04-18
+
+### Sicherheits- und Performance-Audit
+
+#### Sicherheit
+
+**Auth-Requests ohne Timeout (kritisch)**
+`idk.py` und `porsche.py` nutzten `self._session.get/post()` ohne Timeout.
+Bei einem hängenden VW/Audi-Identity-Server hätte HA ewig blockiert.
+
+Fix: `_AUTH_TIMEOUT = ClientTimeout(total=30)` in beiden Auth-Modulen.
+Alle 20 betroffenen Requests (15 in idk.py, 5 in porsche.py) haben jetzt 30s Timeout.
+
+**`TokenSet.needs_refresh()` — proaktiver Token-Refresh**
+`TokenSet` hat jetzt ein `expires_at: float` Feld und `needs_refresh()` Methode.
+Tokens können 60 Sekunden vor Ablauf proaktiv erneuert werden (statt erst auf 401 zu warten).
+
+#### Performance
+
+**Blockierendes `os.makedirs` entfernt**
+`coordinator._tokenstore_path()` rief `os.makedirs()` direkt im Async-Context.
+Fix: `hass.config.path(".storage")` — `.storage` existiert in HA immer.
+
+#### Was sauber war (bleibt sauber)
+- SSL immer aktiv (kein `verify=False`)
+- Credentials nie in Logs
+- Thread-Lock für CC-Thread/HA-Loop
+- Fehler pro Fahrzeug isoliert
+- `update_interval=None` mit Push-Updates
+- Bilder nur bei URL-Änderung neu geladen
+
+**363/363 Tests ✓ | mypy 32/32 ✓ | Ruff ✓**
+
+---
+
+
 ## [1.5.5] - 2026-04-18
 
 ### Behoben — IDK Auth-Logs erschienen als "Fehler" in HA

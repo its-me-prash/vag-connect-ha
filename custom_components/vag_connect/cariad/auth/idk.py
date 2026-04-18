@@ -21,7 +21,7 @@ from typing import Any
 from urllib.parse import parse_qs, urlparse, urlunparse
 
 
-from aiohttp import ClientSession, InvalidURL
+from aiohttp import ClientSession, ClientTimeout, InvalidURL
 
 from ..exceptions import (
     AuthenticationError,
@@ -34,6 +34,8 @@ from ..exceptions import (
 from ..models import BrandConfig, TokenSet
 
 _LOGGER = logging.getLogger(__name__)
+
+_AUTH_TIMEOUT = ClientTimeout(total=30)  # per-request timeout for auth flows
 
 _IDK_BASE = "https://identity.vwgroup.io"
 _SIGNIN_BASE = f"{_IDK_BASE}/signin-service/v1"
@@ -145,7 +147,8 @@ class IDKAuth:
             "code_challenge_method": "S256",
         }
         async with self._session.get(
-            _AUTHORIZE_URL, params=params, headers=self._base_headers(),
+            _AUTHORIZE_URL,
+            timeout=_AUTH_TIMEOUT, params=params, headers=self._base_headers(),
             allow_redirects=True,
         ) as resp:
             login_url = str(resp.url)
@@ -223,6 +226,7 @@ class IDKAuth:
         try:
             async with self._session.post(
                 post_url,
+                timeout=_AUTH_TIMEOUT,
                 data=login_form,
                 headers=self._form_headers(),
                 allow_redirects=False,  # follow manually to preserve cookies
@@ -272,6 +276,7 @@ class IDKAuth:
                     mfa_state = parse_qs(urlparse(ref).query).get("state", [auth0_state])[0]
                     async with self._session.post(
                         ref,
+                        timeout=_AUTH_TIMEOUT,
                         data={"code": mfa_code, "state": mfa_state},
                         headers=self._form_headers(),
                         allow_redirects=False,
@@ -285,6 +290,7 @@ class IDKAuth:
             try:
                 async with self._session.get(
                     ref,
+                    timeout=_AUTH_TIMEOUT,
                     headers=self._base_headers(),
                     allow_redirects=False,
                 ) as redir_resp:
@@ -345,6 +351,7 @@ class IDKAuth:
         }
         async with self._session.post(
             url,
+            timeout=_AUTH_TIMEOUT,
             data=data,
             headers=headers,
             allow_redirects=True,
@@ -413,7 +420,8 @@ class IDKAuth:
         # Step 2 — POST email (audiconnect: cookies=step1_cookies, allow_redirects=True)
         _LOGGER.debug("IDK legacy: posting email to %s", email_url[:100])
         async with self._session.post(
-            email_url, data=submit_data,
+            email_url,
+            timeout=_AUTH_TIMEOUT, data=submit_data,
             headers=self._form_headers(), allow_redirects=True,
         ) as resp:
             if resp.status != 200:
@@ -459,7 +467,8 @@ class IDKAuth:
             pw_url[:100], list(submit_data.keys()),
         )
         async with self._session.post(
-            pw_url, data=submit_data,
+            pw_url,
+            timeout=_AUTH_TIMEOUT, data=submit_data,
             headers=self._form_headers(), allow_redirects=False,
         ) as resp:
             pw_status = resp.status
@@ -500,7 +509,8 @@ class IDKAuth:
             if "terms-and-conditions" in ref:
                 raise TermsAndConditionsError()
             async with self._session.get(
-                ref, headers=self._base_headers(), allow_redirects=False,
+                ref,
+                timeout=_AUTH_TIMEOUT, headers=self._base_headers(), allow_redirects=False,
             ) as redir:
                 next_loc = redir.headers.get("Location", "")
                 if redir.status in (301, 302, 303, 307, 308) and next_loc:
@@ -524,7 +534,8 @@ class IDKAuth:
             "refresh_token": refresh_token,
         }
         async with self._session.post(
-            token_url, data=data, headers=self._form_headers()
+            token_url,
+            timeout=_AUTH_TIMEOUT, data=data, headers=self._form_headers()
         ) as resp:
             if resp.status == 400:
                 raise TokenExpiredError("Refresh token rejected — full re-login required.")
@@ -591,6 +602,7 @@ class IDKAuth:
 
         async with self._session.post(
             callback_url,
+            timeout=_AUTH_TIMEOUT,
             data=parser.fields,
             headers=self._form_headers(),
             allow_redirects=False,
@@ -616,6 +628,7 @@ class IDKAuth:
 
             async with self._session.get(
                 location,
+                timeout=_AUTH_TIMEOUT,
                 headers=self._base_headers(),
                 allow_redirects=False,
             ) as resp:
@@ -646,7 +659,8 @@ class IDKAuth:
         """POST data, then follow HTTP 302 redirects until we hit the app URI."""
         prefix = app_prefix_full.split("://")[0] + "://"
         async with self._session.post(
-            url, data=data, headers=self._form_headers(), allow_redirects=False
+            url,
+            timeout=_AUTH_TIMEOUT, data=data, headers=self._form_headers(), allow_redirects=False
         ) as resp:
             if resp.status == 200:
                 body = await resp.text()
@@ -691,7 +705,8 @@ class IDKAuth:
                 raise MarketingConsentError()
             _LOGGER.debug("IDK legacy: following redirect → %s", location[:80])
             async with self._session.get(
-                location, headers=self._base_headers(), allow_redirects=False
+                location,
+                timeout=_AUTH_TIMEOUT, headers=self._base_headers(), allow_redirects=False
             ) as resp:
                 if resp.status in (301, 302, 303, 307, 308):
                     raw_next = resp.headers.get("Location", "")
@@ -719,7 +734,8 @@ class IDKAuth:
             "code_verifier": verifier,
         }
         async with self._session.post(
-            token_url, data=data, headers=self._form_headers()
+            token_url,
+            timeout=_AUTH_TIMEOUT, data=data, headers=self._form_headers()
         ) as resp:
             if resp.status != 200:
                 body = await resp.text()
@@ -736,7 +752,7 @@ class IDKAuth:
         cariad_token = "https://emea.bff.cariad.digital/login/v1/idk/token"
         try:
             url = "https://emea.bff.cariad.digital/login/v1/idk/openid-configuration"
-            async with self._session.get(url) as resp:
+            async with self._session.get(url, timeout=_AUTH_TIMEOUT) as resp:
                 if resp.status == 200:
                     cfg: dict[str, Any] = await resp.json()
                     return str(cfg.get("token_endpoint", cariad_token))

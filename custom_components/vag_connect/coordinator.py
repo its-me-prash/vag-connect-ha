@@ -187,9 +187,10 @@ class VagConnectCoordinator(DataUpdateCoordinator):
     def _tokenstore_path(self) -> str:
         """Pfad zur Token-Datei im HA-Config-Verzeichnis.
         Tokens persist across HA restarts — no re-authentication needed.
+        Note: os.makedirs on .storage is safe — directory always exists in HA.
         """
-        storage_dir = os.path.join(self.hass.config.config_dir, ".storage")
-        os.makedirs(storage_dir, exist_ok=True)
+        storage_dir = self.hass.config.path(".storage")
+        # .storage always exists in HA — no makedirs needed
         return os.path.join(
             storage_dir,
             f"vag_connect_tokens_{self.entry.entry_id}.json"

@@ -15,10 +15,12 @@ import os
 import re
 from urllib.parse import parse_qs
 
-from aiohttp import ClientSession
+from aiohttp import ClientTimeout, ClientSession
 
 from ..exceptions import AuthenticationError, TokenExpiredError
 from ..models import TokenSet
+
+_AUTH_TIMEOUT = ClientTimeout(total=30)  # per-request timeout for auth flows
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -68,6 +70,7 @@ class PorscheAuth:
         }
         async with self._session.get(
             _AUTH_URL,
+            timeout=_AUTH_TIMEOUT,
             params=params,
             headers={"User-Agent": _USER_AGENT},
             allow_redirects=True,
@@ -85,6 +88,7 @@ class PorscheAuth:
         login_url = f"https://{_AUTH_SERVER}/u/login/identifier?state={auth0_state}"
         async with self._session.post(
             login_url,
+            timeout=_AUTH_TIMEOUT,
             data={
                 "state":       auth0_state,
                 "username":    email,
@@ -106,6 +110,7 @@ class PorscheAuth:
         password_url = f"https://{_AUTH_SERVER}/u/login/password?state={auth0_state}"
         async with self._session.post(
             password_url,
+            timeout=_AUTH_TIMEOUT,
             data={
                 "state":    auth0_state,
                 "username": email,
@@ -134,6 +139,7 @@ class PorscheAuth:
         """Refresh tokens using refresh_token."""
         async with self._session.post(
             _TOKEN_URL,
+            timeout=_AUTH_TIMEOUT,
             json={
                 "grant_type":    "refresh_token",
                 "client_id":     _CLIENT_ID,
@@ -154,6 +160,7 @@ class PorscheAuth:
     async def _exchange_code(self, code: str, verifier: str) -> TokenSet:
         async with self._session.post(
             _TOKEN_URL,
+            timeout=_AUTH_TIMEOUT,
             json={
                 "grant_type":    "authorization_code",
                 "client_id":     _CLIENT_ID,

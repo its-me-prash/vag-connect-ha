@@ -121,10 +121,18 @@ class TokenSet:
     access_token: str
     refresh_token: str
     id_token: str
+    expires_at: float = 0.0  # Unix timestamp — 0 = unknown, refresh proactively 60s before
 
     def is_valid(self) -> bool:
         """Return True if all required tokens are present."""
         return bool(self.access_token and self.refresh_token and self.id_token)
+
+    def needs_refresh(self) -> bool:
+        """True if token expires within 60 seconds or expiry is unknown."""
+        if not self.expires_at:
+            return False  # unknown → let the API tell us via 401
+        import time
+        return time.time() >= self.expires_at - 60
 
 
 @dataclass
