@@ -39,7 +39,29 @@ class SeatCupraClient(CariadBaseClient):
         await self._fetch_user_id()
 
     async def _fetch_user_id(self) -> None:
-        """Fetch user ID needed for garage endpoint."""
+        """Fetch user ID needed for garage endpoint.
+
+        Strategy: extract 'sub' claim from the ID token JWT (no API call needed).
+        Fallback: GET /v1/users endpoint.
+        """
+        # Try extracting from ID token first (most reliable)
+        if self._tokens and self._tokens.id_token:
+            try:
+                import base64  # noqa: PLC0415
+                import json as _json  # noqa: PLC0415
+                # JWT payload is the second segment (base64url-encoded, no padding)
+                payload_b64 = self._tokens.id_token.split(".")[1]
+                payload_b64 += "=" * (4 - len(payload_b64) % 4)  # fix padding
+                payload = _json.loads(base64.urlsafe_b64decode(payload_b64))
+                sub = payload.get("sub")
+                if sub:
+                    self._user_id = sub
+                    _LOGGER.debug("SEAT/CUPRA user_id from ID token: %s", sub[:8])
+                    return
+            except Exception:  # noqa: BLE001
+                _LOGGER.debug("Could not extract user_id from ID token")
+
+        # Fallback: API call
         try:
             data = await self._get(f"{_BASE}/v1/users")
             self._user_id = data.get("userId") or data.get("sub")
