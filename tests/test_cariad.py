@@ -618,6 +618,46 @@ class TestSeatCupraClient:
         from custom_components.vag_connect.cariad.api.seat_cupra import _BASE
         assert "ola.prod.code.seat" in _BASE
 
+    def test_cupra_has_client_secret(self):
+        from custom_components.vag_connect.cariad.models import BRAND_CUPRA
+        assert BRAND_CUPRA.client_secret != ""
+        assert len(BRAND_CUPRA.client_secret) > 20
+
+    def test_seat_has_no_client_secret(self):
+        from custom_components.vag_connect.cariad.models import BRAND_SEAT
+        assert BRAND_SEAT.client_secret == ""
+
+    def test_fetch_user_id_from_jwt(self):
+        import asyncio
+        from custom_components.vag_connect.cariad.api.seat_cupra import SeatCupraClient
+        from custom_components.vag_connect.cariad.models import TokenSet
+        import base64, json as _json
+        client = SeatCupraClient(MagicMock(), "cupra", "u@t.de", "pw")
+        # Build a fake JWT with 'sub' claim
+        header = base64.urlsafe_b64encode(b'{"alg":"RS256"}').rstrip(b"=").decode()
+        payload = base64.urlsafe_b64encode(
+            _json.dumps({"sub": "test-user-123", "email": "u@t.de"}).encode()
+        ).rstrip(b"=").decode()
+        fake_jwt = f"{header}.{payload}.fakesig"
+        client._tokens = TokenSet(
+            access_token="fake_access", refresh_token="fake_refresh", id_token=fake_jwt
+        )
+        asyncio.get_event_loop().run_until_complete(client._fetch_user_id())
+        assert client._user_id == "test-user-123"
+
+    def test_fetch_user_id_fallback_on_bad_jwt(self):
+        import asyncio
+        from custom_components.vag_connect.cariad.api.seat_cupra import SeatCupraClient
+        from custom_components.vag_connect.cariad.models import TokenSet
+        client = SeatCupraClient(MagicMock(), "cupra", "u@t.de", "pw")
+        client._tokens = TokenSet(
+            access_token="fake", refresh_token="fake", id_token="not.a.jwt"
+        )
+        # Should not crash, user_id stays None (fallback API call will also fail in test)
+        asyncio.get_event_loop().run_until_complete(client._fetch_user_id())
+        # user_id is None because both JWT and API fallback failed
+        assert client._user_id is None
+
 
 # ── IDK auth flow deeper coverage ─────────────────────────────────────────────
 

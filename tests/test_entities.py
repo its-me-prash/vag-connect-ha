@@ -261,6 +261,50 @@ class TestBinarySensor:
         assert any("door_" in k for k in keys)
 
 
+# ── lock ───────────────────────────────────────────────────────────────────────
+
+class TestLock:
+    def test_lock_is_locked(self):
+        from custom_components.vag_connect.lock import VagDoorLock
+        coord = _make_coordinator()
+        vin = list(coord.data.keys())[0]
+        lock = VagDoorLock(coord, vin)
+        assert lock.is_locked is True
+
+    def test_lock_is_unlocked(self):
+        from custom_components.vag_connect.lock import VagDoorLock
+        coord = _make_coordinator()
+        vin = list(coord.data.keys())[0]
+        coord.data[vin]["doors_locked"] = False
+        lock = VagDoorLock(coord, vin)
+        assert lock.is_locked is False
+
+    def test_lock_async_lock(self):
+        import asyncio
+        from custom_components.vag_connect.lock import VagDoorLock
+        coord = _make_coordinator()
+        vin = list(coord.data.keys())[0]
+        lock = VagDoorLock(coord, vin)
+        asyncio.get_event_loop().run_until_complete(lock.async_lock())
+        coord.async_lock.assert_called_once_with(vin)
+
+    def test_lock_async_unlock(self):
+        import asyncio
+        from custom_components.vag_connect.lock import VagDoorLock
+        coord = _make_coordinator()
+        vin = list(coord.data.keys())[0]
+        lock = VagDoorLock(coord, vin)
+        asyncio.get_event_loop().run_until_complete(lock.async_unlock())
+        coord.async_unlock.assert_called_once_with(vin)
+
+    def test_lock_unique_id(self):
+        from custom_components.vag_connect.lock import VagDoorLock
+        coord = _make_coordinator()
+        vin = list(coord.data.keys())[0]
+        lock = VagDoorLock(coord, vin)
+        assert lock.unique_id == f"{vin}_door_lock"
+
+
 # ── switch ─────────────────────────────────────────────────────────────────────
 
 class TestSwitch:
