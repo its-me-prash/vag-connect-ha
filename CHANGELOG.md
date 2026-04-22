@@ -21,6 +21,17 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ---
 
+## [1.5.10] - 2026-04-22
+
+### Fixed
+
+- **CUPRA/SEAT user_id:** Extracted from JWT `sub` claim instead of failing `/v1/users` API call. Fixes #42.
+- **Lock platform:** Added proper HA `LockEntity` (was switch-only before).
+- **Nightly polling reduction:** Doubles polling interval between 22:00–05:00 automatically.
+- **Downloads badge:** Added to all 8 READMEs.
+
+---
+
 ## [1.5.9] - 2026-04-22
 
 ### Fixed
