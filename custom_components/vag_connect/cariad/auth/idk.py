@@ -528,11 +528,13 @@ class IDKAuth:
     async def refresh(self, refresh_token: str) -> TokenSet:
         """Exchange a refresh token for a fresh token set."""
         token_url = await self._get_token_endpoint()
-        data = {
+        data: dict[str, str] = {
             "client_id": self._brand.client_id,
             "grant_type": "refresh_token",
             "refresh_token": refresh_token,
         }
+        if self._brand.client_secret:
+            data["client_secret"] = self._brand.client_secret
         async with self._session.post(
             token_url,
             timeout=_AUTH_TIMEOUT, data=data, headers=self._form_headers()
@@ -726,16 +728,18 @@ class IDKAuth:
     async def _exchange_code(self, code: str, verifier: str) -> TokenSet:
         """POST authorization code + PKCE verifier → tokens."""
         token_url = await self._get_token_endpoint()
-        data = {
+        data: dict[str, str] = {
             "client_id": self._brand.client_id,
             "grant_type": "authorization_code",
             "code": code,
             "redirect_uri": self._brand.redirect_uri,
             "code_verifier": verifier,
         }
+        if self._brand.client_secret:
+            data["client_secret"] = self._brand.client_secret
         _LOGGER.debug(
-            "Token exchange: url=%s client_id=%s redirect_uri=%s",
-            token_url, self._brand.client_id[:20], self._brand.redirect_uri,
+            "Token exchange: url=%s client_id=%s has_secret=%s",
+            token_url, self._brand.client_id[:20], bool(self._brand.client_secret),
         )
         async with self._session.post(
             token_url,
@@ -743,31 +747,10 @@ class IDKAuth:
         ) as resp:
             if resp.status != 200:
                 body = await resp.text()
-                _LOGGER.debug(
-                    "Token exchange failed at %s — trying Auth0 /oauth/token fallback",
-                    token_url,
-                )
-                # Fallback: Auth0 uses /oauth/token instead of /oidc/v1/token
-                auth0_url = f"{_IDK_BASE}/oauth/token"
-                if token_url != auth0_url:
-                    async with self._session.post(
-                        auth0_url,
-                        timeout=_AUTH_TIMEOUT, data=data,
-                        headers={
-                            "Content-Type": "application/x-www-form-urlencoded",
-                            "Accept": "application/json",
-                        },
-                    ) as auth0_resp:
-                        if auth0_resp.status == 200:
-                            _LOGGER.debug("Token exchange succeeded via Auth0 /oauth/token")
-                            payload: dict[str, Any] = await auth0_resp.json()
-                            return self._parse_tokens(payload)
-                        body = await auth0_resp.text()
-                        _LOGGER.debug("Auth0 fallback also failed: %s", body[:200])
                 raise AuthenticationError(
                     f"Token exchange failed HTTP {resp.status}: {body[:200]}"
                 )
-            payload = await resp.json()
+            payload: dict[str, Any] = await resp.json()
 
         return self._parse_tokens(payload)
 

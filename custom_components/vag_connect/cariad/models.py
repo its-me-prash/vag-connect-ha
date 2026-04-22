@@ -16,6 +16,7 @@ class BrandConfig:
     redirect_uri: str
     user_agent: str
     api_base: str
+    client_secret: str = ""
     scope: str = (
         "openid profile badge birthdate birthplace nationalIdentifier "
         "nationality profession email vin phone nickname name picture mbb "
@@ -71,18 +72,19 @@ BRAND_SEAT = BrandConfig(
     name="seat",
     client_id="99a5b77d-bd88-4d53-b4e5-a539c60694a3@apps_vw-dilab_com",
     redirect_uri="seat://oauth-callback",
-    user_agent="OLASeat/2.10.1 (Android 12; sdk_gphone64_x86_64; Google) Mobile",
+    user_agent="OLASeat/2.13.3 (Android 12; sdk_gphone64_x86_64; Google) Mobile",
     api_base="https://ola.prod.code.seat.cloud.vwgroup.com",
-    scope="openid profile address phone email birthdate nickname",
+    scope="openid profile nickname birthdate phone",
 )
 
 BRAND_CUPRA = BrandConfig(
     name="cupra",
     client_id="3c756d46-f1ba-4d78-9f9a-cff0d5292d51@apps_vw-dilab_com",
     redirect_uri="cupra://oauth-callback",
-    user_agent="OLACupra/2.10.0 (Android 12; sdk_gphone64_x86_64; Google) Mobile",
+    user_agent="OLACupra/2.15.0 (Android 12; sdk_gphone64_x86_64; Google) Mobile",
     api_base="https://ola.prod.code.seat.cloud.vwgroup.com",
-    scope="openid profile address phone email birthdate nickname",
+    client_secret="eb8814e641c81a2640ad62eeccec11c98effc9bccd4269ab7af338b50a94b3a2",
+    scope="openid profile nickname birthdate phone",
 )
 
 BRAND_VW_NA_MODEL = BrandConfig(
