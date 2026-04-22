@@ -21,6 +21,20 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ---
 
+## [1.5.8] - 2026-04-22
+
+### Fixed
+
+- **SEAT/CUPRA/Škoda auth:** Token exchange failed with `invalid_client` because CARIAD BFF endpoint only accepts VW EU/Audi client IDs. Now routes these brands to the direct IDK token endpoint (`identity.vwgroup.io/oidc/v1/token`). Fixes #41.
+- **English entity labels:** `strings.json` switched from German to English (HA standard). English users now see "Fuel Level", "Doors Locked" etc. instead of German labels. Fixes #38.
+- **CUPRA/SEAT OAuth scope:** Added missing `email` and `address` scopes (all other brands already had them).
+
+### Changed
+
+- READMEs updated across all 8 languages (70+ entities, Porsche/VW NA Beta, current roadmap).
+
+---
+
 ## [1.5.6] - 2026-04-18
 
 ### Sicherheits- und Performance-Audit
