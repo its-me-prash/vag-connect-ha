@@ -747,14 +747,29 @@ class IDKAuth:
         return self._parse_tokens(payload)
 
     async def _get_token_endpoint(self) -> str:
-        """Fetch token endpoint — prefer CARIAD BFF over IDK direct."""
-        # CARIAD BFF endpoint (confirmed by audiconnect + CARIAD openid-config)
+        """Fetch token endpoint for the current brand.
+
+        SEAT/CUPRA/Škoda use the direct IDK endpoint — the CARIAD BFF
+        only accepts VW EU and Audi client IDs.
+        """
+        if self._brand.name in ("seat", "cupra", "skoda"):
+            idk_token = f"{_IDK_BASE}/oidc/v1/token"
+            try:
+                url = f"{_IDK_BASE}/.well-known/openid-configuration"
+                async with self._session.get(url, timeout=_AUTH_TIMEOUT) as resp:
+                    if resp.status == 200:
+                        cfg: dict[str, Any] = await resp.json()
+                        return str(cfg.get("token_endpoint", idk_token))
+            except Exception:  # noqa: BLE001
+                pass
+            return idk_token
+
         cariad_token = "https://emea.bff.cariad.digital/login/v1/idk/token"
         try:
             url = "https://emea.bff.cariad.digital/login/v1/idk/openid-configuration"
             async with self._session.get(url, timeout=_AUTH_TIMEOUT) as resp:
                 if resp.status == 200:
-                    cfg: dict[str, Any] = await resp.json()
+                    cfg = await resp.json()
                     return str(cfg.get("token_endpoint", cariad_token))
         except Exception:  # noqa: BLE001
             pass
