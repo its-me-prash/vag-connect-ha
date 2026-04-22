@@ -126,14 +126,12 @@ Uruchom ponownie Home Assistant.
 
 ## Mapa Drogowa
 
-| Version | Content |
-|---|---|
-| ✅ v0.14.1 | Platinum, own CARIAD client |
-| ✅ Beta | Porsche (Auth0 + PPA API) |
-| ✅ Beta | VW North America |
-| ✅ v1.0.0 | Porsche + VW NA (Beta), 7 brands |
-| ✅ v1.5.7 | English labels, CUPRA/SEAT scope fix |
-| 🔜 v2.0.0 | HACS Default, trip statistics, charging history |
+| Version | Content | Status |
+|---|---|---|
+| v1.0–v1.5 | 9 platforms, 7 brands, bugs & entity audit | ✅ Done |
+| v1.6.0 | Charging profiles, alarm, consumption, climate timer | 🔜 |
+| v1.7.0 | Navigation → vehicle, remote start, PPC platform 2025 | 🔜 |
+| v2.0.0 | HACS Official (live tests all 7 brands) | 🎯 |
 
 ---
 
