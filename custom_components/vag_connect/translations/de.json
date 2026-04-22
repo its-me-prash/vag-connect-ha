@@ -13,6 +13,9 @@
           "force_enable_access": "Türzustand erzwingen (für ältere Modelle)"
         },
         "data_description": {
+          "brand": "Wähle deine Fahrzeugmarke.",
+          "username": "Die E-Mail-Adresse aus der Hersteller-App (myAudi, WeConnect, etc.).",
+          "password": "Das Passwort aus der App.",
           "spin": "Wird für Türverriegelung und einige andere Aktionen benötigt. Kann leer gelassen werden.",
           "scan_interval": "Wie oft die API abgefragt wird (Minuten). Standard: 5. Minimum: 3.",
           "force_enable_access": "Aktivieren, wenn Tür- und Fensterstatus nicht angezeigt werden, obwohl sie in der App sichtbar sind."

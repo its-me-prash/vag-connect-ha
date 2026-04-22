@@ -2,69 +2,69 @@
   "config": {
     "step": {
       "user": {
-        "title": "VAG Connect einrichten",
-        "description": "Verbinde dein Fahrzeug mit Home Assistant. Wähle deine Marke und gib die Zugangsdaten aus der jeweiligen App ein.",
+        "title": "Set up VAG Connect",
+        "description": "Connect your vehicle to Home Assistant. Select your brand and enter the login credentials from the corresponding app.",
         "data": {
-          "brand": "Fahrzeugmarke",
-          "username": "E-Mail-Adresse",
-          "password": "Passwort",
-          "spin": "S-PIN (optional, für Türverriegelung)",
-          "scan_interval": "Aktualisierungsintervall (Minuten)",
-          "force_enable_access": "Türzustand erzwingen (für ältere Modelle)"
+          "brand": "Vehicle brand",
+          "username": "Email address",
+          "password": "Password",
+          "spin": "S-PIN (optional, required for door locking)",
+          "scan_interval": "Update interval (minutes)",
+          "force_enable_access": "Force door access (for older models)"
         },
         "data_description": {
-          "brand": "Wähle deine Fahrzeugmarke.",
-          "username": "Die E-Mail-Adresse aus der Hersteller-App (myAudi, WeConnect, etc.).",
-          "password": "Das Passwort aus der App.",
-          "spin": "Nur erforderlich für Verriegelung. Steht in der App unter Sicherheit → S-PIN.",
-          "scan_interval": "Wie oft die API abgefragt wird (Minuten). Standard: 5. Minimum: 3.",
-          "force_enable_access": "Für ältere Fahrzeuge die den 'access' Capability-Check nicht bestehen."
+          "brand": "Select your vehicle brand.",
+          "username": "The email address from the manufacturer app (myAudi, WeConnect, etc.).",
+          "password": "The password from the app.",
+          "spin": "Required for door locking and some other actions. Can be left empty.",
+          "scan_interval": "How often the API is polled (minutes). Default: 5. Minimum: 3.",
+          "force_enable_access": "Enable if door and window status is not shown, even though it's visible in the app."
         }
       },
       "reauth_confirm": {
-        "title": "Erneut anmelden",
-        "description": "Bitte gib dein Passwort für {brand} ({username}) erneut ein.",
+        "title": "Re-authenticate",
+        "description": "Please re-enter your password for {brand} ({username}).",
         "data": {
-          "password": "Passwort",
-          "spin": "S-PIN (optional)"
+          "password": "Password",
+          "spin": "S-PIN (optional, required for door locking)"
         }
       },
       "reconfigure": {
-        "title": "VAG Connect neu konfigurieren",
-        "description": "Ändere Zugangsdaten oder Einstellungen ohne die Integration zu entfernen.",
+        "title": "Reconfigure VAG Connect",
+        "description": "Change credentials or settings without removing the integration.",
         "data": {
-          "brand": "Fahrzeugmarke",
-          "username": "E-Mail",
-          "password": "Neues Passwort",
-          "spin": "S-PIN",
-          "scan_interval": "Abfrageintervall (Minuten)",
-          "force_enable_access": "Zugriff erzwingen"
+          "brand": "Vehicle brand",
+          "username": "Email address",
+          "password": "Password",
+          "spin": "S-PIN (optional, required for door locking)",
+          "scan_interval": "Update interval (minutes)",
+          "force_enable_access": "Force door access (for older models)"
         }
       }
     },
     "error": {
-      "cannot_connect": "Verbindung fehlgeschlagen. Zugangsdaten und Internetverbindung prüfen.",
-      "unknown": "Unbekannter Fehler. Bitte die Logs prüfen.",
-      "terms_and_conditions": "Nutzungsbedingungen müssen akzeptiert werden. Einmal in der App anmelden und bestätigen.",
-      "marketing_consent": "Neue Datenschutzzustimmung erforderlich. App öffnen: Profil → Einwilligungen.",
-      "two_factor_required": "Zwei-Faktor-Bestätigung nötig. Einmal manuell in der App anmelden und den Code per E-Mail bestätigen.",
-      "too_many_requests": "Account vorübergehend gesperrt (zu viele Anmeldeversuche). Bitte 15 Minuten warten.",
-      "invalid_credentials": "Passwort falsch oder Login vom Server abgelehnt. Prüfe die Zugangsdaten aus der Hersteller-App.",
-      "email_rejected": "E-Mail-Adresse wurde vom Anmeldeserver nicht erkannt. Prüfe ob du die E-Mail aus der richtigen App verwendest (myAudi, WeConnect, MyŠkoda, MyCupra etc.).",
-      "auth_server_error": "Der Anmeldeserver (identity.vwgroup.io) ist nicht erreichbar oder hat sich geändert. Bitte später erneut versuchen. Falls das Problem bestehen bleibt: GitHub Issue erstellen."
+      "cannot_connect": "Connection failed. Check credentials and internet connection.",
+      "unknown": "Unknown error. Please check the logs.",
+      "terms_and_conditions": "Terms and conditions need to be accepted. Sign in to the app once and confirm.",
+      "marketing_consent": "New privacy consent required. Open app: Profile → Consents.",
+      "two_factor_required": "Two-factor authentication required. Sign in manually in the app and confirm the email code.",
+      "too_many_requests": "Account temporarily suspended (too many login attempts). Please wait 15 minutes.",
+      "invalid_credentials": "Password incorrect or login rejected by server. Check the credentials from the manufacturer app.",
+      "email_rejected": "Email address not recognized by login server. Make sure you use the email from the correct app (myAudi, WeConnect, MyŠkoda, MyCupra etc.).",
+      "auth_server_error": "Login server (identity.vwgroup.io) is unreachable or has changed. Please try again later."
     },
     "abort": {
-      "already_configured": "Dieses Konto ist bereits eingerichtet.",
-      "reauth_successful": "Erneute Anmeldung erfolgreich.",
-      "reconfigure_successful": "Konfiguration erfolgreich aktualisiert."
+      "already_configured": "This account is already configured.",
+      "reauth_successful": "Re-authentication successful.",
+      "reconfigure_successful": "Configuration updated successfully."
     }
   },
   "options": {
     "step": {
       "init": {
-        "title": "VAG Connect — Einstellungen",
+        "title": "VAG Connect — Settings",
         "data": {
-          "scan_interval": "Aktualisierungsintervall (Minuten)",
+          "scan_interval": "Update interval (minutes)",
           "spin": "S-PIN"
         }
       }
@@ -73,242 +73,242 @@
   "entity": {
     "sensor": {
       "fuel_level": {
-        "name": "Tankstand"
+        "name": "Fuel Level"
       },
       "battery_soc": {
-        "name": "Akkustand"
+        "name": "Battery Level"
       },
       "range_km": {
-        "name": "Reichweite"
+        "name": "Range"
       },
       "odometer_km": {
-        "name": "Kilometerstand"
+        "name": "Odometer"
       },
       "charging_state": {
-        "name": "Ladevorgang"
+        "name": "Charging"
       },
       "plug_state": {
-        "name": "Ladestecker"
+        "name": "Plug"
       },
       "target_soc": {
-        "name": "Ladeziel"
+        "name": "Charge Target"
       },
       "charging_power_kw": {
-        "name": "Ladeleistung"
+        "name": "Charging Power"
       },
       "charging_rate_kmh": {
-        "name": "Ladegeschwindigkeit"
+        "name": "Charging Speed"
       },
       "charge_complete_eta": {
-        "name": "Ladeende"
+        "name": "Charge Complete"
       },
       "charging_type": {
-        "name": "Ladetyp"
+        "name": "Charge Type"
       },
       "charging_station_name": {
-        "name": "Ladesäule"
+        "name": "Charging Station"
       },
       "charging_station_address": {
-        "name": "Ladesäule Adresse"
+        "name": "Charging Station Address"
       },
       "charging_station_kw": {
-        "name": "Ladesäule Leistung"
+        "name": "Charging Station Power"
       },
       "charging_station_operator": {
-        "name": "Ladesäule Betreiber"
+        "name": "Charging Station Operator"
       },
       "climatisation_state": {
-        "name": "Klimatisierung"
+        "name": "Climatisation"
       },
       "target_temperature": {
-        "name": "Zieltemperatur"
+        "name": "Target Temperature"
       },
       "outside_temp": {
-        "name": "Außentemperatur"
+        "name": "Outside Temperature"
       },
       "service_km": {
-        "name": "Nächste Inspektion"
+        "name": "Next Service"
       },
       "service_due_at": {
-        "name": "Inspektionsdatum"
+        "name": "Service Date"
       },
       "oil_service_km": {
-        "name": "Nächster Ölwechsel"
+        "name": "Next Oil Change"
       },
       "oil_service_at": {
-        "name": "Ölwechseldatum"
+        "name": "Oil Change Date"
       },
       "vehicle_state": {
-        "name": "Fahrzeugzustand"
+        "name": "Vehicle State"
       },
       "connection_state": {
-        "name": "Verbindung"
+        "name": "Connection"
       },
       "parking_address": {
-        "name": "Standort"
+        "name": "Location"
       },
       "parking_city": {
-        "name": "Standort Stadt"
+        "name": "City"
       },
       "heading": {
-        "name": "Fahrtrichtung"
+        "name": "Heading"
       },
       "battery_temp": {
-        "name": "Akkutemperatur"
+        "name": "Battery Temperature"
       },
       "battery_cap_kwh": {
-        "name": "Akkukapazität"
+        "name": "Battery Capacity"
       },
       "firmware_version": {
-        "name": "Firmware-Version"
+        "name": "Firmware Version"
       },
       "license_plate": {
-        "name": "Kennzeichen"
+        "name": "License Plate"
       },
       "departure_timer_1_time": {
-        "name": "Abfahrtstimer 1"
+        "name": "Departure Timer 1"
       },
       "departure_timer_2_time": {
-        "name": "Abfahrtstimer 2"
+        "name": "Departure Timer 2"
       },
       "departure_timer_3_time": {
-        "name": "Abfahrtstimer 3"
+        "name": "Departure Timer 3"
       },
       "range_estimated_full_km": {
-        "name": "Reichweite bei 100%"
+        "name": "Range at 100%"
       },
       "range_wltp_km": {
-        "name": "WLTP-Reichweite"
+        "name": "WLTP Range"
       },
       "battery_available_kwh": {
-        "name": "Akkuenergie verfügbar"
+        "name": "Battery Energy Available"
       },
       "last_updated_at": {
-        "name": "Zuletzt aktualisiert"
+        "name": "Last Updated"
       }
     },
     "binary_sensor": {
       "doors_locked": {
-        "name": "Türen verriegelt"
+        "name": "Doors Locked"
       },
       "doors_open": {
-        "name": "Türen offen"
+        "name": "Doors Open"
       },
       "windows_open": {
-        "name": "Fenster offen"
+        "name": "Windows Open"
       },
       "plug_connected": {
-        "name": "Ladekabel steckt"
+        "name": "Charging Cable Connected"
       },
       "is_charging": {
-        "name": "Lädt"
+        "name": "Charging"
       },
       "climatisation_active": {
-        "name": "Klimatisierung läuft"
+        "name": "Climatisation Active"
       },
       "is_driving": {
-        "name": "In Fahrt"
+        "name": "Driving"
       },
       "is_online": {
-        "name": "Erreichbar"
+        "name": "Reachable"
       },
       "connector_locked": {
-        "name": "Ladestecker gesperrt"
+        "name": "Charging Plug Locked"
       }
     },
     "switch": {
       "lock_switch": {
-        "name": "Türverriegelung"
+        "name": "Door Lock"
       },
       "climatisation_switch": {
-        "name": "Klimatisierung"
+        "name": "Climatisation"
       },
       "charging_switch": {
-        "name": "Laden"
+        "name": "Charging"
       },
       "window_heating_switch": {
-        "name": "Scheibenheizung"
+        "name": "Window Heating"
       },
       "seat_heating_switch": {
-        "name": "Sitzheizung"
+        "name": "Seat Heating"
       },
       "auto_unlock_switch": {
-        "name": "Stecker nach Laden entsperren"
+        "name": "Unlock Plug After Charging"
       },
       "departure_timer_1_switch": {
-        "name": "Abfahrtstimer 1"
+        "name": "Departure Timer 1"
       },
       "departure_timer_2_switch": {
-        "name": "Abfahrtstimer 2"
+        "name": "Departure Timer 2"
       },
       "departure_timer_3_switch": {
-        "name": "Abfahrtstimer 3"
+        "name": "Departure Timer 3"
       }
     },
     "number": {
       "target_soc_number": {
-        "name": "Ladeziel"
+        "name": "Charge Target"
       },
       "climate_temp_number": {
-        "name": "Klimaanlage Temperatur"
+        "name": "Climate Temperature"
       },
       "max_charge_current": {
-        "name": "Max. Ladestrom"
+        "name": "Max. Charge Current"
       },
       "target_soc": {
-        "name": "Ladeziel"
+        "name": "Charge Target"
       },
       "target_temperature": {
-        "name": "Klimatisierungstemperatur"
+        "name": "Climatisation Temperature"
       }
     },
     "button": {
       "flash_button": {
-        "name": "Lichtsignal"
+        "name": "Flash Lights"
       },
       "refresh_button": {
-        "name": "Daten aktualisieren"
+        "name": "Refresh Data"
       },
       "wake_button": {
-        "name": "Fahrzeug aufwecken"
+        "name": "Wake Up Vehicle"
       }
     },
     "climate": {
       "climate": {
-        "name": "Vorklimatisierung"
+        "name": "Pre-Conditioning"
       }
     },
     "device_tracker": {
       "position": {
-        "name": "Position"
+        "name": "Location"
       }
     }
   },
   "issues": {
     "two_factor_required": {
-      "title": "Zwei-Faktor-Anmeldung erforderlich — {brand}",
-      "description": "Dein {brand}-Konto ({username}) verlangt eine Bestätigung per E-Mail-Code.\n\n**Einmalige Lösung:**\n1. Öffne die **{brand}-App** auf deinem Handy\n2. Melde dich dort manuell an\n3. Bestätige den Code, der per E-Mail kommt\n4. Starte Home Assistant neu\n\nNach diesem einmaligen Schritt speichert die Integration das Login-Token — du musst das nicht wiederholen."
+      "title": "Two-factor authentication required — {brand}",
+      "description": "Your {brand} account ({username}) requires an email verification code.\n\n**One-time fix:**\n1. Open the **{brand} app** on your phone\n2. Sign in manually\n3. Confirm the code sent by email\n4. Restart Home Assistant\n\nAfter this one-time step, the integration stores the login token — you won't need to repeat this."
     },
     "terms_and_conditions": {
-      "title": "Nutzungsbedingungen akzeptieren — {brand}",
-      "description": "Für {brand} ({username}) gibt es neue Nutzungsbedingungen.\n\n1. {brand}-App öffnen\n2. Anmelden und Bedingungen bestätigen\n3. Home Assistant neu starten"
+      "title": "Accept terms and conditions — {brand}",
+      "description": "There are new terms and conditions for {brand} ({username}).\n\n1. Open the {brand} app\n2. Sign in and accept the terms\n3. Restart Home Assistant"
     },
     "marketing_consent": {
-      "title": "Einwilligung nötig — {brand}",
-      "description": "Für {brand} ({username}) liegt eine neue Datenschutzabfrage vor.\n\nApp öffnen → Profil → Einwilligungen → bestätigen → HA neu starten."
+      "title": "Consent required — {brand}",
+      "description": "A new privacy consent is required for {brand} ({username}).\n\nOpen app → Profile → Consents → confirm → restart HA."
     },
     "too_many_requests": {
-      "title": "Account vorübergehend gesperrt — {brand}",
-      "description": "Der {brand}-Account ({username}) ist vorübergehend gesperrt, weil zu viele Anfragen gesendet wurden.\n\nBitte **15 Minuten warten** und dann Home Assistant neu starten.\nTipp: Das Aktualisierungsintervall auf mindestens 15 Minuten erhöhen."
+      "title": "Account temporarily suspended — {brand}",
+      "description": "The {brand} account ({username}) is temporarily suspended due to too many requests.\n\nPlease **wait 15 minutes** and restart Home Assistant.\nTip: Increase the update interval to at least 15 minutes."
     },
     "auth_failed": {
-      "title": "Anmeldung fehlgeschlagen — {brand}",
-      "description": "Die Verbindung zu {brand} ({username}) ist fehlgeschlagen.\n\nEinstellungen → Geräte & Dienste → VAG Connect → ⋮ → Neu konfigurieren."
+      "title": "Authentication failed — {brand}",
+      "description": "Connection to {brand} ({username}) failed.\n\nSettings → Devices & Services → VAG Connect → ⋮ → Reconfigure."
     }
   },
   "exceptions": {
     "vehicle_not_found": {
-      "message": "Fahrzeug mit VIN '{vin}' nicht gefunden. Prüfe ob die Integration gestartet ist."
+      "message": "Vehicle with VIN '{vin}' not found. Check that the integration is started."
     }
   }
 }

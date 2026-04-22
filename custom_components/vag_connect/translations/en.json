@@ -13,6 +13,9 @@
           "force_enable_access": "Force door access (for older models)"
         },
         "data_description": {
+          "brand": "Select your vehicle brand.",
+          "username": "The email address from the manufacturer app (myAudi, WeConnect, etc.).",
+          "password": "The password from the app.",
           "spin": "Required for door locking and some other actions. Can be left empty.",
           "scan_interval": "How often the API is polled (minutes). Default: 5. Minimum: 3.",
           "force_enable_access": "Enable if door and window status is not shown, even though it's visible in the app."
