@@ -46,7 +46,9 @@
       "marketing_consent": "New privacy consent required. Open app: Profile → Consents.",
       "two_factor_required": "Two-factor authentication required. Sign in manually in the app and confirm the email code.",
       "too_many_requests": "Account temporarily suspended (too many login attempts). Please wait 15 minutes.",
-      "invalid_credentials": "Email address or password incorrect."
+      "invalid_credentials": "Password incorrect or login rejected by server. Check the credentials from the manufacturer app.",
+      "email_rejected": "Email address not recognized by login server. Make sure you use the email from the correct app (myAudi, WeConnect, MyŠkoda, MyCupra etc.).",
+      "auth_server_error": "Login server (identity.vwgroup.io) is unreachable or has changed. Please try again later."
     },
     "abort": {
       "already_configured": "This account is already configured.",

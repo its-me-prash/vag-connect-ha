@@ -11,6 +11,10 @@ class CariadError(Exception):
 class AuthenticationError(CariadError):
     """Login failed — wrong credentials or account issue."""
 
+    def __init__(self, message: str, reason: str = "invalid_credentials") -> None:
+        super().__init__(message)
+        self.reason = reason
+
 
 class TermsAndConditionsError(AuthenticationError):
     """Terms and conditions must be accepted in the app before API access."""

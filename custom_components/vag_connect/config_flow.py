@@ -58,9 +58,10 @@ async def _validate_credentials(
     except RateLimitError as err:
         raise ValueError("too_many_requests") from err
     except AuthenticationError as err:
-        raise ValueError("invalid_credentials") from err
+        _LOGGER.warning("Authentication failed for %s/%s: %s", brand, username, err)
+        raise ValueError(err.reason) from err
     except Exception as err:  # noqa: BLE001
-        _LOGGER.debug("Credential validation error: %s", err)
+        _LOGGER.warning("Credential validation error for %s/%s: %s", brand, username, err)
         raise ValueError("cannot_connect") from err
 
 
@@ -90,7 +91,8 @@ def _map_error(err_code: str) -> str:
     """Map ValueError string to strings.json error key."""
     return err_code if err_code in {
         "terms_and_conditions", "marketing_consent", "two_factor_required",
-        "too_many_requests", "invalid_credentials", "missing_library",
+        "too_many_requests", "invalid_credentials", "email_rejected",
+        "auth_server_error", "missing_library",
     } else "cannot_connect"
 
 

@@ -46,7 +46,9 @@
       "marketing_consent": "Nytt dataskyddssamtycke krävs. App → Profil → Samtycken.",
       "two_factor_required": "Tvåfaktorsautentisering krävs. Logga in manuellt i appen.",
       "too_many_requests": "Kontot är tillfälligt spärrat. Vänta 15 minuter.",
-      "invalid_credentials": "Felaktig e-postadress eller lösenord."
+      "invalid_credentials": "Lösenord felaktigt eller inloggning avvisad av server. Kontrollera inloggningsuppgifterna från tillverkarens app.",
+      "email_rejected": "E-postadress kändes inte igen av inloggningsservern. Kontrollera att du använder e-postadressen från rätt app (myAudi, WeConnect, MyŠkoda, MyCupra etc.).",
+      "auth_server_error": "Inloggningsserver (identity.vwgroup.io) är otillgänglig eller har ändrats. Försök igen senare."
     },
     "abort": {
       "already_configured": "Det här kontot är redan konfigurerat.",

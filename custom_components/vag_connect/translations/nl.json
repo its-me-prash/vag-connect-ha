@@ -46,7 +46,9 @@
       "marketing_consent": "Nieuwe privacytoestemming vereist. App → Profiel → Toestemmingen.",
       "two_factor_required": "Tweestapsverificatie vereist. Log handmatig in via de app.",
       "too_many_requests": "Account tijdelijk geblokkeerd. Wacht 15 minuten.",
-      "invalid_credentials": "E-mailadres of wachtwoord onjuist."
+      "invalid_credentials": "Wachtwoord onjuist of login geweigerd door server. Controleer de inloggegevens van de fabrikant-app.",
+      "email_rejected": "E-mailadres niet herkend door de inlogserver. Controleer of je het e-mailadres van de juiste app gebruikt (myAudi, WeConnect, MyŠkoda, MyCupra etc.).",
+      "auth_server_error": "Inlogserver (identity.vwgroup.io) is niet bereikbaar of is gewijzigd. Probeer het later opnieuw."
     },
     "abort": {
       "already_configured": "Dit account is al geconfigureerd.",

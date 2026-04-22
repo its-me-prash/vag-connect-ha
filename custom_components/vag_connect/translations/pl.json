@@ -46,7 +46,9 @@
       "marketing_consent": "Wymagana nowa zgoda. Aplikacja → Profil → Zgody.",
       "two_factor_required": "Wymagane uwierzytelnianie dwuskładnikowe. Zaloguj się ręcznie w aplikacji.",
       "too_many_requests": "Konto tymczasowo zablokowane. Poczekaj 15 minut.",
-      "invalid_credentials": "Nieprawidłowy e-mail lub hasło."
+      "invalid_credentials": "Hasło nieprawidłowe lub logowanie odrzucone przez serwer. Sprawdź dane logowania z aplikacji producenta.",
+      "email_rejected": "Adres e-mail nie został rozpoznany przez serwer logowania. Upewnij się, że używasz e-maila z właściwej aplikacji (myAudi, WeConnect, MyŠkoda, MyCupra itp.).",
+      "auth_server_error": "Serwer logowania (identity.vwgroup.io) jest niedostępny lub uległ zmianie. Spróbuj ponownie później."
     },
     "abort": {
       "already_configured": "To konto jest już skonfigurowane.",

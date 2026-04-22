@@ -122,18 +122,34 @@ class IDKAuth:
             "code_challenge_method": "S256",
         }
         headers = self._base_headers()
+        _LOGGER.debug("IDK Step 1: GET %s (brand=%s)", _AUTHORIZE_URL, self._brand.name)
         async with self._session.get(
             _AUTHORIZE_URL, params=params, headers=headers, allow_redirects=True
         ) as resp:
             if resp.status != 200:
+                _LOGGER.warning(
+                    "IDK Step 1 failed: HTTP %s from authorization page (brand=%s)",
+                    resp.status, self._brand.name,
+                )
                 raise AuthenticationError(
-                    f"Authorization page returned HTTP {resp.status}"
+                    f"Authorization page returned HTTP {resp.status} — "
+                    f"IDK server may be temporarily unavailable.",
+                    reason="auth_server_error",
                 )
             html = await resp.text()
 
         csrf = self._parse_csrf(html)
         if not csrf.fields.get("_csrf") and not csrf.fields.get("hmac"):
-            raise AuthenticationError("Could not parse login page — IDK may have changed.")
+            _LOGGER.warning(
+                "IDK Step 1: no CSRF fields found in login page (brand=%s, "
+                "form_action=%s, fields=%s)",
+                self._brand.name, csrf.form_action, list(csrf.fields),
+            )
+            raise AuthenticationError(
+                "Could not parse login page — IDK may have changed.",
+                reason="auth_server_error",
+            )
+        _LOGGER.debug("IDK Step 1 OK: CSRF fields=%s", list(csrf.fields))
 
         # Step 2 — submit email
         email_url = _absolute_url(
@@ -141,12 +157,24 @@ class IDKAuth:
             csrf.form_action or f"{_SIGNIN_BASE}/{self._brand.client_id}/login/identifier",
         )
         email_data = {**csrf.fields, "email": email}
+        _LOGGER.debug("IDK Step 2: POST email to %s", email_url)
         async with self._session.post(
             email_url, data=email_data, headers=self._form_headers(), allow_redirects=True
         ) as resp:
             if resp.status != 200:
-                raise AuthenticationError(f"Email submission returned HTTP {resp.status}")
+                body = await resp.text()
+                _LOGGER.warning(
+                    "IDK Step 2 failed: HTTP %s submitting email (brand=%s, url=%s, "
+                    "body=%.300s)",
+                    resp.status, self._brand.name, email_url, body,
+                )
+                raise AuthenticationError(
+                    f"Email rejected by IDK server (HTTP {resp.status}). "
+                    f"Ensure you use the email from the {self._brand.name} app.",
+                    reason="email_rejected",
+                )
             html = await resp.text()
+        _LOGGER.debug("IDK Step 2 OK: email accepted")
 
         # Extract updated CSRF for password step
         csrf2 = self._parse_csrf(html)
@@ -156,23 +184,46 @@ class IDKAuth:
             if m:
                 csrf2.fields["hmac"] = m.group(1)
 
+        if not csrf2.fields.get("_csrf") and not csrf2.fields.get("hmac"):
+            _LOGGER.warning(
+                "IDK Step 2: password page has no CSRF fields (brand=%s, "
+                "fields=%s)",
+                self._brand.name, list(csrf2.fields),
+            )
+
         # Step 3 — submit password
         pw_url = _absolute_url(
             _IDK_BASE,
             f"{_SIGNIN_BASE}/{self._brand.client_id}/login/authenticate",
         )
         pw_data = {**csrf2.fields, "email": email, "password": password}
+        _LOGGER.debug("IDK Step 3: POST password to %s", pw_url)
         location = await self._follow_to_app_redirect(
             pw_url, pw_data, self._brand.redirect_uri
         )
         if not location:
-            raise AuthenticationError("Password submission did not redirect to app — check credentials.")
+            _LOGGER.warning(
+                "IDK Step 3 failed: no redirect to app after password (brand=%s)",
+                self._brand.name,
+            )
+            raise AuthenticationError(
+                "Password rejected or server did not redirect — check credentials.",
+                reason="invalid_credentials",
+            )
 
         auth_code = _extract_auth_code(location, self._brand.redirect_uri)
         if not auth_code:
-            raise AuthenticationError(f"Could not extract authorization code from: {location}")
+            _LOGGER.warning(
+                "IDK Step 4: no auth code in redirect (brand=%s, location=%.200s)",
+                self._brand.name, location,
+            )
+            raise AuthenticationError(
+                f"Could not extract authorization code from redirect.",
+                reason="auth_server_error",
+            )
 
         # Step 4 — exchange code for tokens
+        _LOGGER.debug("IDK Step 4: exchanging auth code for tokens")
         return await self._exchange_code(auth_code, verifier)
 
     async def refresh(self, refresh_token: str) -> TokenSet:

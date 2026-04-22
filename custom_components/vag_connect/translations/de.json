@@ -46,7 +46,9 @@
       "marketing_consent": "Neue Datenschutzzustimmung erforderlich. App öffnen: Profil → Einwilligungen.",
       "two_factor_required": "Zwei-Faktor-Bestätigung nötig. Einmal manuell in der App anmelden und den Code per E-Mail bestätigen.",
       "too_many_requests": "Account vorübergehend gesperrt (zu viele Anmeldeversuche). Bitte 15 Minuten warten.",
-      "invalid_credentials": "E-Mail-Adresse oder Passwort falsch."
+      "invalid_credentials": "Passwort falsch oder Login vom Server abgelehnt. Prüfe die Zugangsdaten aus der Hersteller-App.",
+      "email_rejected": "E-Mail-Adresse wurde vom Anmeldeserver nicht erkannt. Prüfe ob du die E-Mail aus der richtigen App verwendest (myAudi, WeConnect, MyŠkoda, MyCupra etc.).",
+      "auth_server_error": "Der Anmeldeserver (identity.vwgroup.io) ist nicht erreichbar oder hat sich geändert. Bitte später erneut versuchen."
     },
     "abort": {
       "already_configured": "Dieses Konto ist bereits eingerichtet.",

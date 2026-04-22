@@ -46,7 +46,9 @@
       "marketing_consent": "Nouveau consentement RGPD requis. Application → Profil → Consentements.",
       "two_factor_required": "Double authentification requise. Connectez-vous manuellement dans l'application.",
       "too_many_requests": "Compte suspendu temporairement. Attendez 15 minutes.",
-      "invalid_credentials": "Adresse e-mail ou mot de passe incorrect."
+      "invalid_credentials": "Mot de passe incorrect ou connexion refusée par le serveur. Vérifiez les identifiants de l'app constructeur.",
+      "email_rejected": "Adresse e-mail non reconnue par le serveur d'authentification. Vérifiez que vous utilisez l'e-mail de la bonne app (myAudi, WeConnect, MyŠkoda, MyCupra etc.).",
+      "auth_server_error": "Serveur d'authentification (identity.vwgroup.io) indisponible ou modifié. Réessayez plus tard."
     },
     "abort": {
       "already_configured": "Ce compte est déjà configuré.",

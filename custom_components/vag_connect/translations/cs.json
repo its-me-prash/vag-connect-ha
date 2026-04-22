@@ -46,7 +46,9 @@
       "marketing_consent": "Vyžadován nový souhlas. Aplikace → Profil → Souhlasy.",
       "two_factor_required": "Vyžadováno dvoufázové ověření. Přihlaste se ručně v aplikaci.",
       "too_many_requests": "Účet dočasně zablokován. Počkejte 15 minut.",
-      "invalid_credentials": "Nesprávná e-mailová adresa nebo heslo."
+      "invalid_credentials": "Heslo nesprávné nebo přihlášení odmítnuto serverem. Zkontrolujte přihlašovací údaje z aplikace výrobce.",
+      "email_rejected": "E-mailová adresa nebyla rozpoznána přihlašovacím serverem. Ujistěte se, že používáte e-mail ze správné aplikace (myAudi, WeConnect, MyŠkoda, MyCupra atd.).",
+      "auth_server_error": "Přihlašovací server (identity.vwgroup.io) je nedostupný nebo se změnil. Zkuste to prosím později."
     },
     "abort": {
       "already_configured": "Tento účet je již nastaven.",
