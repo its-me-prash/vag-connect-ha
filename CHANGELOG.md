@@ -21,6 +21,21 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ---
 
+## [1.5.9] - 2026-04-22
+
+### Fixed
+
+- **CUPRA auth:** Token exchange failed with `invalid_client` because CUPRA is a confidential OAuth client requiring `client_secret`. Now included in token exchange and refresh. Fixes #41.
+- **CUPRA/SEAT scope:** Reverted to match pycupra exactly (`openid profile nickname birthdate phone`).
+- **SEAT/CUPRA/Škoda token endpoint:** Route to direct IDK endpoint instead of CARIAD BFF.
+- **User-Agent:** Updated CUPRA to 2.15.0, SEAT to 2.13.3.
+
+### Added
+
+- `client_secret` field in `BrandConfig` for confidential OAuth clients.
+
+---
+
 ## [1.5.8] - 2026-04-22
 
 ### Fixed
