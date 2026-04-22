@@ -49,7 +49,7 @@ Vanaf v0.14.1 communiceert de integratie **rechtstreeks** met de CARIAD API — 
 | Porsche | Auth0 | api.ppa.porsche.com | ✅ Beta |
 | VW NA (US/CA) | VW NA Auth | b-h-s.spr.*.p.con-veh.net | ✅ Beta |
 
-> **Porsche:** Porsche gebruikt een volledig afzonderlijk Auth0-authenticatiesysteem. Gepland voor v0.15.0. Nu voor Porsche: [ha-porscheconnect](https://github.com/CJNE/ha-porscheconnect) (MIT).
+> **Porsche & VW NA:** Beide merken zijn sinds v1.0.0 beschikbaar als Beta. Testers gezocht — meld feedback als [Issue](https://github.com/its-me-prash/vag-connect-ha/issues)!
 
 ---
 
@@ -120,8 +120,7 @@ Herstart Home Assistant.
 - **S-PIN** vereist voor vergrendeling
 - **Poll-interval** minimaal 5 minuten
 - **2FA** — eenmalig handmatig bevestigen in de app
-- **Porsche** — apart Auth0-systeem, gepland v0.15.0
-- **VW Noord-Amerika** — apart auth-systeem, gepland v0.16.0
+- **Porsche / VW NA** — functioneel als Beta, testers gezocht
 
 ---
 
@@ -132,7 +131,9 @@ Herstart Home Assistant.
 | ✅ v0.14.1 | Platinum, own CARIAD client |
 | ✅ Beta | Porsche (Auth0 + PPA API) |
 | ✅ Beta | VW North America |
-| 🎯 v1.0.0 | HACS Official |
+| ✅ v1.0.0 | Porsche + VW NA (Beta), 7 brands |
+| ✅ v1.5.7 | English labels, CUPRA/SEAT scope fix |
+| 🔜 v2.0.0 | HACS Default, trip statistics, charging history |
 
 ---
 

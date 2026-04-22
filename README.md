@@ -30,7 +30,7 @@
 
 **VAG Connect** verbindet Home Assistant direkt mit deinem Fahrzeug — ohne Middleware, ohne Docker, ohne extra Dienst. App-Zugangsdaten eingeben, fertig.
 
-**44 Entities** über **9 Plattformen**, **14 Services**. Alle 7 VAG-Marken in einer Integration — kein separates Plugin nötig.
+**70+ Entities** über **9 Plattformen**, **14 Services**. Alle 7 VAG-Marken in einer Integration — kein separates Plugin nötig.
 
 ## Unterstützte Plattformen
 

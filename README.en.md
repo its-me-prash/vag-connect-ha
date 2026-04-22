@@ -31,7 +31,7 @@
 
 **VAG Connect** connects Home Assistant directly to your Audi, VW, Škoda, SEAT, CUPRA, Porsche or VW US/CA — no middleware, no Docker, no extra service. Enter your app credentials, done.
 
-68 entities across 7 platforms, 14 services, cloud-push architecture. All 7 VAG Group brands in one integration — no separate plugin per brand needed.
+70+ entities across 9 platforms, 14 services, cloud-push architecture. All 7 VAG Group brands in one integration — no separate plugin per brand needed.
 
 Since v0.14.1, VAG Connect speaks **directly** to the CARIAD API via its own async client. No external dependencies, no upstream blockers.
 
@@ -47,7 +47,7 @@ Since v0.14.1, VAG Connect speaks **directly** to the CARIAD API via its own asy
 | Porsche | Auth0 | api.ppa.porsche.com | ✅ Beta |
 | VW NA (US/CA) | VW NA Auth | b-h-s.spr.*.p.con-veh.net | ✅ Beta |
 
-> **Porsche:** Porsche uses a completely separate Auth0 authentication system — distinct from the VAG IDK used by the other brands. The integration is fully documented technically and planned for v0.15.0. For Porsche today: [ha-porscheconnect](https://github.com/CJNE/ha-porscheconnect) (MIT, actively maintained) can be installed alongside.
+> **Porsche & VW NA:** Both brands are available as Beta since v1.0.0. Porsche uses Auth0 (separate from VAG IDK), VW NA uses a separate auth server. Testers wanted — report feedback as an [Issue](https://github.com/its-me-prash/vag-connect-ha/issues)!
 
 ---
 
@@ -118,8 +118,7 @@ Restart Home Assistant.
 - **S-PIN** required for locking — set in the app under Security
 - **Poll interval** minimum 5 minutes — too short leads to temporary account lock
 - **2FA** — confirm once manually in the app, then automatic
-- **Porsche** — separate Auth0 system, planned for v0.15.0
-- **VW North America** — separate auth server, planned for v0.16.0
+- **Porsche / VW NA** — functional as Beta, testers wanted
 - **VW China 2026+** — new CEA/XPeng platform, API not public, no ETA
 
 ---
@@ -131,7 +130,9 @@ Restart Home Assistant.
 | ✅ v0.14.1 | Platinum, own CARIAD client |
 | ✅ Beta | Porsche (Auth0 + PPA API) |
 | ✅ Beta | VW North America |
-| 🎯 v1.0.0 | HACS Official |
+| ✅ v1.0.0 | Porsche + VW NA (Beta), 7 brands |
+| ✅ v1.5.7 | English labels, CUPRA/SEAT scope fix |
+| 🔜 v2.0.0 | HACS Default, trip statistics, charging history |
 
 ---
 
