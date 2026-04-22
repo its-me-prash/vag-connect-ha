@@ -73,7 +73,7 @@ BRAND_SEAT = BrandConfig(
     redirect_uri="seat://oauth-callback",
     user_agent="OLASeat/2.10.1 (Android 12; sdk_gphone64_x86_64; Google) Mobile",
     api_base="https://ola.prod.code.seat.cloud.vwgroup.com",
-    scope="openid profile nickname birthdate phone",
+    scope="openid profile address phone email birthdate nickname",
 )
 
 BRAND_CUPRA = BrandConfig(
@@ -82,7 +82,7 @@ BRAND_CUPRA = BrandConfig(
     redirect_uri="cupra://oauth-callback",
     user_agent="OLACupra/2.10.0 (Android 12; sdk_gphone64_x86_64; Google) Mobile",
     api_base="https://ola.prod.code.seat.cloud.vwgroup.com",
-    scope="openid profile nickname birthdate phone",
+    scope="openid profile address phone email birthdate nickname",
 )
 
 BRAND_VW_NA_MODEL = BrandConfig(
