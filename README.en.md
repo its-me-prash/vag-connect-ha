@@ -5,7 +5,7 @@
 <h1 align="center">VAG Connect</h1>
 
 <p align="center">
-  <strong>Home Assistant Integration for Audi · VW · Škoda · SEAT · CUPRA</strong>
+  <strong>Home Assistant Integration for Audi · VW · Škoda · SEAT · CUPRA · Porsche</strong>
 </p>
 
 <p align="center">
@@ -46,39 +46,60 @@ From v0.14.1, the integration talks **directly** to the CARIAD API — its own a
 | **Škoda** | IDK | mysmob.api.connect.skoda-auto.cz | ✅ |
 | **SEAT** | IDK | ola.prod.code.seat.cloud.vwgroup.com | ✅ |
 | **CUPRA** | IDK | ola.prod.code.seat.cloud.vwgroup.com | ✅ |
-| Porsche | Auth0 | api.ppa.porsche.com | 🔜 v0.15.0 |
-| VW NA (US/CA) | VW NA Auth | b-h-s.spr.*.p.con-veh.net | 🔜 v0.16.0 |
+| **Porsche** | Auth0 | api.ppa.porsche.com | ✅ Beta |
+| **VW NA (US/CA)** | VW NA Auth | b-h-s.spr.*.p.con-veh.net | ✅ Beta |
 
-> **Porsche:** Porsche uses a completely separate Auth0 authentication system — distinct from the VAG IDK used by the other brands. The integration is fully documented technically and planned for v0.15.0. For Porsche today: [ha-porscheconnect](https://github.com/CJNE/ha-porscheconnect) (MIT, actively maintained) can be installed alongside.
+> **Porsche & VW NA:** Both brands have been available as Beta since v1.0.0. Porsche uses Auth0 (separate from VAG IDK), VW NA uses a separate auth server. Testers with real vehicles wanted — please report feedback as an [Issue](https://github.com/its-me-prash/vag-connect-ha/issues)!
 
 ---
 
 ## Features
 
-| Feature | Audi | VW EU | Škoda | SEAT/CUPRA |
-|---|:---:|:---:|:---:|:---:|
-| Fuel / Battery level | ✓ | ✓ | ✓ | ✓ |
-| Range | ✓ | ✓ | ✓ | ✓ |
-| Odometer | ✓ | ✓ | ✓ | ✓ |
-| GPS position | ✓ | ✓ | ✓ | ✓ |
-| Doors (total + per door) | ✓ | ✓ | ✓ | ✓ |
-| Windows | ✓ | ✓ | ✓ | ✓ |
-| Climate start/stop | ✓ | ✓ | ✓ | ✓ |
-| Target temperature | ✓ | ✓ | ✓ | ✓ |
-| Lock / Unlock | ✓ | ✓ | ✓ | ✓ |
-| Flash lights | ✓ | ✓ | ✓ | ✓ |
-| Wake vehicle | ✓ | ✓ | ✓ | ✓ |
-| Service due km/days | ✓ | ✓ | ✓ | ✓ |
-| Online status | ✓ | ✓ | ✓ | ✓ |
-| Battery SoC % | ✓ | ✓ | ✓ | ✓ |
-| Charge state | ✓ | ✓ | ✓ | ✓ |
-| Charge power kW | ✓ | ✓ | ✓ | ✓ |
-| Charge ETA | ✓ | ✓ | ✓ | ✓ |
-| Charge target % | ✓ | ✓ | ✓ | ✓ |
-| Window heating | ✓ | ✓ | ✓ | ✓ |
-| Departure timers 1–3 | ✓ | ✓ | — | — |
-| Battery temperature | ✓ | ✓ | — | — |
-| AdBlue range | ✓ | ✓ | — | — |
+### All Vehicles (70+ Entities)
+
+| Feature | Audi | VW EU | Škoda | SEAT/CUPRA | Porsche |
+|---|:---:|:---:|:---:|:---:|:---:|
+| Fuel / Battery level | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Range (current + WLTP + estimated full) | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Odometer | ✓ | ✓ | ✓ | ✓ | ✓ |
+| GPS position + parking address | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Doors (total + per door) | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Windows | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Climate start/stop | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Target temperature | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Lock / Unlock | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Flash lights | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Wake vehicle | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Service due km/days | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Oil service km/days | ✓ | ✓ | ✓ | ✓ | — |
+| Online status | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Vehicle state (driving/parked) | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Outside temperature | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Vehicle render images | ✓ | — | — | — | — |
+| Firmware version | ✓ | ✓ | ✓ | ✓ | ✓ |
+| License plate | ✓ | ✓ | ✓ | ✓ | ✓ |
+
+### Electric & Hybrid Vehicles
+
+| Feature | Audi | VW EU | Škoda | SEAT/CUPRA | Porsche |
+|---|:---:|:---:|:---:|:---:|:---:|
+| Battery SoC % | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Electric range | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Charge state | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Charge power kW | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Charge speed km/h | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Charge ETA | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Charge type (AC/DC) | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Charging station (name/address/kW/operator) | ✓ | ✓ | ✓ | ✓ | — |
+| Plug status + connector lock | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Charge start/stop | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Charge target % | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Seat heating | ✓ | ✓ | ✓ | ✓ | — |
+| Window heating | ✓ | ✓ | ✓ | ✓ | — |
+| Departure timers 1–3 | ✓ | ✓ | — | — | — |
+| Battery temperature | ✓ | ✓ | — | — | — |
+| Battery capacity kWh | ✓ | ✓ | — | — | — |
+| AdBlue range | ✓ | ✓ | — | — | — |
 
 ---
 
@@ -120,8 +141,7 @@ Restart Home Assistant.
 - **S-PIN** required for locking — set in the app under Security
 - **Poll interval** minimum 5 minutes — too short leads to temporary account lock
 - **2FA** — confirm once manually in the app, then automatic
-- **Porsche** — separate Auth0 system, planned for v0.15.0
-- **VW North America** — separate auth server, planned for v0.16.0
+- **Porsche / VW NA** — functional as Beta, testers wanted
 - **VW China 2026+** — new CEA/XPeng platform, API not public, no ETA
 
 ---
@@ -131,9 +151,9 @@ Restart Home Assistant.
 | Version | Content |
 |---|---|
 | ✅ v0.14.1 | Platinum, own CARIAD client |
-| 🔜 v0.15.0 | Porsche (Auth0 + PPA API) |
-| 🔜 v0.16.0 | VW North America |
-| 🎯 v1.0.0 | HACS Official |
+| ✅ v1.0.0 | Porsche + VW NA (Beta), 7 brands |
+| ✅ v1.5.6 | Vehicle images, 70+ entities, 14 services |
+| 🔜 v2.0.0 | HACS Default, trip statistics, charging history |
 
 ---
 

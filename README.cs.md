@@ -5,7 +5,7 @@
 <h1 align="center">VAG Connect</h1>
 
 <p align="center">
-  <strong>Integrace Home Assistant pro Audi · VW · Škoda · SEAT · CUPRA</strong>
+  <strong>Integrace Home Assistant pro Audi · VW · Škoda · SEAT · CUPRA · Porsche</strong>
 </p>
 
 <p align="center">
@@ -46,39 +46,60 @@ Od v0.14.1 integrace **přímo** komunikuje s CARIAD API — vlastní async klie
 | **Škoda** | IDK | mysmob.api.connect.skoda-auto.cz | ✅ |
 | **SEAT** | IDK | ola.prod.code.seat.cloud.vwgroup.com | ✅ |
 | **CUPRA** | IDK | ola.prod.code.seat.cloud.vwgroup.com | ✅ |
-| Porsche | Auth0 | api.ppa.porsche.com | 🔜 v0.15.0 |
-| VW NA (US/CA) | VW NA Auth | b-h-s.spr.*.p.con-veh.net | 🔜 v0.16.0 |
+| **Porsche** | Auth0 | api.ppa.porsche.com | ✅ Beta |
+| **VW NA (US/CA)** | VW NA Auth | b-h-s.spr.*.p.con-veh.net | ✅ Beta |
 
-> **Porsche:** Porsche používá zcela samostatný systém Auth0. Plánováno pro v0.15.0. Pro Porsche nyní: [ha-porscheconnect](https://github.com/CJNE/ha-porscheconnect) (MIT).
+> **Porsche & VW NA:** Obě značky jsou od v1.0.0 k dispozici jako Beta. Porsche používá Auth0 (odděleně od VAG IDK), VW NA samostatný auth server. Hledáme testery — zpětnou vazbu hlaste jako [Issue](https://github.com/its-me-prash/vag-connect-ha/issues)!
 
 ---
 
 ## Funkce
 
-| Feature | Audi | VW EU | Škoda | SEAT/CUPRA |
-|---|:---:|:---:|:---:|:---:|
-| Fuel / Battery level | ✓ | ✓ | ✓ | ✓ |
-| Range | ✓ | ✓ | ✓ | ✓ |
-| Odometer | ✓ | ✓ | ✓ | ✓ |
-| GPS position | ✓ | ✓ | ✓ | ✓ |
-| Doors (total + per door) | ✓ | ✓ | ✓ | ✓ |
-| Windows | ✓ | ✓ | ✓ | ✓ |
-| Climate start/stop | ✓ | ✓ | ✓ | ✓ |
-| Target temperature | ✓ | ✓ | ✓ | ✓ |
-| Lock / Unlock | ✓ | ✓ | ✓ | ✓ |
-| Flash lights | ✓ | ✓ | ✓ | ✓ |
-| Wake vehicle | ✓ | ✓ | ✓ | ✓ |
-| Service due km/days | ✓ | ✓ | ✓ | ✓ |
-| Online status | ✓ | ✓ | ✓ | ✓ |
-| Battery SoC % | ✓ | ✓ | ✓ | ✓ |
-| Charge state | ✓ | ✓ | ✓ | ✓ |
-| Charge power kW | ✓ | ✓ | ✓ | ✓ |
-| Charge ETA | ✓ | ✓ | ✓ | ✓ |
-| Charge target % | ✓ | ✓ | ✓ | ✓ |
-| Window heating | ✓ | ✓ | ✓ | ✓ |
-| Departure timers 1–3 | ✓ | ✓ | — | — |
-| Battery temperature | ✓ | ✓ | — | — |
-| AdBlue range | ✓ | ✓ | — | — |
+### Všechna vozidla (70+ Entities)
+
+| Feature | Audi | VW EU | Škoda | SEAT/CUPRA | Porsche |
+|---|:---:|:---:|:---:|:---:|:---:|
+| Fuel / Battery level | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Range (current + WLTP + estimated full) | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Odometer | ✓ | ✓ | ✓ | ✓ | ✓ |
+| GPS position + parking address | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Doors (total + per door) | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Windows | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Climate start/stop | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Target temperature | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Lock / Unlock | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Flash lights | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Wake vehicle | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Service due km/days | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Oil service km/days | ✓ | ✓ | ✓ | ✓ | — |
+| Online status | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Vehicle state (driving/parked) | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Outside temperature | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Vehicle render images | ✓ | — | — | — | — |
+| Firmware version | ✓ | ✓ | ✓ | ✓ | ✓ |
+| License plate | ✓ | ✓ | ✓ | ✓ | ✓ |
+
+### Elektro- & hybridní vozidla
+
+| Feature | Audi | VW EU | Škoda | SEAT/CUPRA | Porsche |
+|---|:---:|:---:|:---:|:---:|:---:|
+| Battery SoC % | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Electric range | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Charge state | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Charge power kW | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Charge speed km/h | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Charge ETA | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Charge type (AC/DC) | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Charging station (name/address/kW/operator) | ✓ | ✓ | ✓ | ✓ | — |
+| Plug status + connector lock | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Charge start/stop | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Charge target % | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Seat heating | ✓ | ✓ | ✓ | ✓ | — |
+| Window heating | ✓ | ✓ | ✓ | ✓ | — |
+| Departure timers 1–3 | ✓ | ✓ | — | — | — |
+| Battery temperature | ✓ | ✓ | — | — | — |
+| Battery capacity kWh | ✓ | ✓ | — | — | — |
+| AdBlue range | ✓ | ✓ | — | — | — |
 
 ---
 
@@ -120,8 +141,7 @@ Restartujte Home Assistant.
 - **S-PIN** vyžadováno pro zamykání
 - **Interval** minimum 5 minut
 - **2FA** — jednou ručně potvrdit v aplikaci
-- **Porsche** — samostatný systém Auth0, plánováno v0.15.0
-- **VW Severní Amerika** — samostatný auth server, plánováno v0.16.0
+- **Porsche / VW NA** — funkční jako Beta, hledáme testery
 
 ---
 
@@ -130,9 +150,9 @@ Restartujte Home Assistant.
 | Version | Content |
 |---|---|
 | ✅ v0.14.1 | Platinum, own CARIAD client |
-| 🔜 v0.15.0 | Porsche (Auth0 + PPA API) |
-| 🔜 v0.16.0 | VW North America |
-| 🎯 v1.0.0 | HACS Official |
+| ✅ v1.0.0 | Porsche + VW NA (Beta), 7 brands |
+| ✅ v1.5.6 | Vehicle images, 70+ entities, 14 services |
+| 🔜 v2.0.0 | HACS Default, trip statistics, charging history |
 
 ---
 
