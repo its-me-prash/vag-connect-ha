@@ -313,6 +313,11 @@
       "render_angle_lg": {
         "name": "3/4-Ansicht Groß"
       }
+    },
+    "lock": {
+      "door_lock": {
+        "name": "Türschloss"
+      }
     }
   },
   "issues": {

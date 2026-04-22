@@ -319,6 +319,11 @@
       "render_angle_lg": {
         "name": "3/4 vy stor"
       }
+    },
+    "lock": {
+      "door_lock": {
+        "name": "Dörrlås"
+      }
     }
   },
   "issues": {

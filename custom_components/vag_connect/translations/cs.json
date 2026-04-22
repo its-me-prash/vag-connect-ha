@@ -319,6 +319,11 @@
       "render_angle_lg": {
         "name": "Pohled 3/4 velký"
       }
+    },
+    "lock": {
+      "door_lock": {
+        "name": "Zámek dveří"
+      }
     }
   },
   "issues": {

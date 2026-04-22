@@ -319,6 +319,11 @@
       "render_angle_lg": {
         "name": "Vista 3/4 grande"
       }
+    },
+    "lock": {
+      "door_lock": {
+        "name": "Cerradura"
+      }
     }
   },
   "issues": {

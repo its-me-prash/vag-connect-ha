@@ -319,6 +319,11 @@
       "render_angle_lg": {
         "name": "3/4 weergave groot"
       }
+    },
+    "lock": {
+      "door_lock": {
+        "name": "Deurslot"
+      }
     }
   },
   "issues": {

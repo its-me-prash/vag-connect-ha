@@ -319,6 +319,11 @@
       "render_angle_lg": {
         "name": "Widok 3/4 duży"
       }
+    },
+    "lock": {
+      "door_lock": {
+        "name": "Zamek drzwi"
+      }
     }
   },
   "issues": {

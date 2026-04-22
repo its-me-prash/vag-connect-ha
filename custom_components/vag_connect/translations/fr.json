@@ -319,6 +319,11 @@
       "render_angle_lg": {
         "name": "Vue 3/4 grande"
       }
+    },
+    "lock": {
+      "door_lock": {
+        "name": "Verrouillage"
+      }
     }
   },
   "issues": {

@@ -137,6 +137,9 @@ class VagConnectCoordinator(DataUpdateCoordinator):
 
         Re-reads scan_interval from entry.options on every iteration so that
         Options-Flow changes take effect without a full integration reload.
+
+        Nightly reduction (22:00–05:00): doubles the polling interval to reduce
+        API calls and avoid rate limits during low-activity hours.
         """
         while self._started:
             # Re-read interval every iteration — picks up Options-Flow changes live
@@ -147,6 +150,11 @@ class VagConnectCoordinator(DataUpdateCoordinator):
                 ) * 60,
                 _CC_MIN_INTERVAL_S,
             )
+            # Nightly reduction: double interval between 22:00 and 05:00
+            hour = datetime.now().hour
+            if hour >= 22 or hour < 5:
+                interval_s = interval_s * 2
+                _LOGGER.debug("Nightly reduction active — interval doubled to %ds", interval_s)
             await asyncio.sleep(interval_s)
             if not self._started:
                 break
