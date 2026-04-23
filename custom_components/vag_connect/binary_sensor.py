@@ -27,28 +27,24 @@ BINARY_DESCRIPTIONS: tuple[VagBinarySensorDescription, ...] = (
     VagBinarySensorDescription(
         key="doors_locked",
         data_key="doors_locked",
-        name="Türen verriegelt",
         device_class=BinarySensorDeviceClass.LOCK,
         icon="mdi:car-door-lock",
     ),
     VagBinarySensorDescription(
         key="doors_open",
         data_key="doors_open",
-        name="Türen offen",
         device_class=BinarySensorDeviceClass.DOOR,
         icon="mdi:car-door",
     ),
     VagBinarySensorDescription(
         key="windows_open",
         data_key="windows_open",
-        name="Fenster offen",
         device_class=BinarySensorDeviceClass.WINDOW,
         icon="mdi:car-windshield-outline",
     ),
     VagBinarySensorDescription(
         key="plug_connected",
         data_key="plug_connected",
-        name="Ladekabel verbunden",
         device_class=BinarySensorDeviceClass.PLUG,
         icon="mdi:power-plug",
         condition="electric",
@@ -56,7 +52,6 @@ BINARY_DESCRIPTIONS: tuple[VagBinarySensorDescription, ...] = (
     VagBinarySensorDescription(
         key="is_charging",
         data_key="is_charging",
-        name="Lädt",
         device_class=BinarySensorDeviceClass.BATTERY_CHARGING,
         icon="mdi:battery-charging",
         condition="electric",
@@ -64,14 +59,12 @@ BINARY_DESCRIPTIONS: tuple[VagBinarySensorDescription, ...] = (
     VagBinarySensorDescription(
         key="climatisation_active",
         data_key="climatisation_active",
-        name="Klimatisierung aktiv",
         device_class=BinarySensorDeviceClass.RUNNING,
         icon="mdi:thermometer",
     ),
     VagBinarySensorDescription(
         key="warning_active",
         data_key="warning_active",
-        name="Fahrzeugwarnung aktiv",
         device_class=BinarySensorDeviceClass.PROBLEM,
         icon="mdi:alert-circle",
         entity_category=EntityCategory.DIAGNOSTIC,
@@ -79,7 +72,6 @@ BINARY_DESCRIPTIONS: tuple[VagBinarySensorDescription, ...] = (
     VagBinarySensorDescription(
         key="warning_engine",
         data_key="warning_engine",
-        name="Motorwarnung",
         device_class=BinarySensorDeviceClass.PROBLEM,
         icon="mdi:engine",
         entity_category=EntityCategory.DIAGNOSTIC,
@@ -87,7 +79,6 @@ BINARY_DESCRIPTIONS: tuple[VagBinarySensorDescription, ...] = (
     VagBinarySensorDescription(
         key="warning_oil",
         data_key="warning_oil",
-        name="Ölstandwarnung",
         device_class=BinarySensorDeviceClass.PROBLEM,
         icon="mdi:oil",
         entity_category=EntityCategory.DIAGNOSTIC,
@@ -95,7 +86,6 @@ BINARY_DESCRIPTIONS: tuple[VagBinarySensorDescription, ...] = (
     VagBinarySensorDescription(
         key="warning_tyre",
         data_key="warning_tyre",
-        name="Reifendruckwarnung",
         device_class=BinarySensorDeviceClass.PROBLEM,
         icon="mdi:tire",
         entity_category=EntityCategory.DIAGNOSTIC,
@@ -103,7 +93,6 @@ BINARY_DESCRIPTIONS: tuple[VagBinarySensorDescription, ...] = (
     VagBinarySensorDescription(
         key="warning_brakes",
         data_key="warning_brakes",
-        name="Bremswarnung",
         device_class=BinarySensorDeviceClass.PROBLEM,
         icon="mdi:car-brake-alert",
         entity_category=EntityCategory.DIAGNOSTIC,
@@ -114,14 +103,12 @@ _NEW_BINARY: tuple[VagBinarySensorDescription, ...] = (
     VagBinarySensorDescription(
         key="is_driving",
         data_key="is_driving",
-        name="In Fahrt",
         device_class=BinarySensorDeviceClass.MOTION,
         icon="mdi:car-speed-limiter",
     ),
     VagBinarySensorDescription(
         key="is_online",
         data_key="is_online",
-        name="Online",
         device_class=BinarySensorDeviceClass.CONNECTIVITY,
         icon="mdi:car-wireless",
         entity_category=EntityCategory.DIAGNOSTIC,
@@ -129,7 +116,6 @@ _NEW_BINARY: tuple[VagBinarySensorDescription, ...] = (
     VagBinarySensorDescription(
         key="connector_locked",
         data_key="connector_locked",
-        name="Stecker verriegelt",
         device_class=BinarySensorDeviceClass.LOCK,
         icon="mdi:ev-plug-ccs2",
         entity_category=EntityCategory.DIAGNOSTIC,
@@ -138,7 +124,6 @@ _NEW_BINARY: tuple[VagBinarySensorDescription, ...] = (
     VagBinarySensorDescription(
         key="window_heating_front",
         data_key="window_heating_front",
-        name="Frontscheibenheizung aktiv",
         device_class=BinarySensorDeviceClass.RUNNING,
         icon="mdi:car-windshield",
         entity_category=EntityCategory.DIAGNOSTIC,
@@ -146,7 +131,6 @@ _NEW_BINARY: tuple[VagBinarySensorDescription, ...] = (
     VagBinarySensorDescription(
         key="window_heating_back",
         data_key="window_heating_back",
-        name="Heckscheibenheizung aktiv",
         device_class=BinarySensorDeviceClass.RUNNING,
         icon="mdi:car-windshield",
         entity_category=EntityCategory.DIAGNOSTIC,
@@ -194,11 +178,11 @@ class VagConnectBinarySensor(VagConnectEntity, BinarySensorEntity):
 # Per-door binary sensors.
 
 _DOOR_NAMES = {
-    "frontLeft":  "Tür vorne links",
-    "frontRight": "Tür vorne rechts",
-    "rearLeft":   "Tür hinten links",
-    "rearRight":  "Tür hinten rechts",
-    "trunk":      "Kofferraum",
+    "frontLeft":  "Door Front Left",
+    "frontRight": "Door Front Right",
+    "rearLeft":   "Door Rear Left",
+    "rearRight":  "Door Rear Right",
+    "trunk":      "Trunk",
     "bonnet":     "Motorhaube",
 }
 

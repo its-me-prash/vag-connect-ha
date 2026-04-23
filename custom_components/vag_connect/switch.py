@@ -35,7 +35,7 @@ async def async_setup_entry(
 class VagLockSwitch(VagConnectEntity, SwitchEntity):
     """Door lock toggle."""
 
-    _attr_name = "Türverriegelung"
+    _attr_translation_key = "lock_switch"
     _attr_icon = "mdi:car-door-lock"
 
     def __init__(self, coordinator: VagConnectCoordinator, vin: str) -> None:
@@ -55,7 +55,7 @@ class VagLockSwitch(VagConnectEntity, SwitchEntity):
 class VagClimatisationSwitch(VagConnectEntity, SwitchEntity):
     """Pre-conditioning toggle."""
 
-    _attr_name = "Klimatisierung"
+    _attr_translation_key = "climatisation_switch"
     _attr_icon = "mdi:thermometer"
 
     def __init__(self, coordinator: VagConnectCoordinator, vin: str) -> None:
@@ -78,7 +78,7 @@ class VagClimatisationSwitch(VagConnectEntity, SwitchEntity):
 class VagChargingSwitch(VagConnectEntity, SwitchEntity):
     """Charging toggle."""
 
-    _attr_name = "Laden"
+    _attr_translation_key = "charging_switch"
     _attr_icon = "mdi:ev-plug-type2"
 
     def __init__(self, coordinator: VagConnectCoordinator, vin: str) -> None:
@@ -101,7 +101,7 @@ class VagChargingSwitch(VagConnectEntity, SwitchEntity):
 class VagWindowHeatingSwitch(VagConnectEntity, SwitchEntity):
     """Window heating on/off."""
 
-    _attr_name = "Fensterheizung"
+    _attr_translation_key = "window_heating_switch"
     _attr_icon = "mdi:car-windshield"
 
     def __init__(self, coordinator: VagConnectCoordinator, vin: str) -> None:
@@ -122,7 +122,7 @@ class VagWindowHeatingSwitch(VagConnectEntity, SwitchEntity):
 class VagSeatHeatingSwitch(VagConnectEntity, SwitchEntity):
     """Sitzheizung Ein/Aus — Issue #6."""
 
-    _attr_name = "Sitzheizung"
+    _attr_translation_key = "seat_heating_switch"
     _attr_icon = "mdi:car-seat-heater"
 
     def __init__(self, coordinator: VagConnectCoordinator, vin: str) -> None:
@@ -159,7 +159,7 @@ class VagSeatHeatingSwitch(VagConnectEntity, SwitchEntity):
 class VagAutoUnlockSwitch(VagConnectEntity, SwitchEntity):
     """Auto-unlock plug after charging completes."""
 
-    _attr_name = "Stecker nach Laden entsperren"
+    _attr_translation_key = "auto_unlock_switch"
     _attr_icon = "mdi:ev-plug-ccs2"
 
     def __init__(self, coordinator: VagConnectCoordinator, vin: str) -> None:
@@ -192,7 +192,7 @@ class VagDepartureTimerSwitch(VagConnectEntity, SwitchEntity):
     def __init__(self, coordinator: VagConnectCoordinator, vin: str, timer_id: int) -> None:
         super().__init__(coordinator, vin, f"departure_timer_{timer_id}_switch")
         self._timer_id = timer_id
-        self._attr_name = f"Abfahrtstimer {timer_id}"
+        self._attr_translation_key = f"departure_timer_{timer_id}_switch"
 
     @property
     def is_on(self) -> bool | None:

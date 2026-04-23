@@ -27,7 +27,7 @@ class VagConnectTracker(VagConnectEntity, TrackerEntity):
     """GPS tracker entity — shows car on HA map."""
 
     _attr_icon = "mdi:car"
-    _attr_name = "Position"
+    _attr_translation_key = "position"
 
     def __init__(self, coordinator: VagConnectCoordinator, vin: str) -> None:
         super().__init__(coordinator, vin, "position")

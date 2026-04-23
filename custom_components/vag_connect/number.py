@@ -28,7 +28,6 @@ NUMBER_DESCRIPTIONS: tuple[VagNumberDescription, ...] = (
     VagNumberDescription(
         key="target_soc",
         data_key="target_soc",
-        name="Ladeziel",
         native_unit_of_measurement=PERCENTAGE,
         device_class=NumberDeviceClass.BATTERY,
         native_min_value=10,
@@ -42,7 +41,6 @@ NUMBER_DESCRIPTIONS: tuple[VagNumberDescription, ...] = (
     VagNumberDescription(
         key="target_temperature",
         data_key="target_temperature",
-        name="Klimatisierungstemperatur",
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
         device_class=NumberDeviceClass.TEMPERATURE,
         native_min_value=16,
@@ -55,7 +53,6 @@ NUMBER_DESCRIPTIONS: tuple[VagNumberDescription, ...] = (
     VagNumberDescription(
         key="min_soc",
         data_key="min_soc",
-        name="Mindest-Akkustand (PHEV)",
         native_unit_of_measurement=PERCENTAGE,
         device_class=NumberDeviceClass.BATTERY,
         native_min_value=0,
@@ -69,7 +66,6 @@ NUMBER_DESCRIPTIONS: tuple[VagNumberDescription, ...] = (
     VagNumberDescription(
         key="max_charge_current",
         data_key="max_charge_current",
-        name="Max. Ladestrom",
         native_unit_of_measurement="A",
         native_min_value=6,
         native_max_value=32,

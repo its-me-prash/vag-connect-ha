@@ -37,7 +37,7 @@ async def async_setup_entry(
 class VagClimate(VagConnectEntity, ClimateEntity):
     """Climate entity for vehicle pre-conditioning."""
 
-    _attr_name = "Vorklimatisierung"
+    _attr_translation_key = "climate"
     _attr_icon = "mdi:thermometer"
     _attr_temperature_unit = UnitOfTemperature.CELSIUS
     _attr_hvac_modes = [HVACMode.OFF, HVACMode.HEAT_COOL]
