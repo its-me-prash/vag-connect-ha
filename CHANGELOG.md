@@ -21,6 +21,24 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ---
 
+## [1.5.11] - 2026-04-23
+
+### Fixed
+
+- **Brand-specific token endpoints:** Each brand now uses its correct token exchange mechanism. Fixes #43.
+  - Škoda: proprietary JSON API on `mysmob.api.connect.skoda-auto.cz` (not OAuth)
+  - SEAT: OLA endpoint (`ola.prod.code.seat.cloud.vwgroup.com/authorization/api/v1/token`)
+  - CUPRA: IDK endpoint with `client_secret`
+  - VW EU / Audi: CARIAD BFF (unchanged)
+- **Token refresh** is also brand-specific (Škoda proprietary, SEAT/CUPRA via OLA, VW/Audi via CARIAD BFF).
+
+### Added
+
+- Tests for Lock platform and JWT user_id extraction.
+- GitHub downloads badge in all 8 READMEs.
+
+---
+
 ## [1.5.10] - 2026-04-22
 
 ### Fixed
