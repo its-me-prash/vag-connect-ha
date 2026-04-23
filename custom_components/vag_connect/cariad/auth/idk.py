@@ -526,8 +526,22 @@ class IDKAuth:
         return await self._exchange_code(auth_code, verifier)
 
     async def refresh(self, refresh_token: str) -> TokenSet:
-        """Exchange a refresh token for a fresh token set."""
-        token_url = await self._get_token_endpoint()
+        """Exchange a refresh token for a fresh token set.
+
+        Refresh endpoints differ by brand:
+        - Škoda: proprietary endpoint on mysmob
+        - SEAT/CUPRA: OLA endpoint (CUPRA includes client_secret)
+        - VW EU/Audi: CARIAD BFF
+        """
+        if self._brand.name == "skoda":
+            return await self._refresh_skoda(refresh_token)
+
+        # SEAT and CUPRA both refresh via OLA endpoint
+        if self._brand.name in ("seat", "cupra"):
+            token_url = "https://ola.prod.code.seat.cloud.vwgroup.com/authorization/api/v1/token"
+        else:
+            token_url = self._get_token_endpoint()
+
         data: dict[str, str] = {
             "client_id": self._brand.client_id,
             "grant_type": "refresh_token",
@@ -543,6 +557,29 @@ class IDKAuth:
                 raise TokenExpiredError("Refresh token rejected — full re-login required.")
             if resp.status != 200:
                 raise AuthenticationError(f"Token refresh returned HTTP {resp.status}")
+            payload: dict[str, Any] = await resp.json()
+
+        return self._parse_tokens(payload)
+
+    async def _refresh_skoda(self, refresh_token: str) -> TokenSet:
+        """Škoda uses a proprietary refresh endpoint."""
+        url = (
+            "https://mysmob.api.connect.skoda-auto.cz"
+            "/api/v1/authentication/refresh-token?tokenType=CONNECT"
+        )
+        async with self._session.post(
+            url, timeout=_AUTH_TIMEOUT,
+            json={"token": refresh_token},
+            headers={
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+                "User-Agent": self._brand.user_agent,
+            },
+        ) as resp:
+            if resp.status == 400:
+                raise TokenExpiredError("Škoda refresh token rejected.")
+            if resp.status != 200:
+                raise AuthenticationError(f"Škoda token refresh HTTP {resp.status}")
             payload: dict[str, Any] = await resp.json()
 
         return self._parse_tokens(payload)
@@ -726,8 +763,18 @@ class IDKAuth:
         return location if location.startswith(prefix) else None
 
     async def _exchange_code(self, code: str, verifier: str) -> TokenSet:
-        """POST authorization code + PKCE verifier → tokens."""
-        token_url = await self._get_token_endpoint()
+        """POST authorization code + PKCE verifier → tokens.
+
+        Each brand uses a different token exchange mechanism:
+        - VW EU / Audi: CARIAD BFF (standard OAuth)
+        - CUPRA: IDK /oidc/v1/token (standard OAuth + client_secret)
+        - SEAT: OLA /authorization/api/v1/token (standard OAuth, no secret)
+        - Škoda: proprietary JSON API on mysmob (not OAuth)
+        """
+        if self._brand.name == "skoda":
+            return await self._exchange_code_skoda(code, verifier)
+
+        token_url = self._get_token_endpoint()
         data: dict[str, str] = {
             "client_id": self._brand.client_id,
             "grant_type": "authorization_code",
@@ -738,8 +785,8 @@ class IDKAuth:
         if self._brand.client_secret:
             data["client_secret"] = self._brand.client_secret
         _LOGGER.debug(
-            "Token exchange: url=%s client_id=%s has_secret=%s",
-            token_url, self._brand.client_id[:20], bool(self._brand.client_secret),
+            "Token exchange: url=%s brand=%s has_secret=%s",
+            token_url, self._brand.name, bool(self._brand.client_secret),
         )
         async with self._session.post(
             token_url,
@@ -754,34 +801,43 @@ class IDKAuth:
 
         return self._parse_tokens(payload)
 
-    async def _get_token_endpoint(self) -> str:
-        """Fetch token endpoint for the current brand.
+    async def _exchange_code_skoda(self, code: str, verifier: str) -> TokenSet:
+        """Škoda uses a proprietary token exchange — not standard OAuth."""
+        url = (
+            "https://mysmob.api.connect.skoda-auto.cz"
+            "/api/v1/authentication/exchange-authorization-code?tokenType=CONNECT"
+        )
+        payload = {
+            "code": code,
+            "redirectUri": self._brand.redirect_uri,
+            "verifier": verifier,
+        }
+        _LOGGER.debug("Škoda token exchange: %s", url)
+        async with self._session.post(
+            url, timeout=_AUTH_TIMEOUT, json=payload,
+            headers={
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+                "User-Agent": self._brand.user_agent,
+            },
+        ) as resp:
+            if resp.status != 200:
+                body = await resp.text()
+                raise AuthenticationError(
+                    f"Škoda token exchange failed HTTP {resp.status}: {body[:200]}"
+                )
+            data: dict[str, Any] = await resp.json()
 
-        SEAT/CUPRA/Škoda use the direct IDK endpoint — the CARIAD BFF
-        only accepts VW EU and Audi client IDs.
-        """
-        if self._brand.name in ("seat", "cupra", "skoda"):
-            idk_token = f"{_IDK_BASE}/oidc/v1/token"
-            try:
-                url = f"{_IDK_BASE}/.well-known/openid-configuration"
-                async with self._session.get(url, timeout=_AUTH_TIMEOUT) as resp:
-                    if resp.status == 200:
-                        cfg: dict[str, Any] = await resp.json()
-                        return str(cfg.get("token_endpoint", idk_token))
-            except Exception:  # noqa: BLE001
-                pass
-            return idk_token
+        return self._parse_tokens(data)
 
-        cariad_token = "https://emea.bff.cariad.digital/login/v1/idk/token"
-        try:
-            url = "https://emea.bff.cariad.digital/login/v1/idk/openid-configuration"
-            async with self._session.get(url, timeout=_AUTH_TIMEOUT) as resp:
-                if resp.status == 200:
-                    cfg = await resp.json()
-                    return str(cfg.get("token_endpoint", cariad_token))
-        except Exception:  # noqa: BLE001
-            pass
-        return cariad_token
+    def _get_token_endpoint(self) -> str:
+        """Return the correct token endpoint for the current brand."""
+        if self._brand.name == "cupra":
+            return f"{_IDK_BASE}/oidc/v1/token"
+        if self._brand.name == "seat":
+            return "https://ola.prod.code.seat.cloud.vwgroup.com/authorization/api/v1/token"
+        # VW EU, Audi, and others: CARIAD BFF
+        return "https://emea.bff.cariad.digital/login/v1/idk/token"
 
     def _parse_tokens(self, payload: dict[str, Any]) -> TokenSet:
         """Parse token response into a TokenSet."""
