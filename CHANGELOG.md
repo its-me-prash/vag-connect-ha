@@ -21,6 +21,18 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ---
 
+## [1.5.12] - 2026-04-23
+
+### Fixed
+
+- **Entity translations:** Removed 47 hardcoded German `_attr_name` values across all 7 entity files. Entities now use `translation_key` so HA reads names from `strings.json` / `translations/{lang}.json`. Properly fixes #38.
+- **Škoda token exchange:** Škoda uses a proprietary JSON API (`mysmob.api.connect.skoda-auto.cz`), not standard OAuth. Fixes #43.
+- **SEAT token exchange:** Routed to correct OLA endpoint instead of IDK.
+- **Brand-specific token refresh:** Škoda proprietary, SEAT/CUPRA via OLA, VW/Audi via CARIAD BFF.
+- **Per-door sensor names:** Changed from German to English defaults.
+
+---
+
 ## [1.5.11] - 2026-04-23
 
 ### Fixed
