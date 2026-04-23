@@ -180,22 +180,35 @@ class TestIDKAuth:
         assert p.fields["relayState"] == "RS789"
         assert p.form_action == "/login/authenticate"
 
-    def test_idk_auth_get_token_endpoint_fallback(self):
-        """Falls back to known endpoint if openid-config is unreachable."""
+    def test_idk_auth_get_token_endpoint_vw(self):
+        """VW EU uses CARIAD BFF endpoint."""
         from custom_components.vag_connect.cariad.auth.idk import IDKAuth
         from custom_components.vag_connect.cariad.models import BRAND_VW_EU
 
-        session = MagicMock()
-        resp = AsyncMock()
-        resp.__aenter__ = AsyncMock(return_value=resp)
-        resp.__aexit__ = AsyncMock(return_value=False)
-        resp.json = AsyncMock(side_effect=Exception("network error"))
-        session.get = MagicMock(return_value=resp)
-
-        auth = IDKAuth(session, BRAND_VW_EU)
-        result = asyncio.get_event_loop().run_until_complete(auth._get_token_endpoint())
-        assert "cariad.digital" in result or "identity.vwgroup.io" in result
+        auth = IDKAuth(MagicMock(), BRAND_VW_EU)
+        result = auth._get_token_endpoint()
+        assert "cariad.digital" in result
         assert "token" in result
+
+    def test_idk_auth_get_token_endpoint_cupra(self):
+        """CUPRA uses IDK endpoint."""
+        from custom_components.vag_connect.cariad.auth.idk import IDKAuth
+        from custom_components.vag_connect.cariad.models import BRAND_CUPRA
+
+        auth = IDKAuth(MagicMock(), BRAND_CUPRA)
+        result = auth._get_token_endpoint()
+        assert "identity.vwgroup.io" in result
+        assert "oidc/v1/token" in result
+
+    def test_idk_auth_get_token_endpoint_seat(self):
+        """SEAT uses OLA endpoint."""
+        from custom_components.vag_connect.cariad.auth.idk import IDKAuth
+        from custom_components.vag_connect.cariad.models import BRAND_SEAT
+
+        auth = IDKAuth(MagicMock(), BRAND_SEAT)
+        result = auth._get_token_endpoint()
+        assert "ola.prod.code.seat" in result
+        assert "authorization/api/v1/token" in result
 
     def test_idk_auth_raises_on_bad_auth_page(self):
         """Raises AuthenticationError if login page has no CSRF fields."""
@@ -685,7 +698,6 @@ class TestIDKAuthFlow:
         from custom_components.vag_connect.cariad.auth.idk import IDKAuth
         from custom_components.vag_connect.cariad.models import BRAND_VW_EU
 
-        oidc_resp = self._make_resp(200, json_data={"token_endpoint": "https://idp/token"})
         token_resp = self._make_resp(200, json_data={
             "access_token": "new_acc",
             "refresh_token": "new_ref",
@@ -693,7 +705,6 @@ class TestIDKAuthFlow:
         })
 
         session = MagicMock()
-        session.get = MagicMock(return_value=oidc_resp)
         session.post = MagicMock(return_value=token_resp)
 
         auth = IDKAuth(session, BRAND_VW_EU)
@@ -706,22 +717,20 @@ class TestIDKAuthFlow:
         from custom_components.vag_connect.cariad.exceptions import TokenExpiredError
         from custom_components.vag_connect.cariad.models import BRAND_VW_EU
 
-        oidc_resp = self._make_resp(200, json_data={"token_endpoint": "https://idp/token"})
         bad_resp = self._make_resp(400, text="invalid_grant")
 
         session = MagicMock()
-        session.get = MagicMock(return_value=oidc_resp)
         session.post = MagicMock(return_value=bad_resp)
 
         auth = IDKAuth(session, BRAND_VW_EU)
         with pytest.raises(TokenExpiredError):
             asyncio.get_event_loop().run_until_complete(auth.refresh("expired_token"))
 
-    def test_exchange_code_success(self):
+    def test_exchange_code_skoda_proprietary(self):
+        """Škoda uses proprietary JSON API, not standard OAuth."""
         from custom_components.vag_connect.cariad.auth.idk import IDKAuth
         from custom_components.vag_connect.cariad.models import BRAND_SKODA
 
-        oidc_resp = self._make_resp(200, json_data={"token_endpoint": "https://idp/token"})
         token_resp = self._make_resp(200, json_data={
             "access_token": "skoda_acc",
             "refresh_token": "skoda_ref",
@@ -729,7 +738,6 @@ class TestIDKAuthFlow:
         })
 
         session = MagicMock()
-        session.get = MagicMock(return_value=oidc_resp)
         session.post = MagicMock(return_value=token_resp)
 
         auth = IDKAuth(session, BRAND_SKODA)
@@ -738,16 +746,34 @@ class TestIDKAuthFlow:
         )
         assert result.access_token == "skoda_acc"
 
+    def test_exchange_code_audi_standard(self):
+        """Audi uses standard OAuth via CARIAD BFF."""
+        from custom_components.vag_connect.cariad.auth.idk import IDKAuth
+        from custom_components.vag_connect.cariad.models import BRAND_AUDI
+
+        token_resp = self._make_resp(200, json_data={
+            "access_token": "audi_acc",
+            "refresh_token": "audi_ref",
+            "id_token": "audi_id",
+        })
+
+        session = MagicMock()
+        session.post = MagicMock(return_value=token_resp)
+
+        auth = IDKAuth(session, BRAND_AUDI)
+        result = asyncio.get_event_loop().run_until_complete(
+            auth._exchange_code("CODE", "VERIFIER")
+        )
+        assert result.access_token == "audi_acc"
+
     def test_exchange_code_failure(self):
         from custom_components.vag_connect.cariad.auth.idk import IDKAuth
         from custom_components.vag_connect.cariad.exceptions import AuthenticationError
         from custom_components.vag_connect.cariad.models import BRAND_AUDI
 
-        oidc_resp = self._make_resp(200, json_data={"token_endpoint": "https://idp/token"})
         bad_resp = self._make_resp(401, text="invalid_client")
 
         session = MagicMock()
-        session.get = MagicMock(return_value=oidc_resp)
         session.post = MagicMock(return_value=bad_resp)
 
         auth = IDKAuth(session, BRAND_AUDI)
