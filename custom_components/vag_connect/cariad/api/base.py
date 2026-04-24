@@ -165,7 +165,7 @@ class CariadBaseClient:
                 return await self._request(method, url, retry=False, **kwargs)
             if resp.status == 204:
                 return None
-            if resp.status not in (200, 202, 207):
+            if resp.status not in (200, 201, 202, 207):
                 body = await resp.text()
                 raise APIError(resp.status, url, body)
             ct = resp.headers.get("Content-Type", "")
