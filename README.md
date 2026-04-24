@@ -31,12 +31,12 @@
 
 **VAG Connect** verbindet Home Assistant direkt mit deinem Fahrzeug — ohne Middleware, ohne Docker, ohne extra Dienst. App-Zugangsdaten eingeben, fertig.
 
-**70+ Entities** über **9 Plattformen**, **14 Services**. Alle 7 VAG-Marken in einer Integration — kein separates Plugin nötig.
+**80+ Entities** über **10 Plattformen**, **16 Services**. Alle 7 VAG-Marken in einer Integration — kein separates Plugin nötig.
 
 ## Unterstützte Plattformen
 
 ```
-sensor  |  binary_sensor  |  device_tracker  |  switch  |  button  |  climate  |  number  |  select  |  image
+sensor  |  binary_sensor  |  device_tracker  |  switch  |  button  |  climate  |  number  |  select  |  image  |  lock
 ```
 
 ---
@@ -297,7 +297,8 @@ cariad/
 | Version | Inhalt | Status |
 |---|---|---|
 | v1.0–v1.5 | 9 Plattformen, 7 Marken, Bugs & Entity-Audit | ✅ Done |
-| v1.6.0 | Ladeprofile, Alarm, Verbrauch, Klimatimer | 🔜 |
+| v1.6.0 | SEAT/CUPRA 9 Endpoints, Škoda Fix, Audi PPC, Lock, Nachtabsenkung | ✅ Done |
+| v1.7.0 | Ladeprofile, Alarm, Verbrauch, Klimatimer, Firebase Push | 🔜 |
 | v1.7.0 | Navigation → Fahrzeug, Remote Start, PPC-Plattform 2025 | 🔜 |
 | v2.0.0 | HACS Official (Live-Tests alle 7 Marken) | 🎯 |
 

@@ -32,7 +32,7 @@
 
 **VAG Connect** connects Home Assistant directly to your Audi, VW, Škoda, SEAT, CUPRA, Porsche or VW US/CA — no middleware, no Docker, no extra service. Enter your app credentials, done.
 
-70+ entities across 9 platforms, 14 services, cloud-push architecture. All 7 VAG Group brands in one integration — no separate plugin per brand needed.
+80+ entities across 10 platforms, 14 services, cloud-push architecture. All 7 VAG Group brands in one integration — no separate plugin per brand needed.
 
 Since v0.14.1, VAG Connect speaks **directly** to the CARIAD API via its own async client. No external dependencies, no upstream blockers.
 
@@ -72,12 +72,15 @@ Since v0.14.1, VAG Connect speaks **directly** to the CARIAD API via its own asy
 | Battery SoC % | ✓ | ✓ | ✓ | ✓ |
 | Charge state | ✓ | ✓ | ✓ | ✓ |
 | Charge power kW | ✓ | ✓ | ✓ | ✓ |
+| Charge speed km/h | ✓ | ✓ | ✓ | ✓ |
 | Charge ETA | ✓ | ✓ | ✓ | ✓ |
 | Charge target % | ✓ | ✓ | ✓ | ✓ |
+| Trunk / hood / sunroof | ✓ | ✓ | ✓ | ✓ |
 | Window heating | ✓ | ✓ | ✓ | ✓ |
+| Vehicle renders | ✓ | — | — | ✓ |
 | Departure timers 1–3 | ✓ | ✓ | — | — |
 | Battery temperature | ✓ | ✓ | — | — |
-| AdBlue range | ✓ | ✓ | — | — |
+| AdBlue range | ✓ | ✓ | — | ✓ |
 
 ---
 
@@ -129,8 +132,9 @@ Restart Home Assistant.
 | Version | Content | Status |
 |---|---|---|
 | v1.0–v1.5 | 9 platforms, 7 brands, bugs & entity audit | ✅ Done |
-| v1.6.0 | Charging profiles, alarm, consumption, climate timer | 🔜 |
-| v1.7.0 | Navigation → vehicle, remote start, PPC platform 2025 | 🔜 |
+| v1.6.0 | SEAT/CUPRA 9 endpoints, Škoda fix, Audi PPC, Lock, nightly reduction | ✅ Done |
+| v1.7.0 | Charging profiles, alarm, consumption, climate timer, Firebase push | 🔜 |
+| v1.8.0 | Navigation → vehicle, remote start, trip statistics | 🔜 |
 | v2.0.0 | HACS Official (live tests all 7 brands) | 🎯 |
 
 ---
