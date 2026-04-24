@@ -111,8 +111,8 @@ class VagConnectCoordinator(DataUpdateCoordinator):
             found = len(self.vehicles)
             _LOGGER.info("VAG Connect: setup complete — %d vehicle(s)", found)
 
-            # Start background polling
-            self.hass.async_create_task(self._poll_loop())
+            # Start background polling — use background task so HA bootstrap doesn't wait
+            self.hass.async_create_background_task(self._poll_loop(), f"{DOMAIN}_poll")
             return found > 0
 
         except TermsAndConditionsError as err:

@@ -61,11 +61,14 @@ class CariadBaseClient:
         raise NotImplementedError
 
     async def fetch_images(self) -> None:
-        """Fetch render image URLs via GraphQL — best-effort, never blocks.
+        """Fetch render image URLs via GraphQL — Audi only.
 
         Called once during get_vehicles(). Populates self._image_data.
-        Subclasses override this if they use a different GraphQL endpoint.
+        SEAT/CUPRA use OLA renders endpoint instead (in SeatCupraClient).
+        Škoda, Porsche, VW NA do not have a GraphQL image endpoint.
         """
+        if self._brand.name not in ("audi",):
+            return
         try:
             fetcher = VehicleImageFetcher(self._session)
             data = await fetcher.fetch_image_data(self._access_token, self._brand.name)
