@@ -21,6 +21,33 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ---
 
+## [1.5.14] - 2026-04-24
+
+### Added
+
+- **SEAT/CUPRA:** Expanded from 4 to 9 API endpoints with 40+ data fields.
+  New: ranges (electric/combustion/AdBlue), per-door/window status, trunk/hood/sunroof,
+  charge rate + time remaining, cable lock, max charge current, service days,
+  online status, outside temperature, window heating status.
+- **SEAT/CUPRA vehicle renders:** Images via `/v2/vehicles/{vin}/renders` (OLA REST, no GraphQL).
+- **SEAT/CUPRA window heating:** Start/stop commands added.
+
+### Fixed
+
+- **Škoda:** Missing `/api` prefix on all 18 API endpoints — garage returned empty.
+- **Škoda:** camelCase token response (`accessToken` instead of `access_token`).
+- **CUPRA/SEAT user_id:** Extracted from OAuth redirect chain (pycupra pattern) instead of JWT.
+- **Coordinator:** Deprecated `asyncio.ensure_future(loop=)` → `hass.async_create_task()`.
+- **Coordinator:** Indentation bug silently dropped poll results.
+- **Coordinator:** Update listener read from wrong data store.
+- **Diagnostics:** Username now redacted in output.
+- **Entity names:** Explicit `translation_key` on all 47 descriptions — no more duplicates.
+- **VINs anonymized** in services.yaml and README examples.
+- **All German log messages** replaced with English.
+- **Dead code removed:** `_tokenstore_path()`, hmac warning → debug.
+
+---
+
 ## [1.5.13] - 2026-04-24
 
 ### Fixed
