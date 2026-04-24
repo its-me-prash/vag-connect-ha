@@ -21,30 +21,55 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ---
 
-## [1.5.14] - 2026-04-24
+## [1.6.0] - 2026-04-24
 
-### Added
+### Added / Hinzugefügt
 
-- **SEAT/CUPRA:** Expanded from 4 to 9 API endpoints with 40+ data fields.
-  New: ranges (electric/combustion/AdBlue), per-door/window status, trunk/hood/sunroof,
+- **SEAT/CUPRA:** 9 API endpoints instead of 4 — 40+ data fields now available.
+  Ranges (electric/combustion/AdBlue), per-door/window status, trunk/hood/sunroof,
   charge rate + time remaining, cable lock, max charge current, service days,
   online status, outside temperature, window heating status.
-- **SEAT/CUPRA vehicle renders:** Images via `/v2/vehicles/{vin}/renders` (OLA REST, no GraphQL).
-- **SEAT/CUPRA window heating:** Start/stop commands added.
+- **SEAT/CUPRA vehicle renders:** Vehicle images via OLA REST endpoint (no GraphQL needed).
+- **SEAT/CUPRA window heating:** Start/stop commands.
+- **VW/Audi PPC command fallback (#51, #29):** Newer models (RS e-tron GT, Q6, Q4 2025, A3 2023+)
+  that return 404 on combined endpoints now automatically fall back to separate
+  `/start`, `/stop`, `/lock`, `/unlock` endpoints. No breaking change for older models.
+- **Lock platform:** Native HA LockEntity for door lock/unlock (all brands).
+- **Nightly polling reduction:** Polling interval doubled between 22:00–05:00 automatically.
 
-### Fixed
+---
 
-- **Škoda:** Missing `/api` prefix on all 18 API endpoints — garage returned empty.
+- **SEAT/CUPRA:** 9 API-Endpoints statt 4 — über 40 Datenfelder verfügbar.
+  Reichweite (elektrisch/Verbrenner/AdBlue), einzelne Türen/Fenster, Kofferraum/Motorhaube/Schiebedach,
+  Ladegeschwindigkeit + Restzeit, Kabelverriegelung, max. Ladestrom, Service in Tagen,
+  Online-Status, Außentemperatur, Scheibenheizung.
+- **SEAT/CUPRA Fahrzeugbilder:** Render-Bilder direkt über OLA-API (kein GraphQL nötig).
+- **VW/Audi PPC-Fallback (#51, #29):** Neuere Modelle (RS e-tron GT, Q6, Q4 2025, A3 2023+)
+  die 404 auf kombinierten Endpoints bekommen, nutzen jetzt automatisch separate Endpoints.
+- **Lock-Plattform:** Echte HA LockEntity für Türverriegelung.
+- **Nachtabsenkung:** Polling-Intervall wird zwischen 22:00–05:00 automatisch verdoppelt.
+
+### Fixed / Behoben
+
+- **Škoda:** Missing `/api` prefix on all 18 endpoints — garage returned empty list.
 - **Škoda:** camelCase token response (`accessToken` instead of `access_token`).
-- **CUPRA/SEAT user_id:** Extracted from OAuth redirect chain (pycupra pattern) instead of JWT.
+- **CUPRA/SEAT user_id:** Now extracted from OAuth redirect chain instead of JWT.
+- **Entity names:** Explicit `translation_key` on all 47 descriptions — no more duplicate entities.
 - **Coordinator:** Deprecated `asyncio.ensure_future(loop=)` → `hass.async_create_task()`.
 - **Coordinator:** Indentation bug silently dropped poll results.
 - **Coordinator:** Update listener read from wrong data store.
-- **Diagnostics:** Username now redacted in output.
-- **Entity names:** Explicit `translation_key` on all 47 descriptions — no more duplicates.
-- **VINs anonymized** in services.yaml and README examples.
-- **All German log messages** replaced with English.
-- **Dead code removed:** `_tokenstore_path()`, hmac warning → debug.
+- **Diagnostics:** Username/email now redacted.
+- **Privacy:** VINs anonymized in services.yaml and README examples.
+- **Dead code removed**, all German log messages → English.
+
+---
+
+- **Škoda:** Fehlender `/api`-Prefix auf allen 18 Endpoints — Garage war leer.
+- **Škoda:** camelCase Token-Antwort jetzt unterstützt.
+- **CUPRA/SEAT user_id:** Wird jetzt aus der OAuth-Redirect-Chain extrahiert.
+- **Entity-Namen:** `translation_key` auf allen 47 Descriptions — keine Duplikate mehr.
+- **Coordinator:** Mehrere Bugs behoben (deprecated API, Indentation, falscher Data Store).
+- **Datenschutz:** E-Mail in Diagnostics geschwärzt, VINs anonymisiert.
 
 ---
 
