@@ -21,6 +21,15 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ---
 
+## [1.5.13] - 2026-04-24
+
+### Fixed
+
+- **Škoda camelCase tokens:** Škoda API returns `accessToken`/`refreshToken`/`idToken` (camelCase) instead of OAuth standard `access_token`/`refresh_token`/`id_token`. Token parser now accepts both formats. Fixes #49, #52.
+- **Tests:** Updated token exchange and refresh tests for brand-specific endpoints.
+
+---
+
 ## [1.5.12] - 2026-04-23
 
 ### Fixed
