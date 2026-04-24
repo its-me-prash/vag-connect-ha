@@ -840,17 +840,18 @@ class IDKAuth:
         return "https://emea.bff.cariad.digital/login/v1/idk/token"
 
     def _parse_tokens(self, payload: dict[str, Any]) -> TokenSet:
-        """Parse token response into a TokenSet."""
-        try:
-            return TokenSet(
-                access_token=payload["access_token"],
-                refresh_token=payload["refresh_token"],
-                id_token=payload.get("id_token", ""),
-            )
-        except KeyError as err:
+        """Parse token response into a TokenSet.
+
+        Handles both snake_case (OAuth standard) and camelCase (Škoda proprietary).
+        """
+        access = payload.get("access_token") or payload.get("accessToken")
+        refresh = payload.get("refresh_token") or payload.get("refreshToken")
+        id_tok = payload.get("id_token") or payload.get("idToken") or ""
+        if not access or not refresh:
             raise AuthenticationError(
-                f"Token response missing field {err}: {list(payload)}"
-            ) from err
+                f"Token response missing required fields: {list(payload)}"
+            )
+        return TokenSet(access_token=access, refresh_token=refresh, id_token=id_tok)
 
     @staticmethod
     def _parse_csrf(html: str) -> _CSRFParser:
