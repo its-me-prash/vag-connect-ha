@@ -120,49 +120,87 @@ class VWEUClient(CariadBaseClient):
         return self._parse_status(vin, raw, parking)
 
     async def command_lock(self, vin: str) -> None:
-        """Lock vehicle."""
-        await self._post(
-            f"{_BASE}/vehicle/v1/vehicles/{vin}/access/lock-unlock",
-            json={"action": "lock"},
-        )
+        """Lock vehicle — tries combined endpoint, falls back to separate."""
+        try:
+            await self._post(
+                f"{_BASE}/vehicle/v1/vehicles/{vin}/access/lock-unlock",
+                json={"action": "lock"},
+            )
+        except Exception:  # noqa: BLE001
+            await self._post(f"{_BASE}/vehicle/v1/vehicles/{vin}/access/lock", json={})
 
     async def command_unlock(self, vin: str, spin: str = "") -> None:
         """Unlock vehicle — S-PIN required if set."""
         payload: dict[str, Any] = {"action": "unlock"}
         if spin or self._spin:
             payload["spin"] = spin or self._spin
-        await self._post(
-            f"{_BASE}/vehicle/v1/vehicles/{vin}/access/lock-unlock",
-            json=payload,
-        )
+        try:
+            await self._post(
+                f"{_BASE}/vehicle/v1/vehicles/{vin}/access/lock-unlock",
+                json=payload,
+            )
+        except Exception:  # noqa: BLE001
+            unlock_payload: dict[str, Any] = {}
+            if spin or self._spin:
+                unlock_payload["spin"] = spin or self._spin
+            await self._post(
+                f"{_BASE}/vehicle/v1/vehicles/{vin}/access/unlock",
+                json=unlock_payload,
+            )
 
     async def command_start_climate(self, vin: str) -> None:
-        """Start pre-conditioning."""
-        await self._post(
-            f"{_BASE}/vehicle/v1/vehicles/{vin}/climatisation/start-stop",
-            json={"action": "start"},
-        )
+        """Start pre-conditioning — combined or separate endpoint."""
+        try:
+            await self._post(
+                f"{_BASE}/vehicle/v1/vehicles/{vin}/climatisation/start-stop",
+                json={"action": "start"},
+            )
+        except Exception:  # noqa: BLE001
+            await self._post(
+                f"{_BASE}/vehicle/v1/vehicles/{vin}/climatisation/start",
+                json={
+                    "targetTemperature": 21.0,
+                    "targetTemperatureUnit": "celsius",
+                    "climatisationWithoutExternalPower": True,
+                    "windowHeatingEnabled": True,
+                },
+            )
 
     async def command_stop_climate(self, vin: str) -> None:
         """Stop pre-conditioning."""
-        await self._post(
-            f"{_BASE}/vehicle/v1/vehicles/{vin}/climatisation/start-stop",
-            json={"action": "stop"},
-        )
+        try:
+            await self._post(
+                f"{_BASE}/vehicle/v1/vehicles/{vin}/climatisation/start-stop",
+                json={"action": "stop"},
+            )
+        except Exception:  # noqa: BLE001
+            await self._post(
+                f"{_BASE}/vehicle/v1/vehicles/{vin}/climatisation/stop", json={},
+            )
 
     async def command_start_charging(self, vin: str) -> None:
         """Start charging."""
-        await self._post(
-            f"{_BASE}/vehicle/v1/vehicles/{vin}/charging/start-stop",
-            json={"action": "start"},
-        )
+        try:
+            await self._post(
+                f"{_BASE}/vehicle/v1/vehicles/{vin}/charging/start-stop",
+                json={"action": "start"},
+            )
+        except Exception:  # noqa: BLE001
+            await self._post(
+                f"{_BASE}/vehicle/v1/vehicles/{vin}/charging/start", json={},
+            )
 
     async def command_stop_charging(self, vin: str) -> None:
         """Stop charging."""
-        await self._post(
-            f"{_BASE}/vehicle/v1/vehicles/{vin}/charging/start-stop",
-            json={"action": "stop"},
-        )
+        try:
+            await self._post(
+                f"{_BASE}/vehicle/v1/vehicles/{vin}/charging/start-stop",
+                json={"action": "stop"},
+            )
+        except Exception:  # noqa: BLE001
+            await self._post(
+                f"{_BASE}/vehicle/v1/vehicles/{vin}/charging/stop", json={},
+            )
 
     async def command_flash(self, vin: str) -> None:
         """Honk and flash."""
