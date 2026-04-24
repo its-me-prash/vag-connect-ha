@@ -26,24 +26,28 @@ class VagBinarySensorDescription(BinarySensorEntityDescription):
 BINARY_DESCRIPTIONS: tuple[VagBinarySensorDescription, ...] = (
     VagBinarySensorDescription(
         key="doors_locked",
+        translation_key="doors_locked",
         data_key="doors_locked",
         device_class=BinarySensorDeviceClass.LOCK,
         icon="mdi:car-door-lock",
     ),
     VagBinarySensorDescription(
         key="doors_open",
+        translation_key="doors_open",
         data_key="doors_open",
         device_class=BinarySensorDeviceClass.DOOR,
         icon="mdi:car-door",
     ),
     VagBinarySensorDescription(
         key="windows_open",
+        translation_key="windows_open",
         data_key="windows_open",
         device_class=BinarySensorDeviceClass.WINDOW,
         icon="mdi:car-windshield-outline",
     ),
     VagBinarySensorDescription(
         key="plug_connected",
+        translation_key="plug_connected",
         data_key="plug_connected",
         device_class=BinarySensorDeviceClass.PLUG,
         icon="mdi:power-plug",
@@ -51,6 +55,7 @@ BINARY_DESCRIPTIONS: tuple[VagBinarySensorDescription, ...] = (
     ),
     VagBinarySensorDescription(
         key="is_charging",
+        translation_key="is_charging",
         data_key="is_charging",
         device_class=BinarySensorDeviceClass.BATTERY_CHARGING,
         icon="mdi:battery-charging",
@@ -58,12 +63,14 @@ BINARY_DESCRIPTIONS: tuple[VagBinarySensorDescription, ...] = (
     ),
     VagBinarySensorDescription(
         key="climatisation_active",
+        translation_key="climatisation_active",
         data_key="climatisation_active",
         device_class=BinarySensorDeviceClass.RUNNING,
         icon="mdi:thermometer",
     ),
     VagBinarySensorDescription(
         key="warning_active",
+        translation_key="warning_active",
         data_key="warning_active",
         device_class=BinarySensorDeviceClass.PROBLEM,
         icon="mdi:alert-circle",
@@ -71,6 +78,7 @@ BINARY_DESCRIPTIONS: tuple[VagBinarySensorDescription, ...] = (
     ),
     VagBinarySensorDescription(
         key="warning_engine",
+        translation_key="warning_engine",
         data_key="warning_engine",
         device_class=BinarySensorDeviceClass.PROBLEM,
         icon="mdi:engine",
@@ -78,6 +86,7 @@ BINARY_DESCRIPTIONS: tuple[VagBinarySensorDescription, ...] = (
     ),
     VagBinarySensorDescription(
         key="warning_oil",
+        translation_key="warning_oil",
         data_key="warning_oil",
         device_class=BinarySensorDeviceClass.PROBLEM,
         icon="mdi:oil",
@@ -85,6 +94,7 @@ BINARY_DESCRIPTIONS: tuple[VagBinarySensorDescription, ...] = (
     ),
     VagBinarySensorDescription(
         key="warning_tyre",
+        translation_key="warning_tyre",
         data_key="warning_tyre",
         device_class=BinarySensorDeviceClass.PROBLEM,
         icon="mdi:tire",
@@ -92,6 +102,7 @@ BINARY_DESCRIPTIONS: tuple[VagBinarySensorDescription, ...] = (
     ),
     VagBinarySensorDescription(
         key="warning_brakes",
+        translation_key="warning_brakes",
         data_key="warning_brakes",
         device_class=BinarySensorDeviceClass.PROBLEM,
         icon="mdi:car-brake-alert",
@@ -102,12 +113,14 @@ BINARY_DESCRIPTIONS: tuple[VagBinarySensorDescription, ...] = (
 _NEW_BINARY: tuple[VagBinarySensorDescription, ...] = (
     VagBinarySensorDescription(
         key="is_driving",
+        translation_key="is_driving",
         data_key="is_driving",
         device_class=BinarySensorDeviceClass.MOTION,
         icon="mdi:car-speed-limiter",
     ),
     VagBinarySensorDescription(
         key="is_online",
+        translation_key="is_online",
         data_key="is_online",
         device_class=BinarySensorDeviceClass.CONNECTIVITY,
         icon="mdi:car-wireless",
@@ -115,6 +128,7 @@ _NEW_BINARY: tuple[VagBinarySensorDescription, ...] = (
     ),
     VagBinarySensorDescription(
         key="connector_locked",
+        translation_key="connector_locked",
         data_key="connector_locked",
         device_class=BinarySensorDeviceClass.LOCK,
         icon="mdi:ev-plug-ccs2",
@@ -123,6 +137,7 @@ _NEW_BINARY: tuple[VagBinarySensorDescription, ...] = (
     ),
     VagBinarySensorDescription(
         key="window_heating_front",
+        translation_key="window_heating_front",
         data_key="window_heating_front",
         device_class=BinarySensorDeviceClass.RUNNING,
         icon="mdi:car-windshield",
@@ -130,6 +145,7 @@ _NEW_BINARY: tuple[VagBinarySensorDescription, ...] = (
     ),
     VagBinarySensorDescription(
         key="window_heating_back",
+        translation_key="window_heating_back",
         data_key="window_heating_back",
         device_class=BinarySensorDeviceClass.RUNNING,
         icon="mdi:car-windshield",

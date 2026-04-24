@@ -47,6 +47,7 @@ SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
 
     VagSensorDescription(
         key="fuel_level",
+        translation_key="fuel_level",
         data_key="fuel_level",
         native_unit_of_measurement=PERCENTAGE,
         state_class=SensorStateClass.MEASUREMENT,
@@ -55,6 +56,7 @@ SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
     ),
     VagSensorDescription(
         key="battery_soc",
+        translation_key="battery_soc",
         data_key="battery_soc",
         native_unit_of_measurement=PERCENTAGE,
         device_class=SensorDeviceClass.BATTERY,
@@ -64,6 +66,7 @@ SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
     ),
     VagSensorDescription(
         key="range_km",
+        translation_key="range_km",
         data_key="range_km",
         native_unit_of_measurement=UnitOfLength.KILOMETERS,
         device_class=SensorDeviceClass.DISTANCE,
@@ -74,6 +77,7 @@ SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
 
     VagSensorDescription(
         key="odometer_km",
+        translation_key="odometer_km",
         data_key="odometer_km",
         native_unit_of_measurement=UnitOfLength.KILOMETERS,
         device_class=SensorDeviceClass.DISTANCE,
@@ -84,18 +88,21 @@ SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
 
     VagSensorDescription(
         key="charging_state",
+        translation_key="charging_state",
         data_key="charging_state",
         icon="mdi:ev-plug-type2",
         condition="electric",
     ),
     VagSensorDescription(
         key="plug_state",
+        translation_key="plug_state",
         data_key="plug_state",
         icon="mdi:power-plug",
         condition="electric",
     ),
     VagSensorDescription(
         key="target_soc",
+        translation_key="target_soc",
         data_key="target_soc",
         native_unit_of_measurement=PERCENTAGE,
         state_class=SensorStateClass.MEASUREMENT,
@@ -104,6 +111,7 @@ SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
     ),
     VagSensorDescription(
         key="charging_power_kw",
+        translation_key="charging_power_kw",
         data_key="charging_power_kw",
         native_unit_of_measurement=UnitOfPower.KILO_WATT,
         device_class=SensorDeviceClass.POWER,
@@ -113,6 +121,7 @@ SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
     ),
     VagSensorDescription(
         key="charging_rate_kmh",
+        translation_key="charging_rate_kmh",
         data_key="charging_rate_kmh",
         # km/h = km Reichweite pro Stunde → device_class=SPEED → HA rechnet km/h ↔ mph
         native_unit_of_measurement=UnitOfSpeed.KILOMETERS_PER_HOUR,
@@ -124,6 +133,7 @@ SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
     ),
     VagSensorDescription(
         key="charge_complete_eta",
+        translation_key="charge_complete_eta",
         data_key="charge_complete_eta",
         device_class=SensorDeviceClass.TIMESTAMP,
         icon="mdi:clock-end",
@@ -131,6 +141,7 @@ SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
     ),
     VagSensorDescription(
         key="charging_type",
+        translation_key="charging_type",
         data_key="charging_type",
         icon="mdi:ev-plug-type2",
         entity_category=EntityCategory.DIAGNOSTIC,
@@ -140,11 +151,13 @@ SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
 
     VagSensorDescription(
         key="climatisation_state",
+        translation_key="climatisation_state",
         data_key="climatisation_state",
         icon="mdi:thermometer",
     ),
     VagSensorDescription(
         key="target_temperature",
+        translation_key="target_temperature",
         data_key="target_temperature",
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
         device_class=SensorDeviceClass.TEMPERATURE,
@@ -154,6 +167,7 @@ SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
 
     VagSensorDescription(
         key="outside_temp",
+        translation_key="outside_temp",
         data_key="outside_temp",
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
         device_class=SensorDeviceClass.TEMPERATURE,
@@ -163,6 +177,7 @@ SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
 
     VagSensorDescription(
         key="service_km",
+        translation_key="service_km",
         data_key="service_km",
         native_unit_of_measurement=UnitOfLength.KILOMETERS,
         device_class=SensorDeviceClass.DISTANCE,
@@ -172,6 +187,7 @@ SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
     ),
     VagSensorDescription(
         key="service_due_at",
+        translation_key="service_due_at",
         data_key="service_due_at",
         device_class=SensorDeviceClass.DATE,
         icon="mdi:calendar-clock",
@@ -179,6 +195,7 @@ SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
     ),
     VagSensorDescription(
         key="oil_service_km",
+        translation_key="oil_service_km",
         data_key="oil_service_km",
         native_unit_of_measurement=UnitOfLength.KILOMETERS,
         device_class=SensorDeviceClass.DISTANCE,
@@ -189,6 +206,7 @@ SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
     ),
     VagSensorDescription(
         key="oil_service_at",
+        translation_key="oil_service_at",
         data_key="oil_service_at",
         device_class=SensorDeviceClass.DATE,
         icon="mdi:oil",
@@ -198,17 +216,20 @@ SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
 
     VagSensorDescription(
         key="vehicle_state",
+        translation_key="vehicle_state",
         data_key="vehicle_state",
         icon="mdi:car-info",
     ),
 
     VagSensorDescription(
         key="parking_address",
+        translation_key="parking_address",
         data_key="parking_address",
         icon="mdi:map-marker",
     ),
     VagSensorDescription(
         key="parking_city",
+        translation_key="parking_city",
         data_key="parking_city",
         icon="mdi:city",
         entity_category=EntityCategory.DIAGNOSTIC,
@@ -216,6 +237,7 @@ SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
 
     VagSensorDescription(
         key="battery_temp",
+        translation_key="battery_temp",
         data_key="battery_temp",
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
         device_class=SensorDeviceClass.TEMPERATURE,
@@ -227,6 +249,7 @@ SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
 
     VagSensorDescription(
         key="last_updated_at",
+        translation_key="last_updated_at",
         data_key="last_updated_at",
         device_class=SensorDeviceClass.TIMESTAMP,
         icon="mdi:clock-check-outline",
@@ -235,18 +258,21 @@ SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
 
     VagSensorDescription(
         key="departure_timer_1_time",
+        translation_key="departure_timer_1_time",
         data_key="departure_timer_1_time",
         icon="mdi:clock-time-eight-outline",
         condition="electric",
     ),
     VagSensorDescription(
         key="departure_timer_2_time",
+        translation_key="departure_timer_2_time",
         data_key="departure_timer_2_time",
         icon="mdi:clock-time-eight-outline",
         condition="electric",
     ),
     VagSensorDescription(
         key="departure_timer_3_time",
+        translation_key="departure_timer_3_time",
         data_key="departure_timer_3_time",
         icon="mdi:clock-time-eight-outline",
         condition="electric",
@@ -255,6 +281,7 @@ SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
     # ── AdBlue (Diesel) ──────────────────────────────────────────────────────
     VagSensorDescription(
         key="adblue_range_km",
+        translation_key="adblue_range_km",
         data_key="adblue_range_km",
         native_unit_of_measurement=UnitOfLength.KILOMETERS,
         device_class=SensorDeviceClass.DISTANCE,

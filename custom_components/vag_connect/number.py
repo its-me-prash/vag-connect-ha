@@ -27,6 +27,7 @@ class VagNumberDescription(NumberEntityDescription):
 NUMBER_DESCRIPTIONS: tuple[VagNumberDescription, ...] = (
     VagNumberDescription(
         key="target_soc",
+        translation_key="target_soc",
         data_key="target_soc",
         native_unit_of_measurement=PERCENTAGE,
         device_class=NumberDeviceClass.BATTERY,
@@ -40,6 +41,7 @@ NUMBER_DESCRIPTIONS: tuple[VagNumberDescription, ...] = (
     ),
     VagNumberDescription(
         key="target_temperature",
+        translation_key="target_temperature",
         data_key="target_temperature",
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
         device_class=NumberDeviceClass.TEMPERATURE,
@@ -52,6 +54,7 @@ NUMBER_DESCRIPTIONS: tuple[VagNumberDescription, ...] = (
     ),
     VagNumberDescription(
         key="min_soc",
+        translation_key="min_soc",
         data_key="min_soc",
         native_unit_of_measurement=PERCENTAGE,
         device_class=NumberDeviceClass.BATTERY,
@@ -65,6 +68,7 @@ NUMBER_DESCRIPTIONS: tuple[VagNumberDescription, ...] = (
     ),
     VagNumberDescription(
         key="max_charge_current",
+        translation_key="max_charge_current",
         data_key="max_charge_current",
         native_unit_of_measurement="A",
         native_min_value=6,
