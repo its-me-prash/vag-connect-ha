@@ -445,7 +445,7 @@ class IDKAuth:
             submit_data["hmac"] = hmac_matches[0]
             # Password URL: replace "identifier" with "authenticate" in email_url
             pw_url = email_url.replace("identifier", "authenticate")
-            _LOGGER.warning(
+            _LOGGER.debug(
                 "IDK legacy: hmac from JS, step1 fields kept, pw_url=%s", pw_url[:100]
             )
         else:

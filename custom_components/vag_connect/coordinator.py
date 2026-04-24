@@ -28,7 +28,6 @@ from .const import (
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
 )
-import os
 from homeassistant.helpers import device_registry as dr
 from .cariad.models import VehicleData
 
@@ -113,9 +112,7 @@ class VagConnectCoordinator(DataUpdateCoordinator):
             _LOGGER.info("VAG Connect: setup complete — %d vehicle(s)", found)
 
             # Start background polling
-            self.hass.loop.call_soon_threadsafe(
-                lambda: asyncio.ensure_future(self._poll_loop(), loop=self.hass.loop)
-            )
+            self.hass.async_create_task(self._poll_loop())
             return found > 0
 
         except TermsAndConditionsError as err:
@@ -169,11 +166,12 @@ class VagConnectCoordinator(DataUpdateCoordinator):
                     if isinstance(result, Exception):
                         _LOGGER.debug("Poll failed for %s: %s", vin, result)
                         fresh[vin] = self.vehicles.get(vin, {})
+                    elif isinstance(result, VehicleData):
+                        data = result.to_dict()
+                        data["_client"] = self._cariad_client
+                        fresh[vin] = await self._enrich(data)
                     else:
-                            if isinstance(result, VehicleData):
-                                data = result.to_dict()
-                                data["_client"] = self._cariad_client
-                                fresh[vin] = await self._enrich(data)
+                        fresh[vin] = self.vehicles.get(vin, {})
                 with self._vehicles_lock:
                     self.vehicles.update(fresh)
                 await self._async_push_update(fresh, success=True)
@@ -192,19 +190,6 @@ class VagConnectCoordinator(DataUpdateCoordinator):
         """Return True if the CARIAD polling loop is active."""
         return self._started
 
-    def _tokenstore_path(self) -> str:
-        """Pfad zur Token-Datei im HA-Config-Verzeichnis.
-        Tokens persist across HA restarts — no re-authentication needed.
-        Note: os.makedirs on .storage is safe — directory always exists in HA.
-        """
-        storage_dir = self.hass.config.path(".storage")
-        # .storage always exists in HA — no makedirs needed
-        return os.path.join(
-            storage_dir,
-            f"vag_connect_tokens_{self.entry.entry_id}.json"
-        )
-
-
     async def _async_push_update(self, data: dict, success: bool = True) -> None:
         """Push vehicle data to HA.
 
@@ -215,7 +200,7 @@ class VagConnectCoordinator(DataUpdateCoordinator):
         if success:
             if not self._was_available:
                 _LOGGER.info(
-                    "VAG Connect: Fahrzeug wieder erreichbar (%s)",
+                    "VAG Connect: vehicle reachable again (%s)",
                     self.entry.data.get("username", ""),
                 )
                 self._was_available = True
@@ -224,11 +209,11 @@ class VagConnectCoordinator(DataUpdateCoordinator):
             await self._async_remove_stale_devices(set(data.keys()))
 
             self.async_set_updated_data(data)
-            _LOGGER.debug("VAG Connect: Push zu HA — %d Fahrzeug(e)", len(data))
+            _LOGGER.debug("VAG Connect: pushed %d vehicle(s) to HA", len(data))
         else:
             if self._was_available:
                 _LOGGER.warning(
-                    "VAG Connect: Fahrzeug nicht erreichbar — Entities auf unavailable gesetzt (%s)",
+                    "VAG Connect: vehicle unreachable — entities set to unavailable (%s)",
                     self.entry.data.get("username", ""),
                 )
                 self._was_available = False
@@ -255,7 +240,7 @@ class VagConnectCoordinator(DataUpdateCoordinator):
             )
             if device_entry is not None:
                 _LOGGER.info(
-                    "VAG Connect: Fahrzeug %s nicht mehr im Account — Gerät entfernt",
+                    "VAG Connect: vehicle %s removed from account — device deleted",
                     stale_vin,
                 )
                 device_reg.async_remove_device(device_entry.id)

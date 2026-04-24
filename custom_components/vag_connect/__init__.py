@@ -243,7 +243,7 @@ async def _async_update_listener(
     A full reload is only triggered when brand, username or password changes
     (those require a new authenticated API client).
     """
-    coordinator: VagConnectCoordinator = hass.data.get(DOMAIN, {}).get(entry.entry_id)
+    coordinator: VagConnectCoordinator | None = getattr(entry, "runtime_data", None)
 
     # Fields that require a full reload (new auth client needed)
     _RELOAD_KEYS = {CONF_BRAND, CONF_USERNAME, CONF_PASSWORD}
@@ -255,7 +255,7 @@ async def _async_update_listener(
     }
 
     if changed:
-        _LOGGER.info("VAG Connect: Konfiguration geändert (%s) — Neustart", changed)
+        _LOGGER.info("VAG Connect: config changed (%s) — reloading", changed)
         await hass.config_entries.async_reload(entry.entry_id)
     else:
         # Soft update: merge options into entry data so coordinator picks them up
@@ -263,7 +263,7 @@ async def _async_update_listener(
         hass.config_entries.async_update_entry(entry, data=new_data, options={})
         if coordinator:
             _LOGGER.debug(
-                "VAG Connect: Einstellungen live übernommen (kein Neustart nötig)"
+                "VAG Connect: settings applied live (no restart needed)"
             )
             # Trigger one immediate refresh so users see the effect
             await coordinator.async_request_refresh()

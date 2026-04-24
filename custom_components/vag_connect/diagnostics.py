@@ -8,10 +8,10 @@ from typing import Any
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 
-from .const import CONF_PASSWORD, CONF_SPIN
+from .const import CONF_PASSWORD, CONF_SPIN, CONF_USERNAME
 from .coordinator import VagConnectCoordinator
 
-_REDACT = frozenset({CONF_PASSWORD, CONF_SPIN, "latitude", "longitude"})
+_REDACT = frozenset({CONF_PASSWORD, CONF_SPIN, CONF_USERNAME, "latitude", "longitude"})
 
 
 async def async_get_config_entry_diagnostics(
