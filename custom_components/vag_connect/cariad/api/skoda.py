@@ -33,7 +33,7 @@ class SkodaClient(CariadBaseClient):
         params = {
             "connectivityGenerations": ["MOD1", "MOD2", "MOD3", "MOD4"],
         }
-        data = await self._get(f"{_BASE}/v2/garage", params=params)
+        data = await self._get(f"{_BASE}/api/v2/garage", params=params)
         vehicles: list[dict[str, Any]] = data.get("vehicles", [])
         vins = [v["vin"] for v in vehicles if v.get("vin")]
         await self.fetch_images()
@@ -46,13 +46,13 @@ class SkodaClient(CariadBaseClient):
 
         # Parallel fetch of key endpoints
         results = await asyncio.gather(
-            self._get(f"{_BASE}/v2/vehicle-status/{vin}"),
-            self._get(f"{_BASE}/v1/charging/{vin}"),
-            self._get(f"{_BASE}/v2/air-conditioning/{vin}"),
-            self._get(f"{_BASE}/v1/maps/positions?vin={vin}"),
-            self._get(f"{_BASE}/v2/vehicle-status/{vin}/driving-range"),
-            self._get(f"{_BASE}/v3/vehicle-maintenance/vehicles/{vin}"),
-            self._get(f"{_BASE}/v2/connection-status/{vin}/readiness"),
+            self._get(f"{_BASE}/api/v2/vehicle-status/{vin}"),
+            self._get(f"{_BASE}/api/v1/charging/{vin}"),
+            self._get(f"{_BASE}/api/v2/air-conditioning/{vin}"),
+            self._get(f"{_BASE}/api/v1/maps/positions?vin={vin}"),
+            self._get(f"{_BASE}/api/v2/vehicle-status/{vin}/driving-range"),
+            self._get(f"{_BASE}/api/v3/vehicle-maintenance/vehicles/{vin}"),
+            self._get(f"{_BASE}/api/v2/connection-status/{vin}/readiness"),
             return_exceptions=True,
         )
         status, charging, ac, positions, driving_range, maintenance, readiness = results
@@ -124,40 +124,40 @@ class SkodaClient(CariadBaseClient):
         return d
 
     async def command_lock(self, vin: str) -> None:
-        await self._post(f"{_BASE}/v1/vehicle-access/{vin}/lock", json={})
+        await self._post(f"{_BASE}/api/v1/vehicle-access/{vin}/lock", json={})
 
     async def command_unlock(self, vin: str, spin: str = "") -> None:
         payload: dict[str, Any] = {}
         if spin or self._spin:
             payload["spin"] = spin or self._spin
-        await self._post(f"{_BASE}/v1/vehicle-access/{vin}/unlock", json=payload)
+        await self._post(f"{_BASE}/api/v1/vehicle-access/{vin}/unlock", json=payload)
 
     async def command_start_climate(self, vin: str) -> None:
-        await self._post(f"{_BASE}/v2/air-conditioning/{vin}/start", json={})
+        await self._post(f"{_BASE}/api/v2/air-conditioning/{vin}/start", json={})
 
     async def command_stop_climate(self, vin: str) -> None:
-        await self._post(f"{_BASE}/v2/air-conditioning/{vin}/stop", json={})
+        await self._post(f"{_BASE}/api/v2/air-conditioning/{vin}/stop", json={})
 
     async def command_start_charging(self, vin: str) -> None:
-        await self._post(f"{_BASE}/v1/charging/{vin}/start", json={})
+        await self._post(f"{_BASE}/api/v1/charging/{vin}/start", json={})
 
     async def command_stop_charging(self, vin: str) -> None:
-        await self._post(f"{_BASE}/v1/charging/{vin}/stop", json={})
+        await self._post(f"{_BASE}/api/v1/charging/{vin}/stop", json={})
 
     async def command_flash(self, vin: str) -> None:
-        await self._post(f"{_BASE}/v1/vehicle-access/{vin}/honk-and-flash", json={"mode": "FLASH_ONLY"})
+        await self._post(f"{_BASE}/api/v1/vehicle-access/{vin}/honk-and-flash", json={"mode": "FLASH_ONLY"})
 
     async def command_wake(self, vin: str) -> None:
-        await self._post(f"{_BASE}/v1/vehicle-wakeup/{vin}?applyRequestLimiter=true", json={})
+        await self._post(f"{_BASE}/api/v1/vehicle-wakeup/{vin}?applyRequestLimiter=true", json={})
 
     async def command_set_target_soc(self, vin: str, target: int) -> None:
         await self._post(
-            f"{_BASE}/v1/charging/{vin}/set-charge-limit",
+            f"{_BASE}/api/v1/charging/{vin}/set-charge-limit",
             json={"targetStateOfChargeInPercent": target},
         )
 
     async def command_set_climate_temperature(self, vin: str, temp_c: float) -> None:
         await self._post(
-            f"{_BASE}/v2/air-conditioning/{vin}/settings/target-temperature",
+            f"{_BASE}/api/v2/air-conditioning/{vin}/settings/target-temperature",
             json={"temperatureValue": temp_c, "unitInCar": "CELSIUS"},
         )

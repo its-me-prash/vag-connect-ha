@@ -118,6 +118,7 @@ class IDKAuth:
     def __init__(self, session: ClientSession, brand: BrandConfig) -> None:
         self._session = session
         self._brand = brand
+        self.user_id: str | None = None
 
     async def authenticate(self, email: str, password: str, mfa_code: str | None = None) -> TokenSet:
         """Full login flow → returns access/refresh/id tokens.
@@ -267,6 +268,12 @@ class IDKAuth:
         for _ in range(15):
             if not ref:
                 break
+            # Capture user_id from redirect URL (SEAT/CUPRA pattern from pycupra)
+            if "user_id" in ref:
+                uid = parse_qs(urlparse(ref).query).get("user_id", [""])[0]
+                if uid:
+                    self.user_id = uid
+                    _LOGGER.debug("IDK Auth0: captured user_id from redirect: %s", uid[:8])
             if ref.startswith(prefix):
                 break
             # Detect MFA
@@ -736,6 +743,12 @@ class IDKAuth:
             if not location:
                 _LOGGER.debug("IDK legacy: empty location in redirect chain")
                 break
+            # Capture user_id from redirect URL (SEAT/CUPRA pattern from pycupra)
+            if "user_id" in location:
+                uid = parse_qs(urlparse(location).query).get("user_id", [""])[0]
+                if uid:
+                    self.user_id = uid
+                    _LOGGER.debug("IDK: captured user_id from redirect: %s", uid[:8])
             if location.startswith(prefix):
                 return location
             if "terms-and-conditions" in location:

@@ -34,34 +34,38 @@ class SeatCupraClient(CariadBaseClient):
         self._user_id: str | None = None
 
     async def authenticate(self, mfa_code: str | None = None) -> None:
-        """IDK auth + fetch user_id."""
+        """IDK auth + capture user_id from redirect chain."""
         await super().authenticate()
-        await self._fetch_user_id()
+        # user_id is captured from OAuth redirect URL during auth (pycupra pattern)
+        if self._auth.user_id:
+            self._user_id = self._auth.user_id
+            _LOGGER.debug("SEAT/CUPRA user_id from auth redirect: %s", self._user_id[:8])
+        else:
+            await self._fetch_user_id()
 
     async def _fetch_user_id(self) -> None:
-        """Fetch user ID needed for garage endpoint.
+        """Fallback: extract user_id from JWT or API call.
 
-        Strategy: extract 'sub' claim from the ID token JWT (no API call needed).
-        Fallback: GET /v1/users endpoint.
+        Primary source is the OAuth redirect chain (set in authenticate).
+        This is only called if the redirect didn't contain user_id.
         """
-        # Try extracting from ID token first (most reliable)
+        # Try JWT sub claim
         if self._tokens and self._tokens.id_token:
             try:
                 import base64  # noqa: PLC0415
                 import json as _json  # noqa: PLC0415
-                # JWT payload is the second segment (base64url-encoded, no padding)
                 payload_b64 = self._tokens.id_token.split(".")[1]
-                payload_b64 += "=" * (4 - len(payload_b64) % 4)  # fix padding
+                payload_b64 += "=" * (4 - len(payload_b64) % 4)
                 payload = _json.loads(base64.urlsafe_b64decode(payload_b64))
                 sub = payload.get("sub")
                 if sub:
                     self._user_id = sub
-                    _LOGGER.debug("SEAT/CUPRA user_id from ID token: %s", sub[:8])
+                    _LOGGER.debug("SEAT/CUPRA user_id from JWT: %s", sub[:8])
                     return
             except Exception:  # noqa: BLE001
-                _LOGGER.debug("Could not extract user_id from ID token")
+                pass
 
-        # Fallback: API call
+        # Last resort: API call
         try:
             data = await self._get(f"{_BASE}/v1/users")
             self._user_id = data.get("userId") or data.get("sub")
