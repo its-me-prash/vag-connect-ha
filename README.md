@@ -181,7 +181,7 @@ entity: sensor.audi_s6_avant_reichweite
 show_icon: false
 styles:
   card:
-    - background-image: url('/local/vehicles/WAUZZZF29MN024037_side_large.png')
+    - background-image: url('/local/vehicles/WVWZZZ1KZAW000000_side_large.png')
     - background-size: contain
     - background-repeat: no-repeat
     - height: 180px

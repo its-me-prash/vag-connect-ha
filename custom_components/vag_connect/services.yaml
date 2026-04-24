@@ -11,7 +11,7 @@ lock:
       name: Fahrzeugidentifikationsnummer (VIN)
       description: Die VIN des Fahrzeugs.
       required: true
-      example: "WAUZZZ4G7EN123456"
+      example: "WVWZZZ00000000000"
       selector:
         text:
 
@@ -23,7 +23,7 @@ unlock:
       name: Fahrzeugidentifikationsnummer (VIN)
       description: Die VIN des Fahrzeugs.
       required: true
-      example: "WAUZZZ4G7EN123456"
+      example: "WVWZZZ00000000000"
       selector:
         text:
 
