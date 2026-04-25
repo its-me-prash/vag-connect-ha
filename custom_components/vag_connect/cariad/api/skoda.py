@@ -63,17 +63,17 @@ class SkodaClient(CariadBaseClient):
             d.doors_locked = v(access, "overallStatus") != "OPEN"
             d.doors_open = v(access, "doorsOpenedCount", default=0) > 0
             d.windows_open = v(access, "windowsOpenedCount", default=0) > 0
-            d.odometer_km = v(status, "detail", "mileageInKm")
+            # odometer is in maintenance endpoint, not vehicle-status
 
         # ── Charging ────────────────────────────────────────────────────────
         if isinstance(charging, dict):
             c = charging.get("status", {})
             d.battery_soc = v(c, "battery", "stateOfChargeInPercent")
-            d.charging_state = v(c, "charging", "state")
+            d.charging_state = v(c, "state")
             d.is_charging = d.charging_state == "CHARGING"
-            d.charging_power_kw = v(c, "charging", "chargePowerInKw")
-            d.charging_rate_kmh = v(c, "charging", "chargeRateInKmPerHour")
-            remaining = v(c, "charging", "remainingTimeToFullyChargedInMinutes")
+            d.charging_power_kw = v(c, "chargePowerInKw")
+            d.charging_rate_kmh = v(c, "chargingRateInKilometersPerHour")
+            remaining = v(c, "remainingTimeToFullyChargedInMinutes")
             if remaining:
                 d.charge_complete_eta = datetime.now(tz=timezone.utc) + timedelta(minutes=int(remaining))
             plug = v(c, "plug", "connectionState")
@@ -113,9 +113,12 @@ class SkodaClient(CariadBaseClient):
 
         # ── Maintenance ──────────────────────────────────────────────────────
         if isinstance(maintenance, dict):
-            d.service_km = v(maintenance, "maintenanceStatus", "inspectionDue_km")
-            d.service_due_at = v(maintenance, "maintenanceStatus", "inspectionDue_days")
-            d.oil_service_km = v(maintenance, "maintenanceStatus", "oilServiceDue_km")
+            report = v(maintenance, "maintenanceReport") or maintenance
+            d.odometer_km = v(report, "mileageInKm")
+            d.service_km = v(report, "inspectionDueInKm")
+            d.service_due_at = v(report, "inspectionDueInDays")
+            d.oil_service_km = v(report, "oilServiceDueInKm")
+            d.oil_service_at = v(report, "oilServiceDueInDays")
 
         # ── Readiness / online ───────────────────────────────────────────────
         if isinstance(readiness, dict):
