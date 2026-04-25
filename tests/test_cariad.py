@@ -1042,10 +1042,19 @@ class TestSkodaGetStatus:
         client = self._client({
             "status": {
                 "battery": {"stateOfChargeInPercent": 75},
-                "charging": {"state": "READY"},
+                "state": "READY",
+                "chargePowerInKw": 11.0,
+                "chargingRateInKilometersPerHour": 45,
                 "access": {"overallStatus": "LOCKED"},
             },
             "settings": {"targetStateOfChargeInPercent": 80},
+            "maintenanceReport": {
+                "mileageInKm": 25000,
+                "inspectionDueInKm": 8000,
+                "inspectionDueInDays": 120,
+                "oilServiceDueInKm": 5000,
+                "oilServiceDueInDays": 90,
+            },
         })
         result = asyncio.get_event_loop().run_until_complete(client.get_status("TMB_EV"))
         assert result.vin == "TMB_EV"
