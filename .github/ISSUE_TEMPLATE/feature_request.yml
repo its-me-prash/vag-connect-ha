@@ -1,14 +1,14 @@
 name: 💡 Feature Request
-description: Idee für eine neue Funktion
+description: Idea for a new feature / Idee für eine neue Funktion
 labels: ["enhancement"]
 body:
   - type: dropdown
     id: brand
     attributes:
-      label: Betrifft welche Marke(n)?
+      label: Affected brand(s) / Betrifft welche Marke(n)?
       multiple: true
       options:
-        - Alle
+        - All / Alle
         - Audi
         - Volkswagen EU
         - Škoda
@@ -22,21 +22,27 @@ body:
   - type: textarea
     id: feature
     attributes:
-      label: Was soll das Feature tun?
-      description: Kurze, klare Beschreibung.
+      label: What should the feature do? / Was soll das Feature tun?
+      description: Short, clear description. / Kurze, klare Beschreibung.
     validations:
       required: true
 
   - type: textarea
     id: usecase
     attributes:
-      label: Welches Problem löst es?
-      description: "z.B. 'Ich möchte eine Automation wenn der Akku unter 20% fällt, aber der Sensor fehlt.'"
+      label: What problem does it solve? / Welches Problem löst es?
+      description: |
+        e.g. "I want an automation when battery drops below 20 %, but the sensor is missing."
+
+        z.B. "Ich möchte eine Automation wenn der Akku unter 20 % fällt, aber der Sensor fehlt."
     validations:
       required: true
 
   - type: textarea
     id: api
     attributes:
-      label: API-Hinweise (optional)
-      description: Weißt du ob die VAG-API das unterstützt? Link zu Dokumentation oder ähnlichen Projekten?
+      label: API hints (optional) / API-Hinweise (optional)
+      description: |
+        Do you know if the VAG API supports this? Link to documentation or similar projects?
+
+        Weißt du ob die VAG-API das unterstützt? Link zu Dokumentation oder ähnlichen Projekten?
