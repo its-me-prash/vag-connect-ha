@@ -109,11 +109,39 @@ jobs:
             homeassistant
 
       - name: Tests mit Coverage ausführen
+        id: pytest
         run: |
-          python3 -m pytest tests/ -v --tb=short \
+          set -o pipefail
+          python3 -m pytest tests/ -v --tb=long \
             --cov=custom_components/vag_connect \
             --cov-report=term-missing \
-            --cov-fail-under=70
+            --cov-fail-under=70 2>&1 | tee pytest_output.log
+
+      - name: Show pytest output in step summary on failure
+        if: failure()
+        run: |
+          {
+            echo "## Pytest failure summary"
+            echo ""
+            echo '```'
+            # Show only the FAILED lines + tracebacks (last ~200 lines usually)
+            grep -E "^(FAILED|ERROR|E   |_____|=====|tests/.*::)" pytest_output.log | head -200 || true
+            echo '```'
+            echo ""
+            echo "## Last 100 lines of pytest output"
+            echo '```'
+            tail -100 pytest_output.log
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload pytest log as artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pytest-output
+          path: pytest_output.log
+          retention-days: 7
+          if-no-files-found: ignore
 
   hassfest:
     name: HA Hassfest
