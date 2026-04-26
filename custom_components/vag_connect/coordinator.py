@@ -162,14 +162,19 @@ class VagConnectCoordinator(DataUpdateCoordinator):
                     return_exceptions=True,
                 )
                 fresh: dict[str, Any] = {}
+                any_success = False
                 for vin, result in zip(vins, results):
                     if isinstance(result, Exception):
                         _LOGGER.debug("Poll failed for %s: %s", vin, result)
-                        fresh[vin] = self.vehicles.get(vin, {})
+                        old = self.vehicles.get(vin, {})
+                        old["_poll_failed"] = True
+                        fresh[vin] = old
                     elif isinstance(result, VehicleData):
                         data = result.to_dict()
                         data["_client"] = self._cariad_client
+                        data["_poll_failed"] = False
                         fresh[vin] = await self._enrich(data)
+                        any_success = True
                     else:
                         fresh[vin] = self.vehicles.get(vin, {})
                 with self._vehicles_lock:

@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from typing import Any
 
@@ -15,7 +16,7 @@ from ..models import BrandConfig, TokenSet, VehicleData
 
 _LOGGER = logging.getLogger(__name__)
 
-_REQUEST_TIMEOUT = 30
+_REQUEST_TIMEOUT = 60
 
 
 class CariadBaseClient:
@@ -40,6 +41,7 @@ class CariadBaseClient:
         self._spin = spin
         self._tokens: TokenSet | None = None
         self._image_data: dict[str, VehicleImageData] = {}
+        self._refresh_lock: asyncio.Lock | None = None
         self._auth = IDKAuth(session, brand)
 
     @property
@@ -148,9 +150,11 @@ class CariadBaseClient:
         return await self._request("POST", url, **kwargs)
 
     async def _request(
-        self, method: str, url: str, retry: bool = True, **kwargs: Any
+        self, method: str, url: str, retry: bool = True, _attempt: int = 0, **kwargs: Any
     ) -> Any:
-        """Execute an authenticated request, refreshing tokens on 401."""
+        """Execute an authenticated request with retry for transient errors."""
+        import asyncio as _aio  # noqa: PLC0415
+
         headers = kwargs.pop("headers", {})
         headers["Authorization"] = f"Bearer {self._access_token}"
         headers["Accept"] = "application/json"
@@ -163,6 +167,16 @@ class CariadBaseClient:
             if resp.status == 401 and retry:
                 await self._refresh_tokens()
                 return await self._request(method, url, retry=False, **kwargs)
+            if resp.status == 429 and _attempt < 3:
+                wait = (2 ** _attempt) * 5
+                _LOGGER.debug("Rate limited (429) — retrying in %ds", wait)
+                await _aio.sleep(wait)
+                return await self._request(method, url, retry=retry, _attempt=_attempt + 1, **kwargs)
+            if resp.status in (500, 502, 503) and _attempt < 2:
+                wait = (2 ** _attempt) * 3
+                _LOGGER.debug("Server error %d — retrying in %ds", resp.status, wait)
+                await _aio.sleep(wait)
+                return await self._request(method, url, retry=retry, _attempt=_attempt + 1, **kwargs)
             if resp.status == 204:
                 return None
             if resp.status not in (200, 201, 202, 207):
@@ -174,15 +188,21 @@ class CariadBaseClient:
             return await resp.text()
 
     async def _refresh_tokens(self) -> None:
-        """Attempt token refresh; fall back to full re-login."""
-        if self._tokens and self._tokens.refresh_token:
-            try:
-                self._tokens = await self._auth.refresh(self._tokens.refresh_token)
-                return
-            except TokenExpiredError:
-                pass
-        _LOGGER.info("Token refresh failed — re-authenticating for %s", self._brand.name)
-        await self.authenticate()
+        """Attempt token refresh; fall back to full re-login.
+
+        Uses a lock to prevent concurrent refresh attempts from racing.
+        """
+        if self._refresh_lock is None:
+            self._refresh_lock = asyncio.Lock()
+        async with self._refresh_lock:
+            if self._tokens and self._tokens.refresh_token:
+                try:
+                    self._tokens = await self._auth.refresh(self._tokens.refresh_token)
+                    return
+                except TokenExpiredError:
+                    pass
+            _LOGGER.info("Token refresh failed — re-authenticating for %s", self._brand.name)
+            await self.authenticate()
 
     @property
     def _access_token(self) -> str:
