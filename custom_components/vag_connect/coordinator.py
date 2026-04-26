@@ -369,6 +369,8 @@ class VagConnectCoordinator(DataUpdateCoordinator):
 
     async def async_unlock(self, vin: str) -> None:
         spin = self.entry.data.get(CONF_SPIN) or ""
+        if not spin:
+            _LOGGER.warning("Unlock requires S-PIN — configure it in integration options")
         await self._cariad_cmd(vin, "command_unlock", spin=spin)
 
     async def async_start_climatisation(self, vin: str) -> None:

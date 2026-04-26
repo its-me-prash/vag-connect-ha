@@ -97,7 +97,7 @@
         "name": "Nájezd"
       },
       "charging_state": {
-        "name": "Nabíjení"
+        "name": "Stav nabíjení"
       },
       "plug_state": {
         "name": "Nabíjecí konektor"
@@ -139,10 +139,10 @@
         "name": "Datum výměny oleje"
       },
       "vehicle_state": {
-        "name": "Stav vozidla"
+        "name": "Stav vozu"
       },
       "parking_address": {
-        "name": "Poloha"
+        "name": "Zaparkováno"
       },
       "parking_city": {
         "name": "Město"
@@ -186,10 +186,10 @@
         "name": "Klimatizace aktivní"
       },
       "is_driving": {
-        "name": "V pohybu"
+        "name": "Na cestě"
       },
       "is_online": {
-        "name": "Dostupné"
+        "name": "Vůz dostupný"
       },
       "connector_locked": {
         "name": "Konektor uzamčen"
@@ -273,7 +273,7 @@
     },
     "button": {
       "flash_button": {
-        "name": "Světelný signál"
+        "name": "Blikání světel"
       },
       "refresh_button": {
         "name": "Aktualizovat data"
@@ -284,7 +284,7 @@
     },
     "climate": {
       "climate": {
-        "name": "Předklimatizace"
+        "name": "Klimatizace"
       }
     },
     "device_tracker": {

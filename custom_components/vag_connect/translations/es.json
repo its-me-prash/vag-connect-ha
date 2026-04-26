@@ -97,7 +97,7 @@
         "name": "Kilometraje"
       },
       "charging_state": {
-        "name": "Carga activa"
+        "name": "Estado de carga"
       },
       "plug_state": {
         "name": "Enchufe de carga"
@@ -139,10 +139,10 @@
         "name": "Fecha de cambio de aceite"
       },
       "vehicle_state": {
-        "name": "Estado del vehículo"
+        "name": "Estado del coche"
       },
       "parking_address": {
-        "name": "Ubicación"
+        "name": "Aparcado en"
       },
       "parking_city": {
         "name": "Ciudad"
@@ -189,7 +189,7 @@
         "name": "En marcha"
       },
       "is_online": {
-        "name": "Accesible"
+        "name": "Vehículo disponible"
       },
       "connector_locked": {
         "name": "Enchufe bloqueado"
@@ -273,7 +273,7 @@
     },
     "button": {
       "flash_button": {
-        "name": "Señal luminosa"
+        "name": "Ráfaga de luces"
       },
       "refresh_button": {
         "name": "Actualizar datos"
@@ -284,7 +284,7 @@
     },
     "climate": {
       "climate": {
-        "name": "Preclimatización"
+        "name": "Climatización"
       }
     },
     "device_tracker": {

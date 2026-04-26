@@ -97,7 +97,7 @@
         "name": "Przebieg"
       },
       "charging_state": {
-        "name": "Ładowanie"
+        "name": "Status ładowania"
       },
       "plug_state": {
         "name": "Wtyczka ładowania"
@@ -139,10 +139,10 @@
         "name": "Data wymiany oleju"
       },
       "vehicle_state": {
-        "name": "Stan pojazdu"
+        "name": "Status auta"
       },
       "parking_address": {
-        "name": "Lokalizacja"
+        "name": "Zaparkowany"
       },
       "parking_city": {
         "name": "Miasto"
@@ -186,10 +186,10 @@
         "name": "Klimatyzacja aktywna"
       },
       "is_driving": {
-        "name": "W ruchu"
+        "name": "W trasie"
       },
       "is_online": {
-        "name": "Dostępny"
+        "name": "Pojazd dostępny"
       },
       "connector_locked": {
         "name": "Wtyczka zablokowana"
@@ -273,7 +273,7 @@
     },
     "button": {
       "flash_button": {
-        "name": "Sygnał świetlny"
+        "name": "Mignięcie światłami"
       },
       "refresh_button": {
         "name": "Odśwież dane"
@@ -284,7 +284,7 @@
     },
     "climate": {
       "climate": {
-        "name": "Wstępne klimatyzowanie"
+        "name": "Klimatyzacja postojowa"
       }
     },
     "device_tracker": {

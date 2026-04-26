@@ -97,7 +97,7 @@
         "name": "Kilometerstand"
       },
       "charging_state": {
-        "name": "Laadproces"
+        "name": "Laadstatus"
       },
       "plug_state": {
         "name": "Laadstekker"
@@ -118,7 +118,7 @@
         "name": "Laadtype"
       },
       "climatisation_state": {
-        "name": "Klimaatregeling"
+        "name": "Airco"
       },
       "target_temperature": {
         "name": "Doeltemperatuur"
@@ -139,10 +139,10 @@
         "name": "Datum olieverversing"
       },
       "vehicle_state": {
-        "name": "Voertuigstatus"
+        "name": "Auto-status"
       },
       "parking_address": {
-        "name": "Locatie"
+        "name": "Geparkeerd bij"
       },
       "parking_city": {
         "name": "Stad"
@@ -186,10 +186,10 @@
         "name": "Klimaatregeling actief"
       },
       "is_driving": {
-        "name": "In gebruik"
+        "name": "Onderweg"
       },
       "is_online": {
-        "name": "Bereikbaar"
+        "name": "Voertuig bereikbaar"
       },
       "connector_locked": {
         "name": "Laadstekker vergrendeld"
@@ -284,7 +284,7 @@
     },
     "climate": {
       "climate": {
-        "name": "Voorverwarming"
+        "name": "Standklimatisering"
       }
     },
     "device_tracker": {

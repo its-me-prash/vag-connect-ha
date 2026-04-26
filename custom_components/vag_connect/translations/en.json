@@ -97,10 +97,10 @@
         "name": "Odometer"
       },
       "charging_state": {
-        "name": "Charging"
+        "name": "Charging Status"
       },
       "plug_state": {
-        "name": "Plug"
+        "name": "Charging Port"
       },
       "target_soc": {
         "name": "Charge Target"
@@ -112,13 +112,13 @@
         "name": "Charging Speed"
       },
       "charge_complete_eta": {
-        "name": "Charge Complete"
+        "name": "Charging Done By"
       },
       "charging_type": {
         "name": "Charge Type"
       },
       "climatisation_state": {
-        "name": "Climatisation"
+        "name": "Climate Control"
       },
       "target_temperature": {
         "name": "Target Temperature"
@@ -139,13 +139,13 @@
         "name": "Oil Change Date"
       },
       "vehicle_state": {
-        "name": "Vehicle State"
+        "name": "Vehicle Status"
       },
       "parking_address": {
-        "name": "Location"
+        "name": "Parked At"
       },
       "parking_city": {
-        "name": "City"
+        "name": "Parked In"
       },
       "battery_temp": {
         "name": "Battery Temperature"
@@ -160,7 +160,7 @@
         "name": "Departure Timer 3"
       },
       "last_updated_at": {
-        "name": "Last Updated"
+        "name": "Last Update"
       },
       "adblue_range_km": {
         "name": "AdBlue Range"
@@ -180,25 +180,25 @@
         "name": "Charging Cable Connected"
       },
       "is_charging": {
-        "name": "Charging"
+        "name": "Currently Charging"
       },
       "climatisation_active": {
-        "name": "Climatisation Active"
+        "name": "Climate Control Active"
       },
       "is_driving": {
-        "name": "Driving"
+        "name": "On the Road"
       },
       "is_online": {
-        "name": "Reachable"
+        "name": "Vehicle Reachable"
       },
       "connector_locked": {
-        "name": "Charging Plug Locked"
+        "name": "Charging Cable Locked"
       },
       "trunk_locked": {
         "name": "Trunk Locked"
       },
       "sunroof_open": {
-        "name": "Sunroof"
+        "name": "Sunroof Open"
       },
       "window_heating_front": {
         "name": "Front Window Heating"
@@ -207,7 +207,7 @@
         "name": "Rear Window Heating"
       },
       "warning_active": {
-        "name": "Vehicle Warning Active"
+        "name": "Warning Active"
       },
       "warning_engine": {
         "name": "Engine Warning"
@@ -224,10 +224,10 @@
     },
     "switch": {
       "lock_switch": {
-        "name": "Door Lock"
+        "name": "Central Locking"
       },
       "climatisation_switch": {
-        "name": "Climatisation"
+        "name": "Climate Control"
       },
       "charging_switch": {
         "name": "Charging"
@@ -239,7 +239,7 @@
         "name": "Seat Heating"
       },
       "auto_unlock_switch": {
-        "name": "Unlock Plug After Charging"
+        "name": "Unlock Cable After Charging"
       },
       "departure_timer_1_switch": {
         "name": "Departure Timer 1"
@@ -256,7 +256,7 @@
         "name": "Charge Target"
       },
       "climate_temp_number": {
-        "name": "Climate Temperature"
+        "name": "Desired Temperature"
       },
       "max_charge_current": {
         "name": "Max. Charge Current"
@@ -265,26 +265,26 @@
         "name": "Charge Target"
       },
       "target_temperature": {
-        "name": "Climatisation Temperature"
+        "name": "Desired Temperature"
       },
       "min_soc": {
-        "name": "Minimum SoC (PHEV)"
+        "name": "Minimum Charge Level (Hybrid)"
       }
     },
     "button": {
       "flash_button": {
-        "name": "Flash Lights"
+        "name": "Flash Headlights"
       },
       "refresh_button": {
         "name": "Refresh Data"
       },
       "wake_button": {
-        "name": "Wake Up Vehicle"
+        "name": "Wake Up Car"
       }
     },
     "climate": {
       "climate": {
-        "name": "Pre-Conditioning"
+        "name": "Climate Control"
       }
     },
     "device_tracker": {
@@ -322,7 +322,7 @@
     },
     "lock": {
       "door_lock": {
-        "name": "Door Lock"
+        "name": "Central Locking"
       }
     }
   },

@@ -97,7 +97,7 @@
         "name": "Kilométrage"
       },
       "charging_state": {
-        "name": "Charge en cours"
+        "name": "État de charge"
       },
       "plug_state": {
         "name": "Prise de charge"
@@ -142,7 +142,7 @@
         "name": "État du véhicule"
       },
       "parking_address": {
-        "name": "Emplacement"
+        "name": "Garé à"
       },
       "parking_city": {
         "name": "Ville"
@@ -186,10 +186,10 @@
         "name": "Climatisation active"
       },
       "is_driving": {
-        "name": "En déplacement"
+        "name": "En route"
       },
       "is_online": {
-        "name": "Joignable"
+        "name": "Véhicule joignable"
       },
       "connector_locked": {
         "name": "Prise verrouillée"
@@ -273,7 +273,7 @@
     },
     "button": {
       "flash_button": {
-        "name": "Signal lumineux"
+        "name": "Appel de phares"
       },
       "refresh_button": {
         "name": "Actualiser les données"
@@ -284,7 +284,7 @@
     },
     "climate": {
       "climate": {
-        "name": "Préclimatisation"
+        "name": "Climatisation"
       }
     },
     "device_tracker": {

@@ -97,7 +97,7 @@
         "name": "Mätarställning"
       },
       "charging_state": {
-        "name": "Laddning"
+        "name": "Laddstatus"
       },
       "plug_state": {
         "name": "Laddkontakt"
@@ -118,7 +118,7 @@
         "name": "Laddningstyp"
       },
       "climatisation_state": {
-        "name": "Klimatisering"
+        "name": "Klimatanläggning"
       },
       "target_temperature": {
         "name": "Måltemperatur"
@@ -139,10 +139,10 @@
         "name": "Datum för oljebyte"
       },
       "vehicle_state": {
-        "name": "Fordonsstatus"
+        "name": "Bilstatus"
       },
       "parking_address": {
-        "name": "Plats"
+        "name": "Parkerad vid"
       },
       "parking_city": {
         "name": "Stad"
@@ -186,10 +186,10 @@
         "name": "Klimatisering aktiv"
       },
       "is_driving": {
-        "name": "I rörelse"
+        "name": "På väg"
       },
       "is_online": {
-        "name": "Nåbar"
+        "name": "Fordon nåbart"
       },
       "connector_locked": {
         "name": "Laddkontakt låst"
@@ -284,7 +284,7 @@
     },
     "climate": {
       "climate": {
-        "name": "Förklimatisering"
+        "name": "Kupévärmare"
       }
     },
     "device_tracker": {
