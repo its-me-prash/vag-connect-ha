@@ -1,7 +1,7 @@
 # Copyright 2026 Prash Balan (@its-me-prash) — Apache License 2.0
 """Škoda API client — mysmob.api.connect.skoda-auto.cz.
 
-Source: skodaconnect/myskoda (MIT) — clean-room reimplementation of endpoints.
+API endpoints verified against skodaconnect/myskoda (MIT) model classes.
 """
 
 from __future__ import annotations
@@ -44,28 +44,26 @@ class SkodaClient(CariadBaseClient):
         v = self._val
         d = VehicleData(vin=vin)
 
-        # Parallel fetch of key endpoints
         results = await asyncio.gather(
             self._get(f"{_BASE}/api/v2/vehicle-status/{vin}"),
             self._get(f"{_BASE}/api/v1/charging/{vin}"),
             self._get(f"{_BASE}/api/v2/air-conditioning/{vin}"),
-            self._get(f"{_BASE}/api/v1/maps/positions?vin={vin}"),
+            self._get(f"{_BASE}/api/v3/maps/positions/vehicles/{vin}/parking"),
             self._get(f"{_BASE}/api/v2/vehicle-status/{vin}/driving-range"),
             self._get(f"{_BASE}/api/v3/vehicle-maintenance/vehicles/{vin}"),
             self._get(f"{_BASE}/api/v2/connection-status/{vin}/readiness"),
             return_exceptions=True,
         )
-        status, charging, ac, positions, driving_range, maintenance, readiness = results
+        status, charging, ac, parking, driving_range, maintenance, readiness = results
 
-        # ── Access ──────────────────────────────────────────────────────────
+        # ── Access / doors / windows ─────────────────────────────────────────
         if isinstance(status, dict):
             access = v(status, "access") or {}
             d.doors_locked = v(access, "overallStatus") != "OPEN"
             d.doors_open = v(access, "doorsOpenedCount", default=0) > 0
             d.windows_open = v(access, "windowsOpenedCount", default=0) > 0
-            # odometer is in maintenance endpoint, not vehicle-status
 
-        # ── Charging ────────────────────────────────────────────────────────
+        # ── Charging ─────────────────────────────────────────────────────────
         if isinstance(charging, dict):
             c = charging.get("status", {})
             d.battery_soc = v(c, "battery", "stateOfChargeInPercent")
@@ -73,40 +71,53 @@ class SkodaClient(CariadBaseClient):
             d.is_charging = d.charging_state == "CHARGING"
             d.charging_power_kw = v(c, "chargePowerInKw")
             d.charging_rate_kmh = v(c, "chargingRateInKilometersPerHour")
+            d.charging_type = v(c, "chargeType")
             remaining = v(c, "remainingTimeToFullyChargedInMinutes")
             if remaining:
                 d.charge_complete_eta = datetime.now(tz=timezone.utc) + timedelta(minutes=int(remaining))
-            plug = v(c, "plug", "connectionState")
-            d.plug_connected = plug == "CONNECTED"
-            d.plug_state = plug
             d.has_battery = d.battery_soc is not None
 
             settings = charging.get("settings", {})
             d.target_soc = v(settings, "targetStateOfChargeInPercent")
             d.auto_unlock_charge = v(settings, "autoUnlockPlugWhenChargedAC") == "ON"
 
-        # ── Air conditioning ─────────────────────────────────────────────────
+        # ── Air conditioning (also has plug state!) ──────────────────────────
         if isinstance(ac, dict):
-            status_ac = ac.get("status", {})
-            d.climatisation_state = v(status_ac, "state")
-            d.climatisation_active = d.climatisation_state not in (None, "OFF")
-            d.target_temperature = v(ac, "settings", "targetTemperatureInCelsius")
+            d.climatisation_state = v(ac, "state")
+            d.climatisation_active = d.climatisation_state not in (None, "OFF", "INVALID")
+            temp_val = v(ac, "targetTemperature", "temperatureValue")
+            if temp_val is not None:
+                d.target_temperature = float(temp_val)
 
-        # ── Position ─────────────────────────────────────────────────────────
-        if isinstance(positions, dict):
-            parking = v(positions, "positions", default=[])
-            if isinstance(parking, list) and parking:
-                pos = parking[0].get("gpsCoordinates", {})
-                d.latitude = pos.get("latitude")
-                d.longitude = pos.get("longitude")
+            wh = v(ac, "windowHeatingState") or {}
+            d.window_heating_front = v(wh, "front") == "ON"
+            d.window_heating_back = v(wh, "rear") == "ON"
 
-        # ── Range ────────────────────────────────────────────────────────────
+            plug_conn = v(ac, "chargerConnectionState")
+            if plug_conn:
+                d.plug_connected = plug_conn == "CONNECTED"
+                d.plug_state = plug_conn
+            d.connector_locked = v(ac, "chargerLockState") == "LOCKED"
+
+        # ── Parking position (v3 with formatted address) ─────────────────────
+        if isinstance(parking, dict):
+            pos = v(parking, "parkingPosition", "gpsCoordinates") or {}
+            d.latitude = pos.get("latitude")
+            d.longitude = pos.get("longitude")
+            addr = v(parking, "parkingPosition", "formattedAddress")
+            if addr:
+                d.parking_address = addr
+
+        # ── Driving range ────────────────────────────────────────────────────
         if isinstance(driving_range, dict):
             electric = v(driving_range, "electricRange", "distanceInKm")
             total = v(driving_range, "totalRangeInKm")
             d.range_km = electric or total
             fuel = v(driving_range, "combustionRange")
             d.has_combustion = fuel is not None
+            adblue = v(driving_range, "adBlueRange", "distanceInKm")
+            if adblue is not None:
+                d.adblue_range_km = int(adblue)
 
         d.is_electric = d.has_battery and not d.has_combustion
         d.is_hybrid = d.has_battery and d.has_combustion
@@ -120,11 +131,15 @@ class SkodaClient(CariadBaseClient):
             d.oil_service_km = v(report, "oilServiceDueInKm")
             d.oil_service_at = v(report, "oilServiceDueInDays")
 
-        # ── Readiness / online ───────────────────────────────────────────────
+        # ── Connection status ────────────────────────────────────────────────
         if isinstance(readiness, dict):
-            d.is_online = v(readiness, "connectionState", "isOnline") is True
+            unreachable = v(readiness, "unreachable")
+            d.is_online = unreachable is False if unreachable is not None else None
+            d.is_driving = v(readiness, "inMotion") is True
 
         return d
+
+    # ── Commands ─────────────────────────────────────────────────────────────
 
     async def command_lock(self, vin: str) -> None:
         await self._post(f"{_BASE}/api/v1/vehicle-access/{vin}/lock", json={})
@@ -164,3 +179,9 @@ class SkodaClient(CariadBaseClient):
             f"{_BASE}/api/v2/air-conditioning/{vin}/settings/target-temperature",
             json={"temperatureValue": temp_c, "unitInCar": "CELSIUS"},
         )
+
+    async def command_start_window_heating(self, vin: str) -> None:
+        await self._post(f"{_BASE}/api/v2/air-conditioning/{vin}/start-window-heating", json={})
+
+    async def command_stop_window_heating(self, vin: str) -> None:
+        await self._post(f"{_BASE}/api/v2/air-conditioning/{vin}/stop-window-heating", json={})
