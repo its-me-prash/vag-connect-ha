@@ -21,6 +21,42 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ---
 
+## [1.7.0] - 2026-04-25
+
+### Added / Hinzugefügt
+
+- **Škoda: Complete API rewrite** — all JSON parsing paths verified against skodaconnect/myskoda. Plug state, climatisation, target temperature, window heating, parking address, AdBlue range, connector lock, charging type now work correctly. #54
+- **Car-friendly entity names** — 30 German, 27 English, 48 other language names improved. "Lichthupe" instead of "Lichtsignal", "Zentralverriegelung" instead of "Türverriegelung", "Klimaanlage" instead of "Klimatisierung" — terms every car owner understands.
+- **Škoda parking v3** — upgraded to `/v3/maps/positions` with `formattedAddress` (no external geocoding needed).
+- **Škoda window heating** — start/stop commands added.
+- **SPIN validation** — warns if S-PIN is missing before unlock attempt.
+
+---
+
+- **Škoda: Kompletter API-Rewrite** — alle JSON-Pfade gegen skodaconnect/myskoda verifiziert. Ladeanschluss, Klimaanlage, Wunschtemperatur, Scheibenheizung, Parkadresse, AdBlue, Kabelverriegelung, Ladeart funktionieren jetzt korrekt. #54
+- **Autofahrer-freundliche Entity-Namen** — "Lichthupe" statt "Lichtsignal", "Zentralverriegelung" statt "Türverriegelung", "Klimaanlage" statt "Klimatisierung". 30 deutsche + 27 englische + 48 weitere Sprachen verbessert.
+- **Škoda Parking v3** — mit `formattedAddress` direkt von der API (kein externes Geocoding).
+- **S-PIN Warnung** — warnt wenn S-PIN fehlt vor Entriegelungsversuch.
+
+### Fixed / Behoben
+
+- **Rate limit handling** — exponential backoff for 429/503 errors (3 retries with 5/15/45s delays). Request timeout increased to 60s.
+- **Token refresh lock** — prevents concurrent refresh attempts from racing.
+- **Stale data tracking** — poll failures now tracked instead of silently serving old values.
+- **Škoda sensors** — 5 previously broken sensors (odometer, charging state/power/speed, service km) now return correct values.
+- **GraphQL skip** — no more 404 errors for non-Audi brands.
+- **Bootstrap timeout** — poll loop runs as background task.
+- **HTTP 201** — accepted as success for async commands.
+
+---
+
+- **Rate-Limit-Behandlung** — exponentieller Backoff bei 429/503 (3 Versuche). Timeout auf 60s erhöht.
+- **Token-Refresh-Lock** — verhindert gleichzeitige Refresh-Versuche.
+- **Veraltete-Daten-Tracking** — Poll-Fehler werden jetzt markiert statt alte Werte stillschweigend zu servieren.
+- **Škoda Sensoren** — 5 vorher defekte Sensoren zeigen jetzt korrekte Werte.
+
+---
+
 ## [1.6.1] - 2026-04-25
 
 ### Fixed / Behoben
