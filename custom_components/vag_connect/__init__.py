@@ -35,6 +35,8 @@ PLATFORMS: list[Platform] = [
     Platform.CLIMATE,
     Platform.NUMBER,
     Platform.LOCK,
+    Platform.IMAGE,
+    Platform.SELECT,
 ]
 
 SERVICE_VIN_SCHEMA = vol.Schema({vol.Required("vin"): cv.string})
@@ -228,7 +230,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: VagConnectConfigEntry) 
             if hass.services.has_service(DOMAIN, svc):
                 hass.services.async_remove(DOMAIN, svc)
 
-    return unload_ok
+    return bool(unload_ok)
 
 
 async def _async_update_listener(

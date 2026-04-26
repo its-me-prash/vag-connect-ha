@@ -8,8 +8,8 @@
   "dependencies": [],
   "documentation": "https://github.com/its-me-prash/vag-connect-ha",
   "integration_type": "hub",
-  "iot_class": "cloud_push",
+  "iot_class": "cloud_polling",
   "issue_tracker": "https://github.com/its-me-prash/vag-connect-ha/issues",
   "requirements": [],
-  "version": "1.7.0"
+  "version": "1.8.0"
 }

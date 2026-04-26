@@ -134,7 +134,9 @@ class SkodaClient(CariadBaseClient):
         # ── Connection status ────────────────────────────────────────────────
         if isinstance(readiness, dict):
             unreachable = v(readiness, "unreachable")
-            d.is_online = unreachable is False if unreachable is not None else None
+            # When unreachable is unknown (None), assume reachable (True)
+            # to avoid setting is_online to a falsy default.
+            d.is_online = unreachable is None or unreachable is False
             d.is_driving = v(readiness, "inMotion") is True
 
         return d
@@ -162,7 +164,12 @@ class SkodaClient(CariadBaseClient):
     async def command_stop_charging(self, vin: str) -> None:
         await self._post(f"{_BASE}/api/v1/charging/{vin}/stop", json={})
 
-    async def command_flash(self, vin: str) -> None:
+    async def command_flash(
+        self,
+        vin: str,
+        latitude: float | None = None,  # noqa: ARG002
+        longitude: float | None = None,  # noqa: ARG002
+    ) -> None:
         await self._post(f"{_BASE}/api/v1/vehicle-access/{vin}/honk-and-flash", json={"mode": "FLASH_ONLY"})
 
     async def command_wake(self, vin: str) -> None:

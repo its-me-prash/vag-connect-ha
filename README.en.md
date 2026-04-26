@@ -129,13 +129,30 @@ Restart Home Assistant.
 
 ## Roadmap
 
+### Achieved so far
+
 | Version | Content | Status |
 |---|---|---|
 | v1.0–v1.5 | 9 platforms, 7 brands, bugs & entity audit | ✅ Done |
 | v1.6.0 | SEAT/CUPRA 9 endpoints, Škoda fix, Audi PPC, Lock, nightly reduction | ✅ Done |
-| v1.7.0 | Charging profiles, alarm, consumption, climate timer, Firebase push | 🔜 |
-| v1.8.0 | Navigation → vehicle, remote start, trip statistics | 🔜 |
-| v2.0.0 | HACS Official (live tests all 7 brands) | 🎯 |
+| v1.7.0 | Complete Škoda rewrite, car-friendly translations all languages, reliability | ✅ Done |
+
+### Session plan (P0 → P2)
+
+| Session | Version | Scope | Issues |
+|---|---|---|---|
+| **1 — Foundation Fix** | v1.8.0 | iot_class, per-VIN availability, S-PIN fail-fast, fake writables removed, geocoding opt-in, platforms sync | **#60** |
+| **2 — Capabilities** | v1.8.1 | Capability-gated entities, subscription detection | #56 |
+| **3 — Command Profile** | v1.8.2 | Brand/region/platform routing, RS e-tron GT fix | #61, #51 |
+| **4 — Diagnostics + Fixtures** | v1.8.3 | Anonymized diagnostics, regression tests | #62, #58 |
+| **5 — Process & Governance** | — | Issue forms, brand captains, CODEOWNERS, privacy guide | #64 |
+| **6 — Read-only + Locking** | v1.9.0 | Read-only mode, command locking, cloud vs wake | #63, #55 |
+| **7 — Push CUPRA/SEAT** | v1.9.1 | Firebase FCM via mqtt.messagehub.de | #57 |
+| **8 — Push Škoda** | v1.9.2 | MQTT broker integration | #57 |
+| **9 — Feature batch** | v1.10.0 | Trip stats, charging history, departure timer UI, alarm, charge profiles | #24, #35, #26, #33, #31 |
+| **10 — HACS Default + v2.0.0** | v2.0.0 | Live tests all brands, compatibility matrix, EU Data Act ready | #13, #59 |
+
+> Strict P0 → P1 → P2 order. Sessions 1–4 are non-negotiable before any new features land.
 
 ---
 

@@ -202,7 +202,12 @@ class VWEUClient(CariadBaseClient):
                 f"{_BASE}/vehicle/v1/vehicles/{vin}/charging/stop", json={},
             )
 
-    async def command_flash(self, vin: str) -> None:
+    async def command_flash(
+        self,
+        vin: str,
+        latitude: float | None = None,  # noqa: ARG002
+        longitude: float | None = None,  # noqa: ARG002
+    ) -> None:
         """Honk and flash."""
         await self._post(
             f"{_BASE}/vehicle/v1/vehicles/{vin}/vehicleLights/flash",

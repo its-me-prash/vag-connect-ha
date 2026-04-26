@@ -184,38 +184,66 @@ class TestEnrich:
         result = asyncio.get_event_loop().run_until_complete(coord._enrich(data))
         assert result["vehicle_state"] == "DRIVING"
 
-    def test_geocoding_skipped_when_address_already_set(self):
-        """If client already set parking_address, don't call geocoder."""
+    def test_geocoding_off_by_default(self):
+        """v1.8.0: reverse geocoding is opt-in. Without explicit opt-in,
+        the geocoder must NOT be called even when GPS is available (#60)."""
         import asyncio
+        from unittest.mock import AsyncMock, patch
         coord = self._make_coord()
-        data = {"latitude": 48.1, "longitude": 11.5,
-                "parking_address": "Existierende Straße 1, München"}
-        asyncio.get_event_loop().run_until_complete(coord._enrich(data))
-        coord.hass.async_add_executor_job.assert_not_called()
+        # Real dict so opt-in flag check returns False (MagicMock truthiness off).
+        coord.entry.options = {}
+        coord.entry.data = {"brand": "audi"}
+        with patch.object(coord, "_reverse_geocode", new=AsyncMock()) as mock_geo:
+            data = {"latitude": 48.1351, "longitude": 11.5820, "parking_address": None}
+            asyncio.get_event_loop().run_until_complete(coord._enrich(data))
+            mock_geo.assert_not_called()
 
-    def test_geocoding_called_when_gps_available(self):
-        """When lat/lon present and no address, geocoder is called."""
+    def test_geocoding_skipped_when_address_already_set(self):
+        """If client already set parking_address, don't call geocoder
+        even when opt-in is enabled."""
         import asyncio
-        from unittest.mock import AsyncMock
+        from unittest.mock import AsyncMock, patch
         coord = self._make_coord()
-        coord.hass.async_add_executor_job = AsyncMock(
+        coord.entry.options = {"enable_reverse_geocoding": True}
+        coord.entry.data = {"brand": "audi"}
+        with patch.object(coord, "_reverse_geocode", new=AsyncMock()) as mock_geo:
+            data = {"latitude": 48.1, "longitude": 11.5,
+                    "parking_address": "Existierende Straße 1, München"}
+            asyncio.get_event_loop().run_until_complete(coord._enrich(data))
+            mock_geo.assert_not_called()
+
+    def test_geocoding_called_when_opted_in_and_gps_available(self):
+        """When user opts in and lat/lon present, _reverse_geocode is called."""
+        import asyncio
+        from unittest.mock import AsyncMock, patch
+        coord = self._make_coord()
+        coord.entry.options = {"enable_reverse_geocoding": True}
+        coord.entry.data = {"brand": "audi"}
+        mock_geo = AsyncMock(
             return_value={"address": "Teststraße 1, München", "city": "München"}
         )
-        data = {"latitude": 48.1351, "longitude": 11.5820, "parking_address": None}
-        result = asyncio.get_event_loop().run_until_complete(coord._enrich(data))
-        coord.hass.async_add_executor_job.assert_called_once()
-        assert result["parking_address"] == "Teststraße 1, München"
-        assert result["parking_city"] == "München"
+        with patch.object(coord, "_reverse_geocode", new=mock_geo):
+            data = {"latitude": 48.1351, "longitude": 11.5820, "parking_address": None}
+            result = asyncio.get_event_loop().run_until_complete(coord._enrich(data))
+            mock_geo.assert_called_once()
+            assert result["parking_address"] == "Teststraße 1, München"
+            assert result["parking_city"] == "München"
 
     def test_geocoding_failure_does_not_crash(self):
         """Geocoding exception → silently ignored, address stays None."""
         import asyncio
-        from unittest.mock import AsyncMock
+        from unittest.mock import AsyncMock, patch
         coord = self._make_coord()
-        coord.hass.async_add_executor_job = AsyncMock(side_effect=Exception("Network error"))
-        data = {"latitude": 48.1, "longitude": 11.5, "parking_address": None}
-        result = asyncio.get_event_loop().run_until_complete(coord._enrich(data))
-        assert result.get("parking_address") is None  # no crash, address stays None
+        coord.entry.options = {"enable_reverse_geocoding": True}
+        coord.entry.data = {"brand": "audi"}
+        with patch.object(
+            coord,
+            "_reverse_geocode",
+            new=AsyncMock(side_effect=Exception("Network error")),
+        ):
+            data = {"latitude": 48.1, "longitude": 11.5, "parking_address": None}
+            result = asyncio.get_event_loop().run_until_complete(coord._enrich(data))
+            assert result.get("parking_address") is None  # no crash, address stays None
 
 
 # ── Fix #917: charging sensors return 0 when plugged but not charging ───────

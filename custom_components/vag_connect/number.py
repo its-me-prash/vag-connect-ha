@@ -66,19 +66,9 @@ NUMBER_DESCRIPTIONS: tuple[VagNumberDescription, ...] = (
         entity_category=EntityCategory.CONFIG,
         condition="electric",
     ),
-    VagNumberDescription(
-        key="max_charge_current",
-        translation_key="max_charge_current",
-        data_key="max_charge_current",
-        native_unit_of_measurement="A",
-        native_min_value=6,
-        native_max_value=32,
-        native_step=1,
-        mode=NumberMode.SLIDER,
-        icon="mdi:current-ac",
-        entity_category=EntityCategory.CONFIG,
-        condition="electric",
-    ),
+    # max_charge_current removed in v1.8.0 — no real API command exists yet.
+    # Entity reappears once the CARIAD client implements command_set_max_charge_current.
+    # See issue #60.
 )
 
 
@@ -124,5 +114,3 @@ class VagConnectNumber(VagConnectEntity, NumberEntity):
             await self.coordinator.async_set_climatisation_temperature(self._vin, value)
         elif key == "min_soc":
             await self.coordinator.async_set_min_soc(self._vin, int(value))
-        elif key == "max_charge_current":
-            await self.coordinator.async_set_max_charge_current(self._vin, int(value))

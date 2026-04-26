@@ -9,7 +9,6 @@ from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import DOMAIN
 from .coordinator import VagConnectCoordinator
 from .entity_base import VagConnectEntity
 
@@ -29,7 +28,7 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up charge-mode selects."""
-    coordinator: VagConnectCoordinator = hass.data[DOMAIN][entry.entry_id]
+    coordinator: VagConnectCoordinator = entry.runtime_data
     entities: list[SelectEntity] = []
 
     for vin, vehicle in coordinator.vehicles.items():
@@ -42,7 +41,7 @@ async def async_setup_entry(
 class VagChargeModeSelect(VagConnectEntity, SelectEntity):
     """Select entity for charging mode (MANUAL / TIMER / PREFERRED_CHARGING_TIMES)."""
 
-    _attr_name = "Lademodus"
+    _attr_translation_key = "charge_mode_select"
     _attr_icon = "mdi:ev-plug-type2"
     _attr_entity_category = EntityCategory.CONFIG
     _attr_options = list(_CHARGE_MODES.values())  # HA shows translated labels

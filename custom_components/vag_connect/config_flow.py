@@ -28,6 +28,7 @@ from homeassistant.helpers.selector import (
 from .const import (
     BRANDS,
     CONF_BRAND,
+    CONF_ENABLE_REVERSE_GEOCODING,
     CONF_FORCE_ACCESS,
     CONF_SCAN_INTERVAL,
     CONF_SPIN,
@@ -167,7 +168,7 @@ def _credentials_schema(
 
 # ── Config Flow ───────────────────────────────────────────────────────────────
 
-class VagConnectConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
+class VagConnectConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):  # type: ignore[call-arg]
     """Handle a config flow for VAG Connect."""
 
     VERSION = 1
@@ -377,20 +378,34 @@ class VagConnectOptionsFlow(config_entries.OptionsFlow):
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
     ) -> config_entries.ConfigFlowResult:
-        """Options: scan interval + S-PIN."""
+        """Options: scan interval, S-PIN, reverse geocoding opt-in."""
         if user_input is not None:
             return self.async_create_entry(title="", data=user_input)
 
-        current = self._config_entry.data
+        current_data = self._config_entry.data
+        current_options = self._config_entry.options
         return self.async_show_form(
             step_id="init",
             data_schema=vol.Schema({
                 vol.Optional(
                     CONF_SCAN_INTERVAL,
-                    default=current.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL),
+                    default=current_options.get(
+                        CONF_SCAN_INTERVAL,
+                        current_data.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL),
+                    ),
                 ): _INTERVAL_SELECTOR,
                 vol.Optional(
-                    CONF_SPIN, default=current.get(CONF_SPIN, "")
+                    CONF_SPIN,
+                    default=current_options.get(
+                        CONF_SPIN, current_data.get(CONF_SPIN, "")
+                    ),
                 ): _SPIN_SELECTOR,
+                vol.Optional(
+                    CONF_ENABLE_REVERSE_GEOCODING,
+                    default=current_options.get(
+                        CONF_ENABLE_REVERSE_GEOCODING,
+                        current_data.get(CONF_ENABLE_REVERSE_GEOCODING, False),
+                    ),
+                ): _BOOL_SELECTOR,
             }),
         )

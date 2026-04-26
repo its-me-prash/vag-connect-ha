@@ -130,13 +130,30 @@ Uruchom ponownie Home Assistant.
 
 ## Mapa Drogowa
 
-| Version | Content | Status |
+### Osiągnięte
+
+| Wersja | Zawartość | Status |
 |---|---|---|
-| v1.0–v1.5 | 9 platforms, 7 brands, bugs & entity audit | ✅ Done |
-| v1.6.0 | SEAT/CUPRA 9 endpoints, Škoda fix, Audi PPC, Lock, nightly reduction | ✅ Done |
-| v1.7.0 | Charging profiles, alarm, consumption, climate timer, Firebase push | 🔜 |
-| v1.8.0 | Navigation → vehicle, remote start, trip statistics | 🔜 |
-| v2.0.0 | HACS Official (live tests all 7 brands) | 🎯 |
+| v1.0–v1.5 | 9 platform, 7 marek, poprawki & audyt encji | ✅ Gotowe |
+| v1.6.0 | SEAT/CUPRA 9 endpointów, poprawka Škoda, Audi PPC, zamek, tryb nocny | ✅ Gotowe |
+| v1.7.0 | Kompletne przepisanie Škoda, motoryzacyjne tłumaczenia we wszystkich językach, niezawodność | ✅ Gotowe |
+
+### Plan sesji (P0 → P2)
+
+| Sesja | Wersja | Zakres | Issues |
+|---|---|---|---|
+| **1 — Foundation Fix** | v1.8.0 | iot_class, dostępność per VIN, S-PIN fail-fast, fałszywe writable usunięte | **#60** |
+| **2 — Capabilities** | v1.8.1 | Encje wg możliwości, detekcja subskrypcji | #56 |
+| **3 — Command Profile** | v1.8.2 | Routing marka/region/platforma, fix RS e-tron GT | #61, #51 |
+| **4 — Diagnostics + Fixtures** | v1.8.3 | Anonimizowane diagnostyki, testy regresji | #62, #58 |
+| **5 — Process & Governance** | — | Issue forms, brand captains, CODEOWNERS, przewodnik prywatności | #64 |
+| **6 — Read-only + Locking** | v1.9.0 | Tryb read-only, command locking, cloud vs wake | #63, #55 |
+| **7 — Push CUPRA/SEAT** | v1.9.1 | Firebase FCM via mqtt.messagehub.de | #57 |
+| **8 — Push Škoda** | v1.9.2 | Integracja brokera MQTT | #57 |
+| **9 — Feature batch** | v1.10.0 | Statystyki, historia ładowania, UI timerów, alarm, profile ładowania | #24, #35, #26, #33, #31 |
+| **10 — HACS Default + v2.0.0** | v2.0.0 | Live testy wszystkich marek, compatibility matrix, EU Data Act | #13, #59 |
+
+> Ścisła kolejność P0 → P1 → P2. Sesje 1–4 są nienegocjowalne przed nowymi funkcjami.
 
 ---
 

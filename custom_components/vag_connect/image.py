@@ -28,7 +28,6 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .cariad.api.graphql import RENDER_IMAGE_TYPES
-from .const import DOMAIN
 from .coordinator import VagConnectCoordinator
 from .entity_base import VagConnectEntity
 
@@ -59,7 +58,7 @@ async def async_setup_entry(
     If image_urls are not yet available at setup time (GraphQL fetch pending
     or failed), a coordinator listener will retry once data arrives.
     """
-    coordinator: VagConnectCoordinator = hass.data[DOMAIN][entry.entry_id]
+    coordinator: VagConnectCoordinator = entry.runtime_data
     added_vins: set[str] = set()
 
     # Ensure cache dir exists
