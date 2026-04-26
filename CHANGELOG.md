@@ -21,6 +21,61 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ---
 
+## [1.8.0] - 2026-04-26
+
+### Foundation Release — P0 Audit Findings (#60)
+
+A code audit identified seven release blockers in v1.7.0. v1.8.0 fixes
+them in a single atomic release before any new features are added.
+
+### Fixed / Behoben
+
+- **Per-VIN availability** — coordinator now tracks success/failure per
+  vehicle and exposes `is_vehicle_available(vin)`. A single failing
+  vehicle no longer blanks out entities of the others. The poll loop
+  previously pushed `success=True` regardless of any vehicle's actual
+  status, so entities appeared "fresh" with stale data.
+- **S-PIN fail-fast** — `unlock` raises `ServiceValidationError` with
+  translation key `spin_required` when no S-PIN is configured, instead
+  of sending the command to the API and getting a 4xx response.
+- **Fake writable entities removed** — `max_charge_current`,
+  `seat_heating_switch` and `auto_unlock_switch` only mutated internal
+  state without sending real API commands. Removed; will return once
+  the CARIAD client implements the matching commands.
+- **Reverse geocoding opt-in** — vehicle GPS was sent to OpenStreetMap
+  Nominatim on every poll. Now off by default, opt-in via options flow
+  `enable_reverse_geocoding`. When enabled, results are cached by
+  rounded coordinates (~110m) and use HA's shared aiohttp session
+  instead of a synchronous urllib request.
+- **Platforms in sync** — `image` and `select` platform files existed
+  but were never loaded (missing from `PLATFORMS` list and used the
+  obsolete `hass.data[DOMAIN]` lookup). Now properly forwarded and use
+  `entry.runtime_data`.
+- **`select` entity translated** — `VagChargeModeSelect` no longer uses
+  a hardcoded German name; picks up `charge_mode_select` from all 8
+  language files.
+- **`iot_class` corrected** — manifest declares `cloud_polling` instead
+  of the misleading `cloud_push` (no real push channel exists yet —
+  see #57).
+- **`quality_scale.yaml` cleaned** — removed duplicate `comment:` keys
+  and outdated hardcoded test counts.
+
+### Added / Hinzugefügt
+
+- New options flow setting **Reverse Geocoding** (privacy opt-in).
+- Translation keys `spin_required` and `feature_not_supported` in all
+  9 language files (en/de/cs/es/fr/nl/pl/sv).
+- Coordinator method `is_vehicle_available(vin)` — used by the entity
+  base class for per-VIN availability.
+
+### Roadmap
+
+v1.8.0 ist Session 1 von 10 (siehe README Roadmap).
+Als Nächstes: v1.8.1 Capabilities-Check (#56), v1.8.2 Command Profile
+Layer (#61), v1.8.3 Diagnostics + Fixtures (#62, #58).
+
+---
+
 ## [1.7.0] - 2026-04-25
 
 ### Added / Hinzugefügt

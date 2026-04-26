@@ -2665,41 +2665,8 @@ class TestSwitchAdditional:
         asyncio.get_event_loop().run_until_complete(sw.async_turn_off())
         coord._cariad_client.command_stop_window_heating.assert_awaited()
 
-    def test_seat_heating_switch_turn_on(self):
-        from custom_components.vag_connect.switch import VagSeatHeatingSwitch
-        coord = self._make_coord()
-        sw = VagSeatHeatingSwitch.__new__(VagSeatHeatingSwitch)
-        sw.coordinator = coord
-        sw._vin = "VIN1"
-        asyncio.get_event_loop().run_until_complete(sw.async_turn_on())
-        coord.hass.async_add_executor_job.assert_awaited()
-
-    def test_seat_heating_switch_turn_off(self):
-        from custom_components.vag_connect.switch import VagSeatHeatingSwitch
-        coord = self._make_coord()
-        sw = VagSeatHeatingSwitch.__new__(VagSeatHeatingSwitch)
-        sw.coordinator = coord
-        sw._vin = "VIN1"
-        asyncio.get_event_loop().run_until_complete(sw.async_turn_off())
-        coord.hass.async_add_executor_job.assert_awaited()
-
-    def test_auto_unlock_switch_turn_on(self):
-        from custom_components.vag_connect.switch import VagAutoUnlockSwitch
-        coord = self._make_coord()
-        sw = VagAutoUnlockSwitch.__new__(VagAutoUnlockSwitch)
-        sw.coordinator = coord
-        sw._vin = "VIN1"
-        asyncio.get_event_loop().run_until_complete(sw.async_turn_on())
-        coord.hass.async_add_executor_job.assert_awaited()
-
-    def test_auto_unlock_switch_turn_off(self):
-        from custom_components.vag_connect.switch import VagAutoUnlockSwitch
-        coord = self._make_coord()
-        sw = VagAutoUnlockSwitch.__new__(VagAutoUnlockSwitch)
-        sw.coordinator = coord
-        sw._vin = "VIN1"
-        asyncio.get_event_loop().run_until_complete(sw.async_turn_off())
-        coord.hass.async_add_executor_job.assert_awaited()
+    # VagSeatHeatingSwitch + VagAutoUnlockSwitch removed in v1.8.0 (#60).
+    # 4 tests removed; reintroduce when real API commands exist.
 
 
 # ── Micro-tests für 9 verbleibende Zeilen → 95% ───────────────────────────────

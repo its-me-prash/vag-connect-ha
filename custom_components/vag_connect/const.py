@@ -4,12 +4,13 @@
 DOMAIN = "vag_connect"
 
 # Config entry keys
-CONF_BRAND          = "brand"
-CONF_USERNAME       = "username"
-CONF_PASSWORD       = "password"
-CONF_SPIN           = "spin"
-CONF_SCAN_INTERVAL  = "scan_interval"
-CONF_FORCE_ACCESS   = "force_enable_access"
+CONF_BRAND                    = "brand"
+CONF_USERNAME                 = "username"
+CONF_PASSWORD                 = "password"
+CONF_SPIN                     = "spin"
+CONF_SCAN_INTERVAL            = "scan_interval"
+CONF_FORCE_ACCESS             = "force_enable_access"
+CONF_ENABLE_REVERSE_GEOCODING = "enable_reverse_geocoding"
 
 # Supported brands — must match CariadClientFactory.create() keys
 BRANDS = {

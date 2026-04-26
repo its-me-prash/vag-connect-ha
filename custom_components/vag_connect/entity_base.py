@@ -24,12 +24,15 @@ def _device_name(vehicle: dict, brand: str) -> str:
 class VagConnectEntity(CoordinatorEntity[VagConnectCoordinator]):
     """Base entity shared by all VAG Connect platforms.
 
-    parallel_updates=0: cloud_push — the CC background thread owns all API
-    calls.  HA entities never initiate requests.
+    parallel_updates=0: the coordinator's background poll loop owns all API
+    calls.  HA entities never initiate requests directly.
+
+    available: per-VIN — entity is unavailable when its vehicle's last poll
+    failed, even if other vehicles in the same account succeeded.
     """
 
     _attr_has_entity_name = True
-    _attr_parallel_updates = 0  # cloud_push: CC thread owns all updates
+    _attr_parallel_updates = 0  # coordinator owns all API requests
 
     def __init__(
         self,
@@ -50,6 +53,18 @@ class VagConnectEntity(CoordinatorEntity[VagConnectCoordinator]):
         data: dict[str, Any] = self.coordinator.data or {}
         result: dict[str, Any] = data.get(self._vin, {})
         return result
+
+    @property
+    def available(self) -> bool:
+        """Per-VIN availability — falls back to coordinator default if unknown.
+
+        Reflects the success of the last per-vehicle poll, so that a single
+        failing vehicle does not affect entities for other vehicles in the
+        same account.
+        """
+        if not super().available:
+            return False
+        return bool(self.coordinator.is_vehicle_available(self._vin))
 
     @property
     def device_info(self) -> DeviceInfo:

@@ -73,11 +73,13 @@
         "title": "VAG Connect — Nastavení",
         "data": {
           "scan_interval": "Interval aktualizace",
-          "spin": "S-PIN"
+          "spin": "S-PIN",
+          "enable_reverse_geocoding": "Reverzní geokódování (adresa parkování)"
         },
         "data_description": {
           "scan_interval": "Jak často se stahují data (minuty). Minimum: 3.",
-          "spin": "S-PIN pro zamykání dveří."
+          "spin": "S-PIN pro zamykání dveří.",
+          "enable_reverse_geocoding": "Odesílá GPS parkování do OpenStreetMap Nominatim pro získání ulice/města. Výchozí: vypnuto (soukromí)."
         }
       }
     }
@@ -351,6 +353,12 @@
   "exceptions": {
     "vehicle_not_found": {
       "message": "Vozidlo s VIN {vin} nebylo nalezeno."
+    },
+    "spin_required": {
+      "message": "Pro tuto akci je vyžadován S-PIN. Nastavte ho v Nastavení → Zařízení a služby → VAG Connect → Konfigurovat."
+    },
+    "feature_not_supported": {
+      "message": "Funkce '{feature}' není podporována vaším vozidlem nebo aktuálním API klientem. Akce nebyla odeslána."
     }
   }
 }

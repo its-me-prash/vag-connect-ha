@@ -71,7 +71,11 @@
         "title": "VAG Connect — Einstellungen",
         "data": {
           "scan_interval": "Aktualisierungsintervall (Minuten)",
-          "spin": "S-PIN"
+          "spin": "S-PIN",
+          "enable_reverse_geocoding": "Adress-Auflösung (Parkposition)"
+        },
+        "data_description": {
+          "enable_reverse_geocoding": "Sendet GPS der Parkposition an OpenStreetMap Nominatim, um Straße/Stadt zu ermitteln. Standard: aus (Datenschutz)."
         }
       }
     }
@@ -345,6 +349,12 @@
   "exceptions": {
     "vehicle_not_found": {
       "message": "Fahrzeug mit VIN {vin} nicht gefunden. Prüfe ob die Integration gestartet ist."
+    },
+    "spin_required": {
+      "message": "S-PIN ist für diese Aktion erforderlich. Konfiguriere ihn unter Einstellungen → Geräte & Dienste → VAG Connect → Konfigurieren."
+    },
+    "feature_not_supported": {
+      "message": "Die Funktion '{feature}' wird vom Fahrzeug oder dem aktuellen API-Client nicht unterstützt. Die Aktion wurde nicht gesendet."
     }
   }
 }

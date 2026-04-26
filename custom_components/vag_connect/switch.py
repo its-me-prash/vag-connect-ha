@@ -22,9 +22,11 @@ async def async_setup_entry(
         entities.append(VagLockSwitch(coordinator, vin))
         entities.append(VagClimatisationSwitch(coordinator, vin))
         entities.append(VagWindowHeatingSwitch(coordinator, vin))
-        entities.append(VagSeatHeatingSwitch(coordinator, vin))
+        # VagSeatHeatingSwitch + VagAutoUnlockSwitch removed in v1.8.0:
+        # they relied on internal CarConnectivity object mutation that no
+        # longer exists in our own CARIAD client. They will return once a
+        # real API command is implemented. See issue #60.
         if vehicle.get("has_battery"):  # EV + PHEV
-            entities.append(VagAutoUnlockSwitch(coordinator, vin))
             entities.append(VagChargingSwitch(coordinator, vin))
             for timer_id in (1, 2, 3):
                 entities.append(VagDepartureTimerSwitch(coordinator, vin, timer_id))
@@ -117,71 +119,6 @@ class VagWindowHeatingSwitch(VagConnectEntity, SwitchEntity):
 
     async def async_turn_off(self, **kwargs: object) -> None:
         await self.coordinator.async_stop_window_heating(self._vin)
-
-
-class VagSeatHeatingSwitch(VagConnectEntity, SwitchEntity):
-    """Sitzheizung Ein/Aus — Issue #6."""
-
-    _attr_translation_key = "seat_heating_switch"
-    _attr_icon = "mdi:car-seat-heater"
-
-    def __init__(self, coordinator: VagConnectCoordinator, vin: str) -> None:
-        super().__init__(coordinator, vin, "seat_heating_switch")
-
-    @property
-    def is_on(self) -> bool | None:
-        try:
-            v = self._vehicle.get("_vehicle")
-            if v is None:
-                return None
-            val = v.climatization.settings.seat_heating.value
-            return bool(val) if val is not None else None
-        except Exception:  # noqa: BLE001
-            return None
-
-    async def async_turn_on(self, **kwargs: object) -> None:
-        def _set() -> None:
-            v = self._vehicle.get("_vehicle")
-            if v:
-                v.climatization.settings.seat_heating.value = True
-        await self.coordinator.hass.async_add_executor_job(_set)
-        await self.coordinator.async_request_refresh()
-
-    async def async_turn_off(self, **kwargs: object) -> None:
-        def _set() -> None:
-            v = self._vehicle.get("_vehicle")
-            if v:
-                v.climatization.settings.seat_heating.value = False
-        await self.coordinator.hass.async_add_executor_job(_set)
-        await self.coordinator.async_request_refresh()
-
-
-class VagAutoUnlockSwitch(VagConnectEntity, SwitchEntity):
-    """Auto-unlock plug after charging completes."""
-
-    _attr_translation_key = "auto_unlock_switch"
-    _attr_icon = "mdi:ev-plug-ccs2"
-
-    def __init__(self, coordinator: VagConnectCoordinator, vin: str) -> None:
-        super().__init__(coordinator, vin, "auto_unlock_switch")
-
-    @property
-    def is_on(self) -> bool | None:
-        return self._vehicle.get("auto_unlock_charge")
-
-    async def async_turn_on(self, **kwargs: object) -> None:
-        await self._set_auto_unlock(True)
-
-    async def async_turn_off(self, **kwargs: object) -> None:
-        await self._set_auto_unlock(False)
-
-    async def _set_auto_unlock(self, value: bool) -> None:
-        def _do() -> None:
-            v = self._vehicle.get("_vehicle")
-            if v:
-                v.charging.settings.auto_unlock.value = value
-        await self.coordinator.hass.async_add_executor_job(_do)
-        await self.coordinator.async_request_refresh()
 
 
 class VagDepartureTimerSwitch(VagConnectEntity, SwitchEntity):

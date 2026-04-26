@@ -380,12 +380,7 @@ class TestSwitch:
         asyncio.get_event_loop().run_until_complete(s.async_turn_on())
         coord.async_set_departure_timer.assert_called_once_with(vin, 2, enabled=True, departure_time=None)
 
-    def test_auto_unlock_switch(self):
-        from custom_components.vag_connect.switch import VagAutoUnlockSwitch
-        coord = _make_coordinator()
-        vin = list(coord.data.keys())[0]
-        s = VagAutoUnlockSwitch(coord, vin)
-        assert s.is_on is False
+    # test_auto_unlock_switch removed in v1.8.0 — VagAutoUnlockSwitch deleted (#60).
 
 
 # ── button ─────────────────────────────────────────────────────────────────────
@@ -687,39 +682,8 @@ class TestSwitchExtended:
         s = VagWindowHeatingSwitch(coord, vin)
         assert s.is_on is None
 
-    def test_seat_heating_is_on(self):
-        from custom_components.vag_connect.switch import VagSeatHeatingSwitch
-        coord = _make_coordinator()
-        vin = list(coord.data.keys())[0]
-        v_mock = MagicMock()
-        v_mock.climatization.settings.seat_heating.value = True
-        coord.data[vin]["_vehicle"] = v_mock
-        s = VagSeatHeatingSwitch(coord, vin)
-        assert s.is_on is True
-
-    def test_seat_heating_turn_on_sets_value(self):
-        import asyncio
-        from custom_components.vag_connect.switch import VagSeatHeatingSwitch
-        coord = _make_coordinator()
-        vin = list(coord.data.keys())[0]
-        v_mock = MagicMock()
-        coord.data[vin]["_vehicle"] = v_mock
-        coord.vehicles[vin]["_vehicle"] = v_mock
-        s = VagSeatHeatingSwitch(coord, vin)
-        asyncio.get_event_loop().run_until_complete(s.async_turn_on())
-        coord.hass.async_add_executor_job.assert_called()
-
-    def test_auto_unlock_turn_on(self):
-        import asyncio
-        from custom_components.vag_connect.switch import VagAutoUnlockSwitch
-        coord = _make_coordinator()
-        vin = list(coord.data.keys())[0]
-        v_mock = MagicMock()
-        coord.data[vin]["_vehicle"] = v_mock
-        coord.vehicles[vin]["_vehicle"] = v_mock
-        s = VagAutoUnlockSwitch(coord, vin)
-        asyncio.get_event_loop().run_until_complete(s.async_turn_on())
-        coord.hass.async_add_executor_job.assert_called()
+    # VagSeatHeatingSwitch + VagAutoUnlockSwitch removed in v1.8.0 (#60).
+    # Tests removed; reintroduce when real API commands exist.
 
     def test_setup_creates_ev_switches(self):
         import asyncio
@@ -809,16 +773,9 @@ class TestClimateExtended:
 # ── Extended Number Tests ──────────────────────────────────────────────────────
 
 class TestNumberExtended:
-    def test_set_max_charge_current(self):
-        import asyncio
-        from custom_components.vag_connect.number import VagConnectNumber, VagNumberDescription
-        coord = _make_coordinator()
-        coord.async_set_max_charge_current = AsyncMock()
-        vin = list(coord.data.keys())[0]
-        desc = VagNumberDescription(key="max_charge_current", data_key="max_charge_current")
-        n = VagConnectNumber(coord, vin, desc)
-        asyncio.get_event_loop().run_until_complete(n.async_set_native_value(16))
-        coord.async_set_max_charge_current.assert_called_once_with(vin, 16)
+    # max_charge_current entity removed in v1.8.0 (#60) — no real API command exists.
+    # Direct call to coordinator.async_set_max_charge_current now raises
+    # ServiceValidationError; the test for that lives in TestRunCommand.
 
     def test_setup_creates_ev_numbers(self):
         import asyncio
@@ -832,15 +789,15 @@ class TestNumberExtended:
         )
         keys = {e.entity_description.key for e in added}
         assert "target_soc" in keys
-        assert "max_charge_current" in keys
         assert "target_temperature" in keys
+        assert "max_charge_current" not in keys  # Removed in v1.8.0
 
     def test_native_value_invalid_converts_to_none(self):
         from custom_components.vag_connect.number import VagConnectNumber, VagNumberDescription
         coord = _make_coordinator()
         vin = list(coord.data.keys())[0]
-        coord.data[vin]["max_charge_current"] = "invalid"
-        desc = VagNumberDescription(key="max_charge_current", data_key="max_charge_current")
+        coord.data[vin]["target_soc"] = "invalid"
+        desc = VagNumberDescription(key="target_soc", data_key="target_soc")
         n = VagConnectNumber(coord, vin, desc)
         assert n.native_value is None
 
@@ -1068,14 +1025,6 @@ class TestSwitchRemaining:
         s = VagChargingSwitch(coord, vin)
         assert s.is_on is None
 
-    def test_seat_heating_is_none_without_vehicle(self):
-        from custom_components.vag_connect.switch import VagSeatHeatingSwitch
-        coord = _make_coordinator()
-        vin = list(coord.data.keys())[0]
-        coord.data[vin]["_vehicle"] = None
-        s = VagSeatHeatingSwitch(coord, vin)
-        assert s.is_on is None
-
     def test_departure_timer_switch_turn_off(self):
         import asyncio
         from custom_components.vag_connect.switch import VagDepartureTimerSwitch
@@ -1189,13 +1138,15 @@ class TestRunCommand:
         asyncio.get_event_loop().run_until_complete(coord.async_wake_vehicle("VIN1"))
         coord._cariad_client.command_wake.assert_awaited()
 
-    def test_async_set_max_charge_current(self):
+    def test_async_set_max_charge_current_raises(self):
+        """v1.8.0: max_charge_current raises ServiceValidationError — no real API command."""
         import asyncio
+        from homeassistant.exceptions import ServiceValidationError
         coord, _ = self._make_coord()
-        asyncio.get_event_loop().run_until_complete(
-            coord.async_set_max_charge_current("VIN1", 16)
-        )
-        coord.async_request_refresh.assert_awaited()
+        with pytest.raises(ServiceValidationError):
+            asyncio.get_event_loop().run_until_complete(
+                coord.async_set_max_charge_current("VIN1", 16)
+            )
 
     def test_async_update_data_returns_vehicles_when_not_started(self):
         import asyncio
@@ -1330,33 +1281,7 @@ class TestSwitchWritePaths:
         coord.async_request_refresh = AsyncMock()
         return coord, vin, v_mock
 
-    def test_seat_heating_turn_off_sets_false(self):
-        import asyncio
-        from custom_components.vag_connect.switch import VagSeatHeatingSwitch
-        coord, vin, v = self._make_coord_with_vehicle()
-        s = VagSeatHeatingSwitch(coord, vin)
-        asyncio.get_event_loop().run_until_complete(s.async_turn_off())
-        coord.hass.async_add_executor_job.assert_called()
-        coord.async_request_refresh.assert_called()
-
-    def test_seat_heating_none_value_returns_none(self):
-        from custom_components.vag_connect.switch import VagSeatHeatingSwitch
-        coord = _make_coordinator()
-        vin = list(coord.data.keys())[0]
-        v_mock = MagicMock()
-        v_mock.climatization.settings.seat_heating.value = None
-        coord.data[vin]["_vehicle"] = v_mock
-        s = VagSeatHeatingSwitch(coord, vin)
-        assert s.is_on is None
-
-    def test_auto_unlock_turn_off(self):
-        import asyncio
-        from custom_components.vag_connect.switch import VagAutoUnlockSwitch
-        coord, vin, v = self._make_coord_with_vehicle()
-        s = VagAutoUnlockSwitch(coord, vin)
-        asyncio.get_event_loop().run_until_complete(s.async_turn_off())
-        coord.hass.async_add_executor_job.assert_called()
-        coord.async_request_refresh.assert_called()
+    # VagSeatHeatingSwitch + VagAutoUnlockSwitch removed in v1.8.0 (#60).
 
     def test_window_heating_active_state(self):
         from custom_components.vag_connect.switch import VagWindowHeatingSwitch

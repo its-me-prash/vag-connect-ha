@@ -17,10 +17,12 @@ import threading
 from typing import Any
 
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
 from .const import (
     CONF_BRAND,
+    CONF_ENABLE_REVERSE_GEOCODING,
     CONF_PASSWORD,
     CONF_SCAN_INTERVAL,
     CONF_SPIN,
@@ -54,6 +56,13 @@ class VagConnectCoordinator(DataUpdateCoordinator):
         # Thread-safe dict for vehicle data
         self.vehicles: dict[str, Any] = {}
         self._vehicles_lock = threading.Lock()
+
+        # Per-VIN poll success tracking — entities use this for availability
+        # so a single failing vehicle doesn't blank out the others.
+        self.vehicle_success: dict[str, bool] = {}
+
+        # Reverse-geocoding cache: {(round(lat,3), round(lon,3)): result}
+        self._geocode_cache: dict[tuple[float, float], dict[str, str | None]] = {}
 
         # update_interval=None: no HA-level polling
         # Updates arrive reactively via _on_cc_update → async_set_updated_data
@@ -101,11 +110,13 @@ class VagConnectCoordinator(DataUpdateCoordinator):
                 for vin, result in zip(vins, results):
                     if isinstance(result, Exception):
                         _LOGGER.warning("Could not fetch status for %s: %s", vin, result)
+                        self.vehicle_success[vin] = False
                         continue
                     if isinstance(result, VehicleData):
                         data = result.to_dict()
                         data["_client"] = self._cariad_client
                         self.vehicles[vin] = await self._enrich(data)
+                        self.vehicle_success[vin] = True
 
             self._started = True
             found = len(self.vehicles)
@@ -169,19 +180,25 @@ class VagConnectCoordinator(DataUpdateCoordinator):
                         old = self.vehicles.get(vin, {})
                         old["_poll_failed"] = True
                         fresh[vin] = old
+                        self.vehicle_success[vin] = False
                     elif isinstance(result, VehicleData):
                         data = result.to_dict()
                         data["_client"] = self._cariad_client
                         data["_poll_failed"] = False
                         fresh[vin] = await self._enrich(data)
                         any_success = True
+                        self.vehicle_success[vin] = True
                     else:
                         fresh[vin] = self.vehicles.get(vin, {})
+                        self.vehicle_success[vin] = False
                 with self._vehicles_lock:
                     self.vehicles.update(fresh)
-                await self._async_push_update(fresh, success=True)
+                await self._async_push_update(fresh, success=any_success)
             except Exception as err:  # noqa: BLE001
                 _LOGGER.error("VAG Connect poll error: %s", err)
+                # Mark all known VINs as failed — avoids stale-as-fresh
+                for vin in list(self.vehicles.keys()):
+                    self.vehicle_success[vin] = False
                 await self._async_push_update({}, success=False)
 
     async def async_shutdown(self) -> None:
@@ -194,6 +211,15 @@ class VagConnectCoordinator(DataUpdateCoordinator):
     def is_active(self) -> bool:
         """Return True if the CARIAD polling loop is active."""
         return self._started
+
+    def is_vehicle_available(self, vin: str) -> bool:
+        """Return True if the last poll for *vin* succeeded.
+
+        Used by entities to expose per-VIN availability so a single failing
+        vehicle does not blank out entities of other vehicles in the same
+        account. Defaults to True for unknown VINs (covers initial setup).
+        """
+        return self.vehicle_success.get(vin, True)
 
     async def _async_push_update(self, data: dict, success: bool = True) -> None:
         """Push vehicle data to HA.
@@ -289,52 +315,84 @@ class VagConnectCoordinator(DataUpdateCoordinator):
         if not data.get("is_driving") and data.get("vehicle_state") == "DRIVING":
             data["is_driving"] = True
 
-        # Reverse geocode parking position (best-effort, only if not already set)
-        lat = data.get("latitude")
-        lon = data.get("longitude")
-        if lat and lon and not data.get("parking_address"):
-            try:
-                result = await self.hass.async_add_executor_job(
-                    self._reverse_geocode, lat, lon
-                )
-                if result:
-                    data["parking_address"] = result.get("address")
-                    data["parking_city"] = result.get("city")
-            except Exception:  # noqa: BLE001
-                pass  # geocoding is optional — never fail an update because of it
+        # Reverse geocode parking position — opt-in, privacy-aware (#60).
+        # Default OFF: vehicle GPS is sensitive and would otherwise be sent
+        # to a third-party service (OpenStreetMap Nominatim) on every poll.
+        if self._reverse_geocoding_enabled():
+            lat = data.get("latitude")
+            lon = data.get("longitude")
+            if lat and lon and not data.get("parking_address"):
+                try:
+                    result = await self._reverse_geocode(float(lat), float(lon))
+                    if result:
+                        data["parking_address"] = result.get("address")
+                        data["parking_city"] = result.get("city")
+                except Exception:  # noqa: BLE001
+                    pass  # geocoding is optional — never fail an update because of it
 
         return data
 
+    def _reverse_geocoding_enabled(self) -> bool:
+        """Return True if the user explicitly opted into reverse geocoding."""
+        return bool(
+            self.entry.options.get(CONF_ENABLE_REVERSE_GEOCODING, False)
+            or self.entry.data.get(CONF_ENABLE_REVERSE_GEOCODING, False)
+        )
 
-    @staticmethod
-    def _reverse_geocode(lat: float, lon: float) -> dict | None:
-        """Reverse geocode lat/lon via Nominatim (OSM).
+    async def _reverse_geocode(
+        self, lat: float, lon: float
+    ) -> dict[str, str | None] | None:
+        """Reverse geocode lat/lon via Nominatim using HA's shared aiohttp session.
 
-        Uses HA's built-in reverse geocoding convention:
-        User-Agent required by Nominatim ToS.
-        Returns dict with 'address' and 'city' keys.
+        Coordinates are rounded to 3 decimals (~110m precision) for caching
+        so we do not hit Nominatim every poll for the same parking spot.
         """
-        import urllib.request  # noqa: PLC0415
-        import json as _json  # noqa: PLC0415
+        from homeassistant.helpers.aiohttp_client import (  # noqa: PLC0415
+            async_get_clientsession,
+        )
 
+        cache_key = (round(lat, 3), round(lon, 3))
+        if cache_key in self._geocode_cache:
+            return self._geocode_cache[cache_key]
+
+        session = async_get_clientsession(self.hass)
         url = (
-            f"https://nominatim.openstreetmap.org/reverse"
+            "https://nominatim.openstreetmap.org/reverse"
             f"?lat={lat}&lon={lon}&format=json&addressdetails=1"
         )
-        req = urllib.request.Request(url, headers={"User-Agent": "VAGConnect/1.0 HomeAssistant"})
-        with urllib.request.urlopen(req, timeout=5) as resp:
-            data = _json.loads(resp.read())
+        headers = {"User-Agent": "VAGConnect/1.x (+https://github.com/its-me-prash/vag-connect-ha)"}
+        try:
+            async with session.get(url, headers=headers, timeout=5) as resp:
+                if resp.status != 200:
+                    return None
+                payload = await resp.json()
+        except Exception:  # noqa: BLE001
+            return None
 
-        addr = data.get("address", {})
+        addr = payload.get("address", {}) if isinstance(payload, dict) else {}
         road = addr.get("road") or addr.get("pedestrian") or addr.get("path", "")
         house = addr.get("house_number", "")
-        city = addr.get("city") or addr.get("town") or addr.get("village") or addr.get("municipality", "")
-        display = data.get("display_name", "")
+        city = (
+            addr.get("city")
+            or addr.get("town")
+            or addr.get("village")
+            or addr.get("municipality", "")
+        )
+        display = payload.get("display_name", "") if isinstance(payload, dict) else ""
 
         street = f"{road} {house}".strip() if house else road
-        address = f"{street}, {city}".strip(", ") if street and city else (city or display[:60])
+        address = (
+            f"{street}, {city}".strip(", ")
+            if street and city
+            else (city or display[:60])
+        )
 
-        return {"address": address or None, "city": city or None}
+        result: dict[str, str | None] = {
+            "address": address or None,
+            "city": city or None,
+        }
+        self._geocode_cache[cache_key] = result
+        return result
 
     async def _async_update_data(self) -> dict[str, Any]:
         """Manual refresh — fetches fresh status for all known VINs."""
@@ -368,9 +426,12 @@ class VagConnectCoordinator(DataUpdateCoordinator):
         await self._cariad_cmd(vin, "command_lock")
 
     async def async_unlock(self, vin: str) -> None:
-        spin = self.entry.data.get(CONF_SPIN) or ""
+        spin = self.entry.options.get(CONF_SPIN) or self.entry.data.get(CONF_SPIN) or ""
         if not spin:
-            _LOGGER.warning("Unlock requires S-PIN — configure it in integration options")
+            raise ServiceValidationError(
+                translation_domain=DOMAIN,
+                translation_key="spin_required",
+            )
         await self._cariad_cmd(vin, "command_unlock", spin=spin)
 
     async def async_start_climatisation(self, vin: str) -> None:
@@ -433,9 +494,17 @@ class VagConnectCoordinator(DataUpdateCoordinator):
         await self._cariad_cmd(vin, "command_set_min_soc", min_soc=min_soc)
 
     async def async_set_max_charge_current(self, vin: str, ampere: int) -> None:
-        """Set max charge current — informational, refresh state."""
-        _LOGGER.info("VAG: max_charge_current %sA for %s", ampere, vin)
-        await self.async_request_refresh()
+        """Set max charge current — not supported by current API client.
+
+        Raises ServiceValidationError so HA shows a clear error to the user
+        instead of silently swallowing the action (#60). The entity itself
+        is hidden in number.py until a real API command exists.
+        """
+        raise ServiceValidationError(
+            translation_domain=DOMAIN,
+            translation_key="feature_not_supported",
+            translation_placeholders={"feature": "max_charge_current"},
+        )
 
     async def async_start_window_heating(self, vin: str) -> None:
         await self._cariad_cmd(vin, "command_start_window_heating")

@@ -134,7 +134,9 @@ class SkodaClient(CariadBaseClient):
         # ── Connection status ────────────────────────────────────────────────
         if isinstance(readiness, dict):
             unreachable = v(readiness, "unreachable")
-            d.is_online = unreachable is False if unreachable is not None else None
+            # When unreachable is unknown (None), assume reachable (True)
+            # to avoid setting is_online to a falsy default.
+            d.is_online = unreachable is None or unreachable is False
             d.is_driving = v(readiness, "inMotion") is True
 
         return d

@@ -73,11 +73,13 @@
         "title": "VAG Connect — Instellingen",
         "data": {
           "scan_interval": "Update-interval",
-          "spin": "S-PIN"
+          "spin": "S-PIN",
+          "enable_reverse_geocoding": "Reverse geocoding (parkeeradres)"
         },
         "data_description": {
           "scan_interval": "Hoe vaak gegevens worden opgehaald (minuten). Minimum: 3.",
-          "spin": "S-PIN voor deurvergrendeling."
+          "spin": "S-PIN voor deurvergrendeling.",
+          "enable_reverse_geocoding": "Verzendt parkeer-GPS naar OpenStreetMap Nominatim om straat/stad te vinden. Standaard uit (privacy)."
         }
       }
     }
@@ -351,6 +353,12 @@
   "exceptions": {
     "vehicle_not_found": {
       "message": "Voertuig met VIN {vin} niet gevonden."
+    },
+    "spin_required": {
+      "message": "S-PIN is vereist voor deze actie. Configureer het onder Instellingen → Apparaten en diensten → VAG Connect → Configureren."
+    },
+    "feature_not_supported": {
+      "message": "De functie '{feature}' wordt niet ondersteund door uw voertuig of de huidige API-client. De actie is niet verzonden."
     }
   }
 }
