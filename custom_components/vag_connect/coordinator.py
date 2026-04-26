@@ -355,6 +355,8 @@ class VagConnectCoordinator(DataUpdateCoordinator):
         if cache_key in self._geocode_cache:
             return self._geocode_cache[cache_key]
 
+        from aiohttp import ClientTimeout  # noqa: PLC0415
+
         session = async_get_clientsession(self.hass)
         url = (
             "https://nominatim.openstreetmap.org/reverse"
@@ -362,7 +364,9 @@ class VagConnectCoordinator(DataUpdateCoordinator):
         )
         headers = {"User-Agent": "VAGConnect/1.x (+https://github.com/its-me-prash/vag-connect-ha)"}
         try:
-            async with session.get(url, headers=headers, timeout=5) as resp:
+            async with session.get(
+                url, headers=headers, timeout=ClientTimeout(total=5)
+            ) as resp:
                 if resp.status != 200:
                     return None
                 payload = await resp.json()
