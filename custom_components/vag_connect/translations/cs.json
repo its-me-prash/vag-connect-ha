@@ -358,7 +358,7 @@
       "message": "Pro tuto akci je vyžadován S-PIN. Nastavte ho v Nastavení → Zařízení a služby → VAG Connect → Konfigurovat."
     },
     "feature_not_supported": {
-      "message": "Funkce '{feature}' není podporována vaším vozidlem nebo aktuálním API klientem. Akce nebyla odeslána."
+      "message": "Funkce {feature} není podporována vaším vozidlem nebo aktuálním API klientem. Akce nebyla odeslána."
     }
   }
 }

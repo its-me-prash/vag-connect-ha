@@ -358,7 +358,7 @@
       "message": "S-PIN krävs för denna åtgärd. Konfigurera den under Inställningar → Enheter och tjänster → VAG Connect → Konfigurera."
     },
     "feature_not_supported": {
-      "message": "Funktionen '{feature}' stöds inte av ditt fordon eller den nuvarande API-klienten. Åtgärden skickades inte."
+      "message": "Funktionen {feature} stöds inte av ditt fordon eller den nuvarande API-klienten. Åtgärden skickades inte."
     }
   }
 }

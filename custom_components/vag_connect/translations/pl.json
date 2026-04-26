@@ -358,7 +358,7 @@
       "message": "S-PIN jest wymagany do tej akcji. Skonfiguruj go w Ustawienia → Urządzenia i usługi → VAG Connect → Konfiguruj."
     },
     "feature_not_supported": {
-      "message": "Funkcja '{feature}' nie jest obsługiwana przez Twój pojazd lub obecnego klienta API. Akcja nie została wysłana."
+      "message": "Funkcja {feature} nie jest obsługiwana przez Twój pojazd lub obecnego klienta API. Akcja nie została wysłana."
     }
   }
 }
