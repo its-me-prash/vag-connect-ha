@@ -237,12 +237,6 @@
       "window_heating_switch": {
         "name": "Rutavfrostning"
       },
-      "seat_heating_switch": {
-        "name": "Sätesvärme"
-      },
-      "auto_unlock_switch": {
-        "name": "Lås upp kontakt efter laddning"
-      },
       "departure_timer_1_switch": {
         "name": "Avgångstimer 1"
       },
@@ -259,9 +253,6 @@
       },
       "climate_temp_number": {
         "name": "Klimattemperatur"
-      },
-      "max_charge_current": {
-        "name": "Max. laddström"
       },
       "target_soc": {
         "name": "Laddningsmål"

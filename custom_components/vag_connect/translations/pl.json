@@ -237,12 +237,6 @@
       "window_heating_switch": {
         "name": "Ogrzewanie szyb"
       },
-      "seat_heating_switch": {
-        "name": "Ogrzewanie siedzeń"
-      },
-      "auto_unlock_switch": {
-        "name": "Odblokuj wtyczkę po naładowaniu"
-      },
       "departure_timer_1_switch": {
         "name": "Timer odjazdu 1"
       },
@@ -259,9 +253,6 @@
       },
       "climate_temp_number": {
         "name": "Temperatura klimatyzacji"
-      },
-      "max_charge_current": {
-        "name": "Maks. prąd ładowania"
       },
       "target_soc": {
         "name": "Cel ładowania"

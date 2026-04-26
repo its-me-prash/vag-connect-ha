@@ -237,12 +237,6 @@
       "window_heating_switch": {
         "name": "Vyhřívání skel"
       },
-      "seat_heating_switch": {
-        "name": "Vyhřívání sedadel"
-      },
-      "auto_unlock_switch": {
-        "name": "Odemknout konektor po nabití"
-      },
       "departure_timer_1_switch": {
         "name": "Časovač odjezdu 1"
       },
@@ -259,9 +253,6 @@
       },
       "climate_temp_number": {
         "name": "Teplota klimatizace"
-      },
-      "max_charge_current": {
-        "name": "Max. nabíjecí proud"
       },
       "target_soc": {
         "name": "Cíl nabíjení"

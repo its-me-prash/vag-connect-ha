@@ -1,6 +1,11 @@
 # Dependency Audit — CarConnectivity vs Own Client
 
 > Prash Balan (@its-me-prash) — 2026-04-12
+>
+> **Historical record.** Status as of v1.8.0: the migration to our own
+> client (proposed below) was completed in v0.12.0. `manifest.json` ships
+> with `requirements: []` — zero external runtime dependencies. The
+> CarConnectivity dependency described below is no longer present.
 
 ---
 

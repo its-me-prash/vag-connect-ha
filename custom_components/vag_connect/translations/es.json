@@ -237,12 +237,6 @@
       "window_heating_switch": {
         "name": "Desempañador"
       },
-      "seat_heating_switch": {
-        "name": "Calefacción de asientos"
-      },
-      "auto_unlock_switch": {
-        "name": "Desbloquear enchufe tras carga"
-      },
       "departure_timer_1_switch": {
         "name": "Temporizador de salida 1"
       },
@@ -259,9 +253,6 @@
       },
       "climate_temp_number": {
         "name": "Temperatura de climatización"
-      },
-      "max_charge_current": {
-        "name": "Corriente de carga máx."
       },
       "target_soc": {
         "name": "Objetivo de carga"
