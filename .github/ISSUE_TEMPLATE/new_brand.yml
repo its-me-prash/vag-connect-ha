@@ -1,43 +1,79 @@
-name: 🚗 Neue Marke / Neues Modell
-description: Porsche/VW NA Live-Test oder neue Marke vorschlagen
-labels: ["new-brand", "testing"]
+name: 🚗 Brand live-test report / Live-Test einer Marke
+description: Report whether your brand / model works with VAG Connect / Berichte ob deine Marke / dein Modell mit VAG Connect funktioniert
+labels: ["testing"]
 body:
   - type: markdown
     attributes:
       value: |
-        ## Tester gesucht — Porsche & VW US/CA
-        Porsche und VW North America sind als Beta implementiert aber noch ohne echten Live-Test.
-        Wenn du eines dieser Fahrzeuge hast, hilf uns mit einem kurzen Bericht!
+        ## Testers needed / Tester gesucht
+
+        We welcome any live feedback. Especially needed:
+
+        Wir freuen uns über jedes Live-Feedback. Besonders gesucht sind:
+
+        - **Porsche** (Auth0 + PPA — implemented, barely live tested)
+        - **VW US / CA** (separate auth server — implemented, barely live tested)
+        - **VW Commercial** (Transporter, ID. Buzz Cargo — assumed to be VW EU compatible, untested)
+        - **Škoda Enyaq, Superb iV, Karoq** (platform broadening)
+
+        Not implemented and not planned: Bentley, Lamborghini, Bugatti, Ducati,
+        MAN, Scania — see [`docs/research/LUXURY_BRANDS.md`](https://github.com/its-me-prash/vag-connect-ha/blob/main/docs/research/LUXURY_BRANDS.md).
+
+        Nicht implementiert und auch nicht geplant: Bentley, Lamborghini,
+        Bugatti, Ducati, MAN, Scania — siehe `docs/research/LUXURY_BRANDS.md`.
 
   - type: dropdown
     id: brand
     attributes:
-      label: Marke / Modell
+      label: Brand / Marke
       options:
-        - Porsche (My Porsche App)
-        - Volkswagen US (MyVW App)
-        - Volkswagen CA (MyVW App)
-        - Andere (bitte unten beschreiben)
+        - Porsche
+        - Volkswagen US (MyVW)
+        - Volkswagen CA (MyVW)
+        - Volkswagen Commercial (Transporter / ID. Buzz Cargo / Crafter)
+        - Audi
+        - Volkswagen EU
+        - Škoda
+        - SEAT
+        - CUPRA
+        - Other — describe below / Andere — bitte unten beschreiben
     validations:
       required: true
 
   - type: input
     id: model
     attributes:
-      label: Fahrzeugmodell
-      placeholder: "z.B. Porsche Taycan, VW ID.4 (US)"
+      label: Model + year / Modell + Baujahr
+      placeholder: "e.g. Porsche Taycan 2023, VW ID.4 2024 (US), Škoda Enyaq iV 2025"
+    validations:
+      required: true
+
+  - type: input
+    id: country
+    attributes:
+      label: Country / Land
+      placeholder: "e.g. Germany, USA, Czech Republic"
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: VAG Connect Version
+      placeholder: "e.g. 1.8.0"
     validations:
       required: true
 
   - type: dropdown
     id: result
     attributes:
-      label: Ergebnis
+      label: Result / Ergebnis
       options:
-        - ✅ Funktioniert vollständig
-        - ⚠️ Teilweise — bestimmte Features fehlen
-        - ❌ Authentifizierung schlägt fehl
-        - ❌ Fahrzeug wird nicht erkannt
+        - "✅ Fully works / Funktioniert vollständig"
+        - "⚠️ Partial — some features missing / Teilweise — bestimmte Features fehlen"
+        - "❌ Authentication fails / Authentifizierung schlägt fehl"
+        - "❌ Vehicle not detected / Fahrzeug wird nicht erkannt"
+        - "❌ Status loads but commands fail / Status lädt aber Befehle scheitern"
     validations:
       required: true
 
@@ -45,6 +81,12 @@ body:
     id: details
     attributes:
       label: Details / Logs
-      description: Was genau funktioniert oder fehlt?
+      description: |
+        Which entities appear? Which actions work / fail?
+
+        Welche Entities erscheinen? Welche Aktionen funktionieren / scheitern?
+
+        Please remove VIN, email, tokens, GPS and S-PIN from logs.
+        Bitte VIN, Email, Tokens, GPS-Koordinaten und S-PIN aus Logs entfernen.
     validations:
       required: true

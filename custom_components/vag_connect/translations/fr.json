@@ -237,12 +237,6 @@
       "window_heating_switch": {
         "name": "Dégivrage des vitres"
       },
-      "seat_heating_switch": {
-        "name": "Chauffage des sièges"
-      },
-      "auto_unlock_switch": {
-        "name": "Déverrouiller prise après charge"
-      },
       "departure_timer_1_switch": {
         "name": "Minuterie de départ 1"
       },
@@ -259,9 +253,6 @@
       },
       "climate_temp_number": {
         "name": "Température climatisation"
-      },
-      "max_charge_current": {
-        "name": "Courant de charge max."
       },
       "target_soc": {
         "name": "Objectif de charge"

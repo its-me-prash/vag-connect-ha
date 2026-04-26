@@ -158,12 +158,6 @@
       "window_heating_switch": {
         "default": "mdi:car-windshield"
       },
-      "seat_heating_switch": {
-        "default": "mdi:car-seat-heater"
-      },
-      "auto_unlock_switch": {
-        "default": "mdi:ev-plug-ccs2"
-      },
       "departure_timer_1_switch": {
         "default": "mdi:clock-time-eight-outline"
       },
@@ -191,9 +185,6 @@
       },
       "target_temperature": {
         "default": "mdi:thermometer"
-      },
-      "max_charge_current": {
-        "default": "mdi:current-ac"
       }
     },
     "device_tracker": {

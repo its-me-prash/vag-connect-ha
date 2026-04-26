@@ -1,0 +1,23 @@
+# Dependabot configuration for VAG Connect.
+# We have no Python runtime dependencies (`requirements: []`), so the
+# only ecosystem worth watching is GitHub Actions itself — to catch
+# Node version deprecations before they break CI.
+
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    commit-message:
+      prefix: "ci"
+      include: "scope"
+    labels:
+      - "ci"
+      - "dependencies"
+    # Group all action bumps into a single PR so reviews stay light.
+    groups:
+      github-actions:
+        patterns:
+          - "*"

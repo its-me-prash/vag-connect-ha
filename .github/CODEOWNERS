@@ -1,0 +1,32 @@
+# CODEOWNERS for VAG Connect
+# Until brand captains are recruited (Issue #64), the maintainer owns
+# everything. As contributors take responsibility for specific brands,
+# add entries below.
+
+# Default: everything maintained by Prash
+*                                                                   @its-me-prash
+
+# Brand API clients (look for volunteers per brand — see #64)
+custom_components/vag_connect/cariad/api/audi.py                    @its-me-prash
+custom_components/vag_connect/cariad/api/vw_eu.py                   @its-me-prash
+custom_components/vag_connect/cariad/api/vw_na.py                   @its-me-prash
+custom_components/vag_connect/cariad/api/skoda.py                   @its-me-prash
+custom_components/vag_connect/cariad/api/seat_cupra.py              @its-me-prash
+custom_components/vag_connect/cariad/api/porsche.py                 @its-me-prash
+
+# Auth flows
+custom_components/vag_connect/cariad/auth/                          @its-me-prash
+
+# CI / build / release
+.github/                                                            @its-me-prash
+RELEASE_PROCESS.md                                                  @its-me-prash
+
+# Documentation in 8 languages — keep in sync at every release
+README.md                                                           @its-me-prash
+README.en.md                                                        @its-me-prash
+README.cs.md                                                        @its-me-prash
+README.es.md                                                        @its-me-prash
+README.fr.md                                                        @its-me-prash
+README.nl.md                                                        @its-me-prash
+README.pl.md                                                        @its-me-prash
+README.sv.md                                                        @its-me-prash

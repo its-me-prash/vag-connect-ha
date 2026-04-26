@@ -1,16 +1,18 @@
 name: 🐛 Bug Report
-description: Etwas funktioniert nicht wie erwartet
+description: Something doesn't work as expected / Etwas funktioniert nicht wie erwartet
 labels: ["bug"]
 body:
   - type: markdown
     attributes:
       value: |
-        Danke für dein Feedback! Bitte fülle so viele Felder wie möglich aus — das spart Zeit.
+        Thanks for the feedback! Please fill in as many fields as possible — it saves a lot of time.
+
+        Danke für dein Feedback! Bitte fülle so viele Felder wie möglich aus — das spart enorm Zeit.
 
   - type: dropdown
     id: brand
     attributes:
-      label: Fahrzeugmarke
+      label: Vehicle brand / Fahrzeugmarke
       options:
         - Audi
         - Volkswagen EU
@@ -23,10 +25,26 @@ body:
       required: true
 
   - type: input
+    id: country
+    attributes:
+      label: Country / Land
+      placeholder: "e.g. Germany, Austria, UK, USA"
+    validations:
+      required: true
+
+  - type: input
+    id: model
+    attributes:
+      label: Model + year / Modell + Baujahr
+      placeholder: "e.g. Audi S6 2021, ID.4 2023, Cupra Born 2023"
+    validations:
+      required: true
+
+  - type: input
     id: version
     attributes:
       label: VAG Connect Version
-      placeholder: "z.B. 1.0.0"
+      placeholder: "e.g. 1.8.0"
     validations:
       required: true
 
@@ -34,39 +52,97 @@ body:
     id: ha_version
     attributes:
       label: Home Assistant Version
-      placeholder: "z.B. 2025.1.0"
+      placeholder: "e.g. 2026.4.0"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: official_app
+    attributes:
+      label: Does the same action work in the official manufacturer app? / Funktioniert die selbe Aktion in der offiziellen App?
+      options:
+        - "Yes / Ja"
+        - "No / Nein"
+        - "Partially / Teilweise"
+        - "I don't know / Weiß ich nicht"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: subscription
+    attributes:
+      label: Connected services subscription active? / Online-Services Abo aktiv?
+      description: |
+        Some brands (VW, CUPRA) block commands when the subscription expires —
+        that's not a bug in this integration but a server-side restriction.
+
+        Manche Marken (VW, CUPRA) sperren Befehle wenn das Abo abgelaufen ist —
+        dann ist es kein Bug bei uns sondern eine serverseitige Einschränkung.
+      options:
+        - "Yes / Ja"
+        - "No / Nein"
+        - "I don't know / Weiß ich nicht"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: spin
+    attributes:
+      label: S-PIN configured? / S-PIN konfiguriert?
+      description: S-PIN is required for lock and some other commands / S-PIN ist nötig für Verriegeln und einige andere Befehle
+      options:
+        - "Yes / Ja"
+        - "No / Nein"
+        - "Not relevant / Nicht relevant"
     validations:
       required: true
 
   - type: textarea
     id: description
     attributes:
-      label: Was ist passiert?
-      description: Klarer, konkreter Fehlerbeschreibung.
+      label: What happened? / Was ist passiert?
     validations:
       required: true
 
   - type: textarea
     id: expected
     attributes:
-      label: Was sollte passieren?
+      label: What should happen? / Was sollte passieren?
     validations:
       required: true
 
   - type: textarea
     id: logs
     attributes:
-      label: Logs
+      label: Logs (redacted / geschwärzt)
       description: |
+        HA → Settings → System → Logs → filter by "vag_connect".
+        Enable debug logging via the integration → "Enable debug logging".
+
         HA → Einstellungen → System → Logs → nach "vag_connect" filtern.
-        Debug-Logging aktivieren unter Einstellungen → Integrationen → VAG Connect → "Debug-Logging aktivieren".
+        Debug-Logging über Integration → Debug-Logging aktivieren.
+
+        **Please remove or mask VIN, email, tokens, GPS coordinates and S-PIN!**
+        Bitte VIN, Email, Tokens, GPS-Koordinaten und S-PIN entfernen / schwärzen!
       render: text
 
   - type: textarea
     id: diagnostics
     attributes:
-      label: Diagnose-Daten (optional)
+      label: Diagnostics / Diagnose-Daten (optional)
       description: |
+        Settings → Devices & Services → VAG Connect → ⋮ → Download diagnostics.
+        Sensitive data (password, S-PIN, GPS, email) is auto-redacted.
+
         HA → Einstellungen → Integrationen → VAG Connect → 3-Punkte-Menü → Diagnose herunterladen.
-        Sensible Daten (GPS, Passwort) sind automatisch geschwärzt.
+        Sensible Daten (Passwort, S-PIN, GPS, Email) sind automatisch geschwärzt.
       render: json
+
+  - type: checkboxes
+    id: privacy_confirmation
+    attributes:
+      label: Privacy confirmation / Datenschutz-Bestätigung
+      description: Required / Pflicht
+      options:
+        - label: I have removed tokens, full VIN, email, GPS and S-PIN from logs/diagnostics. / Ich habe Tokens, vollständige VIN, Email, GPS-Koordinaten und S-PIN aus Logs/Diagnose entfernt.
+          required: true

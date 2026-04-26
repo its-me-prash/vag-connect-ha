@@ -237,12 +237,6 @@
       "window_heating_switch": {
         "name": "Window Heating"
       },
-      "seat_heating_switch": {
-        "name": "Seat Heating"
-      },
-      "auto_unlock_switch": {
-        "name": "Unlock Cable After Charging"
-      },
       "departure_timer_1_switch": {
         "name": "Departure Timer 1"
       },
@@ -259,9 +253,6 @@
       },
       "climate_temp_number": {
         "name": "Desired Temperature"
-      },
-      "max_charge_current": {
-        "name": "Max. Charge Current"
       },
       "target_soc": {
         "name": "Charge Target"

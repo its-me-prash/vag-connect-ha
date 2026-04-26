@@ -1,6 +1,13 @@
 # Architecture Decision Record — Own CARIAD API Client
 
-> Status: **APPROVED** | Date: 2026-04-12 | Author: Prash Balan (@its-me-prash)
+> Status: **APPROVED & IMPLEMENTED** (shipped in v0.12.0, in use through v1.8.0)
+> Date: 2026-04-12 | Author: Prash Balan (@its-me-prash)
+
+> **Historical record.** This ADR is preserved unchanged from when the
+> decision was made. The implementation went live with v0.12.0 and is
+> still the architecture as of v1.8.0. CarConnectivity is no longer a
+> dependency. Refer to [`docs/SESSION_HANDOFF.md`](../SESSION_HANDOFF.md)
+> for the current architecture map.
 
 ---
 

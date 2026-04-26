@@ -21,6 +21,20 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ---
 
+## [Unreleased]
+
+### Removed
+- Stale icon and translation entries for entities that were removed in
+  v1.8.0 (`seat_heating_switch`, `auto_unlock_switch`, `max_charge_current`).
+  The keys had no corresponding entity since the v1.8.0 cleanup and were
+  unused by HA. Cleaned across `icons.json`, `strings.json` and all
+  8 language files.
+
+### Changed
+- `docs/research/ARCHITECTURE_DECISION.md` and
+  `docs/research/DEPENDENCY_AUDIT.md` marked as historical
+  (implemented in v0.12.0, still the architecture in v1.8.0).
+
 ## [1.8.0] - 2026-04-26
 
 ### Bug Fix — CUPRA/SEAT honk-and-flash 400 (#53)

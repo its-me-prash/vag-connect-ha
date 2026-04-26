@@ -237,12 +237,6 @@
       "window_heating_switch": {
         "name": "Ruitenverwarming"
       },
-      "seat_heating_switch": {
-        "name": "Stoelverwarming"
-      },
-      "auto_unlock_switch": {
-        "name": "Stekker na laden ontgrendelen"
-      },
       "departure_timer_1_switch": {
         "name": "Vertrektimer 1"
       },
@@ -259,9 +253,6 @@
       },
       "climate_temp_number": {
         "name": "Klimaat temperatuur"
-      },
-      "max_charge_current": {
-        "name": "Max. laadstroom"
       },
       "target_soc": {
         "name": "Laaddoel"

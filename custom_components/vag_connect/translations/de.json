@@ -233,12 +233,6 @@
       "window_heating_switch": {
         "name": "Scheibenheizung"
       },
-      "seat_heating_switch": {
-        "name": "Sitzheizung"
-      },
-      "auto_unlock_switch": {
-        "name": "Ladekabel nach Laden entriegeln"
-      },
       "departure_timer_1_switch": {
         "name": "Abfahrtstimer 1"
       },
@@ -255,9 +249,6 @@
       },
       "climate_temp_number": {
         "name": "Wunschtemperatur"
-      },
-      "max_charge_current": {
-        "name": "Max. Ladestrom"
       },
       "target_soc": {
         "name": "Ladeziel"
