@@ -298,9 +298,10 @@ cariad/
 |---|---|---|
 | v1.0–v1.5 | 9 Plattformen, 7 Marken, Bugs & Entity-Audit | ✅ Done |
 | v1.6.0 | SEAT/CUPRA 9 Endpoints, Škoda Fix, Audi PPC, Lock, Nachtabsenkung | ✅ Done |
-| v1.7.0 | Ladeprofile, Alarm, Verbrauch, Klimatimer, Firebase Push | 🔜 |
-| v1.7.0 | Navigation → Fahrzeug, Remote Start, PPC-Plattform 2025 | 🔜 |
-| v2.0.0 | HACS Official (Live-Tests alle 7 Marken) | 🎯 |
+| v1.7.0 | Škoda Komplett-Rewrite, Auto-Fachwörter alle Sprachen, Zuverlässigkeit | ✅ Done |
+| v1.8.0 | Capabilities-Check (#56), Push-Benachrichtigungen (#57), Defensive Coding (#58) | 🔜 Next |
+| v1.9.0 | Verbrauchsdaten, Ladehistorie, Abfahrtstimer-UI, PPC-Plattform | 🔜 |
+| v2.0.0 | HACS Default, alle Marken live getestet, EU Data Act (#59) | 🎯 |
 
 ---
 

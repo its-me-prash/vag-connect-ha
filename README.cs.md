@@ -130,13 +130,14 @@ Restartujte Home Assistant.
 
 ## Plán
 
-| Version | Content | Status |
+| Verze | Obsah | Stav |
 |---|---|---|
-| v1.0–v1.5 | 9 platforms, 7 brands, bugs & entity audit | ✅ Done |
-| v1.6.0 | SEAT/CUPRA 9 endpoints, Škoda fix, Audi PPC, Lock, nightly reduction | ✅ Done |
-| v1.7.0 | Charging profiles, alarm, consumption, climate timer, Firebase push | 🔜 |
-| v1.8.0 | Navigation → vehicle, remote start, trip statistics | 🔜 |
-| v2.0.0 | HACS Official (live tests all 7 brands) | 🎯 |
+| v1.0–v1.5 | 9 platforem, 7 značek, opravy & audit entit | ✅ Hotovo |
+| v1.6.0 | SEAT/CUPRA 9 endpointů, Škoda oprava, Audi PPC, zámek, noční režim | ✅ Hotovo |
+| v1.7.0 | Kompletní přepis Škoda, automobilové překlady ve všech jazycích, spolehlivost | ✅ Hotovo |
+| v1.8.0 | Kontrola schopností (#56), push notifikace (#57), defenzivní kódování (#58) | 🔜 Další |
+| v1.9.0 | Statistiky jízd, historie nabíjení, UI časovačů odjezdu, PPC platforma | 🔜 |
+| v2.0.0 | HACS Default, všechny značky otestovány, EU Data Act (#59) | 🎯 |
 
 ---
 

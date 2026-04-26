@@ -130,13 +130,14 @@ Reinicia Home Assistant.
 
 ## Hoja de Ruta
 
-| Version | Content | Status |
+| Versión | Contenido | Estado |
 |---|---|---|
-| v1.0–v1.5 | 9 platforms, 7 brands, bugs & entity audit | ✅ Done |
-| v1.6.0 | SEAT/CUPRA 9 endpoints, Škoda fix, Audi PPC, Lock, nightly reduction | ✅ Done |
-| v1.7.0 | Charging profiles, alarm, consumption, climate timer, Firebase push | 🔜 |
-| v1.8.0 | Navigation → vehicle, remote start, trip statistics | 🔜 |
-| v2.0.0 | HACS Official (live tests all 7 brands) | 🎯 |
+| v1.0–v1.5 | 9 plataformas, 7 marcas, correcciones & auditoría de entidades | ✅ Listo |
+| v1.6.0 | SEAT/CUPRA 9 endpoints, corrección Škoda, Audi PPC, cerradura, modo nocturno | ✅ Listo |
+| v1.7.0 | Reescritura completa Škoda, traducciones automovilísticas en todos los idiomas, fiabilidad | ✅ Listo |
+| v1.8.0 | Verificación de capacidades (#56), notificaciones push (#57), código defensivo (#58) | 🔜 Siguiente |
+| v1.9.0 | Estadísticas de viaje, historial de carga, UI temporizadores de salida, plataforma PPC | 🔜 |
+| v2.0.0 | HACS Default, todas las marcas probadas, EU Data Act (#59) | 🎯 |
 
 ---
 

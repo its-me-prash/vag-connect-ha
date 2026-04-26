@@ -130,13 +130,14 @@ Herstart Home Assistant.
 
 ## Roadmap
 
-| Version | Content | Status |
+| Versie | Inhoud | Status |
 |---|---|---|
-| v1.0–v1.5 | 9 platforms, 7 brands, bugs & entity audit | ✅ Done |
-| v1.6.0 | SEAT/CUPRA 9 endpoints, Škoda fix, Audi PPC, Lock, nightly reduction | ✅ Done |
-| v1.7.0 | Charging profiles, alarm, consumption, climate timer, Firebase push | 🔜 |
-| v1.8.0 | Navigation → vehicle, remote start, trip statistics | 🔜 |
-| v2.0.0 | HACS Official (live tests all 7 brands) | 🎯 |
+| v1.0–v1.5 | 9 platformen, 7 merken, bugfixes & entiteit-audit | ✅ Klaar |
+| v1.6.0 | SEAT/CUPRA 9 endpoints, Škoda fix, Audi PPC, vergrendeling, nachtmodus | ✅ Klaar |
+| v1.7.0 | Complete Škoda herschrijving, autovriendelijke vertalingen alle talen, betrouwbaarheid | ✅ Klaar |
+| v1.8.0 | Capabilitycheck (#56), pushnotificaties (#57), defensieve code (#58) | 🔜 Volgende |
+| v1.9.0 | Ritstatistieken, laadgeschiedenis, vertrektimer-UI, PPC-platform | 🔜 |
+| v2.0.0 | HACS Default, alle merken live getest, EU Data Act (#59) | 🎯 |
 
 ---
 

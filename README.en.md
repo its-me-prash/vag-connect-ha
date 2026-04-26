@@ -133,9 +133,10 @@ Restart Home Assistant.
 |---|---|---|
 | v1.0–v1.5 | 9 platforms, 7 brands, bugs & entity audit | ✅ Done |
 | v1.6.0 | SEAT/CUPRA 9 endpoints, Škoda fix, Audi PPC, Lock, nightly reduction | ✅ Done |
-| v1.7.0 | Charging profiles, alarm, consumption, climate timer, Firebase push | 🔜 |
-| v1.8.0 | Navigation → vehicle, remote start, trip statistics | 🔜 |
-| v2.0.0 | HACS Official (live tests all 7 brands) | 🎯 |
+| v1.7.0 | Complete Škoda rewrite, car-friendly translations all languages, reliability | ✅ Done |
+| v1.8.0 | Capabilities check (#56), push notifications (#57), defensive coding (#58) | 🔜 Next |
+| v1.9.0 | Trip statistics, charging history, departure timer UI, PPC platform | 🔜 |
+| v2.0.0 | HACS Default, all brands live-tested, EU Data Act (#59) | 🎯 |
 
 ---
 

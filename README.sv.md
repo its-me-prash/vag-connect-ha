@@ -130,13 +130,14 @@ Starta om Home Assistant.
 
 ## Vägkarta
 
-| Version | Content | Status |
+| Version | Innehåll | Status |
 |---|---|---|
-| v1.0–v1.5 | 9 platforms, 7 brands, bugs & entity audit | ✅ Done |
-| v1.6.0 | SEAT/CUPRA 9 endpoints, Škoda fix, Audi PPC, Lock, nightly reduction | ✅ Done |
-| v1.7.0 | Charging profiles, alarm, consumption, climate timer, Firebase push | 🔜 |
-| v1.8.0 | Navigation → vehicle, remote start, trip statistics | 🔜 |
-| v2.0.0 | HACS Official (live tests all 7 brands) | 🎯 |
+| v1.0–v1.5 | 9 plattformar, 7 märken, bugfixar & entitetsrevision | ✅ Klart |
+| v1.6.0 | SEAT/CUPRA 9 endpoints, Škoda-fix, Audi PPC, lås, nattläge | ✅ Klart |
+| v1.7.0 | Komplett omskrivning Škoda, bilvänliga översättningar alla språk, tillförlitlighet | ✅ Klart |
+| v1.8.0 | Kapabilitetskontroll (#56), push-notiser (#57), defensiv kodning (#58) | 🔜 Nästa |
+| v1.9.0 | Resestatistik, laddhistorik, avgångstimer-UI, PPC-plattform | 🔜 |
+| v2.0.0 | HACS Default, alla märken live-testade, EU Data Act (#59) | 🎯 |
 
 ---
 

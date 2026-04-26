@@ -130,13 +130,14 @@ Uruchom ponownie Home Assistant.
 
 ## Mapa Drogowa
 
-| Version | Content | Status |
+| Wersja | Zawartość | Status |
 |---|---|---|
-| v1.0–v1.5 | 9 platforms, 7 brands, bugs & entity audit | ✅ Done |
-| v1.6.0 | SEAT/CUPRA 9 endpoints, Škoda fix, Audi PPC, Lock, nightly reduction | ✅ Done |
-| v1.7.0 | Charging profiles, alarm, consumption, climate timer, Firebase push | 🔜 |
-| v1.8.0 | Navigation → vehicle, remote start, trip statistics | 🔜 |
-| v2.0.0 | HACS Official (live tests all 7 brands) | 🎯 |
+| v1.0–v1.5 | 9 platform, 7 marek, poprawki & audyt encji | ✅ Gotowe |
+| v1.6.0 | SEAT/CUPRA 9 endpointów, poprawka Škoda, Audi PPC, zamek, tryb nocny | ✅ Gotowe |
+| v1.7.0 | Kompletne przepisanie Škoda, motoryzacyjne tłumaczenia we wszystkich językach, niezawodność | ✅ Gotowe |
+| v1.8.0 | Sprawdzanie możliwości (#56), powiadomienia push (#57), kod defensywny (#58) | 🔜 Następne |
+| v1.9.0 | Statystyki podróży, historia ładowania, UI timerów odjazdu, platforma PPC | 🔜 |
+| v2.0.0 | HACS Default, wszystkie marki przetestowane, EU Data Act (#59) | 🎯 |
 
 ---
 
