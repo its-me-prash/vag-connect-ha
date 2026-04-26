@@ -1,98 +1,49 @@
-# VAG Connect — Roadmap
+# VAG Connect — Research Roadmap (archive)
 
-> Maintained by Prash Balan (@its-me-prash)
+> This file used to plan releases up to v0.14.x. The canonical session-based
+> roadmap now lives in [`docs/ROADMAP.md`](../ROADMAP.md) and mirrors the
+> README tables in all 8 languages.
 
----
-
-## Current State (v0.14.1) — PLATINUM 🏆
-
-```
-Engine:         Own CARIAD API Client (aiohttp, zero external deps)
-Quality Scale:  47/47 done — PLATINUM
-Tests:          342/342 passing | 95% coverage
-mypy:           0 errors (--disallow-untyped-defs)
-ruff:           0 errors
-Dependencies:   requirements: []
-```
+Last updated: 2026-04-26
 
 ---
 
-## v0.15.0 — Porsche Support
+## Why this file is now an archive
 
-**Goal:** Add Porsche as a 6th supported brand.
+The original plan in this folder targeted v0.15 (Porsche), v0.16 (VW NA),
+and v0.17 (feature expansion). All three goals shipped in v1.0.0.
+Subsequent planning moved into the README and individual GitHub issues.
 
-**Why separate:** Porsche uses a completely different auth system from the other 5 brands:
-- **Auth:** `identity.porsche.com` (Auth0) — NOT `identity.vwgroup.io` (IDK)
-- **API:** `api.ppa.porsche.com` — NOT CARIAD BFF
-- **Client-ID:** `XhygisuebbrqQ80byOuU5VncxLIm8E6H` (Auth0 public client)
-- **X-Client-ID:** `41843fb4-691d-4970-85c7-2673e8ecef40`
+For historical context the original v0.x roadmap is preserved at the
+bottom of this file. For current planning, see:
 
-**Deliverables:**
-- `cariad/auth/porsche.py` — Auth0 PKCE flow
-- `cariad/api/porsche.py` — api.ppa.porsche.com endpoints
-- Factory support: `CariadClientFactory.create("porsche", ...)`
-- Config flow: Porsche option in brand selector
-
-**Reference:** [pyporscheconnectapi](https://github.com/CJNE/pyporscheconnectapi) (MIT)
-
-**Alternative for users now:** [ha-porscheconnect](https://github.com/CJNE/ha-porscheconnect) (MIT, 55 stars)
+- **Canonical roadmap:** [`docs/ROADMAP.md`](../ROADMAP.md) and the README
+- **Active issues:** https://github.com/its-me-prash/vag-connect-ha/issues
+- **Session 1 PR:** https://github.com/its-me-prash/vag-connect-ha/pull/65
 
 ---
 
-## v0.16.0 — VW North America (US/CA)
+## Current research status
 
-**Goal:** VW US and Canada users.
-
-**Auth system:** `b-h-s.spr.{country}00.p.con-veh.net` — completely separate from EU IDK
-
-**Client IDs:**
-- US: `59992128-69a9-42c3-8621-7942041ba824_MYVW_ANDROID`
-- CA: `69eb3c39-d2be-4006-8197-37cc4971e8fe_MYVW_ANDROID`
-
-**Reference:** [CarConnectivity-connector-volkswagen-na](https://github.com/zackcornelius/CarConnectivity-connector-volkswagen-na) (MIT)
-
----
-
-## v0.17.0 — Feature Expansion (post-core)
-
-New sensors/features now possible with own client:
-
-| Feature | Source | Brand |
+| Topic | Status | Source |
 |---|---|---|
-| Trip statistics | CARIAD + Škoda API | VW, Audi, Škoda |
-| Charging history | Škoda API | Škoda |
-| Driving score | Škoda API | Škoda |
-| Auxiliary heating | CARIAD/Škoda | PHEV |
-| Battery care mode | CARIAD charging | EV |
-| Parking time | CARIAD readiness | All |
-| VIN selection in config flow | UX | All |
+| VAG group ecosystem map | Active | [`VAG_GROUP_ECOSYSTEM.md`](VAG_GROUP_ECOSYSTEM.md) |
+| GraphQL vehicle image API | Active | [`GRAPHQL_IMAGE_API.md`](GRAPHQL_IMAGE_API.md) |
+| Luxury / non-API brands | Documented (no implementation) | [`LUXURY_BRANDS.md`](LUXURY_BRANDS.md) |
+| EU Data Act 2026 | Tracking only | Issue #59 |
+| Firebase / MQTT push | Research planned | Issue #57 (Sessions 7–8) |
+| Capabilities check | Implementation planned | Issue #56 (Session 2) |
+| Command profile layer | Implementation planned | Issue #61 (Session 3) |
 
 ---
 
-## v1.0.0 — HACS Official
+## Original v0.x roadmap (archive)
 
-**Requirements before submission:**
-- [x] CarConnectivity dependency removed ✅
-- [x] 95%+ test coverage ✅
-- [x] Full Platinum quality scale ✅
-- [ ] Live-tested: Audi S6 + VW Golf GTE (Prash's vehicles)
-- [ ] Community-tested: at least 1 Škoda, 1 SEAT/CUPRA
-- [ ] Stable for 2+ minor releases
-- [ ] 10+ GitHub stars / real-world users
+Kept for context only. All items below are **shipped**:
 
----
+- v0.15.0 — Porsche support → shipped in v1.0.0
+- v0.16.0 — VW US/CA support → shipped in v1.0.0
+- v0.17.0 — Feature expansion (trip stats, charging history, etc.) → partially shipped, remainder tracked in #11/#18/#24/#35
+- v1.0.0 — HACS official → blocked on live tests (Issue #13) and HACS Default submission (Session 10)
 
-## What Will Never Be Supported
-
-| Brand | Reason |
-|---|---|
-| VW China (2026+) | CEA/XPeng platform — undocumented, HA user base near zero |
-| Lamborghini | No API exists |
-| Bentley | No API found |
-| Bugatti | Too small, no API |
-| Ducati | Motorcycles, different use case |
-| MAN / Scania | Commercial fleet, different use case |
-
----
-
-*Updated: 2026-04-12 | Prash Balan (@its-me-prash)*
+The original quality numbers (95% coverage, 342 tests, Platinum) were captured before the v1.5 entity audit. CI now publishes live numbers — see badges in the README.
