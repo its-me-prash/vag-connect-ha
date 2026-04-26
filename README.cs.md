@@ -130,14 +130,30 @@ Restartujte Home Assistant.
 
 ## Plán
 
+### Dosaženo
+
 | Verze | Obsah | Stav |
 |---|---|---|
 | v1.0–v1.5 | 9 platforem, 7 značek, opravy & audit entit | ✅ Hotovo |
 | v1.6.0 | SEAT/CUPRA 9 endpointů, Škoda oprava, Audi PPC, zámek, noční režim | ✅ Hotovo |
 | v1.7.0 | Kompletní přepis Škoda, automobilové překlady ve všech jazycích, spolehlivost | ✅ Hotovo |
-| v1.8.0 | Kontrola schopností (#56), push notifikace (#57), defenzivní kódování (#58) | 🔜 Další |
-| v1.9.0 | Statistiky jízd, historie nabíjení, UI časovačů odjezdu, PPC platforma | 🔜 |
-| v2.0.0 | HACS Default, všechny značky otestovány, EU Data Act (#59) | 🎯 |
+
+### Plán sessions (P0 → P2)
+
+| Session | Verze | Rozsah | Issues |
+|---|---|---|---|
+| **1 — Foundation Fix** | v1.8.0 | iot_class, per-VIN dostupnost, S-PIN fail-fast, falešné writable odstraněny, geokódování opt-in | **#60** |
+| **2 — Capabilities** | v1.8.1 | Entity podle schopností, detekce předplatného | #56 |
+| **3 — Command Profile** | v1.8.2 | Routing podle značky/regionu/platformy, RS e-tron GT fix | #61, #51 |
+| **4 — Diagnostics + Fixtures** | v1.8.3 | Anonymizované diagnostiky, regresní testy | #62, #58 |
+| **5 — Process & Governance** | — | Issue forms, brand captains, CODEOWNERS, privacy guide | #64 |
+| **6 — Read-only + Locking** | v1.9.0 | Read-only režim, command locking, cloud vs wake | #63, #55 |
+| **7 — Push CUPRA/SEAT** | v1.9.1 | Firebase FCM via mqtt.messagehub.de | #57 |
+| **8 — Push Škoda** | v1.9.2 | MQTT broker integrace | #57 |
+| **9 — Feature batch** | v1.10.0 | Statistiky jízd, historie nabíjení, UI časovačů, alarm, profily nabíjení | #24, #35, #26, #33, #31 |
+| **10 — HACS Default + v2.0.0** | v2.0.0 | Live testy všech značek, compatibility matrix, EU Data Act | #13, #59 |
+
+> Striktní P0 → P1 → P2 pořadí. Sessions 1–4 jsou nezaměnitelné před přidáváním nových funkcí.
 
 ---
 

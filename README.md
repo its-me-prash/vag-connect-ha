@@ -294,14 +294,30 @@ cariad/
 
 ## Roadmap
 
+### Bisher erreicht
+
 | Version | Inhalt | Status |
 |---|---|---|
 | v1.0–v1.5 | 9 Plattformen, 7 Marken, Bugs & Entity-Audit | ✅ Done |
 | v1.6.0 | SEAT/CUPRA 9 Endpoints, Škoda Fix, Audi PPC, Lock, Nachtabsenkung | ✅ Done |
 | v1.7.0 | Škoda Komplett-Rewrite, Auto-Fachwörter alle Sprachen, Zuverlässigkeit | ✅ Done |
-| v1.8.0 | Capabilities-Check (#56), Push-Benachrichtigungen (#57), Defensive Coding (#58) | 🔜 Next |
-| v1.9.0 | Verbrauchsdaten, Ladehistorie, Abfahrtstimer-UI, PPC-Plattform | 🔜 |
-| v2.0.0 | HACS Default, alle Marken live getestet, EU Data Act (#59) | 🎯 |
+
+### Sessions-Plan (P0 → P2)
+
+| Session | Version | Scope | Issues |
+|---|---|---|---|
+| **1 — Foundation Fix** | v1.8.0 | iot_class, per-VIN availability, S-PIN fail-fast, fake writables entfernt, Geocoding opt-in, Platforms-Sync | **#60** |
+| **2 — Capabilities** | v1.8.1 | Capability-gated Entities, Subscription-Detection | #56 |
+| **3 — Command Profile** | v1.8.2 | Brand/Region/Plattform-Routing, RS e-tron GT Fix | #61, #51 |
+| **4 — Diagnostics + Fixtures** | v1.8.3 | Anonymisierte Diagnostics, Regression-Tests | #62, #58 |
+| **5 — Process & Governance** | — | Issue Forms, Brand Captains, CODEOWNERS, Privacy Guide | #64 |
+| **6 — Read-only + Locking** | v1.9.0 | Read-only Modus, Command Locking, Cloud vs Wake | #63, #55 |
+| **7 — Push CUPRA/SEAT** | v1.9.1 | Firebase FCM via mqtt.messagehub.de | #57 |
+| **8 — Push Škoda** | v1.9.2 | MQTT Broker Integration | #57 |
+| **9 — Feature Batch** | v1.10.0 | Verbrauchsdaten, Ladehistorie, Abfahrtstimer-UI, Alarm, Ladeprofile | #24, #35, #26, #33, #31 |
+| **10 — HACS Default + v2.0.0** | v2.0.0 | Live-Tests alle Marken, Compatibility Matrix, EU Data Act ready | #13, #59 |
+
+> Reihenfolge ist **strikt P0 → P1 → P2**. Sessions 1–4 sind nicht-verhandelbar bevor neue Features kommen.
 
 ---
 
