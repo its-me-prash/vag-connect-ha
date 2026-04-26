@@ -1094,12 +1094,28 @@ class TestSeatCupraGetStatus:
 
     def test_seat_commands(self):
         client = self._client("seat")
+        # command_flash is excluded here — SEAT/CUPRA require userPosition
+        # and are exercised separately in test_seat_command_flash_requires_position.
         for cmd in ["lock", "unlock", "start_climate", "stop_climate",
-                    "start_charging", "stop_charging", "flash", "wake"]:
+                    "start_charging", "stop_charging", "wake"]:
             fn = getattr(client, f"command_{cmd}")
             asyncio.get_event_loop().run_until_complete(fn("VIN_SEAT"))
         asyncio.get_event_loop().run_until_complete(client.command_set_target_soc("VIN_SEAT", 80))
         asyncio.get_event_loop().run_until_complete(client.command_set_climate_temperature("VIN_SEAT", 20.0))
+
+    def test_seat_command_flash_requires_position(self):
+        """v1.8.0 / #53: SEAT/CUPRA honk-and-flash needs userPosition.
+        Calling without lat/lng must raise APIError; with lat/lng must succeed."""
+        from custom_components.vag_connect.cariad.exceptions import APIError
+        client = self._client("seat")
+
+        with pytest.raises(APIError):
+            asyncio.get_event_loop().run_until_complete(client.command_flash("VIN_SEAT"))
+
+        # With position present, command goes through
+        asyncio.get_event_loop().run_until_complete(
+            client.command_flash("VIN_SEAT", latitude=48.137, longitude=11.576)
+        )
 
     def test_get_vehicles_with_user_id(self):
         client = self._client("cupra", json_data={"vehicles": [

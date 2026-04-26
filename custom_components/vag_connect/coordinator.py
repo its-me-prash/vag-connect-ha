@@ -447,7 +447,16 @@ class VagConnectCoordinator(DataUpdateCoordinator):
         await self._cariad_cmd(vin, "command_lock")
 
     async def async_unlock(self, vin: str) -> None:
-        spin = self.entry.options.get(CONF_SPIN) or self.entry.data.get(CONF_SPIN) or ""
+        # Prefer options (Options Flow) over data (initial config). Use real
+        # dict semantics so MagicMock values in tests don't accidentally pass
+        # the truthiness check.
+        options = getattr(self.entry, "options", None) or {}
+        data = getattr(self.entry, "data", None) or {}
+        spin = ""
+        if isinstance(options, dict):
+            spin = str(options.get(CONF_SPIN) or "")
+        if not spin and isinstance(data, dict):
+            spin = str(data.get(CONF_SPIN) or "")
         if not spin:
             raise ServiceValidationError(
                 translation_domain=DOMAIN,
