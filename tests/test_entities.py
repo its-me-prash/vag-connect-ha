@@ -598,7 +598,8 @@ class TestDiagnostics:
         )
         assert result["config"]["password"] == "**REDACTED**"
         assert result["config"]["spin"] == "**REDACTED**"
-        assert result["config"]["username"] == "u@a.de"
+        # diagnostics.py also redacts the username (privacy default since v1.x)
+        assert result["config"]["username"] == "**REDACTED**"
 
     def test_gps_redacted_in_vehicle(self):
         import asyncio
@@ -1049,7 +1050,9 @@ class TestRunCommand:
         coord.hass = MagicMock()
         coord.hass.async_add_executor_job = AsyncMock(return_value=None)
         coord.entry = MagicMock()
-        coord.entry.data = {"brand": "audi", "spin": ""}
+        # Real dict + S-PIN so v1.8.0 unlock fail-fast does not block dispatch tests.
+        coord.entry.data = {"brand": "audi", "spin": "1234"}
+        coord.entry.options = {}
         coord._vehicles_lock = threading.Lock()
         coord._cariad_client = MagicMock()
         coord._cariad_client.command_lock = AsyncMock()
