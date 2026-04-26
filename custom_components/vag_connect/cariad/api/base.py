@@ -107,8 +107,13 @@ class CariadBaseClient:
         """Stop charging."""
         raise NotImplementedError
 
-    async def command_flash(self, vin: str) -> None:
-        """Honk and flash."""
+    async def command_flash(
+        self,
+        vin: str,
+        latitude: float | None = None,
+        longitude: float | None = None,
+    ) -> None:
+        """Honk and flash. SEAT/CUPRA require the user position; others ignore it."""
         raise NotImplementedError
 
     async def command_wake(self, vin: str) -> None:

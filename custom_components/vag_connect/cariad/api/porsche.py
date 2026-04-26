@@ -161,7 +161,12 @@ class PorscheClient:
     async def command_stop_charging(self, vin: str) -> None:
         await self._command(vin, "DIRECT_CHARGING_STOP")
 
-    async def command_flash(self, vin: str) -> None:
+    async def command_flash(
+        self,
+        vin: str,
+        latitude: float | None = None,  # noqa: ARG002
+        longitude: float | None = None,  # noqa: ARG002
+    ) -> None:
         await self._command(vin, "HONK_FLASH")
 
     async def command_wake(self, vin: str) -> None:

@@ -447,7 +447,15 @@ class VagConnectCoordinator(DataUpdateCoordinator):
         await self._cariad_cmd(vin, "command_stop_charging")
 
     async def async_flash_lights(self, vin: str) -> None:
-        await self._cariad_cmd(vin, "command_flash")
+        # SEAT/CUPRA require the user position in the honk-and-flash payload
+        # (HTTP 400 otherwise). Other brands accept and ignore it.
+        vehicle = self.vehicles.get(vin, {})
+        await self._cariad_cmd(
+            vin,
+            "command_flash",
+            latitude=vehicle.get("latitude"),
+            longitude=vehicle.get("longitude"),
+        )
 
     async def async_set_target_soc(self, vin: str, target: int) -> None:
         await self._cariad_cmd(vin, "command_set_target_soc", target=target)

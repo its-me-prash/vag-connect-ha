@@ -164,7 +164,12 @@ class SkodaClient(CariadBaseClient):
     async def command_stop_charging(self, vin: str) -> None:
         await self._post(f"{_BASE}/api/v1/charging/{vin}/stop", json={})
 
-    async def command_flash(self, vin: str) -> None:
+    async def command_flash(
+        self,
+        vin: str,
+        latitude: float | None = None,  # noqa: ARG002
+        longitude: float | None = None,  # noqa: ARG002
+    ) -> None:
         await self._post(f"{_BASE}/api/v1/vehicle-access/{vin}/honk-and-flash", json={"mode": "FLASH_ONLY"})
 
     async def command_wake(self, vin: str) -> None:

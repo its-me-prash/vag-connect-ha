@@ -23,6 +23,17 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ## [1.8.0] - 2026-04-26
 
+### Bug Fix — CUPRA/SEAT honk-and-flash 400 (#53)
+
+- `command_flash` for CUPRA/SEAT was sending `{"mode": "FLASH_ONLY"}` and
+  no user position. The OLA API returned HTTP 400 "internal-error".
+  pycupra reference shows the API expects `{"mode": "flash",
+  "userPosition": {"latitude": …, "longitude": …}}`. Fixed: coordinator
+  passes the cached vehicle position into `command_flash`, and the
+  SEAT/CUPRA client sends the correct payload (lat/lng rounded to 4
+  decimals like the official app). Other brands accept the kwargs and
+  ignore them — backward compatible.
+
 ### Foundation Release — P0 Audit Findings (#60)
 
 A code audit identified seven release blockers in v1.7.0. v1.8.0 fixes

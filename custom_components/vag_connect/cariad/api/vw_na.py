@@ -203,7 +203,12 @@ class VWNAClient:
         uuid = self._vin_to_uuid.get(vin, vin)
         await self._post(f"{self._base}/ev/v1/vehicle/{uuid}/charging/stop", json={})
 
-    async def command_flash(self, vin: str) -> None:
+    async def command_flash(
+        self,
+        vin: str,
+        latitude: float | None = None,  # noqa: ARG002
+        longitude: float | None = None,  # noqa: ARG002
+    ) -> None:
         uuid = self._vin_to_uuid.get(vin, vin)
         await self._post(f"{self._base}/ev/v1/vehicle/{uuid}/horn-and-lights", json={"action": "FLASH_ONLY"})
 

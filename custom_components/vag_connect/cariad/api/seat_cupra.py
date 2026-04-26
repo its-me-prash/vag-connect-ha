@@ -13,6 +13,7 @@ from typing import Any
 
 from aiohttp import ClientSession
 
+from ..exceptions import APIError
 from ..models import BRAND_CUPRA, BRAND_SEAT, BrandConfig, VehicleData
 from .base import CariadBaseClient
 
@@ -253,8 +254,33 @@ class SeatCupraClient(CariadBaseClient):
     async def command_stop_charging(self, vin: str) -> None:
         await self._post(f"{_BASE}/v1/vehicles/{vin}/charging/actions", json={"action": "stop"})
 
-    async def command_flash(self, vin: str) -> None:
-        await self._post(f"{_BASE}/v1/vehicles/{vin}/honk-and-flash", json={"mode": "FLASH_ONLY"})
+    async def command_flash(
+        self,
+        vin: str,
+        latitude: float | None = None,
+        longitude: float | None = None,
+    ) -> None:
+        """SEAT/CUPRA honk-and-flash.
+
+        Requires `userPosition` (per pycupra) — without it the API returns
+        HTTP 400 "internal-error". Mode is lowercase "flash" (not "FLASH_ONLY").
+        Coordinates are rounded to 4 decimals (~11m precision) like the app.
+        """
+        if latitude is None or longitude is None:
+            raise APIError(
+                400,
+                f"{_BASE}/v1/vehicles/{vin}/honk-and-flash",
+                "Vehicle position is required for honk-and-flash on SEAT/CUPRA. "
+                "Wait for the next status poll, then retry.",
+            )
+        body = {
+            "mode": "flash",
+            "userPosition": {
+                "latitude": int(latitude * 10000) / 10000,
+                "longitude": int(longitude * 10000) / 10000,
+            },
+        }
+        await self._post(f"{_BASE}/v1/vehicles/{vin}/honk-and-flash", json=body)
 
     async def command_wake(self, vin: str) -> None:
         await self._post(f"{_BASE}/v1/vehicles/{vin}/vehicle-wakeup/request", json={})
