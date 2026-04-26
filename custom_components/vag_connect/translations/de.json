@@ -91,10 +91,10 @@
         "name": "Kilometerstand"
       },
       "charging_state": {
-        "name": "Ladevorgang"
+        "name": "Ladestatus"
       },
       "plug_state": {
-        "name": "Ladestecker"
+        "name": "Ladeanschluss"
       },
       "target_soc": {
         "name": "Ladeziel"
@@ -103,16 +103,16 @@
         "name": "Ladeleistung"
       },
       "charging_rate_kmh": {
-        "name": "Ladegeschwindigkeit"
+        "name": "Ladegeschwindigkeit (km/h)"
       },
       "charge_complete_eta": {
-        "name": "Ladeende"
+        "name": "Laden fertig um"
       },
       "charging_type": {
-        "name": "Ladetyp"
+        "name": "Ladeart"
       },
       "climatisation_state": {
-        "name": "Klimatisierung"
+        "name": "Klimaanlage"
       },
       "target_temperature": {
         "name": "Zieltemperatur"
@@ -133,13 +133,13 @@
         "name": "Ölwechseldatum"
       },
       "vehicle_state": {
-        "name": "Fahrzeugzustand"
+        "name": "Auto-Status"
       },
       "parking_address": {
-        "name": "Standort"
+        "name": "Parkposition"
       },
       "parking_city": {
-        "name": "Standort Stadt"
+        "name": "Parkort"
       },
       "battery_temp": {
         "name": "Akkutemperatur"
@@ -154,7 +154,7 @@
         "name": "Abfahrtstimer 3"
       },
       "last_updated_at": {
-        "name": "Zuletzt aktualisiert"
+        "name": "Letzte Aktualisierung"
       },
       "adblue_range_km": {
         "name": "AdBlue Reichweite"
@@ -171,28 +171,28 @@
         "name": "Fenster offen"
       },
       "plug_connected": {
-        "name": "Ladekabel steckt"
+        "name": "Ladekabel angeschlossen"
       },
       "is_charging": {
-        "name": "Lädt"
+        "name": "Wird geladen"
       },
       "climatisation_active": {
-        "name": "Klimatisierung läuft"
+        "name": "Klimaanlage läuft"
       },
       "is_driving": {
-        "name": "In Fahrt"
+        "name": "Unterwegs"
       },
       "is_online": {
-        "name": "Erreichbar"
+        "name": "Fahrzeug erreichbar"
       },
       "connector_locked": {
-        "name": "Ladestecker gesperrt"
+        "name": "Ladekabel verriegelt"
       },
       "trunk_locked": {
         "name": "Kofferraum verriegelt"
       },
       "sunroof_open": {
-        "name": "Schiebedach"
+        "name": "Schiebedach offen"
       },
       "window_heating_front": {
         "name": "Frontscheibenheizung aktiv"
@@ -201,7 +201,7 @@
         "name": "Heckscheibenheizung aktiv"
       },
       "warning_active": {
-        "name": "Fahrzeugwarnung aktiv"
+        "name": "Warnung aktiv"
       },
       "warning_engine": {
         "name": "Motorwarnung"
@@ -218,13 +218,13 @@
     },
     "switch": {
       "lock_switch": {
-        "name": "Türverriegelung"
+        "name": "Zentralverriegelung"
       },
       "climatisation_switch": {
-        "name": "Klimatisierung"
+        "name": "Klimaanlage"
       },
       "charging_switch": {
-        "name": "Laden"
+        "name": "Ladevorgang"
       },
       "window_heating_switch": {
         "name": "Scheibenheizung"
@@ -233,7 +233,7 @@
         "name": "Sitzheizung"
       },
       "auto_unlock_switch": {
-        "name": "Stecker nach Laden entsperren"
+        "name": "Ladekabel nach Laden entriegeln"
       },
       "departure_timer_1_switch": {
         "name": "Abfahrtstimer 1"
@@ -250,7 +250,7 @@
         "name": "Ladeziel"
       },
       "climate_temp_number": {
-        "name": "Klimaanlage Temperatur"
+        "name": "Wunschtemperatur"
       },
       "max_charge_current": {
         "name": "Max. Ladestrom"
@@ -259,26 +259,26 @@
         "name": "Ladeziel"
       },
       "target_temperature": {
-        "name": "Klimatisierungstemperatur"
+        "name": "Wunschtemperatur"
       },
       "min_soc": {
-        "name": "Mindest-Akkustand (PHEV)"
+        "name": "Mindest-Ladestand (Hybrid)"
       }
     },
     "button": {
       "flash_button": {
-        "name": "Lichtsignal"
+        "name": "Lichthupe"
       },
       "refresh_button": {
         "name": "Daten aktualisieren"
       },
       "wake_button": {
-        "name": "Fahrzeug aufwecken"
+        "name": "Auto aufwecken"
       }
     },
     "climate": {
       "climate": {
-        "name": "Vorklimatisierung"
+        "name": "Standklimatisierung"
       }
     },
     "device_tracker": {
@@ -316,7 +316,7 @@
     },
     "lock": {
       "door_lock": {
-        "name": "Türschloss"
+        "name": "Zentralverriegelung"
       }
     }
   },
