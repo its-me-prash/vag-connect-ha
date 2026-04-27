@@ -86,7 +86,16 @@ body:
 
         Welche Entities erscheinen? Welche Aktionen funktionieren / scheitern?
 
-        Please remove VIN, email, tokens, GPS and S-PIN from logs.
-        Bitte VIN, Email, Tokens, GPS-Koordinaten und S-PIN aus Logs entfernen.
+        **Privacy — required masking before posting:**
+        - **VIN** → only last 6 chars, e.g. `***003577` (a full VIN ties to registration / insurance)
+        - **Email** → mask local part, e.g. `u***@***.com`
+        - **Tokens / S-PIN** → never share
+        - **GPS** → round to 1 decimal or remove
+
+        **Datenschutz — vor dem Posten Pflicht:**
+        - **VIN** nur letzte 6 Zeichen, z.B. `***003577` (vollständige VIN ist mit Zulassung / Versicherung verknüpft)
+        - **Email** lokalen Teil schwärzen, z.B. `u***@***.com`
+        - **Tokens / S-PIN** nie teilen
+        - **GPS** auf 1 Nachkommastelle runden oder löschen
     validations:
       required: true

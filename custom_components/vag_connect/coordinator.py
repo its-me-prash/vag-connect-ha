@@ -31,6 +31,7 @@ from .const import (
     DOMAIN,
 )
 from homeassistant.helpers import device_registry as dr
+from .cariad._util import mask_vin
 from .cariad.models import VehicleData
 
 _LOGGER = logging.getLogger(__name__)
@@ -109,7 +110,7 @@ class VagConnectCoordinator(DataUpdateCoordinator):
             with self._vehicles_lock:
                 for vin, result in zip(vins, results):
                     if isinstance(result, Exception):
-                        _LOGGER.warning("Could not fetch status for %s: %s", vin, result)
+                        _LOGGER.warning("Could not fetch status for %s: %s", mask_vin(vin), result)
                         if hasattr(self, "vehicle_success"):
                             self.vehicle_success[vin] = False
                         continue
@@ -141,6 +142,23 @@ class VagConnectCoordinator(DataUpdateCoordinator):
         except Exception as err:  # noqa: BLE001
             _LOGGER.error("VAG Connect setup failed: %s", err)
             return False
+
+    def _trigger_reauth(self, reason: str) -> None:
+        """Stop the poll loop and ask HA to start the reauth flow.
+
+        Used when refresh + re-login both fail at runtime so the user gets a
+        proper UI prompt instead of a silently failing integration that floods
+        the log with retries.
+        """
+        self._started = False
+        for vin in list(self.vehicles.keys()):
+            self.vehicle_success[vin] = False
+        try:
+            self.entry.async_start_reauth(self.hass)
+        except Exception:  # noqa: BLE001
+            # entry may not support reauth in tests; the loop stop is enough.
+            pass
+        _LOGGER.error("VAG Connect: stopping poll loop, reauth required (%s)", reason)
 
     async def _poll_loop(self) -> None:
         """Background polling loop — runs independently of HA scheduler.
@@ -181,7 +199,7 @@ class VagConnectCoordinator(DataUpdateCoordinator):
                 any_success = False
                 for vin, result in zip(vins, results):
                     if isinstance(result, Exception):
-                        _LOGGER.debug("Poll failed for %s: %s", vin, result)
+                        _LOGGER.debug("Poll failed for %s: %s", mask_vin(vin), result)
                         old = self.vehicles.get(vin, {})
                         old["_poll_failed"] = True
                         fresh[vin] = old
@@ -200,6 +218,13 @@ class VagConnectCoordinator(DataUpdateCoordinator):
                     self.vehicles.update(fresh)
                 await self._async_push_update(fresh, success=any_success)
             except Exception as err:  # noqa: BLE001
+                # Auth failure that survived the client's refresh-then-relogin
+                # fallback means the credentials are stale. Trigger HA reauth.
+                from .cariad.exceptions import AuthenticationError  # noqa: PLC0415
+                if isinstance(err, AuthenticationError):
+                    self._trigger_reauth(str(err) or type(err).__name__)
+                    await self._async_push_update({}, success=False)
+                    return
                 _LOGGER.error("VAG Connect poll error: %s", err)
                 if not hasattr(self, "vehicle_success"):
                     self.vehicle_success = {}
@@ -429,7 +454,7 @@ class VagConnectCoordinator(DataUpdateCoordinator):
             with self._vehicles_lock:
                 for vin, result in zip(vins, results):
                     if isinstance(result, Exception):
-                        _LOGGER.debug("Refresh failed for %s: %s", vin, result)
+                        _LOGGER.debug("Refresh failed for %s: %s", mask_vin(vin), result)
                         continue
                     if isinstance(result, VehicleData):
                         data = result.to_dict()
@@ -518,9 +543,9 @@ class VagConnectCoordinator(DataUpdateCoordinator):
             fn = getattr(self._cariad_client, method)
             await fn(vin, **kwargs)
             await self.async_request_refresh()
-            _LOGGER.debug("VAG Connect: %s(%s) OK", method, vin)
+            _LOGGER.debug("VAG Connect: %s(%s) OK", method, mask_vin(vin))
         except Exception as err:  # noqa: BLE001
-            _LOGGER.error("VAG Connect: %s(%s) failed: %s", method, vin, err)
+            _LOGGER.error("VAG Connect: %s(%s) failed: %s", method, mask_vin(vin), err)
             raise
 
     async def async_set_charge_mode(self, vin: str, mode: str) -> None:

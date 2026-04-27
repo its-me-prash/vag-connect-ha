@@ -15,6 +15,7 @@ from typing import Any
 
 from aiohttp import ClientSession
 
+from .._util import mask_vin as _mask_vin
 from ..models import VehicleData
 from ..exceptions import AuthenticationError, APIError, TokenExpiredError
 from ..auth.idk import IDKAuth
@@ -89,7 +90,7 @@ class VWNAClient:
                 if uuid:
                     self._vin_to_uuid[vin] = uuid
                 vins.append(vin)
-                _LOGGER.debug("VW NA: found VIN %s uuid=%s", vin, uuid)
+                _LOGGER.debug("VW NA: found VIN %s uuid=%s", _mask_vin(vin), uuid)
         return vins
 
     async def get_status(self, vin: str) -> VehicleData:

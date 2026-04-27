@@ -142,9 +142,10 @@ Restart Home Assistant.
 | Session | Version | Scope | Issues |
 |---|---|---|---|
 | **1 — Foundation Fix** | v1.8.0 | iot_class, per-VIN availability, S-PIN fail-fast, fake writables removed, geocoding opt-in, platforms sync | **#60** |
-| **2 — Capabilities** | v1.8.1 | Capability-gated entities, subscription detection | #56 |
-| **3 — Command Profile** | v1.8.2 | Brand/region/platform routing, RS e-tron GT fix | #61, #51 |
-| **4 — Diagnostics + Fixtures** | v1.8.3 | Anonymized diagnostics, regression tests | #62, #58 |
+| **1.5 — Privacy & Auth Polish** | v1.8.1 | VIN masking in logs/diagnostics, ConfigEntryAuthFailed on stale credentials, userPosition documentation | — |
+| **2 — Capabilities** | v1.8.2 | Capability-gated entities, subscription detection (2A→2B→2C) | #56, #68 |
+| **3 — Command Profile** | v1.8.3 | Brand/region/platform routing, RS e-tron GT fix | #61, #51 |
+| **4 — Diagnostics + Fixtures** | v1.8.4 | Anonymized diagnostics, regression tests | #62, #58 |
 | **5 — Process & Governance** | — | Issue forms, brand captains, CODEOWNERS, privacy guide | #64 |
 | **6 — Read-only + Locking** | v1.9.0 | Read-only mode, command locking, cloud vs wake | #63, #55 |
 | **7 — Push CUPRA/SEAT** | v1.9.1 | Firebase FCM via mqtt.messagehub.de | #57 |

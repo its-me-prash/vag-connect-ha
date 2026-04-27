@@ -23,17 +23,85 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ## [Unreleased]
 
-### Removed
+## [1.8.1] - 2026-04-27
+
+### Privacy / Datenschutz
+
+- **VIN masking in logs and diagnostics.** A new `mask_vin()` helper
+  returns `***` + last 6 chars of the VIN. Applied to all coordinator
+  log messages (warning + error level) and to the diagnostics output —
+  the per-vehicle dictionary is now keyed by the masked VIN instead of
+  the full VIN. A full VIN ties to vehicle registration, insurance and
+  ownership records, so it must not appear in support material that
+  users post to GitHub issues.
+
+  **VIN-Maskierung in Logs und Diagnostics.** Neuer `mask_vin()` Helper
+  liefert `***` + letzte 6 Zeichen. Wird jetzt in allen Coordinator-Logs
+  (Warning + Error Level) und im Diagnostics-Export verwendet — die
+  Fahrzeug-Dictionaries werden mit der gemaskten VIN als Schlüssel
+  abgelegt statt der vollständigen VIN. Eine vollständige VIN ist mit
+  Zulassung, Versicherung und Eigentümerdaten verknüpft und gehört
+  daher nicht in Support-Material das User auf GitHub posten.
+
+- **Diagnostics now redact more PII fields by default:** `vin`, `address`,
+  `parking_address`, `user_id`, `account_id` and `email` join the
+  existing `password`, `spin`, `latitude`, `longitude` redaction list.
+  Recursive scrubbing handles nested structures.
+
+  **Diagnostics schwärzen jetzt mehr PII-Felder standardmässig:** `vin`,
+  `address`, `parking_address`, `user_id`, `account_id` und `email`
+  ergänzen die bestehenden `password`, `spin`, `latitude`, `longitude`.
+  Rekursives Scrubbing erfasst auch verschachtelte Strukturen.
+
+- **Issue templates** (`bug_report.yml`, `new_brand.yml`) spell out the
+  required masking before posting (VIN to last 6 chars, email/local
+  part, no tokens or S-PIN, GPS to 1 decimal) in both English and German.
+
+  **Issue-Templates** beschreiben jetzt explizit zweisprachig was vor
+  dem Posten geschwärzt werden muss (VIN auf letzte 6 Zeichen, Email
+  lokalen Teil, keine Tokens oder S-PIN, GPS auf 1 Nachkommastelle).
+
+### Authentication / Authentifizierung
+
+- **`ConfigEntryAuthFailed` is now raised when credentials are stale.**
+  Previously, persistent token refresh failures and rejected re-logins
+  caused the integration to retry forever and flood the log. Now setup
+  raises `ConfigEntryAuthFailed` (which triggers Home Assistant's
+  reauth UI) and the runtime poll loop calls `entry.async_start_reauth()`
+  if auth fails after the client's refresh-then-relogin fallback gave up.
+
+  **`ConfigEntryAuthFailed` wird jetzt geworfen wenn Credentials veraltet
+  sind.** Bisher haben fehlgeschlagene Token-Refreshes und abgelehnte
+  Re-Logins zu endlosen Retries und Log-Spam geführt. Jetzt wirft Setup
+  `ConfigEntryAuthFailed` (das löst Home Assistants Reauth-UI aus) und
+  der Poll-Loop ruft `entry.async_start_reauth()` auf wenn auch der
+  Re-Login-Fallback im Client gescheitert ist.
+
+### Documentation / Dokumentation
+
+- The `userPosition` field in the SEAT/CUPRA honk-and-flash payload is
+  now documented as a misnomer in the OLA API contract: the field
+  expects the **vehicle's** last-known GPS, not the user's phone GPS.
+  Verified against pycupra `vehicle.set_honkandflash` (uses
+  `findCarResponse` lat/lon) and myskoda equivalent (`PositionType.VEHICLE`).
+
+  Das `userPosition` Feld bei SEAT/CUPRA honk-and-flash ist jetzt im
+  Code dokumentiert als irreführender Name im OLA-API-Vertrag: das Feld
+  erwartet die **Fahrzeug**position, nicht die Phone-Position. Verifiziert
+  gegen pycupra (`vehicle.set_honkandflash` nutzt `findCarResponse`)
+  und myskoda (`PositionType.VEHICLE`).
+
+### Removed (carried over from previous Unreleased)
+
 - Stale icon and translation entries for entities that were removed in
   v1.8.0 (`seat_heating_switch`, `auto_unlock_switch`, `max_charge_current`).
-  The keys had no corresponding entity since the v1.8.0 cleanup and were
-  unused by HA. Cleaned across `icons.json`, `strings.json` and all
-  8 language files.
+  Cleaned across `icons.json`, `strings.json` and all 8 language files.
 
-### Changed
+### Changed (carried over from previous Unreleased)
+
 - `docs/research/ARCHITECTURE_DECISION.md` and
   `docs/research/DEPENDENCY_AUDIT.md` marked as historical
-  (implemented in v0.12.0, still the architecture in v1.8.0).
+  (implemented in v0.12.0, still the architecture in v1.8.x).
 
 ## [1.8.0] - 2026-04-26
 

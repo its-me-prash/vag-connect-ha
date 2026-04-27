@@ -143,9 +143,10 @@ Restartujte Home Assistant.
 | Session | Verze | Rozsah | Issues |
 |---|---|---|---|
 | **1 — Foundation Fix** | v1.8.0 | iot_class, per-VIN dostupnost, S-PIN fail-fast, falešné writable odstraněny, geokódování opt-in | **#60** |
-| **2 — Capabilities** | v1.8.1 | Entity podle schopností, detekce předplatného | #56 |
-| **3 — Command Profile** | v1.8.2 | Routing podle značky/regionu/platformy, RS e-tron GT fix | #61, #51 |
-| **4 — Diagnostics + Fixtures** | v1.8.3 | Anonymizované diagnostiky, regresní testy | #62, #58 |
+| **1.5 — Soukromí & Auth** | v1.8.1 | Maskování VIN v logu a diagnostice, ConfigEntryAuthFailed při neplatných údajích, dokumentace userPosition | — |
+| **2 — Capabilities** | v1.8.2 | Entity podle schopností, detekce předplatného (2A→2B→2C) | #56, #68 |
+| **3 — Command Profile** | v1.8.3 | Routing podle značky/regionu/platformy, RS e-tron GT fix | #61, #51 |
+| **4 — Diagnostics + Fixtures** | v1.8.4 | Anonymizované diagnostiky, regresní testy | #62, #58 |
 | **5 — Process & Governance** | — | Issue forms, brand captains, CODEOWNERS, privacy guide | #64 |
 | **6 — Read-only + Locking** | v1.9.0 | Read-only režim, command locking, cloud vs wake | #63, #55 |
 | **7 — Push CUPRA/SEAT** | v1.9.1 | Firebase FCM via mqtt.messagehub.de | #57 |

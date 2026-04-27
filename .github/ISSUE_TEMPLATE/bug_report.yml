@@ -122,8 +122,21 @@ body:
         HA → Einstellungen → System → Logs → nach "vag_connect" filtern.
         Debug-Logging über Integration → Debug-Logging aktivieren.
 
-        **Please remove or mask VIN, email, tokens, GPS coordinates and S-PIN!**
-        Bitte VIN, Email, Tokens, GPS-Koordinaten und S-PIN entfernen / schwärzen!
+        **Privacy — required masking before posting:**
+        - **VIN** → keep only last 6 chars (e.g. `***003577`). A full VIN ties to registration, insurance and ownership records.
+        - **Email** → mask local part, e.g. `u***@***.com`
+        - **Tokens** (`access_token`, `refresh_token`, `id_token`) → remove completely
+        - **GPS** (`latitude`, `longitude`) → round to 1 decimal or remove
+        - **S-PIN** → never share, even masked
+        - **Account ID / user_id** → remove
+
+        **Datenschutz — vor dem Posten Pflicht:**
+        - **VIN** nur letzte 6 Zeichen (z.B. `***003577`). Eine vollständige VIN ist mit Zulassung, Versicherung und Eigentümerdaten verknüpft.
+        - **Email** lokalen Teil schwärzen, z.B. `u***@***.com`
+        - **Tokens** (`access_token`, `refresh_token`, `id_token`) komplett entfernen
+        - **GPS** (`latitude`, `longitude`) auf 1 Nachkommastelle runden oder löschen
+        - **S-PIN** nie teilen, auch nicht geschwärzt
+        - **Account ID / user_id** entfernen
       render: text
 
   - type: textarea
@@ -132,10 +145,13 @@ body:
       label: Diagnostics / Diagnose-Daten (optional)
       description: |
         Settings → Devices & Services → VAG Connect → ⋮ → Download diagnostics.
-        Sensitive data (password, S-PIN, GPS, email) is auto-redacted.
+        Sensitive data (VIN, password, S-PIN, GPS, email, address, user_id) is auto-redacted by v1.8.x+.
 
         HA → Einstellungen → Integrationen → VAG Connect → 3-Punkte-Menü → Diagnose herunterladen.
-        Sensible Daten (Passwort, S-PIN, GPS, Email) sind automatisch geschwärzt.
+        Sensible Daten (VIN, Passwort, S-PIN, GPS, Email, Adresse, user_id) werden ab v1.8.x automatisch geschwärzt.
+
+        If you are on an older version: please open the JSON, mask VINs and email manually before pasting.
+        Bei älterer Version: bitte JSON öffnen und VIN + Email vor dem Einfügen manuell schwärzen.
       render: json
 
   - type: checkboxes
@@ -144,5 +160,5 @@ body:
       label: Privacy confirmation / Datenschutz-Bestätigung
       description: Required / Pflicht
       options:
-        - label: I have removed tokens, full VIN, email, GPS and S-PIN from logs/diagnostics. / Ich habe Tokens, vollständige VIN, Email, GPS-Koordinaten und S-PIN aus Logs/Diagnose entfernt.
+        - label: I have masked VIN to last 6 chars and removed tokens, email, GPS and S-PIN from logs/diagnostics. / Ich habe die VIN auf die letzten 6 Zeichen gekürzt und Tokens, Email, GPS und S-PIN aus Logs/Diagnose entfernt.
           required: true

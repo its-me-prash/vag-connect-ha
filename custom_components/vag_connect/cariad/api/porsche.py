@@ -14,6 +14,7 @@ from typing import Any
 
 from aiohttp import ClientSession, ClientTimeout
 
+from .._util import mask_vin as _mask_vin
 from ..auth.porsche import PorscheAuth
 from ..exceptions import APIError, AuthenticationError, TokenExpiredError
 from ..models import VehicleData, TokenSet
@@ -59,7 +60,7 @@ class PorscheClient:
             vin = v.get("vin") or v.get("VIN")
             if vin:
                 vins.append(vin)
-                _LOGGER.debug("Porsche: found VIN %s model=%s", vin, v.get("modelName"))
+                _LOGGER.debug("Porsche: found VIN %s model=%s", _mask_vin(vin), v.get("modelName"))
         return vins
 
     async def get_status(self, vin: str) -> VehicleData:

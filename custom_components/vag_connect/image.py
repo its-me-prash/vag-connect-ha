@@ -27,6 +27,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
+from .cariad._util import mask_vin
 from .cariad.api.graphql import RENDER_IMAGE_TYPES
 from .coordinator import VagConnectCoordinator
 from .entity_base import VagConnectEntity
@@ -82,10 +83,10 @@ async def async_setup_entry(
             if new:
                 entities.extend(new)
                 added_vins.add(vin)
-                _LOGGER.debug("Image entities created for %s (%d entities)", vin, len(new))
+                _LOGGER.debug("Image entities created for %s (%d entities)", mask_vin(vin), len(new))
         else:
             _LOGGER.debug(
-                "No image_urls for %s at setup — will retry on next coordinator update", vin
+                "No image_urls for %s at setup — will retry on next coordinator update", mask_vin(vin)
             )
 
     if entities:

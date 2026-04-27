@@ -307,9 +307,10 @@ cariad/
 | Session | Version | Scope | Issues |
 |---|---|---|---|
 | **1 — Foundation Fix** | v1.8.0 | iot_class, per-VIN availability, S-PIN fail-fast, fake writables entfernt, Geocoding opt-in, Platforms-Sync | **#60** |
-| **2 — Capabilities** | v1.8.1 | Capability-gated Entities, Subscription-Detection | #56 |
-| **3 — Command Profile** | v1.8.2 | Brand/Region/Plattform-Routing, RS e-tron GT Fix | #61, #51 |
-| **4 — Diagnostics + Fixtures** | v1.8.3 | Anonymisierte Diagnostics, Regression-Tests | #62, #58 |
+| **1.5 — Privacy & Auth Polish** | v1.8.1 | VIN-Maskierung in Logs/Diagnostics, ConfigEntryAuthFailed bei verlorenen Credentials, userPosition-Doku | — |
+| **2 — Capabilities** | v1.8.2 | Capability-gated Entities, Subscription-Detection (2A→2B→2C) | #56, #68 |
+| **3 — Command Profile** | v1.8.3 | Brand/Region/Plattform-Routing, RS e-tron GT Fix | #61, #51 |
+| **4 — Diagnostics + Fixtures** | v1.8.4 | Anonymisierte Diagnostics, Regression-Tests | #62, #58 |
 | **5 — Process & Governance** | — | Issue Forms, Brand Captains, CODEOWNERS, Privacy Guide | #64 |
 | **6 — Read-only + Locking** | v1.9.0 | Read-only Modus, Command Locking, Cloud vs Wake | #63, #55 |
 | **7 — Push CUPRA/SEAT** | v1.9.1 | Firebase FCM via mqtt.messagehub.de | #57 |

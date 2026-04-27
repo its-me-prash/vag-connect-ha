@@ -593,6 +593,7 @@ class TestDiagnostics:
             "password": "secret",
             "spin": "1234",
         }
+        entry.options = {}
         result = asyncio.get_event_loop().run_until_complete(
             async_get_config_entry_diagnostics(MagicMock(), entry)
         )
@@ -609,13 +610,29 @@ class TestDiagnostics:
         entry = MagicMock()
         entry.runtime_data = coord
         entry.data = {"brand": "audi", "username": "u@a.de", "password": "pw", "spin": ""}
+        entry.options = {}
         result = asyncio.get_event_loop().run_until_complete(
             async_get_config_entry_diagnostics(MagicMock(), entry)
         )
-        vin = list(coord.vehicles.keys())[0]
-        assert result["vehicles"][vin].get("latitude") == "**REDACTED**"
-        assert result["vehicles"][vin].get("longitude") == "**REDACTED**"
-        assert "_vehicle" not in result["vehicles"][vin]
+        # VINs are masked to last 6 chars in diagnostics output
+        masked_keys = list(result["vehicles"].keys())
+        assert len(masked_keys) == 1
+        masked_vin = masked_keys[0]
+        assert masked_vin.startswith("***")
+        assert len(masked_vin) <= 9  # "***" + up to 6 chars
+        veh = result["vehicles"][masked_vin]
+        assert veh.get("latitude") == "**REDACTED**"
+        assert veh.get("longitude") == "**REDACTED**"
+        assert veh.get("vin") == "**REDACTED**"
+        assert veh.get("parking_address") == "**REDACTED**"
+        assert "_vehicle" not in veh
+
+    def test_mask_vin_helper(self):
+        from custom_components.vag_connect.cariad._util import mask_vin
+        assert mask_vin("WVGZZZ1KZAW123456") == "***123456"
+        assert mask_vin(None) == "***"
+        assert mask_vin("") == "***"
+        assert mask_vin("ABC") == "***ABC"
 
 
 # ── __init__ service helpers ───────────────────────────────────────────────────

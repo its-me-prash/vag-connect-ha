@@ -2074,9 +2074,13 @@ class TestAsyncSetupEntry:
         hass.config_entries.async_forward_entry_setups = AsyncMock()
         return hass
 
-    def test_setup_entry_raises_config_not_ready_on_value_error(self):
-        """ValueError from coordinator maps to ConfigEntryNotReady."""
-        from homeassistant.exceptions import ConfigEntryNotReady
+    def test_setup_entry_raises_auth_failed_on_invalid_credentials(self):
+        """ValueError('invalid_credentials') maps to ConfigEntryAuthFailed.
+
+        Triggers HA's reauth UI prompt instead of looping
+        ConfigEntryNotReady retries forever.
+        """
+        from homeassistant.exceptions import ConfigEntryAuthFailed
         from custom_components.vag_connect import async_setup_entry
 
         hass = self._hass()
@@ -2084,6 +2088,24 @@ class TestAsyncSetupEntry:
 
         mock_coord = MagicMock()
         mock_coord.async_setup = AsyncMock(side_effect=ValueError("invalid_credentials"))
+        mock_coord.vehicles = {}
+
+        with patch("custom_components.vag_connect.VagConnectCoordinator", return_value=mock_coord):
+            with pytest.raises(ConfigEntryAuthFailed):
+                asyncio.get_event_loop().run_until_complete(
+                    async_setup_entry(hass, entry)
+                )
+
+    def test_setup_entry_other_value_errors_still_config_not_ready(self):
+        """Non-credential ValueErrors keep raising ConfigEntryNotReady."""
+        from homeassistant.exceptions import ConfigEntryNotReady
+        from custom_components.vag_connect import async_setup_entry
+
+        hass = self._hass()
+        entry = self._entry()
+
+        mock_coord = MagicMock()
+        mock_coord.async_setup = AsyncMock(side_effect=ValueError("too_many_requests"))
         mock_coord.vehicles = {}
 
         with patch("custom_components.vag_connect.VagConnectCoordinator", return_value=mock_coord):

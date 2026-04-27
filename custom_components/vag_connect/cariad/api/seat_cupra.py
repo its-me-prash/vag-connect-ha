@@ -262,9 +262,16 @@ class SeatCupraClient(CariadBaseClient):
     ) -> None:
         """SEAT/CUPRA honk-and-flash.
 
-        Requires `userPosition` (per pycupra) — without it the API returns
-        HTTP 400 "internal-error". Mode is lowercase "flash" (not "FLASH_ONLY").
-        Coordinates are rounded to 4 decimals (~11m precision) like the app.
+        The OLA endpoint requires a `userPosition` field; without it the API
+        returns HTTP 400 "internal-error". Mode must be lowercase "flash"
+        (not "FLASH_ONLY"). Coordinates are truncated to 4 decimals (~11 m).
+
+        Despite the field name, OLA expects the **vehicle's** last-known
+        position, not the user's phone GPS. Verified against pycupra
+        `vehicle.set_honkandflash` (uses `findCarResponse` lat/lon) and the
+        myskoda equivalent (sends `PositionType.VEHICLE`). The name is a
+        misnomer in the OLA contract — the field acts as a server-side
+        sanity token bound to the car's known location.
         """
         if latitude is None or longitude is None:
             raise APIError(
