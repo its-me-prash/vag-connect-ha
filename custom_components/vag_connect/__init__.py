@@ -18,7 +18,11 @@ import voluptuous as vol
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant, ServiceCall
-from homeassistant.exceptions import ConfigEntryNotReady, ServiceValidationError
+from homeassistant.exceptions import (
+    ConfigEntryAuthFailed,
+    ConfigEntryNotReady,
+    ServiceValidationError,
+)
 from homeassistant.helpers import config_validation as cv
 
 from .const import DOMAIN, CONF_BRAND, CONF_USERNAME, CONF_PASSWORD
@@ -83,7 +87,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: VagConnectConfigEntry) -
         reason = str(err)
         from .repairs import raise_issue_auth_required  # noqa: PLC0415
         raise_issue_auth_required(hass, entry.entry_id, reason)
-        raise ConfigEntryNotReady(_SETUP_ERRORS.get(reason, str(err))) from err
+        message = _SETUP_ERRORS.get(reason, str(err))
+        # invalid_credentials is a hard auth failure — let HA show the reauth
+        # prompt instead of looping ConfigEntryNotReady retries forever.
+        if reason == "invalid_credentials":
+            raise ConfigEntryAuthFailed(message) from err
+        raise ConfigEntryNotReady(message) from err
     except Exception as err:  # noqa: BLE001
         if "RequirementsNotFound" in type(err).__name__ or "requirements" in str(err).lower():
             from .repairs import raise_issue_requirements_conflict  # noqa: PLC0415
