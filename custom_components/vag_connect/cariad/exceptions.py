@@ -6,6 +6,39 @@ from __future__ import annotations
 from enum import StrEnum
 
 
+class CommandProfile(StrEnum):
+    """Per-VIN command-routing profile.
+
+    Different VAG vehicles speak the same authentication backend (CARIAD)
+    but expose commands at different URL prefixes. The most common split:
+    pre-2024 Audis use ``/vehicle/v1/`` for everything, while newer
+    premium models (RS e-tron GT, Q6 e-tron, A3 2024+ on PPC/PPE) use
+    ``/vehicle/v2/`` paths and reject ``/v1/`` with HTTP 404.
+
+    Currently used by ``AudiClient`` to remember which prefix worked for
+    a given VIN, so a 404-induced fallback only happens once per VIN per
+    integration lifetime. Other brand clients ignore the profile until
+    they grow analogous needs.
+
+    The full enum is defined upfront so future sessions (PPE, MBB
+    legacy, mysmob v3, …) can extend the same dispatch table without
+    breaking existing serialised state.
+    """
+
+    UNKNOWN = "unknown"
+    CARIAD_BFF_V1 = "cariad_bff_v1"
+    CARIAD_BFF_V2 = "cariad_bff_v2"
+    AUDI_PPE = "audi_ppe"
+    AUDI_PREMIUM = "audi_premium"
+    LEGACY_MBB = "legacy_mbb"
+    MEB_ID = "meb_id"
+    SEAT_CUPRA_OLA = "seat_cupra_ola"
+    SKODA_MYSMOB = "skoda_mysmob"
+    SKODA_MYSMOB_V3 = "skoda_mysmob_v3"
+    PORSCHE_PPA = "porsche_ppa"
+    VW_NA = "vw_na"
+
+
 class CommandFailureReason(StrEnum):
     """Why a vehicle command failed.
 

@@ -3447,3 +3447,159 @@ class TestCariadBffGetCapabilities:
             client.get_capabilities("VIN")
         )
         assert result == {}
+
+
+# ── Session 3A: CommandProfile + v1/v2 endpoint fallback ──────────────────────
+
+
+class TestCommandProfileEnum:
+    """CommandProfile is the foundation enum for per-VIN endpoint routing."""
+
+    def test_all_expected_profiles_defined(self):
+        from custom_components.vag_connect.cariad.exceptions import CommandProfile
+        # Foundation values used by Session 3A. Future sessions add more
+        # but these must never go away or change names — they may be
+        # serialised in diagnostics.
+        expected = {
+            "UNKNOWN", "CARIAD_BFF_V1", "CARIAD_BFF_V2",
+            "AUDI_PPE", "AUDI_PREMIUM", "LEGACY_MBB", "MEB_ID",
+            "SEAT_CUPRA_OLA", "SKODA_MYSMOB", "SKODA_MYSMOB_V3",
+            "PORSCHE_PPA", "VW_NA",
+        }
+        actual = {p.name for p in CommandProfile}
+        assert expected.issubset(actual), f"missing: {expected - actual}"
+
+    def test_string_values_are_lowercase_with_underscores(self):
+        """StrEnum values double as JSON-friendly identifiers in diagnostics."""
+        from custom_components.vag_connect.cariad.exceptions import CommandProfile
+        assert CommandProfile.UNKNOWN.value == "unknown"
+        assert CommandProfile.CARIAD_BFF_V2.value == "cariad_bff_v2"
+        assert CommandProfile.AUDI_PREMIUM.value == "audi_premium"
+
+
+class TestCoordinatorCommandProfile:
+    """Coordinator stores per-VIN command profile in runtime cache."""
+
+    def _coord(self):
+        from unittest.mock import MagicMock
+        from custom_components.vag_connect.coordinator import VagConnectCoordinator
+        coord = VagConnectCoordinator.__new__(VagConnectCoordinator)
+        coord.vehicle_command_profile = {}
+        return coord
+
+    def test_get_command_profile_default_unknown(self):
+        from custom_components.vag_connect.cariad.exceptions import CommandProfile
+        coord = self._coord()
+        assert coord.get_command_profile("VINX") is CommandProfile.UNKNOWN
+
+    def test_set_command_profile_persists(self):
+        from custom_components.vag_connect.cariad.exceptions import CommandProfile
+        coord = self._coord()
+        coord.set_command_profile("VINX", CommandProfile.AUDI_PREMIUM)
+        assert coord.get_command_profile("VINX") is CommandProfile.AUDI_PREMIUM
+
+    def test_set_command_profile_independent_per_vin(self):
+        from custom_components.vag_connect.cariad.exceptions import CommandProfile
+        coord = self._coord()
+        coord.set_command_profile("VIN_A", CommandProfile.CARIAD_BFF_V1)
+        coord.set_command_profile("VIN_B", CommandProfile.AUDI_PREMIUM)
+        assert coord.get_command_profile("VIN_A") is CommandProfile.CARIAD_BFF_V1
+        assert coord.get_command_profile("VIN_B") is CommandProfile.AUDI_PREMIUM
+
+
+class TestVWEUv1v2Fallback:
+    """VWEUClient automatically retries on /vehicle/v2/ when /vehicle/v1/ 404s.
+
+    Verification case: Audi RS e-tron GT (#51) — Grant Shewan's
+    `number/set_value` actions returned 404 from /vehicle/v1/...; the
+    same path under /vehicle/v2/... is the documented endpoint.
+    """
+
+    def _client(self):
+        from unittest.mock import AsyncMock
+        from custom_components.vag_connect.cariad.api.vw_eu import VWEUClient
+        client = VWEUClient.__new__(VWEUClient)
+        client._post = AsyncMock()
+        client._v2_command_paths = {}
+        return client
+
+    def test_v1_success_does_not_flip_profile(self):
+        """v1 returns 2xx → no v2 attempt, no profile flip."""
+        import asyncio
+        from unittest.mock import AsyncMock
+        client = self._client()
+        client._post = AsyncMock(return_value=None)
+        asyncio.get_event_loop().run_until_complete(
+            client.command_set_target_soc("VIN1", 80)
+        )
+        assert client._post.call_count == 1
+        assert "/vehicle/v1/" in client._post.call_args[0][0]
+        assert not client._supports_v2_paths("VIN1")
+
+    def test_v1_404_falls_back_to_v2_and_records(self):
+        """v1 404 → v2 retry. On v2 success, mark VIN as v2-active."""
+        import asyncio
+        from unittest.mock import AsyncMock
+        from custom_components.vag_connect.cariad.exceptions import APIError
+        client = self._client()
+        client._post = AsyncMock(side_effect=[
+            APIError(404, "/v1/...", "Not Found"),
+            None,
+        ])
+        asyncio.get_event_loop().run_until_complete(
+            client.command_set_target_soc("VIN_AUDI", 80)
+        )
+        assert client._post.call_count == 2
+        assert "/vehicle/v1/" in client._post.call_args_list[0][0][0]
+        assert "/vehicle/v2/" in client._post.call_args_list[1][0][0]
+        assert client._supports_v2_paths("VIN_AUDI")
+
+    def test_subsequent_calls_skip_v1(self):
+        """Once v2 is recorded for a VIN, all subsequent calls go to v2."""
+        import asyncio
+        from unittest.mock import AsyncMock
+        client = self._client()
+        client._v2_command_paths = {"VIN_AUDI": True}
+        client._post = AsyncMock(return_value=None)
+        asyncio.get_event_loop().run_until_complete(
+            client.command_set_climate_temperature("VIN_AUDI", 21.0)
+        )
+        assert client._post.call_count == 1
+        assert "/vehicle/v2/" in client._post.call_args[0][0]
+
+    def test_non_404_propagates(self):
+        """Other 4xx/5xx must NOT trigger v2 retry — bug class would mask real errors."""
+        import asyncio, pytest
+        from unittest.mock import AsyncMock
+        from custom_components.vag_connect.cariad.exceptions import APIError
+        client = self._client()
+        client._post = AsyncMock(side_effect=APIError(500, "/v1/...", "Server Error"))
+        with pytest.raises(APIError):
+            asyncio.get_event_loop().run_until_complete(
+                client.command_set_target_soc("VIN1", 80)
+            )
+        assert client._post.call_count == 1  # no v2 retry
+        assert not client._supports_v2_paths("VIN1")
+
+    def test_per_vin_independence(self):
+        """One VIN flipping to v2 must not affect another VIN on the same client."""
+        import asyncio
+        from unittest.mock import AsyncMock
+        from custom_components.vag_connect.cariad.exceptions import APIError
+        client = self._client()
+        # VIN_A: v1 works
+        client._post = AsyncMock(return_value=None)
+        asyncio.get_event_loop().run_until_complete(
+            client.command_set_target_soc("VIN_A", 80)
+        )
+        # VIN_B: v1 404 → v2
+        client._post = AsyncMock(side_effect=[
+            APIError(404, "/v1/...", "Not Found"),
+            None,
+        ])
+        asyncio.get_event_loop().run_until_complete(
+            client.command_set_target_soc("VIN_B", 80)
+        )
+        # VIN_A still on v1 path, VIN_B on v2
+        assert not client._supports_v2_paths("VIN_A")
+        assert client._supports_v2_paths("VIN_B")
