@@ -1094,14 +1094,25 @@ class TestSeatCupraGetStatus:
 
     def test_seat_commands(self):
         client = self._client("seat")
-        # command_flash is excluded here — SEAT/CUPRA require userPosition
-        # and are exercised separately in test_seat_command_flash_requires_position.
-        for cmd in ["lock", "unlock", "start_climate", "stop_climate",
+        # Excluded from this loop:
+        #  - command_flash         — needs userPosition (separate test)
+        #  - command_lock/unlock   — need S-PIN SecToken (separate test below)
+        for cmd in ["start_climate", "stop_climate",
                     "start_charging", "stop_charging", "wake"]:
             fn = getattr(client, f"command_{cmd}")
             asyncio.get_event_loop().run_until_complete(fn("VIN_SEAT"))
         asyncio.get_event_loop().run_until_complete(client.command_set_target_soc("VIN_SEAT", 80))
         asyncio.get_event_loop().run_until_complete(client.command_set_climate_temperature("VIN_SEAT", 20.0))
+
+    def test_seat_lock_unlock_require_spin(self):
+        """v1.8.4 (#53): lock/unlock without S-PIN must raise SpinError before any HTTP call."""
+        from custom_components.vag_connect.cariad.exceptions import SpinError
+        client = self._client("seat")  # _client() does not configure an S-PIN
+
+        with pytest.raises(SpinError):
+            asyncio.get_event_loop().run_until_complete(client.command_lock("VIN_SEAT"))
+        with pytest.raises(SpinError):
+            asyncio.get_event_loop().run_until_complete(client.command_unlock("VIN_SEAT"))
 
     def test_seat_command_flash_requires_position(self):
         """v1.8.0 / #53: SEAT/CUPRA honk-and-flash needs userPosition.
