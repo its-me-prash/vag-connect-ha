@@ -7,6 +7,7 @@ from datetime import datetime, timedelta, timezone
 import logging
 from typing import Any
 
+from ..exceptions import APIError
 from ..models import BRAND_VW_EU, VehicleData
 from .base import CariadBaseClient
 
@@ -231,32 +232,84 @@ class VWEUClient(CariadBaseClient):
         """Wake vehicle."""
         await self._post(f"{_BASE}/vehicle/v1/vehicles/{vin}/vehicleWakeup")
 
+    # ── v1/v2 endpoint dispatch (Session 3A — #51, #74) ─────────────────────
+    #
+    # Newer premium Audi models (RS e-tron GT, Q6 e-tron, A3 2024+ on PPC/PPE)
+    # and recent VW EU models (Passat 2025 B9) reject the /vehicle/v1/...
+    # command paths with HTTP 404. The same logical commands exist under
+    # /vehicle/v2/...  We learn the right prefix per VIN on the first 404
+    # and remember it for subsequent commands. Cache is per-client-instance
+    # so a coordinator restart re-learns (one extra 404 per cold start, OK).
+
+    def _supports_v2_paths(self, vin: str) -> bool:
+        """Return True if the v2 command prefix is known to work for *vin*."""
+        flags: dict[str, bool] = getattr(self, "_v2_command_paths", {}) or {}
+        return bool(flags.get(vin, False))
+
+    def _mark_v2_active(self, vin: str) -> None:
+        """Remember that v2 worked for *vin* — skip v1 on subsequent calls."""
+        if not hasattr(self, "_v2_command_paths"):
+            self._v2_command_paths: dict[str, bool] = {}
+        if not self._v2_command_paths.get(vin, False):
+            _LOGGER.info(
+                "CARIAD command profile: %s now using /vehicle/v2/ paths",
+                vin[-6:] if vin else "***",
+            )
+            self._v2_command_paths[vin] = True
+
+    async def _post_command(
+        self, vin: str, path_suffix: str, **kwargs: Any
+    ) -> Any:
+        """POST to /vehicle/v1/vehicles/{vin}/{suffix} with v2 fallback on 404.
+
+        First call per VIN: try v1, on 404 retry v2 and remember.
+        Subsequent calls: skip v1 if v2 is known to work for this VIN.
+        Other 4xx/5xx errors propagate as-is — this only handles the
+        version-mismatch case.
+        """
+        if self._supports_v2_paths(vin):
+            return await self._post(
+                f"{_BASE}/vehicle/v2/vehicles/{vin}/{path_suffix}", **kwargs,
+            )
+        try:
+            return await self._post(
+                f"{_BASE}/vehicle/v1/vehicles/{vin}/{path_suffix}", **kwargs,
+            )
+        except APIError as err:
+            if getattr(err, "status", 0) != 404:
+                raise
+            # v1 said the resource doesn't exist — try v2 once
+            result = await self._post(
+                f"{_BASE}/vehicle/v2/vehicles/{vin}/{path_suffix}", **kwargs,
+            )
+            self._mark_v2_active(vin)
+            return result
+
     async def command_set_target_soc(self, vin: str, target: int) -> None:
-        """Set charge target SoC."""
-        await self._post(
-            f"{_BASE}/vehicle/v1/vehicles/{vin}/charging/settings",
-            json={"targetSOC_pct": target},
+        """Set charge target SoC. Tries v1 first, falls back to v2 on 404."""
+        await self._post_command(
+            vin, "charging/settings", json={"targetSOC_pct": target},
         )
 
     async def command_set_climate_temperature(self, vin: str, temp_c: float) -> None:
-        """Set pre-conditioning temperature."""
-        await self._post(
-            f"{_BASE}/vehicle/v1/vehicles/{vin}/climatisation/settings",
-            json={"targetTemperature_C": temp_c},
+        """Set pre-conditioning temperature. v1 → v2 fallback on 404."""
+        await self._post_command(
+            vin, "climatisation/settings", json={"targetTemperature_C": temp_c},
         )
 
     async def command_set_charge_mode(self, vin: str, mode: str) -> None:
-        """Set charging mode — MANUAL, TIMER, PREFERRED_CHARGING_TIMES."""
-        await self._post(
-            f"{_BASE}/vehicle/v1/vehicles/{vin}/charging/settings",
-            json={"chargeMode": mode.upper()},
+        """Set charging mode — MANUAL, TIMER, PREFERRED_CHARGING_TIMES.
+
+        v1 → v2 fallback on 404.
+        """
+        await self._post_command(
+            vin, "charging/settings", json={"chargeMode": mode.upper()},
         )
 
     async def command_set_min_soc(self, vin: str, min_soc: int) -> None:
-        """Set minimum SoC for PHEV (0–100%)."""
-        await self._post(
-            f"{_BASE}/vehicle/v1/vehicles/{vin}/charging/settings",
-            json={"minChargeLimit_pct": min_soc},
+        """Set minimum SoC for PHEV (0–100%). v1 → v2 fallback on 404."""
+        await self._post_command(
+            vin, "charging/settings", json={"minChargeLimit_pct": min_soc},
         )
 
     async def command_start_window_heating(self, vin: str) -> None:

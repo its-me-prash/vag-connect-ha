@@ -33,7 +33,7 @@ from .const import (
 )
 from homeassistant.helpers import device_registry as dr
 from .cariad._util import mask_vin
-from .cariad.exceptions import CommandFailureReason
+from .cariad.exceptions import CommandFailureReason, CommandProfile
 from .cariad.models import VehicleData
 
 _LOGGER = logging.getLogger(__name__)
@@ -101,6 +101,15 @@ class VagConnectCoordinator(DataUpdateCoordinator):
         # Per-VIN per-command feature state. Hydrated lazily as commands
         # succeed or fail; entry creation is deferred to keep memory tight.
         self.feature_states: dict[str, dict[str, FeatureState]] = {}
+
+        # Per-VIN command profile (Session 3A). Brand clients read this to
+        # pick the right URL prefix — e.g. AudiClient swaps /vehicle/v1/
+        # for /vehicle/v2/ on PPE/Premium models that 404 the v1 paths.
+        # Default UNKNOWN means "use the brand client's current default
+        # and let it auto-detect". Persisted only in memory — gets re-
+        # learned on every restart, which is cheap (one extra 404 per
+        # cold start per VIN).
+        self.vehicle_command_profile: dict[str, CommandProfile] = {}
 
         # Reverse-geocoding cache: {(round(lat,3), round(lon,3)): result}
         self._geocode_cache: dict[tuple[float, float], dict[str, str | None]] = {}
@@ -358,6 +367,38 @@ class VagConnectCoordinator(DataUpdateCoordinator):
         if fetched_at is None:
             return False
         return bool(datetime.now(tz=timezone.utc) - fetched_at < _CAPABILITIES_TTL)
+
+    def get_command_profile(self, vin: str) -> CommandProfile:
+        """Return the cached command profile for *vin*, or ``UNKNOWN``.
+
+        Brand clients consult this before dispatching a command so they
+        can pick the right URL prefix without re-discovering it on every
+        call. ``UNKNOWN`` means "use the brand client's current default"
+        and lets the client auto-learn on the first 404.
+        """
+        profiles: dict[str, CommandProfile] = (
+            getattr(self, "vehicle_command_profile", {}) or {}
+        )
+        return profiles.get(vin, CommandProfile.UNKNOWN)
+
+    def set_command_profile(self, vin: str, profile: CommandProfile) -> None:
+        """Cache the detected command profile for *vin*.
+
+        Called by brand clients after a successful endpoint probe (e.g. a
+        v1 404 followed by a v2 200 on Audi premium models). Persisted
+        only in memory; cheap to re-learn on restart.
+        """
+        if not hasattr(self, "vehicle_command_profile"):
+            self.vehicle_command_profile = {}
+        previous = self.vehicle_command_profile.get(vin, CommandProfile.UNKNOWN)
+        self.vehicle_command_profile[vin] = profile
+        if previous is not profile:
+            _LOGGER.info(
+                "VAG Connect: command profile for %s = %s (was %s)",
+                mask_vin(vin),
+                profile.value,
+                previous.value,
+            )
 
     def vehicle_supports_capability(
         self, vin: str, capability_id: str

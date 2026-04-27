@@ -23,6 +23,49 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ## [Unreleased]
 
+## [1.8.5] - 2026-04-27
+
+### Session 3A — Command Profile Layer foundation + v1/v2 fallback (#61, #51, #74)
+
+- **`CommandProfile` enum** added in `cariad/exceptions.py` with twelve
+  forward-looking values (`UNKNOWN`, `CARIAD_BFF_V1`, `CARIAD_BFF_V2`,
+  `AUDI_PPE`, `AUDI_PREMIUM`, `LEGACY_MBB`, `MEB_ID`, `SEAT_CUPRA_OLA`,
+  `SKODA_MYSMOB`, `SKODA_MYSMOB_V3`, `PORSCHE_PPA`, `VW_NA`). Defined
+  upfront so future sessions can extend the dispatch table without
+  breaking existing serialised state.
+- **Coordinator helpers `get_command_profile(vin)` /
+  `set_command_profile(vin, profile)`** — runtime cache, in-memory only
+  (deliberately NOT in `config_entry.options`).
+- **VWEUClient `_post_command(vin, suffix)` helper** with automatic
+  `/vehicle/v1/` → `/vehicle/v2/` fallback on HTTP 404. The client
+  remembers per-VIN whether v2 worked and skips v1 on subsequent calls
+  to avoid the extra 404 round-trip. Other 4xx/5xx errors propagate
+  as-is — only version-mismatch is auto-handled.
+- **Refactored to use the helper:** `command_set_target_soc`,
+  `command_set_climate_temperature`, `command_set_charge_mode`,
+  `command_set_min_soc`. These are the four "set value" commands that
+  Audi RS e-tron GT (Grant Shewan, #51) and VW Passat 2025 (Marco
+  Grewe, #74) reported as `400/404` failures in v1.8.x.
+- **`AudiClient` inherits the fallback** via `VWEUClient` — no separate
+  fix needed for Audi specifically. Charge target slider, climate temp
+  number, charge mode select and min-SoC number should now silently
+  upgrade to v2 paths when the vehicle requires them.
+- **Out of scope for 3A:** `command_lock`, `command_unlock`, climate
+  start/stop, charging start/stop. Those have separate v1/v1 endpoint
+  fallbacks already and need their own audit (Session 3B). LEGACY_MBB
+  base URL routing for older T6/MQB vehicles is also Session 3B.
+
+### Session 3A — Command Profile Foundation + v1/v2 Fallback
+
+Audi RS e-tron GT (Grant) und VW Passat 2025 (Marco) hatten gemeldet
+dass alle "Wert setzen" Aktionen mit `400/404` scheiterten. Grund: ihre
+Fahrzeuge nutzen `/vehicle/v2/` Pfade, wir sendeten an `/vehicle/v1/`.
+Mit v1.8.5 versucht der CARIAD-Client für VW EU + Audi automatisch
+v2 wenn v1 mit 404 antwortet, merkt sich pro VIN was funktioniert und
+spart dann den 404-Round-Trip beim nächsten Befehl. Vier Commands sind
+bereits umgestellt: Ladziel, Klimatemperatur, Lademodus, Mindest-SoC.
+Lock/Unlock und Climate-Start/Stop kommen in Session 3B.
+
 ## [1.8.4] - 2026-04-27
 
 ### Session 2C — SEAT/CUPRA lock fix + capabilities for more brands
