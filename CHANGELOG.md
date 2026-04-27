@@ -23,6 +23,21 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ## [Unreleased]
 
+### Authentication / Authentifizierung
+
+- **SEAT and CUPRA OAuth scopes broadened to `address phone email birthdate
+  nickname`** (was `nickname birthdate phone`). Mirrors the official My SEAT
+  and MyCupra app scope set. Defense in depth — current OLA endpoints don't
+  require `email` or `address`, but extending the scope ahead of any
+  conditional server-side check costs nothing and prevents future surprises.
+
+  **SEAT- und CUPRA-OAuth-Scopes erweitert auf `address phone email birthdate
+  nickname`** (vorher `nickname birthdate phone`). Stimmt jetzt mit dem
+  offiziellen My-SEAT- und MyCupra-App-Scope überein. Defense in Depth — die
+  aktuellen OLA-Endpoints brauchen `email` und `address` nicht, aber die
+  vorbeugende Erweiterung schadet nicht und verhindert künftige
+  Server-Restriktionen.
+
 ## [1.8.1] - 2026-04-27
 
 ### Privacy / Datenschutz
