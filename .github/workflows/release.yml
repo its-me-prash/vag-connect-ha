@@ -38,68 +38,105 @@ jobs:
           VERSION: ${{ steps.version.outputs.version }}
         run: |
           python3 << 'PYTHON'
-          import re, os, json
+          import re, os
 
           version = os.environ["VERSION"]
           changelog = open("CHANGELOG.md").read()
-          manifest = json.load(open("custom_components/vag_connect/manifest.json"))
 
-          # Extract this version's section from CHANGELOG
-          pattern = rf"## \[{re.escape(version)}\].*?(?=\n## \[|\Z)"
+          # Extract this version's section verbatim — keep all subheadings
+          # and bilingual EN/DE content as written in CHANGELOG.md.
+          pattern = rf"## \[{re.escape(version)}\][^\n]*\n(.*?)(?=\n## \[|\Z)"
           match = re.search(pattern, changelog, re.DOTALL)
-          changelog_section = match.group(0).strip() if match else ""
+          changelog_section = match.group(1).strip() if match else ""
 
-          # Parse sections
-          def extract(section_name, text):
-              m = re.search(rf"### {section_name}\n(.*?)(?=\n### |\Z)", text, re.DOTALL)
-              if not m: return []
-              return [l.strip("- ").strip() for l in m.group(1).strip().split("\n") if l.strip().startswith("-")]
+          # All previous semver versions, newest first. Date is captured
+          # from the `## [X.Y.Z] - YYYY-MM-DD` header when present.
+          all_entries = re.findall(
+              r"## \[(\d+\.\d+\.\d+)\](?:\s*-\s*(\d{4}-\d{2}-\d{2}))?",
+              changelog,
+          )
+          versions_only = [v for v, _ in all_entries]
+          idx = versions_only.index(version) if version in versions_only else -1
+          prev_version = versions_only[idx + 1] if idx + 1 < len(versions_only) else None
+          # Last 3 prior versions for the "Recent releases" pointer
+          recent_prior = [(v, d) for v, d in all_entries if v != version][:3]
 
-          added   = extract("Added", changelog_section)
-          changed = extract("Changed", changelog_section)
-          fixed   = extract("Fixed", changelog_section)
-          removed = extract("Removed", changelog_section)
+          repo = "its-me-prash/vag-connect-ha"
 
-          # Previous version for comparison
-          all_versions = re.findall(r"## \[(\d+\.\d+\.\d+)\]", changelog)
-          idx = all_versions.index(version) if version in all_versions else -1
-          prev_version = all_versions[idx + 1] if idx + 1 < len(all_versions) else None
+          lines: list[str] = []
 
-          lines = []
-          lines.append(f"## VAG Connect v{version}\n")
+          # ── EN-first headline ────────────────────────────────────────────
+          lines.append(f"# VAG Connect v{version}")
+          lines.append("")
+          lines.append("Home Assistant integration for Audi · VW · Škoda · SEAT · CUPRA · Porsche · VW US/CA.")
+          lines.append("")
 
-          if added:
-              lines.append("### ✨ Neu\n")
-              for item in added: lines.append(f"- {item}")
-              lines.append("")
+          # ── What changed in this release ─────────────────────────────────
+          lines.append("## What's new in this release / Was ist neu in diesem Release")
+          lines.append("")
+          if changelog_section:
+              lines.append(changelog_section)
+          else:
+              lines.append("_See the [CHANGELOG.md](" +
+                           f"https://github.com/{repo}/blob/v{version}/CHANGELOG.md) for details._")
+          lines.append("")
 
-          if changed:
-              lines.append("### 🔄 Geändert\n")
-              for item in changed: lines.append(f"- {item}")
-              lines.append("")
-
-          if fixed:
-              lines.append("### 🐛 Behoben\n")
-              for item in fixed: lines.append(f"- {item}")
-              lines.append("")
-
-          if removed:
-              lines.append("### 🗑️ Entfernt\n")
-              for item in removed: lines.append(f"- {item}")
-              lines.append("")
-
-          lines.append("---\n")
-          lines.append("### 📦 Installation / Update\n")
-          lines.append("**HACS:** Update-Hinweis erscheint automatisch (~6h nach Release).\n")
-          lines.append("**Manuell:**")
-          lines.append("```")
-          lines.append("custom_components/vag_connect/  →  ersetzen → HA neu starten")
-          lines.append("```\n")
-          lines.append("### 🚗 Unterstützte Marken\n")
-          lines.append("VW EU · Audi · Škoda · SEAT · CUPRA · VW US/CA (Beta) · Porsche (Beta)\n")
-
+          # ── Compare against previous version ─────────────────────────────
           if prev_version:
-              lines.append(f"**Alle Änderungen:** [`v{prev_version}...v{version}`](https://github.com/its-me-prash/vag-connect-ha/compare/v{prev_version}...v{version})")
+              lines.append(f"## Full diff vs v{prev_version} / Kompletter Diff zu v{prev_version}")
+              lines.append("")
+              compare_url = f"https://github.com/{repo}/compare/v{prev_version}...v{version}"
+              lines.append(f"Every commit, file and code change between the two versions:")
+              lines.append(f"Jeder Commit, jede Datei und jede Code-Änderung zwischen beiden Versionen:")
+              lines.append("")
+              lines.append(f"➜ **{compare_url}**")
+              lines.append("")
+
+          # ── Recent releases pointer ──────────────────────────────────────
+          if recent_prior:
+              lines.append("## Recent releases / Letzte Releases")
+              lines.append("")
+              lines.append("If you're upgrading from an older version, also read these notes:")
+              lines.append("")
+              lines.append("Wenn du von einer älteren Version updatest, lies auch diese Release-Notes:")
+              lines.append("")
+              for v, d in recent_prior:
+                  date_part = f" · {d}" if d else ""
+                  lines.append(f"- [v{v}](https://github.com/{repo}/releases/tag/v{v}){date_part}")
+              lines.append("")
+              lines.append(f"Full history: [CHANGELOG.md](https://github.com/{repo}/blob/main/CHANGELOG.md)")
+              lines.append("")
+
+          # ── Installation / Update ────────────────────────────────────────
+          lines.append("## Installation / Update")
+          lines.append("")
+          lines.append("**HACS users:** the update notification appears automatically within ~6 hours of the release.")
+          lines.append("")
+          lines.append("**HACS-User:** Der Update-Hinweis erscheint automatisch innerhalb von ~6 Stunden nach dem Release.")
+          lines.append("")
+          lines.append("**Manual install / Manuelle Installation:**")
+          lines.append("")
+          lines.append("1. Download `vag_connect.zip` from this release / `vag_connect.zip` aus diesem Release herunterladen")
+          lines.append("2. Unzip and copy `custom_components/vag_connect/` to your HA `config/custom_components/` folder, replacing any older copy / Entpacken und den Ordner `custom_components/vag_connect/` in dein HA `config/custom_components/` kopieren — alten Ordner ersetzen")
+          lines.append("3. Restart Home Assistant / Home Assistant neu starten")
+          lines.append("")
+
+          # ── Brand support ────────────────────────────────────────────────
+          lines.append("## Supported brands / Unterstützte Marken")
+          lines.append("")
+          lines.append("Volkswagen EU · Audi · Škoda · SEAT · CUPRA · Volkswagen US/CA (Beta) · Porsche (Beta)")
+          lines.append("")
+
+          # ── Reporting issues ─────────────────────────────────────────────
+          lines.append("## Found a bug? / Bug gefunden?")
+          lines.append("")
+          lines.append(f"Open an issue with the bug-report template: https://github.com/{repo}/issues/new/choose")
+          lines.append("")
+          lines.append(f"Bug-Report-Template: https://github.com/{repo}/issues/new/choose")
+          lines.append("")
+          lines.append("Please mask your VIN to the last 6 characters and remove email/tokens/GPS before posting.")
+          lines.append("")
+          lines.append("Bitte VIN auf die letzten 6 Zeichen kürzen und Email/Tokens/GPS vor dem Posten entfernen.")
 
           notes = "\n".join(lines)
           with open("/tmp/release_notes.md", "w") as f:
