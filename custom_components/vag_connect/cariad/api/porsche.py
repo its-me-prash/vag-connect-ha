@@ -144,6 +144,16 @@ class PorscheClient:
 
         return d
 
+    async def get_capabilities(self, vin: str) -> dict[str, Any]:  # noqa: ARG002
+        """Porsche PPA does not expose a discrete capabilities endpoint.
+
+        Returning ``{}`` keeps the interface consistent with the
+        CARIAD/OLA clients so the coordinator can call this without
+        feature detection. Buttons will not be capability-gated for
+        Porsche until/unless an endpoint is found.
+        """
+        return {}
+
     async def command_lock(self, vin: str) -> None:
         await self._command(vin, "LOCK")
 

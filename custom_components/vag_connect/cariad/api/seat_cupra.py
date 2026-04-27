@@ -13,7 +13,7 @@ from typing import Any
 
 from aiohttp import ClientSession
 
-from ..exceptions import APIError
+from ..exceptions import APIError, SpinError
 from ..models import BRAND_CUPRA, BRAND_SEAT, BrandConfig, VehicleData
 from .base import CariadBaseClient
 
@@ -246,14 +246,56 @@ class SeatCupraClient(CariadBaseClient):
 
     # ── Commands ─────────────────────────────────────────────────────────────
 
+    async def _get_sec_token(self, spin: str) -> str:
+        """Verify the S-PIN against OLA and return a SecToken.
+
+        SEAT/CUPRA lock/unlock both require a per-call SecToken obtained
+        from a separate `spin/verify` POST. Pycupra does this verbatim:
+        POST `/v2/users/{userId}/spin/verify` with ``{"spin": "<pin>"}``,
+        read ``securityToken`` from the response, then send that as the
+        ``SecToken`` header on the actual lock/unlock POST.
+
+        The S-PIN is passed plain — there's no client-side hashing,
+        challenge/response or RSA. The OLA backend handles verification.
+        """
+        if not spin:
+            raise SpinError("S-PIN required for SEAT/CUPRA lock/unlock.")
+        if not self._user_id:
+            await self._fetch_user_id()
+        url = f"{_BASE}/v2/users/{self._user_id}/spin/verify"
+        try:
+            resp = await self._post(url, json={"spin": spin})
+        except APIError as err:
+            # 400/401 from /spin/verify means the PIN is wrong or the
+            # account is locked. Surface a SpinError so HA can show the
+            # right reauth/correct-pin prompt instead of a raw API error.
+            raise SpinError(
+                f"S-PIN verification failed (HTTP {getattr(err, 'status', '?')}). "
+                "Update the S-PIN in the integration options."
+            ) from err
+        token = (resp or {}).get("securityToken") if isinstance(resp, dict) else None
+        if not token:
+            raise SpinError("S-PIN verify returned no securityToken.")
+        return str(token)
+
     async def command_lock(self, vin: str) -> None:
-        await self._post(f"{_BASE}/v1/vehicles/{vin}/access/lock", json={})
+        """Lock the vehicle. Requires a verified S-PIN SecToken."""
+        token = await self._get_sec_token(self._spin)
+        # Empty body is intentional — pycupra/OLA expect no payload here,
+        # only the SecToken header. _request adds the Authorization +
+        # Content-Type headers automatically.
+        await self._post(
+            f"{_BASE}/v1/vehicles/{vin}/access/lock",
+            headers={"SecToken": token},
+        )
 
     async def command_unlock(self, vin: str, spin: str = "") -> None:
-        payload: dict[str, Any] = {}
-        if spin or self._spin:
-            payload["spin"] = spin or self._spin
-        await self._post(f"{_BASE}/v1/vehicles/{vin}/access/unlock", json=payload)
+        """Unlock the vehicle. Requires a verified S-PIN SecToken."""
+        token = await self._get_sec_token(spin or self._spin)
+        await self._post(
+            f"{_BASE}/v1/vehicles/{vin}/access/unlock",
+            headers={"SecToken": token},
+        )
 
     async def command_start_climate(self, vin: str) -> None:
         await self._post(f"{_BASE}/v2/vehicles/{vin}/climatisation", json={"action": "start"})

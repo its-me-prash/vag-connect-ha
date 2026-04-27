@@ -1094,14 +1094,25 @@ class TestSeatCupraGetStatus:
 
     def test_seat_commands(self):
         client = self._client("seat")
-        # command_flash is excluded here — SEAT/CUPRA require userPosition
-        # and are exercised separately in test_seat_command_flash_requires_position.
-        for cmd in ["lock", "unlock", "start_climate", "stop_climate",
+        # Excluded from this loop:
+        #  - command_flash         — needs userPosition (separate test)
+        #  - command_lock/unlock   — need S-PIN SecToken (separate test below)
+        for cmd in ["start_climate", "stop_climate",
                     "start_charging", "stop_charging", "wake"]:
             fn = getattr(client, f"command_{cmd}")
             asyncio.get_event_loop().run_until_complete(fn("VIN_SEAT"))
         asyncio.get_event_loop().run_until_complete(client.command_set_target_soc("VIN_SEAT", 80))
         asyncio.get_event_loop().run_until_complete(client.command_set_climate_temperature("VIN_SEAT", 20.0))
+
+    def test_seat_lock_unlock_require_spin(self):
+        """v1.8.4 (#53): lock/unlock without S-PIN must raise SpinError before any HTTP call."""
+        from custom_components.vag_connect.cariad.exceptions import SpinError
+        client = self._client("seat")  # _client() does not configure an S-PIN
+
+        with pytest.raises(SpinError):
+            asyncio.get_event_loop().run_until_complete(client.command_lock("VIN_SEAT"))
+        with pytest.raises(SpinError):
+            asyncio.get_event_loop().run_until_complete(client.command_unlock("VIN_SEAT"))
 
     def test_seat_command_flash_requires_position(self):
         """v1.8.0 / #53: SEAT/CUPRA honk-and-flash needs userPosition.
@@ -3227,25 +3238,35 @@ class TestButtonCapabilityGating:
         )
         return coord
 
-    def _entry(self, coord):
+    def _entry(self, coord, brand="cupra"):
         from unittest.mock import MagicMock
         entry = MagicMock()
         entry.runtime_data = coord
+        entry.data = {"brand": brand}
         return entry
 
-    def _setup(self, coord):
+    def _setup(self, coord, brand="cupra"):
         import asyncio
         from unittest.mock import MagicMock
         from custom_components.vag_connect.button import async_setup_entry
         added: list = []
         asyncio.get_event_loop().run_until_complete(
-            async_setup_entry(MagicMock(), self._entry(coord), added.extend)
+            async_setup_entry(MagicMock(), self._entry(coord, brand), added.extend)
         )
         return added
 
     def test_no_capabilities_creates_all_three(self):
-        """Brand without capabilities (e.g. Audi) → all 3 buttons created."""
+        """SEAT/CUPRA brand but no capabilities cache → all 3 buttons created."""
         added = self._setup(self._coord(caps=None))
+        names = [type(e).__name__ for e in added]
+        assert "VagFlashButton" in names
+        assert "VagWakeButton" in names
+        assert "VagRefreshButton" in names
+
+    def test_audi_brand_never_gates_buttons(self):
+        """Audi capability vocabulary is unverified — gating must be skipped."""
+        # Worst-case capabilities cache that would block CUPRA buttons
+        added = self._setup(self._coord(caps={"capabilities": []}), brand="audi")
         names = [type(e).__name__ for e in added]
         assert "VagFlashButton" in names
         assert "VagWakeButton" in names
@@ -3278,3 +3299,151 @@ class TestButtonCapabilityGating:
         added = self._setup(self._coord(caps={"capabilities": []}))
         names = [type(e).__name__ for e in added]
         assert "VagRefreshButton" in names
+
+
+# ── Session 2C: SEAT/CUPRA SecToken flow + capabilities for other brands ──────
+
+
+class TestSeatCupraSecTokenFlow:
+    """SEAT/CUPRA lock/unlock require an S-PIN-derived SecToken header.
+
+    Verified against pycupra: POST /v2/users/{uid}/spin/verify with
+    {"spin": pin} → response {"securityToken": ...} → use that as
+    SecToken header on the /access/lock or /access/unlock POST (empty body).
+    """
+
+    def _client(self, spin="1234", user_id="u-123"):
+        from unittest.mock import AsyncMock, MagicMock
+        from custom_components.vag_connect.cariad.api.seat_cupra import SeatCupraClient
+        client = SeatCupraClient.__new__(SeatCupraClient)
+        client._spin = spin
+        client._user_id = user_id
+        client._post = AsyncMock(return_value={"securityToken": "TOK_ABC"})
+        client._fetch_user_id = AsyncMock()
+        return client
+
+    def test_get_sec_token_calls_verify_endpoint(self):
+        import asyncio
+        client = self._client()
+        token = asyncio.get_event_loop().run_until_complete(
+            client._get_sec_token("1234")
+        )
+        assert token == "TOK_ABC"
+        url = client._post.call_args[0][0]
+        assert url.endswith("/v2/users/u-123/spin/verify")
+        assert client._post.call_args.kwargs["json"] == {"spin": "1234"}
+
+    def test_get_sec_token_raises_spin_error_on_empty_pin(self):
+        import asyncio, pytest
+        from custom_components.vag_connect.cariad.exceptions import SpinError
+        client = self._client(spin="")
+        with pytest.raises(SpinError):
+            asyncio.get_event_loop().run_until_complete(
+                client._get_sec_token("")
+            )
+
+    def test_get_sec_token_wraps_apierror_as_spin_error(self):
+        """Wrong PIN → 400 from /spin/verify → user-facing SpinError."""
+        import asyncio, pytest
+        from unittest.mock import AsyncMock
+        from custom_components.vag_connect.cariad.exceptions import APIError, SpinError
+        client = self._client()
+        client._post = AsyncMock(side_effect=APIError(400, "x", "wrong pin"))
+        with pytest.raises(SpinError):
+            asyncio.get_event_loop().run_until_complete(
+                client._get_sec_token("1234")
+            )
+
+    def test_get_sec_token_raises_when_no_token_in_response(self):
+        import asyncio, pytest
+        from unittest.mock import AsyncMock
+        from custom_components.vag_connect.cariad.exceptions import SpinError
+        client = self._client()
+        client._post = AsyncMock(return_value={"unexpected": "field"})
+        with pytest.raises(SpinError):
+            asyncio.get_event_loop().run_until_complete(
+                client._get_sec_token("1234")
+            )
+
+    def test_command_lock_sends_sectoken_header_no_body(self):
+        import asyncio
+        from unittest.mock import AsyncMock
+        client = self._client()
+        # Two calls: spin/verify + access/lock. Mock _post to handle both.
+        verify_resp = {"securityToken": "TOK_LOCK"}
+        client._post = AsyncMock(side_effect=[verify_resp, None])
+        asyncio.get_event_loop().run_until_complete(
+            client.command_lock("VINX")
+        )
+        # First call = spin/verify
+        assert client._post.call_args_list[0][0][0].endswith("/v2/users/u-123/spin/verify")
+        # Second call = lock with SecToken header, no JSON body
+        lock_call = client._post.call_args_list[1]
+        assert lock_call[0][0].endswith("/v1/vehicles/VINX/access/lock")
+        assert lock_call.kwargs["headers"] == {"SecToken": "TOK_LOCK"}
+        assert "json" not in lock_call.kwargs
+
+    def test_command_unlock_sends_sectoken_header_no_body(self):
+        import asyncio
+        from unittest.mock import AsyncMock
+        client = self._client()
+        verify_resp = {"securityToken": "TOK_UNL"}
+        client._post = AsyncMock(side_effect=[verify_resp, None])
+        asyncio.get_event_loop().run_until_complete(
+            client.command_unlock("VINX", spin="9999")
+        )
+        # spin/verify uses the kwarg-supplied PIN, not self._spin
+        assert client._post.call_args_list[0].kwargs["json"] == {"spin": "9999"}
+        unlock_call = client._post.call_args_list[1]
+        assert unlock_call[0][0].endswith("/v1/vehicles/VINX/access/unlock")
+        assert unlock_call.kwargs["headers"] == {"SecToken": "TOK_UNL"}
+        assert "json" not in unlock_call.kwargs
+
+
+class TestCariadBffGetCapabilities:
+    """VW EU + Audi share the CARIAD BFF capabilities endpoint."""
+
+    def test_vw_eu_get_capabilities_endpoint(self):
+        import asyncio
+        from unittest.mock import AsyncMock
+        from custom_components.vag_connect.cariad.api.vw_eu import VWEUClient
+        client = VWEUClient.__new__(VWEUClient)
+        client._get = AsyncMock(return_value={"capabilities": [{"id": "x"}]})
+        result = asyncio.get_event_loop().run_until_complete(
+            client.get_capabilities("VINY")
+        )
+        assert result == {"capabilities": [{"id": "x"}]}
+        url = client._get.call_args[0][0]
+        assert "emea.bff.cariad.digital" in url
+        assert url.endswith("/vehicle/v1/vehicles/VINY/capabilities")
+
+    def test_get_capabilities_returns_empty_dict_on_non_dict_response(self):
+        import asyncio
+        from unittest.mock import AsyncMock
+        from custom_components.vag_connect.cariad.api.vw_eu import VWEUClient
+        client = VWEUClient.__new__(VWEUClient)
+        client._get = AsyncMock(return_value=["unexpected list"])
+        result = asyncio.get_event_loop().run_until_complete(
+            client.get_capabilities("VIN")
+        )
+        assert result == {}
+
+    def test_porsche_returns_empty_dict_no_endpoint(self):
+        """Porsche PPA has no capabilities endpoint — must not raise."""
+        import asyncio
+        from unittest.mock import MagicMock
+        from custom_components.vag_connect.cariad.api.porsche import PorscheClient
+        client = PorscheClient.__new__(PorscheClient)
+        result = asyncio.get_event_loop().run_until_complete(
+            client.get_capabilities("VIN")
+        )
+        assert result == {}
+
+    def test_vw_na_returns_empty_dict_no_endpoint(self):
+        import asyncio
+        from custom_components.vag_connect.cariad.api.vw_na import VWNAClient
+        client = VWNAClient.__new__(VWNAClient)
+        result = asyncio.get_event_loop().run_until_complete(
+            client.get_capabilities("VIN")
+        )
+        assert result == {}

@@ -23,6 +23,47 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ## [Unreleased]
 
+## [1.8.4] - 2026-04-27
+
+### Session 2C — SEAT/CUPRA lock fix + capabilities for more brands
+
+- **SEAT/CUPRA `command_lock` and `command_unlock` now use the SecToken
+  flow** documented in pycupra. Verified by the live tester report (#53)
+  where Gerhard's CUPRA Born returned `400 internal-error` on lock — root
+  cause was a missing `SecToken` header. The new flow:
+  1. `POST /v2/users/{userId}/spin/verify` with `{"spin": "<pin>"}` →
+     response `{"securityToken": "..."}`
+  2. `POST /v1/vehicles/{vin}/access/lock` (or `/unlock`) with header
+     `SecToken: <token>` and **no JSON body** (matching pycupra exactly)
+- **`coordinator.async_lock` now requires S-PIN for SEAT/CUPRA brands**
+  and raises `ServiceValidationError(spin_required)` before any API call,
+  so users get a translated error rather than a backend 400.
+- **`SpinError`** is raised when the verify call returns an error or
+  no token, surfacing wrong-PIN cases cleanly.
+- **`get_capabilities()` added to CARIAD BFF (VW EU + Audi via inheritance)**
+  using the documented `/vehicle/v1/vehicles/{vin}/capabilities` endpoint.
+- **`get_capabilities()` stubs added to Porsche and VW NA clients**
+  (return `{}`) so the coordinator can call them uniformly. Neither brand
+  has a discrete capabilities endpoint yet.
+- **Button capability gating scoped to SEAT/CUPRA only.** Audi / VW EU /
+  Škoda / Porsche / VW NA buttons are now never gated even though their
+  capabilities cache may be populated, because their capability ID
+  vocabulary has not been verified end-to-end. Will be unlocked
+  per-brand once we have live test confirmation of the IDs.
+
+### Session 2C — Lock-Fix für SEAT/CUPRA + Capabilities für weitere Marken
+
+Der `internal-error` beim Verriegeln (Gerhard #53) war ein fehlender
+`SecToken`-Header. SEAT/CUPRA verlangen einen zweistufigen Ablauf:
+erst S-PIN gegen `/v2/users/{userId}/spin/verify` validieren und dann
+mit dem zurückgegebenen `securityToken` als Header das eigentliche
+Lock/Unlock-POST abschicken — ohne Body, exakt wie pycupra. Mit v1.8.4
+wirft die Integration zudem schon im Coordinator `spin_required` wenn
+der S-PIN für SEAT/CUPRA fehlt, statt einen Backend-Fehler zu kassieren.
+Capabilities-Endpoint dazu für CARIAD BFF (Audi + VW EU); Stubs für
+Porsche und VW NA. Button-Gating bleibt bewusst auf SEAT/CUPRA
+beschränkt bis die Capability-IDs anderer Marken live verifiziert sind.
+
 ## [1.8.3] - 2026-04-27
 
 ### Session 2B — Button capability gating (SEAT/CUPRA only)

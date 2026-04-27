@@ -105,6 +105,19 @@ class VWEUClient(CariadBaseClient):
 
         return vins
 
+    async def get_capabilities(self, vin: str) -> dict[str, Any]:
+        """Return CARIAD BFF capabilities document for *vin*.
+
+        Endpoint identical for VW EU + Audi (same backend, different brand
+        token). The JSON shape is roughly:
+            {"capabilities": [{"id": "honkAndFlash", "status": [...]}, ...]}
+
+        Failure raises ``APIError`` — caller should swallow it because
+        capabilities are best-effort metadata, never load-bearing.
+        """
+        data = await self._get(f"{_BASE}/vehicle/v1/vehicles/{vin}/capabilities")
+        return data if isinstance(data, dict) else {}
+
     async def get_status(self, vin: str) -> VehicleData:
         """Fetch full vehicle status via selectivestatus."""
         url = f"{_BASE}/vehicle/v1/vehicles/{vin}/selectivestatus"
