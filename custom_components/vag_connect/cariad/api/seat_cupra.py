@@ -79,6 +79,19 @@ class SeatCupraClient(CariadBaseClient):
         await self.fetch_images()
         return vins
 
+    async def get_capabilities(self, vin: str) -> dict[str, Any]:
+        """Return the OLA capabilities document for *vin*.
+
+        The response shape is roughly:
+            {"capabilities": [{"id": "honk-and-flash", "status": [...]}, ...]}
+
+        Caller is responsible for caching (handled by the coordinator with a
+        24h TTL). Failure raises ``APIError`` — caller should swallow it
+        because capabilities are best-effort metadata, never load-bearing.
+        """
+        data = await self._get(f"{_BASE}/v1/vehicles/{vin}/capabilities")
+        return data if isinstance(data, dict) else {}
+
     async def _fetch_renders(self, vins: list[str]) -> None:
         """Fetch vehicle render images from OLA renders endpoint."""
         for vin in vins:

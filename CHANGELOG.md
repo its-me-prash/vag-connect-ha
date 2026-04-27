@@ -23,6 +23,70 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ## [Unreleased]
 
+## [1.8.2] - 2026-04-27
+
+### Session 2A — Capabilities foundation (no entity changes)
+
+- **`CommandFailureReason` enum + `classify_command_failure()` helper** in
+  `cariad/exceptions.py`. Nine categories (`MISSING_CAPABILITY`,
+  `SUBSCRIPTION_EXPIRED`, `NOT_ENTITLED`, `WRONG_API_PROFILE`,
+  `VEHICLE_UNREACHABLE`, `SPIN_REQUIRED`, `INVALID_PAYLOAD`,
+  `BACKEND_ERROR`, `UNKNOWN`). Conservative on purpose: `400 internal-error`
+  maps to `BACKEND_ERROR`, never `MISSING_CAPABILITY`, so an ambiguous body
+  can never accidentally hide an entity for good. Only an explicit
+  `missing-capability` body flips that flag.
+
+- **Three-state feature model** on the coordinator:
+  ```python
+  feature_states[vin][command] = FeatureState(
+      supported_by_vehicle, entitled_by_account, available_now,
+      last_error, last_error_at,
+  )
+  ```
+  `supported_by_vehicle` and `entitled_by_account` answer different
+  questions (vehicle hardware vs account subscription) and are tracked
+  separately. Backend errors (transient) flip neither.
+
+- **Capabilities cache** with 24h TTL, runtime-only on the coordinator
+  (deliberately NOT in `config_entry.options` — that's for user settings).
+  Triggered best-effort during `async_setup` for every VIN in parallel;
+  failure is debug-logged and never blocks setup. Re-fetched on TTL expiry
+  or explicit `force=True`.
+
+- **`SeatCupraClient.get_capabilities(vin)`** — only OLA implemented in
+  this PR. CARIAD BFF / mysmob / PPA capabilities methods land in 2B
+  to keep the diff focused.
+
+- **No entity changes.** `button.py`, `lock.py`, `climate.py` etc. don't
+  read from `feature_states` or `vehicle_capabilities` yet — that's the
+  point of splitting 2A out. Verified by entity test suite still passing
+  with no test churn.
+
+### Authentication / Authentifizierung
+
+- **SEAT and CUPRA OAuth scopes broadened to `address phone email birthdate
+  nickname`** (was `nickname birthdate phone`). Mirrors the official My SEAT
+  and MyCupra app scope set. Defense in depth — current OLA endpoints don't
+  require `email` or `address`, but extending the scope ahead of any
+  conditional server-side check costs nothing and prevents future surprises.
+
+  **SEAT- und CUPRA-OAuth-Scopes erweitert auf `address phone email birthdate
+  nickname`** (vorher `nickname birthdate phone`). Stimmt jetzt mit dem
+  offiziellen My-SEAT- und MyCupra-App-Scope überein. Defense in Depth — die
+  aktuellen OLA-Endpoints brauchen `email` und `address` nicht, aber die
+  vorbeugende Erweiterung schadet nicht und verhindert künftige
+  Server-Restriktionen.
+
+### Session 2A — Foundation für Capabilities (keine Entity-Änderungen)
+
+Vorbereitung für Sessions 2B/2C. Führt nur die Datenstrukturen ein —
+Entity-Verhalten bleibt identisch. Beide Cross-Check-Reviews
+(ChatGPT 5.5 + Gemini Pro) haben unabhängig gewarnt vor einem
+"Capabilities-für-alles"-Refactor: drei Live-Tester-Fehler (Gerhard
+`missing-capability`, migendi `expired sub`, gleeballs `free tier 404`)
+sehen ähnlich aus, haben aber unterschiedliche Root Causes. Erst
+Klassifizierung, dann Verhalten.
+
 ## [1.8.1] - 2026-04-27
 
 ### Privacy / Datenschutz

@@ -74,7 +74,9 @@ BRAND_SEAT = BrandConfig(
     redirect_uri="seat://oauth-callback",
     user_agent="OLASeat/2.13.3 (Android 12; sdk_gphone64_x86_64; Google) Mobile",
     api_base="https://ola.prod.code.seat.cloud.vwgroup.com",
-    scope="openid profile nickname birthdate phone",
+    # `address` + `email` mirror the official My SEAT app — defense in depth so
+    # OLA endpoints that conditionally require either claim never get tripped.
+    scope="openid profile address phone email birthdate nickname",
 )
 
 BRAND_CUPRA = BrandConfig(
@@ -84,7 +86,8 @@ BRAND_CUPRA = BrandConfig(
     user_agent="OLACupra/2.15.0 (Android 12; sdk_gphone64_x86_64; Google) Mobile",
     api_base="https://ola.prod.code.seat.cloud.vwgroup.com",
     client_secret="eb8814e641c81a2640ad62eeccec11c98effc9bccd4269ab7af338b50a94b3a2",
-    scope="openid profile nickname birthdate phone",
+    # See BRAND_SEAT above — same OLA backend, same scope set.
+    scope="openid profile address phone email birthdate nickname",
 )
 
 BRAND_VW_NA_MODEL = BrandConfig(

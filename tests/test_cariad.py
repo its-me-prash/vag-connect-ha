@@ -2951,3 +2951,212 @@ class TestVehicleImageFetcher:
         assert RENDER_TYPE_BY_MEDIA["MYAPN8NB"]["entity_suffix"] == "render_side_lg"
         assert RENDER_TYPE_BY_MEDIA["MS_MYP3"]["entity_suffix"] == "render_icon"
         assert RENDER_TYPE_BY_MEDIA["MYAAN3NB"]["tag"] == "angle_hd"
+
+
+# ── Session 2A foundation: error taxonomy + capabilities ──────────────────────
+
+
+class TestCommandFailureClassifier:
+    """classify_command_failure() maps APIError → CommandFailureReason.
+
+    Conservative on purpose: ambiguous bodies (e.g. 400 internal-error) must
+    return BACKEND_ERROR, never MISSING_CAPABILITY. Wrongly hiding entities
+    is harder to recover from than showing a transient error.
+    """
+
+    def test_missing_capability_body_detected(self):
+        from custom_components.vag_connect.cariad.exceptions import (
+            APIError,
+            CommandFailureReason,
+            classify_command_failure,
+        )
+        err = APIError(400, "https://ola.example/v1/.../honk-and-flash",
+                       '{"code":"missing-capability","message":"Missing capability"}')
+        assert classify_command_failure(err) is CommandFailureReason.MISSING_CAPABILITY
+
+    def test_403_is_not_entitled(self):
+        from custom_components.vag_connect.cariad.exceptions import (
+            APIError, CommandFailureReason, classify_command_failure,
+        )
+        err = APIError(403, "https://example", '{"error":"forbidden"}')
+        assert classify_command_failure(err) is CommandFailureReason.NOT_ENTITLED
+
+    def test_404_is_wrong_api_profile(self):
+        from custom_components.vag_connect.cariad.exceptions import (
+            APIError, CommandFailureReason, classify_command_failure,
+        )
+        err = APIError(404, "https://example", '{"error":"not found"}')
+        assert classify_command_failure(err) is CommandFailureReason.WRONG_API_PROFILE
+
+    def test_500_is_backend_error(self):
+        from custom_components.vag_connect.cariad.exceptions import (
+            APIError, CommandFailureReason, classify_command_failure,
+        )
+        err = APIError(500, "https://example", "Internal Server Error")
+        assert classify_command_failure(err) is CommandFailureReason.BACKEND_ERROR
+
+    def test_400_internal_error_is_backend_not_missing_capability(self):
+        """`internal-error` is ambiguous — never claim it's a capability gap."""
+        from custom_components.vag_connect.cariad.exceptions import (
+            APIError, CommandFailureReason, classify_command_failure,
+        )
+        err = APIError(400, "https://ola.example/v1/.../access/lock",
+                       '{"code":"internal-error","message":"Internal server error"}')
+        assert classify_command_failure(err) is CommandFailureReason.BACKEND_ERROR
+
+    def test_non_apierror_is_unknown(self):
+        from custom_components.vag_connect.cariad.exceptions import (
+            CommandFailureReason, classify_command_failure,
+        )
+        assert classify_command_failure(ValueError("oops")) is CommandFailureReason.UNKNOWN
+        assert classify_command_failure(RuntimeError()) is CommandFailureReason.UNKNOWN
+
+
+class TestFeatureStateTracking:
+    """Coordinator records FeatureState lazily on command success/failure."""
+
+    def _coord(self):
+        from unittest.mock import MagicMock
+        from custom_components.vag_connect.coordinator import VagConnectCoordinator
+        coord = VagConnectCoordinator.__new__(VagConnectCoordinator)
+        coord.feature_states = {}
+        return coord
+
+    def test_get_feature_state_creates_lazily(self):
+        coord = self._coord()
+        state = coord.get_feature_state("VIN1", "command_flash")
+        assert state.supported_by_vehicle is None
+        assert state.entitled_by_account is None
+        assert state.last_error is None
+        # Same call returns same instance (cached)
+        assert coord.get_feature_state("VIN1", "command_flash") is state
+
+    def test_record_missing_capability_marks_unsupported(self):
+        from custom_components.vag_connect.cariad.exceptions import CommandFailureReason
+        coord = self._coord()
+        coord.record_command_failure("VIN1", "command_flash",
+                                      CommandFailureReason.MISSING_CAPABILITY)
+        state = coord.get_feature_state("VIN1", "command_flash")
+        assert state.supported_by_vehicle is False
+        assert state.last_error is CommandFailureReason.MISSING_CAPABILITY
+        # Entitlement untouched — different question entirely
+        assert state.entitled_by_account is None
+
+    def test_record_subscription_expired_marks_unentitled_only(self):
+        from custom_components.vag_connect.cariad.exceptions import CommandFailureReason
+        coord = self._coord()
+        coord.record_command_failure("VIN1", "command_lock",
+                                      CommandFailureReason.SUBSCRIPTION_EXPIRED)
+        state = coord.get_feature_state("VIN1", "command_lock")
+        # Vehicle still supports it — user just needs to renew
+        assert state.supported_by_vehicle is None
+        assert state.entitled_by_account is False
+
+    def test_record_backend_error_does_not_flip_either_flag(self):
+        """Transient errors must never permanently hide entities."""
+        from custom_components.vag_connect.cariad.exceptions import CommandFailureReason
+        coord = self._coord()
+        coord.record_command_failure("VIN1", "command_flash",
+                                      CommandFailureReason.BACKEND_ERROR)
+        state = coord.get_feature_state("VIN1", "command_flash")
+        assert state.supported_by_vehicle is None
+        assert state.entitled_by_account is None
+        assert state.last_error is CommandFailureReason.BACKEND_ERROR
+
+    def test_record_success_clears_prior_error(self):
+        from custom_components.vag_connect.cariad.exceptions import CommandFailureReason
+        coord = self._coord()
+        coord.record_command_failure("VIN1", "command_flash",
+                                      CommandFailureReason.MISSING_CAPABILITY)
+        coord.record_command_success("VIN1", "command_flash")
+        state = coord.get_feature_state("VIN1", "command_flash")
+        assert state.supported_by_vehicle is True
+        assert state.entitled_by_account is True
+        assert state.last_error is None
+
+
+class TestCapabilitiesCacheTTL:
+    """Cache must be runtime-only (NOT config_entry.options) and TTL-aware."""
+
+    def _coord(self):
+        from unittest.mock import MagicMock
+        from custom_components.vag_connect.coordinator import VagConnectCoordinator
+        coord = VagConnectCoordinator.__new__(VagConnectCoordinator)
+        coord.vehicle_capabilities = {}
+        coord._capabilities_fetched_at = {}
+        coord._cariad_client = None
+        return coord
+
+    def test_cache_starts_stale(self):
+        coord = self._coord()
+        assert coord.is_capabilities_cache_fresh("VIN1") is False
+
+    def test_fresh_after_recent_fetch(self):
+        from datetime import datetime, timezone
+        coord = self._coord()
+        coord._capabilities_fetched_at["VIN1"] = datetime.now(tz=timezone.utc)
+        assert coord.is_capabilities_cache_fresh("VIN1") is True
+
+    def test_stale_after_25h(self):
+        from datetime import datetime, timedelta, timezone
+        coord = self._coord()
+        coord._capabilities_fetched_at["VIN1"] = (
+            datetime.now(tz=timezone.utc) - timedelta(hours=25)
+        )
+        assert coord.is_capabilities_cache_fresh("VIN1") is False
+
+    def test_refresh_capabilities_no_client_safe(self):
+        """No CARIAD client → must not crash, must not write the cache."""
+        import asyncio
+        coord = self._coord()
+        asyncio.get_event_loop().run_until_complete(
+            coord.refresh_capabilities("VIN1")
+        )
+        assert coord.vehicle_capabilities == {}
+
+    def test_refresh_capabilities_swallows_error(self):
+        """Client raises → cache stays as-is (never load-bearing)."""
+        import asyncio
+        from unittest.mock import AsyncMock
+        coord = self._coord()
+        coord._cariad_client = AsyncMock()
+        coord._cariad_client.get_capabilities = AsyncMock(
+            side_effect=RuntimeError("network down"),
+        )
+        asyncio.get_event_loop().run_until_complete(
+            coord.refresh_capabilities("VIN1")
+        )
+        assert coord.vehicle_capabilities == {}
+
+    def test_refresh_capabilities_caches_dict_response(self):
+        import asyncio
+        from unittest.mock import AsyncMock
+        coord = self._coord()
+        coord._cariad_client = AsyncMock()
+        coord._cariad_client.get_capabilities = AsyncMock(
+            return_value={"capabilities": [{"id": "honk-and-flash"}]},
+        )
+        asyncio.get_event_loop().run_until_complete(
+            coord.refresh_capabilities("VIN1")
+        )
+        assert "VIN1" in coord.vehicle_capabilities
+        assert coord.is_capabilities_cache_fresh("VIN1") is True
+
+    def test_refresh_skipped_when_fresh_unless_forced(self):
+        import asyncio
+        from datetime import datetime, timezone
+        from unittest.mock import AsyncMock
+        coord = self._coord()
+        coord._capabilities_fetched_at["VIN1"] = datetime.now(tz=timezone.utc)
+        coord._cariad_client = AsyncMock()
+        coord._cariad_client.get_capabilities = AsyncMock(return_value={"x": 1})
+        # Not forced → client should not be called
+        asyncio.get_event_loop().run_until_complete(
+            coord.refresh_capabilities("VIN1")
+        )
+        coord._cariad_client.get_capabilities.assert_not_called()
+        # Forced → client is called
+        asyncio.get_event_loop().run_until_complete(
+            coord.refresh_capabilities("VIN1", force=True)
+        )
+        coord._cariad_client.get_capabilities.assert_called_once_with("VIN1")

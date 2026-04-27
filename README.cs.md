@@ -144,9 +144,11 @@ Restartujte Home Assistant.
 |---|---|---|---|
 | **1 — Foundation Fix** | v1.8.0 | iot_class, per-VIN dostupnost, S-PIN fail-fast, falešné writable odstraněny, geokódování opt-in | **#60** |
 | **1.5 — Soukromí & Auth** | v1.8.1 | Maskování VIN v logu a diagnostice, ConfigEntryAuthFailed při neplatných údajích, dokumentace userPosition | — |
-| **2 — Capabilities** | v1.8.2 | Entity podle schopností, detekce předplatného (2A→2B→2C) | #56, #68 |
-| **3 — Command Profile** | v1.8.3 | Routing podle značky/regionu/platformy, RS e-tron GT fix | #61, #51 |
-| **4 — Diagnostics + Fixtures** | v1.8.4 | Anonymizované diagnostiky, regresní testy | #62, #58 |
+| **2A — Capabilities Foundation** | v1.8.2 | Error taxonomy, 3-state model, capabilities cache (24h TTL) | #68 |
+| **2B — Button gating** | v1.8.3 | Skrýt flash/wake u SEAT/CUPRA dle capabilities | #56 |
+| **2C — Lock debug + userPosition** | v1.8.4 | Lock `internal-error` analyzovat + ověřit userPosition | #56 |
+| **3 — Command Profile** | v1.8.5 | Routing podle značky/regionu/platformy, RS e-tron GT fix | #61, #51 |
+| **4 — Diagnostics + Fixtures** | v1.8.6 | Anonymizované diagnostiky, regresní testy | #62, #58 |
 | **5 — Process & Governance** | — | Issue forms, brand captains, CODEOWNERS, privacy guide | #64 |
 | **6 — Read-only + Locking** | v1.9.0 | Read-only režim, command locking, cloud vs wake | #63, #55 |
 | **7 — Push CUPRA/SEAT** | v1.9.1 | Firebase FCM via mqtt.messagehub.de | #57 |
