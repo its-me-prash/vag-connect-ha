@@ -644,6 +644,23 @@ class VagConnectCoordinator(DataUpdateCoordinator):
 
 
     async def async_lock(self, vin: str) -> None:
+        # SEAT/CUPRA lock requires a SecToken obtained from S-PIN verify.
+        # Surface the missing-PIN case before the API call so HA shows a
+        # clean translation key rather than a low-level SpinError trace.
+        brand = self.entry.data.get(CONF_BRAND, "").lower()
+        if brand in ("seat", "cupra"):
+            options = getattr(self.entry, "options", None) or {}
+            data = getattr(self.entry, "data", None) or {}
+            spin = ""
+            if isinstance(options, dict):
+                spin = str(options.get(CONF_SPIN) or "")
+            if not spin and isinstance(data, dict):
+                spin = str(data.get(CONF_SPIN) or "")
+            if not spin:
+                raise ServiceValidationError(
+                    translation_domain=DOMAIN,
+                    translation_key="spin_required",
+                )
         await self._cariad_cmd(vin, "command_lock")
 
     async def async_unlock(self, vin: str) -> None:

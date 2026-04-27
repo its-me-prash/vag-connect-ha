@@ -177,6 +177,16 @@ class VWNAClient:
         d.is_hybrid      = d.has_battery and d.has_combustion
         return d
 
+    async def get_capabilities(self, vin: str) -> dict[str, Any]:  # noqa: ARG002
+        """VW NA does not expose a discrete capabilities endpoint.
+
+        Returning ``{}`` keeps the interface consistent with the other
+        clients so the coordinator can call this without feature
+        detection. Buttons will not be capability-gated for VW NA until
+        an endpoint is documented.
+        """
+        return {}
+
     async def command_lock(self, vin: str) -> None:
         uuid = self._vin_to_uuid.get(vin, vin)
         await self._post(f"{self._base}/ev/v1/vehicle/{uuid}/lock", json={"action": "lock"})

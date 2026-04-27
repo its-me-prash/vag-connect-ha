@@ -91,6 +91,18 @@ class CariadBaseClient:
         """Remote unlock — may require S-PIN."""
         raise NotImplementedError
 
+    async def get_capabilities(self, vin: str) -> dict[str, Any]:
+        """Return the per-VIN capabilities document.
+
+        Default implementation returns ``{}`` (i.e. "no data") so callers
+        can rely on the helper existing without checking ``hasattr``.
+        Brand-specific clients that have a real capabilities endpoint
+        override this — currently SEAT/CUPRA (OLA) and the CARIAD BFF
+        family (VW EU + Audi). Škoda mysmob and Porsche PPA do not expose
+        a discrete capabilities endpoint and keep the default.
+        """
+        return {}
+
     async def command_start_climate(self, vin: str) -> None:
         """Start pre-conditioning."""
         raise NotImplementedError

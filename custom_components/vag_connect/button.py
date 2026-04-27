@@ -6,15 +6,23 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
+from .const import CONF_BRAND
 from .coordinator import VagConnectCoordinator
 from .entity_base import VagConnectEntity
 
-# OLA capability IDs (per pycupra) used to gate flash + wake buttons on
-# SEAT/CUPRA. Other brands have no capabilities cache yet, so the helper
-# returns None for them and the buttons are created unconditionally —
-# matching pre-Session-2B behaviour.
+# Capability IDs vary by backend. The OLA documentation (pycupra) uses
+# camelCase strings like below for SEAT/CUPRA. CARIAD BFF (Audi/VW EU)
+# uses a different vocabulary that we have not yet verified against
+# real vehicles, so gating is currently scoped to brands whose IDs we
+# trust — see ``_BRANDS_WITH_CAPABILITY_GATING`` below.
 _CAP_HONK_AND_FLASH = "honkAndFlash"
 _CAP_VEHICLE_WAKEUP = "vehicleWakeUpTrigger"
+
+# Brands whose capability vocabulary we've verified end-to-end. Other
+# brands fetch capabilities (cache populated) but the IDs may not match
+# what we look up below, so we skip gating for them to avoid hiding
+# entities by mistake.
+_BRANDS_WITH_CAPABILITY_GATING = frozenset({"seat", "cupra"})
 
 
 async def async_setup_entry(
@@ -23,6 +31,9 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     coordinator: VagConnectCoordinator = entry.runtime_data
+    brand = str(entry.data.get(CONF_BRAND, "")).lower()
+    gating_active = brand in _BRANDS_WITH_CAPABILITY_GATING
+
     entities: list[VagConnectEntity] = []
     for vin in coordinator.vehicles:
         # Refresh button never gates — it's a coordinator-level operation,
@@ -30,11 +41,21 @@ async def async_setup_entry(
         entities.append(VagRefreshButton(coordinator, vin))
 
         # Capability gating: only skip if we have an explicit ``False`` from
-        # the cache. ``None`` (unknown / no capabilities endpoint) keeps the
-        # button so other brands behave as before.
-        if coordinator.vehicle_supports_capability(vin, _CAP_HONK_AND_FLASH) is not False:
+        # the cache AND the brand uses the OLA capability vocabulary.
+        # ``None`` (unknown) keeps the button so other brands behave as before.
+        flash_supported = (
+            coordinator.vehicle_supports_capability(vin, _CAP_HONK_AND_FLASH)
+            if gating_active
+            else None
+        )
+        wake_supported = (
+            coordinator.vehicle_supports_capability(vin, _CAP_VEHICLE_WAKEUP)
+            if gating_active
+            else None
+        )
+        if flash_supported is not False:
             entities.append(VagFlashButton(coordinator, vin))
-        if coordinator.vehicle_supports_capability(vin, _CAP_VEHICLE_WAKEUP) is not False:
+        if wake_supported is not False:
             entities.append(VagWakeButton(coordinator, vin))
     async_add_entities(entities)
 
