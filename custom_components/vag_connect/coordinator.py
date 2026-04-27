@@ -11,7 +11,8 @@ Thread safety:
 """
 
 import asyncio
-from datetime import datetime, timezone
+from dataclasses import dataclass
+from datetime import datetime, timedelta, timezone
 import logging
 import threading
 from typing import Any
@@ -32,12 +33,42 @@ from .const import (
 )
 from homeassistant.helpers import device_registry as dr
 from .cariad._util import mask_vin
+from .cariad.exceptions import CommandFailureReason
 from .cariad.models import VehicleData
 
 _LOGGER = logging.getLogger(__name__)
 
 # Minimum interval enforced by Audi/VW connector (Sekunden)
 _CC_MIN_INTERVAL_S = 180
+
+# Capabilities are mostly static (subscription tier, vehicle features) but
+# can change when a user renews/cancels online services. 24h is a balance
+# between picking up legitimate changes and avoiding unnecessary calls.
+_CAPABILITIES_TTL = timedelta(hours=24)
+
+
+@dataclass
+class FeatureState:
+    """Per-VIN per-command state, populated lazily as commands are tried.
+
+    Three orthogonal questions:
+
+    - ``supported_by_vehicle`` — does the VIN have the capability registered
+      in the manufacturer backend? Cleared by ``MISSING_CAPABILITY`` errors.
+    - ``entitled_by_account`` — does the account currently have permission
+      to invoke it? Cleared by ``SUBSCRIPTION_EXPIRED`` / ``NOT_ENTITLED``.
+    - ``available_now`` — is the vehicle reachable / awake / responsive
+      right now? Transient — reset on success or on every reload.
+
+    ``None`` means "not yet determined" for all three. Don't infer anything
+    from a None value; only use this once a real attempt has been made.
+    """
+
+    supported_by_vehicle: bool | None = None
+    entitled_by_account: bool | None = None
+    available_now: bool | None = None
+    last_error: CommandFailureReason | None = None
+    last_error_at: datetime | None = None
 
 
 class VagConnectCoordinator(DataUpdateCoordinator):
@@ -61,6 +92,15 @@ class VagConnectCoordinator(DataUpdateCoordinator):
         # Per-VIN poll success tracking — entities use this for availability
         # so a single failing vehicle doesn't blank out the others.
         self.vehicle_success: dict[str, bool] = {}
+
+        # Per-VIN capabilities cache. Hydrated best-effort during setup.
+        # 2A foundation only — entity platforms don't read from this yet.
+        self.vehicle_capabilities: dict[str, dict[str, Any]] = {}
+        self._capabilities_fetched_at: dict[str, datetime] = {}
+
+        # Per-VIN per-command feature state. Hydrated lazily as commands
+        # succeed or fail; entry creation is deferred to keep memory tight.
+        self.feature_states: dict[str, dict[str, FeatureState]] = {}
 
         # Reverse-geocoding cache: {(round(lat,3), round(lon,3)): result}
         self._geocode_cache: dict[tuple[float, float], dict[str, str | None]] = {}
@@ -120,6 +160,14 @@ class VagConnectCoordinator(DataUpdateCoordinator):
                         self.vehicles[vin] = await self._enrich(data)
                         if hasattr(self, "vehicle_success"):
                             self.vehicle_success[vin] = True
+
+            # Best-effort capabilities prefetch — never blocks setup.
+            # Result lives in self.vehicle_capabilities for entity platforms
+            # to read in Session 2B. Failure is debug-logged and ignored.
+            await asyncio.gather(
+                *[self.refresh_capabilities(vin) for vin in self.vehicles],
+                return_exceptions=True,
+            )
 
             self._started = True
             found = len(self.vehicles)
@@ -254,6 +302,98 @@ class VagConnectCoordinator(DataUpdateCoordinator):
         # Lazy default so tests bypassing __init__ still work.
         success: dict[str, bool] = getattr(self, "vehicle_success", {}) or {}
         return bool(success.get(vin, True))
+
+    # ── Capabilities & feature-state plumbing (Session 2A foundation) ──────
+
+    def get_feature_state(self, vin: str, command: str) -> FeatureState:
+        """Return (or lazily create) the FeatureState for *vin*+*command*.
+
+        2A only sets the dict structure up; later sessions will read from it
+        in entity platforms to gate creation/availability.
+        """
+        states = getattr(self, "feature_states", None)
+        if states is None:
+            self.feature_states = {}
+            states = self.feature_states
+        per_vin = states.setdefault(vin, {})
+        if command not in per_vin:
+            per_vin[command] = FeatureState()
+        return per_vin[command]
+
+    def record_command_failure(
+        self, vin: str, command: str, reason: CommandFailureReason
+    ) -> None:
+        """Update the FeatureState after a command failed.
+
+        Conservative — only flips ``supported_by_vehicle`` to False on an
+        explicit ``MISSING_CAPABILITY`` response. Other reasons leave the
+        flag untouched so a transient backend hiccup never permanently
+        hides an entity.
+        """
+        state = self.get_feature_state(vin, command)
+        state.last_error = reason
+        state.last_error_at = datetime.now(tz=timezone.utc)
+        if reason is CommandFailureReason.MISSING_CAPABILITY:
+            state.supported_by_vehicle = False
+        elif reason in (
+            CommandFailureReason.SUBSCRIPTION_EXPIRED,
+            CommandFailureReason.NOT_ENTITLED,
+        ):
+            state.entitled_by_account = False
+
+    def record_command_success(self, vin: str, command: str) -> None:
+        """Mark a command as known-good for *vin*."""
+        state = self.get_feature_state(vin, command)
+        state.supported_by_vehicle = True
+        state.entitled_by_account = True
+        state.available_now = True
+        state.last_error = None
+        state.last_error_at = None
+
+    def is_capabilities_cache_fresh(self, vin: str) -> bool:
+        """Return True if cached capabilities for *vin* are within TTL."""
+        fetched_at: datetime | None = getattr(
+            self, "_capabilities_fetched_at", {}
+        ).get(vin)
+        if fetched_at is None:
+            return False
+        return bool(datetime.now(tz=timezone.utc) - fetched_at < _CAPABILITIES_TTL)
+
+    async def refresh_capabilities(self, vin: str, force: bool = False) -> None:
+        """Best-effort fetch of the per-VIN capabilities document.
+
+        Failure is logged at debug and never blocks setup or polling. The
+        cache stays as-is on error so we don't lose previously known data.
+        Only SEAT/CUPRA's OLA endpoint is implemented in this PR; other
+        brands return silently from the client side.
+        """
+        if not force and self.is_capabilities_cache_fresh(vin):
+            return
+        client = self._cariad_client
+        if client is None or not hasattr(client, "get_capabilities"):
+            return
+        try:
+            data = await client.get_capabilities(vin)
+        except Exception as err:  # noqa: BLE001
+            _LOGGER.debug(
+                "Capabilities fetch failed for %s: %s",
+                mask_vin(vin),
+                err,
+            )
+            return
+        if not isinstance(data, dict):
+            return
+        if not hasattr(self, "vehicle_capabilities"):
+            self.vehicle_capabilities = {}
+        if not hasattr(self, "_capabilities_fetched_at"):
+            self._capabilities_fetched_at = {}
+        self.vehicle_capabilities[vin] = data
+        self._capabilities_fetched_at[vin] = datetime.now(tz=timezone.utc)
+        _LOGGER.debug(
+            "Capabilities cached for %s (%d entries)",
+            mask_vin(vin),
+            len(data),
+        )
 
     async def _async_push_update(self, data: dict, success: bool = True) -> None:
         """Push vehicle data to HA.

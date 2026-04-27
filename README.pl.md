@@ -144,9 +144,11 @@ Uruchom ponownie Home Assistant.
 |---|---|---|---|
 | **1 — Foundation Fix** | v1.8.0 | iot_class, dostępność per VIN, S-PIN fail-fast, fałszywe writable usunięte | **#60** |
 | **1.5 — Prywatność & Auth** | v1.8.1 | Maskowanie VIN w logach/diagnostyce, ConfigEntryAuthFailed przy nieaktualnych poświadczeniach, dokumentacja userPosition | — |
-| **2 — Capabilities** | v1.8.2 | Encje wg możliwości, detekcja subskrypcji (2A→2B→2C) | #56, #68 |
-| **3 — Command Profile** | v1.8.3 | Routing marka/region/platforma, fix RS e-tron GT | #61, #51 |
-| **4 — Diagnostics + Fixtures** | v1.8.4 | Anonimizowane diagnostyki, testy regresji | #62, #58 |
+| **2A — Capabilities Foundation** | v1.8.2 | Taksonomia błędów, model 3-stanów, cache capabilities (TTL 24h) | #68 |
+| **2B — Button gating** | v1.8.3 | Ukrywanie flash/wake na SEAT/CUPRA wg capabilities | #56 |
+| **2C — Lock debug + userPosition** | v1.8.4 | Analiza lock `internal-error` + weryfikacja userPosition | #56 |
+| **3 — Command Profile** | v1.8.5 | Routing marka/region/platforma, fix RS e-tron GT | #61, #51 |
+| **4 — Diagnostics + Fixtures** | v1.8.6 | Anonimizowane diagnostyki, testy regresji | #62, #58 |
 | **5 — Process & Governance** | — | Issue forms, brand captains, CODEOWNERS, przewodnik prywatności | #64 |
 | **6 — Read-only + Locking** | v1.9.0 | Tryb read-only, command locking, cloud vs wake | #63, #55 |
 | **7 — Push CUPRA/SEAT** | v1.9.1 | Firebase FCM via mqtt.messagehub.de | #57 |
