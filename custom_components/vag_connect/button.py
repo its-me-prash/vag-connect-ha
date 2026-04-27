@@ -1,5 +1,5 @@
 # Copyright 2026 Prash Balan (@its-me-prash) — Apache License 2.0
-"""Button entities for VAG Connect (flash lights, force refresh)."""
+"""Button entities for VAG Connect (flash lights, force refresh, wake)."""
 
 from homeassistant.components.button import ButtonEntity
 from homeassistant.config_entries import ConfigEntry
@@ -8,6 +8,13 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .coordinator import VagConnectCoordinator
 from .entity_base import VagConnectEntity
+
+# OLA capability IDs (per pycupra) used to gate flash + wake buttons on
+# SEAT/CUPRA. Other brands have no capabilities cache yet, so the helper
+# returns None for them and the buttons are created unconditionally —
+# matching pre-Session-2B behaviour.
+_CAP_HONK_AND_FLASH = "honkAndFlash"
+_CAP_VEHICLE_WAKEUP = "vehicleWakeUpTrigger"
 
 
 async def async_setup_entry(
@@ -18,9 +25,17 @@ async def async_setup_entry(
     coordinator: VagConnectCoordinator = entry.runtime_data
     entities: list[VagConnectEntity] = []
     for vin in coordinator.vehicles:
-        entities.append(VagFlashButton(coordinator, vin))
+        # Refresh button never gates — it's a coordinator-level operation,
+        # not a vehicle command.
         entities.append(VagRefreshButton(coordinator, vin))
-        entities.append(VagWakeButton(coordinator, vin))
+
+        # Capability gating: only skip if we have an explicit ``False`` from
+        # the cache. ``None`` (unknown / no capabilities endpoint) keeps the
+        # button so other brands behave as before.
+        if coordinator.vehicle_supports_capability(vin, _CAP_HONK_AND_FLASH) is not False:
+            entities.append(VagFlashButton(coordinator, vin))
+        if coordinator.vehicle_supports_capability(vin, _CAP_VEHICLE_WAKEUP) is not False:
+            entities.append(VagWakeButton(coordinator, vin))
     async_add_entities(entities)
 
 

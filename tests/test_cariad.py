@@ -3160,3 +3160,121 @@ class TestCapabilitiesCacheTTL:
             coord.refresh_capabilities("VIN1", force=True)
         )
         coord._cariad_client.get_capabilities.assert_called_once_with("VIN1")
+
+
+# ── Session 2B: capability lookup + button gating ─────────────────────────────
+
+
+class TestVehicleSupportsCapability:
+    """Three-valued capability lookup: True / False / None."""
+
+    def _coord(self, caps_for_vin=None):
+        from unittest.mock import MagicMock
+        from custom_components.vag_connect.coordinator import VagConnectCoordinator
+        coord = VagConnectCoordinator.__new__(VagConnectCoordinator)
+        coord.vehicle_capabilities = {"VIN1": caps_for_vin} if caps_for_vin else {}
+        return coord
+
+    def test_no_cache_returns_none(self):
+        """No cached document → callers must not gate."""
+        coord = self._coord()
+        assert coord.vehicle_supports_capability("VIN1", "honkAndFlash") is None
+
+    def test_capability_present_no_status_returns_true(self):
+        coord = self._coord({"capabilities": [
+            {"id": "honkAndFlash", "status": []},
+        ]})
+        assert coord.vehicle_supports_capability("VIN1", "honkAndFlash") is True
+
+    def test_capability_with_status_entries_returns_false(self):
+        """status[] non-empty → backend says limited / unavailable."""
+        coord = self._coord({"capabilities": [
+            {"id": "honkAndFlash", "status": [{"reason": "deactivated"}]},
+        ]})
+        assert coord.vehicle_supports_capability("VIN1", "honkAndFlash") is False
+
+    def test_capability_not_listed_returns_false(self):
+        """Cache populated but capability missing → explicit absence."""
+        coord = self._coord({"capabilities": [
+            {"id": "differentFeature", "status": []},
+        ]})
+        assert coord.vehicle_supports_capability("VIN1", "honkAndFlash") is False
+
+    def test_malformed_capability_doc_returns_none(self):
+        coord = self._coord({"capabilities": "not a list"})
+        assert coord.vehicle_supports_capability("VIN1", "honkAndFlash") is None
+
+    def test_other_vin_returns_none(self):
+        coord = self._coord({"capabilities": [{"id": "honkAndFlash", "status": []}]})
+        assert coord.vehicle_supports_capability("VIN_OTHER", "honkAndFlash") is None
+
+
+class TestButtonCapabilityGating:
+    """Session 2B: flash/wake skipped when capabilities say no, refresh always created."""
+
+    def _coord(self, caps=None):
+        from unittest.mock import MagicMock
+        coord = MagicMock()
+        coord.vehicles = {"VIN1": {"vin": "VIN1", "model": "Born"}}
+        coord.vehicle_capabilities = {"VIN1": caps} if caps else {}
+
+        # Real method needs to be called, not a MagicMock auto-method
+        from custom_components.vag_connect.coordinator import VagConnectCoordinator
+        coord.vehicle_supports_capability = (
+            lambda vin, cap_id, _coord=coord: VagConnectCoordinator.vehicle_supports_capability(
+                _coord, vin, cap_id,
+            )
+        )
+        return coord
+
+    def _entry(self, coord):
+        from unittest.mock import MagicMock
+        entry = MagicMock()
+        entry.runtime_data = coord
+        return entry
+
+    def _setup(self, coord):
+        import asyncio
+        from unittest.mock import MagicMock
+        from custom_components.vag_connect.button import async_setup_entry
+        added: list = []
+        asyncio.get_event_loop().run_until_complete(
+            async_setup_entry(MagicMock(), self._entry(coord), added.extend)
+        )
+        return added
+
+    def test_no_capabilities_creates_all_three(self):
+        """Brand without capabilities (e.g. Audi) → all 3 buttons created."""
+        added = self._setup(self._coord(caps=None))
+        names = [type(e).__name__ for e in added]
+        assert "VagFlashButton" in names
+        assert "VagWakeButton" in names
+        assert "VagRefreshButton" in names
+
+    def test_explicit_unsupported_skips_flash_and_wake(self):
+        """OLA reports neither feature → only refresh button stays."""
+        added = self._setup(self._coord(caps={"capabilities": [
+            {"id": "differentFeature", "status": []},
+        ]}))
+        names = [type(e).__name__ for e in added]
+        assert "VagFlashButton" not in names
+        assert "VagWakeButton" not in names
+        assert "VagRefreshButton" in names
+
+    def test_partial_support(self):
+        """Flash supported, wake unavailable → only flash + refresh."""
+        added = self._setup(self._coord(caps={"capabilities": [
+            {"id": "honkAndFlash", "status": []},
+            {"id": "vehicleWakeUpTrigger", "status": [{"reason": "deactivated"}]},
+        ]}))
+        names = [type(e).__name__ for e in added]
+        assert "VagFlashButton" in names
+        assert "VagWakeButton" not in names
+        assert "VagRefreshButton" in names
+
+    def test_refresh_button_always_created(self):
+        """Refresh is coordinator-level — never gated."""
+        # Even with worst-case capabilities cache
+        added = self._setup(self._coord(caps={"capabilities": []}))
+        names = [type(e).__name__ for e in added]
+        assert "VagRefreshButton" in names

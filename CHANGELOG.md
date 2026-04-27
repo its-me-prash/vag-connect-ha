@@ -23,6 +23,60 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ## [Unreleased]
 
+## [1.8.3] - 2026-04-27
+
+### Session 2B — Button capability gating (SEAT/CUPRA only)
+
+- **`vehicle_supports_capability(vin, capability_id)`** on the coordinator
+  returns ``True`` / ``False`` / ``None`` (three-valued logic). Conservative
+  on purpose — ``None`` (unknown) keeps entities visible, only an explicit
+  ``False`` from the cached OLA capabilities document hides them.
+
+- **`button.py` reads from the helper** for two SEAT/CUPRA buttons:
+  - `VagFlashButton` — only created if `honkAndFlash` capability is
+    supported (or unknown for non-OLA brands)
+  - `VagWakeButton` — same gating against `vehicleWakeUpTrigger`
+  - `VagRefreshButton` — always created (coordinator-level, not a
+    vehicle command)
+
+- **No effect on Audi / VW EU / Škoda / Porsche / VW NA** — those brands
+  have no capabilities endpoint implemented yet, so the helper returns
+  ``None`` and all three buttons appear as before. Capability methods for
+  those brands land in 2C / Session 3.
+
+- **Verification case:** Gerhard's CUPRA Born (#53) returned
+  `400 missing-capability` for both flash and wake in v1.8.0. With v1.8.3,
+  if his vehicle's OLA capabilities document doesn't list those features,
+  the buttons disappear at next reload — no more failed presses, no more
+  log spam.
+
+### Session 2B — Button-Capability-Gating (nur SEAT/CUPRA)
+
+Vorbereitung für sauberere Entity-Listen pro Fahrzeug. Die Lichthupe und
+"Auto aufwecken" Buttons werden jetzt für SEAT/CUPRA nur noch erstellt
+wenn die OLA-Capabilities-API sagt dass das Fahrzeug die Funktionen
+unterstützt. Verifikations-Case ist Gerhards CUPRA Born (#53) — bei dem
+die beiden Buttons in v1.8.3 nach dem nächsten Reload verschwinden
+sollten statt 400-Fehler zu produzieren. Andere Marken bleiben
+unverändert (kein Capabilities-Endpoint implementiert → drei Buttons wie
+bisher).
+
+### Release notes / Release-Notes (CI)
+
+- **Release pages now embed the full CHANGELOG section** instead of only
+  matching `### Added` / `### Changed` / `### Fixed` / `### Removed`.
+  Older notes since v1.7 were effectively empty for human readers because
+  our entries use topical headings (e.g. `### Privacy`, `### Authentication`)
+  that the old generator dropped.
+- Bilingual EN/DE for every release-page heading, plus a "Recent
+  releases" pointer to the previous 3 tags with dates and a readable
+  compare URL.
+
+  Release-Seiten zeigen jetzt den vollständigen CHANGELOG-Abschnitt
+  wortwörtlich — alle Sub-Headings, Code-Blöcke und EN+DE-Absätze.
+  Plus einen "Letzte Releases"-Pointer auf die letzten 3 Tags mit
+  Datum und eine lesbare Compare-URL.
+
 ## [1.8.2] - 2026-04-27
 
 ### Session 2A — Capabilities foundation (no entity changes)
