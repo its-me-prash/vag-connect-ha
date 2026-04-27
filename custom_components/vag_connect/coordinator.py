@@ -359,6 +359,41 @@ class VagConnectCoordinator(DataUpdateCoordinator):
             return False
         return bool(datetime.now(tz=timezone.utc) - fetched_at < _CAPABILITIES_TTL)
 
+    def vehicle_supports_capability(
+        self, vin: str, capability_id: str
+    ) -> bool | None:
+        """Return ``True`` / ``False`` / ``None`` for a capability lookup.
+
+        - ``True``  — capability is present in the cached document and has
+          no documented limitations (empty ``status`` array on OLA).
+        - ``False`` — capability is present but the backend lists explicit
+          limitations, OR the cache is populated and the capability is not
+          listed at all (callers can treat both as "do not show entity").
+        - ``None``  — no cached document for this VIN yet (e.g. brand has
+          no capabilities endpoint, or the prefetch failed). Callers must
+          NOT hide entities in this case — the data simply isn't there.
+
+        Conservative on purpose: returns ``None`` for unknown rather than
+        guessing. Only an explicit cache hit warrants gating decisions.
+        """
+        caps = getattr(self, "vehicle_capabilities", {}).get(vin)
+        if not isinstance(caps, dict):
+            return None
+        items = caps.get("capabilities")
+        if not isinstance(items, list):
+            return None
+        for entry in items:
+            if not isinstance(entry, dict):
+                continue
+            if entry.get("id") != capability_id:
+                continue
+            status = entry.get("status")
+            # Empty list / missing → fully usable. Anything in status[] is
+            # a limitation (e.g. deactivated, license required, ...).
+            return not bool(status)
+        # Cache is populated but capability isn't listed — explicit absence.
+        return False
+
     async def refresh_capabilities(self, vin: str, force: bool = False) -> None:
         """Best-effort fetch of the per-VIN capabilities document.
 
