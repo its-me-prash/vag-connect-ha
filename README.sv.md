@@ -143,9 +143,10 @@ Starta om Home Assistant.
 | Session | Version | Omfattning | Issues |
 |---|---|---|---|
 | **1 — Foundation Fix** | v1.8.0 | iot_class, tillgänglighet per VIN, S-PIN fail-fast, falska writables borttagna | **#60** |
-| **2 — Capabilities** | v1.8.1 | Entiteter enligt kapabilitet, prenumerationsdetektering | #56 |
-| **3 — Command Profile** | v1.8.2 | Märke/region/plattform-routing, RS e-tron GT-fix | #61, #51 |
-| **4 — Diagnostics + Fixtures** | v1.8.3 | Anonymiserade diagnostik, regressionstester | #62, #58 |
+| **1.5 — Integritet & Auth** | v1.8.1 | VIN-maskering i loggar/diagnostik, ConfigEntryAuthFailed vid utgångna credentials, userPosition-dokumentation | — |
+| **2 — Capabilities** | v1.8.2 | Entiteter enligt kapabilitet, prenumerationsdetektering (2A→2B→2C) | #56, #68 |
+| **3 — Command Profile** | v1.8.3 | Märke/region/plattform-routing, RS e-tron GT-fix | #61, #51 |
+| **4 — Diagnostics + Fixtures** | v1.8.4 | Anonymiserade diagnostik, regressionstester | #62, #58 |
 | **5 — Process & Governance** | — | Issue forms, brand captains, CODEOWNERS, integritetsguide | #64 |
 | **6 — Read-only + Locking** | v1.9.0 | Read-only läge, command locking, cloud vs wake | #63, #55 |
 | **7 — Push CUPRA/SEAT** | v1.9.1 | Firebase FCM via mqtt.messagehub.de | #57 |

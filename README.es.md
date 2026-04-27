@@ -143,9 +143,10 @@ Reinicia Home Assistant.
 | Sesión | Versión | Alcance | Issues |
 |---|---|---|---|
 | **1 — Foundation Fix** | v1.8.0 | iot_class, disponibilidad por VIN, S-PIN fail-fast, writables falsos eliminados | **#60** |
-| **2 — Capabilities** | v1.8.1 | Entidades según capacidades, detección de suscripción | #56 |
-| **3 — Command Profile** | v1.8.2 | Routing por marca/región/plataforma, fix RS e-tron GT | #61, #51 |
-| **4 — Diagnostics + Fixtures** | v1.8.3 | Diagnósticos anonimizados, tests de regresión | #62, #58 |
+| **1.5 — Privacidad & Auth** | v1.8.1 | Enmascarado de VIN en logs/diagnósticos, ConfigEntryAuthFailed con credenciales obsoletas, documentación userPosition | — |
+| **2 — Capabilities** | v1.8.2 | Entidades según capacidades, detección de suscripción (2A→2B→2C) | #56, #68 |
+| **3 — Command Profile** | v1.8.3 | Routing por marca/región/plataforma, fix RS e-tron GT | #61, #51 |
+| **4 — Diagnostics + Fixtures** | v1.8.4 | Diagnósticos anonimizados, tests de regresión | #62, #58 |
 | **5 — Process & Governance** | — | Issue forms, brand captains, CODEOWNERS, guía de privacidad | #64 |
 | **6 — Read-only + Locking** | v1.9.0 | Modo read-only, command locking, cloud vs wake | #63, #55 |
 | **7 — Push CUPRA/SEAT** | v1.9.1 | Firebase FCM vía mqtt.messagehub.de | #57 |

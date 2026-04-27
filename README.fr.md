@@ -143,9 +143,10 @@ Redémarrez Home Assistant.
 | Session | Version | Portée | Issues |
 |---|---|---|---|
 | **1 — Foundation Fix** | v1.8.0 | iot_class, disponibilité par VIN, S-PIN fail-fast, writables fictifs supprimés | **#60** |
-| **2 — Capabilities** | v1.8.1 | Entités selon capacités, détection abonnement | #56 |
-| **3 — Command Profile** | v1.8.2 | Routing marque/région/plateforme, fix RS e-tron GT | #61, #51 |
-| **4 — Diagnostics + Fixtures** | v1.8.3 | Diagnostics anonymisés, tests de régression | #62, #58 |
+| **1.5 — Confidentialité & Auth** | v1.8.1 | Masquage VIN dans logs/diagnostics, ConfigEntryAuthFailed sur credentials périmés, documentation userPosition | — |
+| **2 — Capabilities** | v1.8.2 | Entités selon capacités, détection abonnement (2A→2B→2C) | #56, #68 |
+| **3 — Command Profile** | v1.8.3 | Routing marque/région/plateforme, fix RS e-tron GT | #61, #51 |
+| **4 — Diagnostics + Fixtures** | v1.8.4 | Diagnostics anonymisés, tests de régression | #62, #58 |
 | **5 — Process & Governance** | — | Issue forms, brand captains, CODEOWNERS, guide vie privée | #64 |
 | **6 — Read-only + Locking** | v1.9.0 | Mode read-only, command locking, cloud vs wake | #63, #55 |
 | **7 — Push CUPRA/SEAT** | v1.9.1 | Firebase FCM via mqtt.messagehub.de | #57 |
