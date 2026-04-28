@@ -12,7 +12,7 @@
   <a href="https://hacs.xyz"><img src="https://img.shields.io/badge/HACS-Custom-orange.svg?style=for-the-badge"></a>
   <a href="https://github.com/its-me-prash/vag-connect-ha/releases"><img src="https://img.shields.io/github/v/release/its-me-prash/vag-connect-ha?style=for-the-badge"></a>
   <a href="../LICENSE"><img src="https://img.shields.io/badge/License-Apache%202.0-blue.svg?style=for-the-badge"></a>
-  <a href="../tests/"><img src="https://img.shields.io/badge/Tests-337%2F337-brightgreen?style=for-the-badge"></a>
+  <a href="https://github.com/its-me-prash/vag-connect-ha/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/its-me-prash/vag-connect-ha/ci.yml?branch=main&style=for-the-badge&label=CI" alt="CI"></a>
   <a href="https://github.com/its-me-prash/vag-connect-ha/releases"><img src="https://img.shields.io/github/downloads/its-me-prash/vag-connect-ha/total?style=for-the-badge&label=Downloads" alt="Downloads"></a>
   <a href="../custom_components/vag_connect/quality_scale.yaml"><img src="https://img.shields.io/badge/Quality%20Scale-Platinum%20%F0%9F%8F%86-gold?style=for-the-badge"></a>
 </p>
@@ -34,7 +34,21 @@ Ik wilde mijn Audi volledig in Home Assistant besturen. Dus bouwde ik dit.
 
 **VAG Connect** is een zelfstandige Home Assistant integratie voor alle VAG-merken. Geen externe afhankelijkheden, geen Docker, geen externe diensten.
 
-Vanaf v0.14.1 communiceert de integratie **rechtstreeks** met de CARIAD API — eigen async-client, volledig zelfstandig.
+Vanaf v0.14.1 communiceert de integratie **rechtstreeks** met de CARIAD API — eigen async-client, volledig zelfstandig. Cloud-polling architectuur, 80+ entities over 10 platforms, 14 services.
+
+> ✅ **Actief onderhouden multi-merk opvolger** van [`mitch-dc/volkswagen_we_connect_id`](https://github.com/mitch-dc/volkswagen_we_connect_id) (gearchiveerd op 2025-10-29) en [`skodaconnect/homeassistant-skodaconnect`](https://github.com/skodaconnect/homeassistant-skodaconnect) (deprecated op 2025-03-14). Eén integratie voor Audi, VW, Škoda, SEAT, CUPRA, Porsche en VW US/CA — geen aparte plugin per merk.
+
+## Huidige status & eerlijke beperkingen (v1.8.5)
+
+VAG Connect is in actieve ontwikkeling. Zodat je weet wat werkt en wat niet:
+
+- **Capability-gating:** Op dit moment alleen actief voor SEAT/CUPRA flash- en wake-knoppen. Voor andere merken worden entities nog zonder capability-controle aangemaakt — ze kunnen dus "niet beschikbaar" tonen als je model de functie niet heeft. Wordt merk-voor-merk uitgerold (Sessies 3B / 3C / 3S).
+- **CARIAD v1/v2 auto-fallback:** Op dit moment alleen actief voor 4 set-value commando's (laaddoel, klimaattemperatuur, laadmodus, minimale SoC). Dit deblokkeert Audi RS e-tron GT en VW Passat 2025 vanaf v1.8.5. Lock/unlock, climate start/stop en charging start/stop volgen in Sessie 3B.
+- **Image-platform:** Er is geen officiële render-image API in de CARIAD-pipeline. De image-entity is daarom een placeholder en wordt in v1.10.0 ofwel verwijderd ofwel omgezet naar door de gebruiker opgegeven URLs.
+- **PPC/PPE-platform (Audi Q5 2025, Q6 e-tron, A5/S5, A6 e-tron):** Deze 2025+ modellen gebruiken de nieuwe E³ 1.2 architectuur. Er zijn nog geen openbaar gereverse-engineerde endpoints bekend. VAG Connect detecteert deze voertuigen en maakt geen command-entities aan, in plaats van 404-fouten te produceren.
+- **Privacy-vereiste:** GPS-positie, voertuigstatus en standkachel vereisen **"Locatie delen"** ingeschakeld in je My-VW / My-Audi / MySkoda / MyCupra app — anders antwoordt de backend met 403.
+
+Actuele roadmap en gedetailleerde status: [`../docs/SESSION_HANDOFF.md`](../docs/SESSION_HANDOFF.md)
 
 ---
 
