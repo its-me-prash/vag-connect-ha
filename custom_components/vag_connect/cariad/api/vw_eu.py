@@ -134,87 +134,95 @@ class VWEUClient(CariadBaseClient):
         return self._parse_status(vin, raw, parking)
 
     async def command_lock(self, vin: str) -> None:
-        """Lock vehicle — tries combined endpoint, falls back to separate."""
-        try:
-            await self._post(
-                f"{_BASE}/vehicle/v1/vehicles/{vin}/access/lock-unlock",
-                json={"action": "lock"},
-            )
-        except Exception:  # noqa: BLE001
-            await self._post(f"{_BASE}/vehicle/v1/vehicles/{vin}/access/lock", json={})
+        """Lock vehicle — combined endpoint with separate-endpoint fallback,
+        each tried on both /vehicle/v1/ and /vehicle/v2/ paths.
+
+        v1.8.8 (Session 3B): replaces the bare-except-then-fallback pattern
+        with HTTP-404-only fallback via ``_post_command_with_fallback_paths``.
+        Auth failures, rate limits and 5xx errors no longer mask as
+        endpoint-version mismatches and now propagate to the coordinator
+        for proper ``classify_command_failure`` handling.
+        """
+        await self._post_command_with_fallback_paths(
+            vin,
+            primary_suffix="access/lock-unlock",
+            primary_payload={"action": "lock"},
+            fallback_suffix="access/lock",
+            fallback_payload={},
+        )
 
     async def command_unlock(self, vin: str, spin: str = "") -> None:
-        """Unlock vehicle — S-PIN required if set."""
-        payload: dict[str, Any] = {"action": "unlock"}
+        """Unlock vehicle — S-PIN required if set.
+
+        Same v1/v2 + combined/separate dispatch as ``command_lock``.
+        S-PIN, when present, is included in *both* the combined-endpoint
+        payload and the separate-endpoint fallback payload (the legacy
+        unlock endpoint accepts the PIN in the body, the same way the
+        SecToken-using SEAT/CUPRA flow does in v1.8.4).
+        """
+        primary_payload: dict[str, Any] = {"action": "unlock"}
+        fallback_payload: dict[str, Any] = {}
         if spin or self._spin:
-            payload["spin"] = spin or self._spin
-        try:
-            await self._post(
-                f"{_BASE}/vehicle/v1/vehicles/{vin}/access/lock-unlock",
-                json=payload,
-            )
-        except Exception:  # noqa: BLE001
-            unlock_payload: dict[str, Any] = {}
-            if spin or self._spin:
-                unlock_payload["spin"] = spin or self._spin
-            await self._post(
-                f"{_BASE}/vehicle/v1/vehicles/{vin}/access/unlock",
-                json=unlock_payload,
-            )
+            primary_payload["spin"] = spin or self._spin
+            fallback_payload["spin"] = spin or self._spin
+        await self._post_command_with_fallback_paths(
+            vin,
+            primary_suffix="access/lock-unlock",
+            primary_payload=primary_payload,
+            fallback_suffix="access/unlock",
+            fallback_payload=fallback_payload,
+        )
 
     async def command_start_climate(self, vin: str) -> None:
-        """Start pre-conditioning — combined or separate endpoint."""
-        try:
-            await self._post(
-                f"{_BASE}/vehicle/v1/vehicles/{vin}/climatisation/start-stop",
-                json={"action": "start"},
-            )
-        except Exception:  # noqa: BLE001
-            await self._post(
-                f"{_BASE}/vehicle/v1/vehicles/{vin}/climatisation/start",
-                json={
-                    "targetTemperature": 21.0,
-                    "targetTemperatureUnit": "celsius",
-                    "climatisationWithoutExternalPower": True,
-                    "windowHeatingEnabled": True,
-                },
-            )
+        """Start pre-conditioning — combined endpoint with separate fallback,
+        each on v1/v2.
+
+        Default target temperature 21°C and window heating enabled match
+        the previous separate-endpoint payload — kept so behaviour does
+        not regress when the combined endpoint isn't available.
+        """
+        await self._post_command_with_fallback_paths(
+            vin,
+            primary_suffix="climatisation/start-stop",
+            primary_payload={"action": "start"},
+            fallback_suffix="climatisation/start",
+            fallback_payload={
+                "targetTemperature": 21.0,
+                "targetTemperatureUnit": "celsius",
+                "climatisationWithoutExternalPower": True,
+                "windowHeatingEnabled": True,
+            },
+        )
 
     async def command_stop_climate(self, vin: str) -> None:
-        """Stop pre-conditioning."""
-        try:
-            await self._post(
-                f"{_BASE}/vehicle/v1/vehicles/{vin}/climatisation/start-stop",
-                json={"action": "stop"},
-            )
-        except Exception:  # noqa: BLE001
-            await self._post(
-                f"{_BASE}/vehicle/v1/vehicles/{vin}/climatisation/stop", json={},
-            )
+        """Stop pre-conditioning — combined endpoint with separate fallback."""
+        await self._post_command_with_fallback_paths(
+            vin,
+            primary_suffix="climatisation/start-stop",
+            primary_payload={"action": "stop"},
+            fallback_suffix="climatisation/stop",
+            fallback_payload={},
+        )
 
     async def command_start_charging(self, vin: str) -> None:
-        """Start charging."""
-        try:
-            await self._post(
-                f"{_BASE}/vehicle/v1/vehicles/{vin}/charging/start-stop",
-                json={"action": "start"},
-            )
-        except Exception:  # noqa: BLE001
-            await self._post(
-                f"{_BASE}/vehicle/v1/vehicles/{vin}/charging/start", json={},
-            )
+        """Start charging — combined endpoint with separate fallback."""
+        await self._post_command_with_fallback_paths(
+            vin,
+            primary_suffix="charging/start-stop",
+            primary_payload={"action": "start"},
+            fallback_suffix="charging/start",
+            fallback_payload={},
+        )
 
     async def command_stop_charging(self, vin: str) -> None:
-        """Stop charging."""
-        try:
-            await self._post(
-                f"{_BASE}/vehicle/v1/vehicles/{vin}/charging/start-stop",
-                json={"action": "stop"},
-            )
-        except Exception:  # noqa: BLE001
-            await self._post(
-                f"{_BASE}/vehicle/v1/vehicles/{vin}/charging/stop", json={},
-            )
+        """Stop charging — combined endpoint with separate fallback."""
+        await self._post_command_with_fallback_paths(
+            vin,
+            primary_suffix="charging/start-stop",
+            primary_payload={"action": "stop"},
+            fallback_suffix="charging/stop",
+            fallback_payload={},
+        )
 
     async def command_flash(
         self,
@@ -284,6 +292,47 @@ class VWEUClient(CariadBaseClient):
             )
             self._mark_v2_active(vin)
             return result
+
+    async def _post_command_with_fallback_paths(
+        self,
+        vin: str,
+        primary_suffix: str,
+        primary_payload: dict[str, Any],
+        fallback_suffix: str,
+        fallback_payload: dict[str, Any],
+    ) -> Any:
+        """POST a vehicle command with full v1/v2 + primary/fallback dispatch.
+
+        Used by lock/unlock and climate/charging start/stop where the
+        CARIAD BFF historically exposes both a combined endpoint
+        (e.g. ``/access/lock-unlock`` with ``{"action": "lock"}``) and
+        separate endpoints (e.g. ``/access/lock`` + ``/access/unlock``).
+
+        Order of attempts (each via ``_post_command``, so each carries its
+        own v1 → v2 fallback on 404):
+
+        1. ``primary_suffix`` (combined endpoint, the historically
+           preferred form on the older CARIAD BFF)
+        2. ``fallback_suffix`` (separate endpoint, what older firmware
+           and some current PPE/PPC vehicles still expect)
+
+        The previous implementation caught a bare ``except Exception`` and
+        always fell back, which masked auth failures, rate limits and
+        backend 500s as if they were endpoint mismatches. v1.8.8 narrows
+        the fallback trigger to HTTP 404 only — every other error
+        propagates so the coordinator's
+        ``classify_command_failure`` can see it.
+        """
+        try:
+            return await self._post_command(
+                vin, primary_suffix, json=primary_payload,
+            )
+        except APIError as err:
+            if getattr(err, "status", 0) != 404:
+                raise
+            return await self._post_command(
+                vin, fallback_suffix, json=fallback_payload,
+            )
 
     async def command_set_target_soc(self, vin: str, target: int) -> None:
         """Set charge target SoC. Tries v1 first, falls back to v2 on 404."""

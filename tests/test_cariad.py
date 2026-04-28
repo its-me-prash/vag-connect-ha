@@ -942,6 +942,128 @@ class TestVWEUCommands:
         client._session.request.assert_called()
 
 
+# ── v1.8.8 Session 3B: v1/v2 + combined/separate endpoint dispatch ──────────
+
+class TestVWEUFallbackPaths:
+    """v1.8.8 — lock/unlock and climate/charging start/stop now dispatch
+    through ``_post_command_with_fallback_paths``: try the combined
+    endpoint on v1, on 404 v2; if both 404, try the separate endpoint on
+    v1, on 404 v2. Critically, *only* HTTP 404 triggers the fallback —
+    auth failures, rate limits and 5xx errors propagate so the
+    coordinator can classify them correctly. The previous implementation
+    caught a bare ``except Exception`` and masked all of these as
+    endpoint-version mismatches.
+    """
+
+    @staticmethod
+    def _resp(status: int, json_data=None, text: str = ""):
+        resp = AsyncMock()
+        resp.status = status
+        resp.headers = {"Content-Type": "application/json"}
+        resp.json = AsyncMock(return_value=json_data or {})
+        resp.text = AsyncMock(return_value=text)
+        resp.__aenter__ = AsyncMock(return_value=resp)
+        resp.__aexit__ = AsyncMock(return_value=False)
+        return resp
+
+    def _client_with_responses(self, responses):
+        """Build a VWEUClient whose session.request returns the given
+        responses in order (last one is repeated if exhausted)."""
+        from custom_components.vag_connect.cariad.api.vw_eu import VWEUClient
+        from custom_components.vag_connect.cariad.models import TokenSet
+        idx = {"i": 0}
+
+        def side_effect(*args, **kwargs):
+            r = responses[min(idx["i"], len(responses) - 1)]
+            idx["i"] += 1
+            return r
+
+        session = MagicMock()
+        session.request = MagicMock(side_effect=side_effect)
+        client = VWEUClient(session, "u@t.de", "pw")
+        client._tokens = TokenSet("acc", "ref", "id")
+        return client, session, idx
+
+    def test_404_on_v1_primary_falls_back_to_v2_primary(self):
+        """v1/access/lock-unlock → 404, v2/access/lock-unlock → 204.
+        Should call exactly two endpoints and not touch the separate
+        access/lock fallback at all."""
+        responses = [self._resp(404, text="not found"),
+                     self._resp(204)]
+        client, session, idx = self._client_with_responses(responses)
+        with patch("custom_components.vag_connect.cariad.api.base.asyncio.sleep",
+                   new=AsyncMock(return_value=None)):
+            asyncio.get_event_loop().run_until_complete(client.command_lock("VIN1"))
+        assert idx["i"] == 2
+        urls = [call.args[1] for call in session.request.call_args_list]
+        assert "/vehicle/v1/vehicles/VIN1/access/lock-unlock" in urls[0]
+        assert "/vehicle/v2/vehicles/VIN1/access/lock-unlock" in urls[1]
+
+    def test_404_on_both_primaries_falls_back_to_separate_endpoint(self):
+        """v1+v2 of combined endpoint both 404 → tries the separate
+        endpoint (v1/access/lock) which succeeds with 204."""
+        responses = [self._resp(404),  # v1 combined
+                     self._resp(404),  # v2 combined
+                     self._resp(204)]  # v1 separate
+        client, session, idx = self._client_with_responses(responses)
+        with patch("custom_components.vag_connect.cariad.api.base.asyncio.sleep",
+                   new=AsyncMock(return_value=None)):
+            asyncio.get_event_loop().run_until_complete(client.command_lock("VIN1"))
+        assert idx["i"] == 3
+        urls = [call.args[1] for call in session.request.call_args_list]
+        assert urls[0].endswith("/vehicle/v1/vehicles/VIN1/access/lock-unlock")
+        assert urls[1].endswith("/vehicle/v2/vehicles/VIN1/access/lock-unlock")
+        assert urls[2].endswith("/vehicle/v1/vehicles/VIN1/access/lock")
+
+    def test_500_on_primary_does_not_trigger_fallback(self):
+        """KEY REGRESSION TEST for v1.8.8: a 500 server error must
+        propagate as APIError(500), NOT trigger the combined→separate
+        fallback. The pre-v1.8.8 ``except Exception`` swallowed this
+        and silently called the wrong endpoint."""
+        from custom_components.vag_connect.cariad.exceptions import APIError
+
+        # 500 on v1 combined; if we accidentally fall back, we'd see
+        # additional requests. We give exactly one 500-response so any
+        # accidental retry would surface (StopIteration on next call).
+        responses = [self._resp(500, text="backend down")]
+        client, session, idx = self._client_with_responses(responses)
+        with patch("custom_components.vag_connect.cariad.api.base.asyncio.sleep",
+                   new=AsyncMock(return_value=None)):
+            with pytest.raises(APIError) as exc:
+                asyncio.get_event_loop().run_until_complete(client.command_lock("VIN1"))
+        assert exc.value.status == 500
+        # The 500 itself is retried 4 times (3 backoff retries inside
+        # _request) — that's the existing behaviour. What MUST NOT happen
+        # is a fall-through to the separate access/lock endpoint.
+        urls = [call.args[1] for call in session.request.call_args_list]
+        assert all("access/lock-unlock" in u for u in urls), (
+            f"Expected only combined-endpoint URLs (lock-unlock); got: {urls}"
+        )
+        assert not any(u.endswith("/access/lock") for u in urls), (
+            f"500 must NOT trigger fallback to separate /access/lock; got: {urls}"
+        )
+
+    def test_unlock_passes_spin_in_both_payloads(self):
+        """When falling back from combined to separate endpoint after a
+        404, the S-PIN must be present in *both* payloads — the legacy
+        separate /access/unlock endpoint accepts the PIN in the body."""
+        import json as _json
+        responses = [self._resp(404),  # v1 combined
+                     self._resp(404),  # v2 combined
+                     self._resp(204)]  # v1 separate succeeds
+        client, session, idx = self._client_with_responses(responses)
+        with patch("custom_components.vag_connect.cariad.api.base.asyncio.sleep",
+                   new=AsyncMock(return_value=None)):
+            asyncio.get_event_loop().run_until_complete(
+                client.command_unlock("VIN1", spin="1234")
+            )
+        # Inspect payloads: kwargs['json'] on each request
+        payloads = [call.kwargs.get("json") for call in session.request.call_args_list]
+        assert payloads[0] == {"action": "unlock", "spin": "1234"}, payloads[0]
+        assert payloads[1] == {"action": "unlock", "spin": "1234"}, payloads[1]
+        assert payloads[2] == {"spin": "1234"}, payloads[2]
+
+
 # ── BaseClient refresh logic ──────────────────────────────────────────────────
 
 class TestBaseClientRefresh:
