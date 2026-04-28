@@ -23,6 +23,120 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ## [Unreleased]
 
+## [1.8.8] - 2026-04-29
+
+### Session 3B — CARIAD v1/v2 + combined/separate endpoint dispatch für Lock/Climate/Charging
+
+Erweitert das v1/v2-Fallback-Pattern aus Session 3A (4 Set-Value-Commands)
+auf die sechs verbleibenden Hauptkommandos: `lock`, `unlock`,
+`climate_start`, `climate_stop`, `charging_start`, `charging_stop`. Plus:
+schließt einen versteckten Bug aus dem Pre-1.8.8-Code, in dem `except
+Exception` Auth-Failures, Rate-Limits und 5xx-Errors als
+Endpoint-Mismatches fehlinterpretierte und still den Fallback-Pfad
+ansprach.
+
+**`cariad/api/vw_eu.py` — neuer Helper `_post_command_with_fallback_paths`:**
+
+Dispatcht in dieser Reihenfolge, jeder Aufruf via bestehendes
+`_post_command` (das schon v1→v2 Fallback macht):
+
+1. `primary_suffix` (combined endpoint) auf v1
+2. `primary_suffix` auf v2 (bei v1-404)
+3. `fallback_suffix` (separate endpoint) auf v1 (bei v2-404)
+4. `fallback_suffix` auf v2 (bei v1-404)
+
+**Kritische Verschärfung**: Fallback wird **nur** bei HTTP 404 ausgelöst.
+Auth-Failures (401), Permission-Errors (403), Rate-Limits (429),
+Backend-5xx und transiente Netzwerk-Fehler propagieren wie sie sollen
+und werden vom Coordinator über `classify_command_failure` korrekt
+klassifiziert.
+
+**Refactor — 6 Commands nutzen den Helper:**
+
+- `command_lock`: `access/lock-unlock` → `access/lock`
+- `command_unlock`: `access/lock-unlock` → `access/unlock` (S-PIN in
+  beiden Payloads, falls gesetzt)
+- `command_start_climate`: `climatisation/start-stop` →
+  `climatisation/start` (mit Default-Parametern wie vorher: 21°C,
+  Window-Heating, ohne externe Stromversorgung)
+- `command_stop_climate`: `climatisation/start-stop` →
+  `climatisation/stop`
+- `command_start_charging`: `charging/start-stop` → `charging/start`
+- `command_stop_charging`: `charging/start-stop` → `charging/stop`
+
+**`AudiClient` profitiert automatisch** über `VWEUClient`-Inheritance —
+keine separaten Audi-Änderungen.
+
+**Tests** (`tests/test_cariad.py::TestVWEUFallbackPaths`):
+
+- 4 neue Tests:
+  1. v1-Primary 404 → v2-Primary genutzt (kein Fallback-Endpoint
+     berührt)
+  2. Beide Primaries 404 → Fallback-Endpoint v1 genutzt
+  3. **Regressionstest**: 500 vom Primary löst KEINEN Fallback aus
+     (Hauptzweck dieser Session — vorheriger Code hätte still den
+     Fallback-Endpoint angefragt und einen Backend-Hiccup als
+     Endpoint-Mismatch maskiert)
+  4. `command_unlock` mit S-PIN passt PIN in alle drei Payloads
+     (combined v1, combined v2, separate v1)
+- Existing Smoke-Tests in `TestVWEUCommands` bleiben ohne Anpassung
+  pass — alle 6 Commands akzeptieren weiterhin 204 vom ersten Endpoint
+  und brauchen nie den Fallback-Pfad im Happy-Path-Test.
+
+**Bewusst NICHT in dieser Session enthalten** (Scope-Disziplin):
+
+- **PPC/PPE Graceful Degradation per VIN-Heuristik** (`devicePlatform`
+  Detection, Skip command-entities für E³-1.2-Vehicles): kommt in
+  v1.8.9 — eigener Scope mit Repair-Notice + Tracking-Issue.
+- **Optimistic-Update + State-Restoration** für lock/climate
+  (`skodaconnect/homeassistant-myskoda` #832 Pattern): braucht eigenen
+  Hotfix mit UI-Layer (entity availability state machine), nicht hier.
+- **LEGACY_MBB Routing** für ältere T6/MQB Vehicles: blockiert auf
+  T6-Logs von Tobias (#76); kein spekulatives Code-Schreiben.
+
+### Session 3B — CARIAD v1/v2 + Combined/Separate Endpoint Dispatch for Lock/Climate/Charging (English)
+
+Extends the v1/v2 fallback pattern from Session 3A (4 set-value commands)
+to the six remaining main commands: `lock`, `unlock`, `climate_start`,
+`climate_stop`, `charging_start`, `charging_stop`. Also: closes a
+hidden bug in pre-1.8.8 code where `except Exception` misclassified
+auth failures, rate limits and 5xx errors as endpoint mismatches and
+silently called the fallback path.
+
+**`cariad/api/vw_eu.py` — new helper `_post_command_with_fallback_paths`:**
+
+Dispatches in this order, each call via the existing `_post_command`
+(which already handles v1→v2 fallback):
+
+1. `primary_suffix` (combined endpoint) on v1
+2. `primary_suffix` on v2 (on v1-404)
+3. `fallback_suffix` (separate endpoint) on v1 (on v2-404)
+4. `fallback_suffix` on v2 (on v1-404)
+
+**Critical narrowing**: fallback fires **only** on HTTP 404. Auth
+failures (401), permission errors (403), rate limits (429), backend
+5xx and transient network errors propagate as they should and are
+correctly classified by the coordinator via `classify_command_failure`.
+
+**Refactor — 6 commands use the helper:** `command_lock`,
+`command_unlock`, `command_start_climate`, `command_stop_climate`,
+`command_start_charging`, `command_stop_charging`. `AudiClient` benefits
+automatically via `VWEUClient` inheritance.
+
+**Tests** (`tests/test_cariad.py::TestVWEUFallbackPaths`):
+
+4 new tests including the key regression test that a 500 on the
+primary endpoint must NOT trigger the fallback (the main purpose of
+this session — the previous code would have silently called the
+fallback and masked a backend hiccup as an endpoint mismatch).
+
+**Deliberately NOT in this session** (scope discipline):
+
+- PPC/PPE graceful degradation via VIN heuristic — v1.8.9.
+- Optimistic-update + state restoration for lock/climate (myskoda
+  #832) — needs its own UI-layer hotfix.
+- LEGACY_MBB routing for older T6/MQB — blocked on T6 logs from
+  Tobias (#76); no speculative code.
 ## [1.8.7] - 2026-04-29
 
 ### Defensive Programming Pass — Retry-Härtung + Stale-Cache + Token-Refresh-Schutz
