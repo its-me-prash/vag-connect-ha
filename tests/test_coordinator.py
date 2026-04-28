@@ -395,3 +395,78 @@ class TestIsChargingReset:
         data = {"is_charging": False, "plug_connected": True, "latitude": None, "longitude": None}
         result = asyncio.get_event_loop().run_until_complete(coord._enrich(data))
         assert result["is_charging"] is False
+
+
+# ── v1.8.7 hardening: failure tolerance + stale-cache window ────────────────
+
+class TestVehicleAvailabilityTolerance:
+    """v1.8.7 — ``is_vehicle_available`` must tolerate up to 3 consecutive
+    failures and serve cached data for up to 6h after the last good poll
+    before flipping to unavailable. Patterns from we_connect_id #215 and
+    myskoda #731 — single-poll backend hiccups should not break automations.
+    """
+
+    def _make_coord(self):
+        coord = VagConnectCoordinator.__new__(VagConnectCoordinator)
+        coord.vehicle_success = {}
+        coord.vehicle_failure_count = {}
+        coord.vehicle_last_good_at = {}
+        coord.vehicles = {}
+        return coord
+
+    def test_unknown_vin_defaults_to_available(self):
+        """Unknown VIN (not yet polled) returns True so initial setup
+        doesn't blank entities before the first poll."""
+        coord = self._make_coord()
+        assert coord.is_vehicle_available("WVWZZZAUZLW000001") is True
+
+    def test_one_failure_still_available(self):
+        """One failed poll is below the tolerance threshold (3)."""
+        coord = self._make_coord()
+        coord.vehicle_failure_count["VIN1"] = 1
+        assert coord.is_vehicle_available("VIN1") is True
+
+    def test_two_failures_still_available(self):
+        """Two failed polls is still below threshold."""
+        coord = self._make_coord()
+        coord.vehicle_failure_count["VIN1"] = 2
+        assert coord.is_vehicle_available("VIN1") is True
+
+    def test_three_failures_no_recent_good_unavailable(self):
+        """At threshold with no recent good data → unavailable."""
+        coord = self._make_coord()
+        coord.vehicle_failure_count["VIN1"] = 3
+        # No entry in vehicle_last_good_at
+        assert coord.is_vehicle_available("VIN1") is False
+
+    def test_past_threshold_with_recent_good_still_available(self):
+        """Even past tolerance, recent good poll within stale window
+        keeps the vehicle visible — myskoda #731 'old but visible' UX."""
+        from datetime import datetime, timezone, timedelta
+        coord = self._make_coord()
+        coord.vehicle_failure_count["VIN1"] = 10
+        # Last good poll was 1 hour ago — well within 6h window
+        coord.vehicle_last_good_at["VIN1"] = (
+            datetime.now(tz=timezone.utc) - timedelta(hours=1)
+        )
+        assert coord.is_vehicle_available("VIN1") is True
+
+    def test_past_threshold_and_past_stale_window_unavailable(self):
+        """Past tolerance AND past stale window → truly unavailable."""
+        from datetime import datetime, timezone, timedelta
+        coord = self._make_coord()
+        coord.vehicle_failure_count["VIN1"] = 10
+        # Last good poll was 7 hours ago — past 6h stale window
+        coord.vehicle_last_good_at["VIN1"] = (
+            datetime.now(tz=timezone.utc) - timedelta(hours=7)
+        )
+        assert coord.is_vehicle_available("VIN1") is False
+
+    def test_legacy_coord_without_v187_attrs_still_available(self):
+        """Coordinators upgraded from <1.8.7 may lack the new dicts —
+        defensive default of True must apply via getattr fallback."""
+        coord = VagConnectCoordinator.__new__(VagConnectCoordinator)
+        # Deliberately do NOT set vehicle_failure_count / vehicle_last_good_at
+        # to simulate an instance constructed before the v1.8.7 __init__
+        # changes (e.g. tests bypassing __init__).
+        assert coord.is_vehicle_available("VIN1") is True

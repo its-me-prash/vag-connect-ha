@@ -353,10 +353,14 @@ class TestBaseClient:
         client = VWEUClient(session, "u@t.de", "pw")
         client._tokens = TokenSet("acc", "ref", "id")
 
-        with pytest.raises(APIError) as exc:
-            asyncio.get_event_loop().run_until_complete(
-                client._request("GET", "https://example.com/api")
-            )
+        # v1.8.7: 500 is now retried up to 3 times (was 2). Patch sleep
+        # so the test finishes quickly instead of waiting 3+6+12 seconds.
+        with patch("custom_components.vag_connect.cariad.api.base.asyncio.sleep",
+                   new=AsyncMock(return_value=None)):
+            with pytest.raises(APIError) as exc:
+                asyncio.get_event_loop().run_until_complete(
+                    client._request("GET", "https://example.com/api")
+                )
         assert exc.value.status == 500
 
     def test_request_204_returns_none(self):
@@ -995,6 +999,142 @@ class TestBaseClientRefresh:
 
         asyncio.get_event_loop().run_until_complete(client.authenticate())
         assert client._tokens.access_token == "fresh_token"
+
+
+# ── v1.8.7 hardening: 504, transient network errors, refresh-storm guard ─────
+
+class TestBaseClientHardening:
+    """v1.8.7 — retry coverage extended to 504 + transient network errors,
+    plus token-refresh storm protection capped at 3/h."""
+
+    @staticmethod
+    def _resp(status: int, json_data=None, text: str = ""):
+        resp = AsyncMock()
+        resp.status = status
+        resp.headers = {"Content-Type": "application/json"}
+        resp.json = AsyncMock(return_value=json_data or {})
+        resp.text = AsyncMock(return_value=text)
+        resp.__aenter__ = AsyncMock(return_value=resp)
+        resp.__aexit__ = AsyncMock(return_value=False)
+        return resp
+
+    @staticmethod
+    def _client_with_session(session):
+        from custom_components.vag_connect.cariad.api.vw_eu import VWEUClient
+        from custom_components.vag_connect.cariad.models import TokenSet
+        client = VWEUClient(session, "u@t.de", "pw")
+        client._tokens = TokenSet("acc", "ref", "id")
+        return client
+
+    def test_request_retries_on_504_then_succeeds(self):
+        """504 Gateway Timeout is now retried (was previously fatal)."""
+        responses = [self._resp(504, text="GW timeout"),
+                     self._resp(200, json_data={"ok": True})]
+        idx = 0
+
+        def side_effect(*args, **kwargs):
+            nonlocal idx
+            r = responses[min(idx, len(responses) - 1)]
+            idx += 1
+            return r
+
+        session = MagicMock()
+        session.request = MagicMock(side_effect=side_effect)
+        client = self._client_with_session(session)
+        with patch("custom_components.vag_connect.cariad.api.base.asyncio.sleep",
+                   new=AsyncMock(return_value=None)):
+            result = asyncio.get_event_loop().run_until_complete(
+                client._request("GET", "https://example.com/api")
+            )
+        assert result == {"ok": True}
+        assert idx >= 2  # at least one retry happened
+
+    def test_request_retries_on_client_connector_error(self):
+        """ClientConnectorError (DNS / connection refused) is retried, not raised."""
+        from aiohttp import ClientConnectorError
+
+        # Build a ClientConnectorError using its real signature
+        connection_key = MagicMock()
+        os_error = OSError("nodename nor servname provided, or not known")
+        cc_err = ClientConnectorError(connection_key, os_error)
+
+        ok_resp = self._resp(200, json_data={"recovered": True})
+        responses_or_errors = [cc_err, ok_resp]
+        idx = 0
+
+        def side_effect(*args, **kwargs):
+            nonlocal idx
+            item = responses_or_errors[min(idx, len(responses_or_errors) - 1)]
+            idx += 1
+            if isinstance(item, Exception):
+                raise item
+            return item
+
+        session = MagicMock()
+        session.request = MagicMock(side_effect=side_effect)
+        client = self._client_with_session(session)
+        with patch("custom_components.vag_connect.cariad.api.base.asyncio.sleep",
+                   new=AsyncMock(return_value=None)):
+            result = asyncio.get_event_loop().run_until_complete(
+                client._request("GET", "https://example.com/api")
+            )
+        assert result == {"recovered": True}
+
+    def test_request_raises_api_error_after_persistent_transient(self):
+        """After 4 attempts at a transient error, surface APIError(0, ...)."""
+        from aiohttp import ServerDisconnectedError
+        from custom_components.vag_connect.cariad.exceptions import APIError
+
+        session = MagicMock()
+        session.request = MagicMock(side_effect=ServerDisconnectedError())
+        client = self._client_with_session(session)
+        with patch("custom_components.vag_connect.cariad.api.base.asyncio.sleep",
+                   new=AsyncMock(return_value=None)):
+            with pytest.raises(APIError) as exc:
+                asyncio.get_event_loop().run_until_complete(
+                    client._request("GET", "https://example.com/api")
+                )
+        assert exc.value.status == 0
+        assert "transient" in str(exc.value).lower()
+
+    def test_refresh_storm_protection_raises_after_threshold(self):
+        """More than 3 refresh attempts in 1h must raise AuthenticationError."""
+        from custom_components.vag_connect.cariad.api.vw_eu import VWEUClient
+        from custom_components.vag_connect.cariad.models import TokenSet
+        from custom_components.vag_connect.cariad.exceptions import AuthenticationError
+
+        client = VWEUClient(MagicMock(), "u@t.de", "pw")
+        client._tokens = TokenSet("acc", "ref", "id")
+        # Mock the inner refresh path so it always succeeds — we want to
+        # verify the storm guard, not the refresh logic itself.
+        client._auth.refresh = AsyncMock(return_value=TokenSet("acc2", "ref2", "id2"))
+
+        loop = asyncio.get_event_loop()
+        # First 3 refreshes succeed (within threshold)
+        for _ in range(3):
+            loop.run_until_complete(client._refresh_tokens())
+        # Fourth must raise
+        with pytest.raises(AuthenticationError, match="storm"):
+            loop.run_until_complete(client._refresh_tokens())
+
+    def test_refresh_storm_window_resets_after_age_out(self):
+        """Old refresh timestamps must be pruned out of the rolling window."""
+        from custom_components.vag_connect.cariad.api.vw_eu import VWEUClient
+        from custom_components.vag_connect.cariad.models import TokenSet
+        import time as _time
+
+        client = VWEUClient(MagicMock(), "u@t.de", "pw")
+        client._tokens = TokenSet("acc", "ref", "id")
+        client._auth.refresh = AsyncMock(return_value=TokenSet("acc2", "ref2", "id2"))
+
+        # Plant 3 ancient (>1h old) timestamps and one recent — should NOT trip
+        old = _time.monotonic() - 7200  # 2h ago
+        client._refresh_history = [old, old, old, _time.monotonic() - 5]
+        # New refresh should succeed (only the recent one survives prune)
+        asyncio.get_event_loop().run_until_complete(client._refresh_tokens())
+        # History after prune should contain at most 2 entries (the recent
+        # one + the brand new one)
+        assert len(client._refresh_history) <= 2
 
 
 # ── Škoda get_status ──────────────────────────────────────────────────────────
