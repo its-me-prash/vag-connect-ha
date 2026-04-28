@@ -23,6 +23,90 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ## [Unreleased]
 
+## [1.8.6] - 2026-04-29
+
+### Docs Truthfulness Hotfix — README + 8 translations + CI badge
+
+Pure documentation release. Kein Code-Change, keine Verhaltensänderung —
+nur die README-Familie auf den realen v1.8.5-Stand bringen und die strategische
+Multi-Brand-Successor-Positionierung aufnehmen.
+
+**Was korrigiert wurde:**
+
+- **README.en.md sagte "cloud-push architecture"** — falsch seit v1.8.0
+  (`iot_class` ist `cloud_polling`). Jetzt korrekt.
+- **README.en.md sagte "14 services"**, README.md sagte "16 services" —
+  beide jetzt vereinheitlicht auf die echte Zahl (14, verifiziert in
+  `services.yaml`).
+- **Hardcoded Test-Badge** ("Tests-337/337" in 7 Übersetzungen,
+  "Tests-363/363" im DE-Master) ersetzt durch dynamischen
+  GitHub-Actions-CI-Badge — driftet nicht mehr auseinander.
+
+**Was neu hinzugekommen ist (in allen 8 Sprachen identisch):**
+
+1. **Successor-Box** direkt nach dem Pitch: Aktiv gepflegter Multi-Brand-Nachfolger
+   für `mitch-dc/volkswagen_we_connect_id` (archiviert 2025-10-29) und
+   `skodaconnect/homeassistant-skodaconnect` (deprecated 2025-03-14). Eine
+   Integration für Audi, VW, Škoda, SEAT, CUPRA, Porsche und VW US/CA.
+2. **"Aktueller Stand & ehrliche Limits (v1.8.5)" Section** mit fünf
+   transparenten Disclaimern:
+   - Capability-Gating aktuell nur SEAT/CUPRA Flash/Wake
+   - CARIAD v1/v2 Auto-Fallback aktuell nur 4 Set-Value Commands
+   - Image-Plattform: kein offizielles Render-API existiert
+   - PPC/PPE-Plattform (Audi Q5 2025, Q6 e-tron, A5/S5, A6 e-tron):
+     Graceful Degradation statt 404, Endpoints noch nicht reverse-engineered
+   - Privacy-Voraussetzung "Standort teilen" in der App muss aktiv sein
+
+**Warum jetzt:**
+
+Die unabhängige Multi-Source-Audit vom 29.04.2026 (siehe
+`docs/AUDIT_2026-04-29.md`) hat festgestellt: Code und Releases sind weiter
+als die README. Vor neuen Features (Session 3B/3C/3S) sollten Tester und
+HACS-Browser realistische Erwartungen bekommen — sonst sieht die Integration
+für sich beim ersten Klick "kaputt" aus, obwohl sie bewusst capability-gated
+oder graceful-degraded.
+
+### Docs Truthfulness Hotfix — README + 8 Translations + CI Badge (English)
+
+Pure documentation release. No code change, no behaviour change — just
+aligning the README family to the actual v1.8.5 state and adding the
+strategic multi-brand-successor positioning.
+
+**What was corrected:**
+
+- README.en.md said "cloud-push architecture" — wrong since v1.8.0
+  (`iot_class` is `cloud_polling`). Now correct.
+- README.en.md said "14 services", README.md said "16 services" — both
+  now unified to the real count (14, verified in `services.yaml`).
+- Hardcoded test badge ("Tests-337/337" in 7 translations,
+  "Tests-363/363" in the DE master) replaced by a dynamic
+  GitHub Actions CI badge — no more drift.
+
+**What was added (identically in all 8 languages):**
+
+1. **Successor box** right after the pitch: active multi-brand successor
+   to `mitch-dc/volkswagen_we_connect_id` (archived 2025-10-29) and
+   `skodaconnect/homeassistant-skodaconnect` (deprecated 2025-03-14).
+   One integration for Audi, VW, Škoda, SEAT, CUPRA, Porsche and VW US/CA.
+2. **"Current state & honest limits (v1.8.5)" section** with five
+   transparent disclaimers:
+   - Capability-gating currently only SEAT/CUPRA flash/wake
+   - CARIAD v1/v2 auto-fallback currently only 4 set-value commands
+   - Image platform: no official render API exists
+   - PPC/PPE platform (Audi Q5 2025, Q6 e-tron, A5/S5, A6 e-tron):
+     graceful degradation instead of 404, endpoints not yet
+     reverse-engineered publicly
+   - Privacy prerequisite "Share my position" must be enabled in the app
+
+**Why now:**
+
+The independent multi-source audit on 2026-04-29 (see
+`docs/AUDIT_2026-04-29.md`) found: code and releases are ahead of the
+README. Before shipping new features (Session 3B/3C/3S), testers and
+HACS browsers should get realistic expectations — otherwise the
+integration looks "broken" on first click, when it is in fact
+deliberately capability-gated or graceful-degraded.
+
 ## [1.8.5] - 2026-04-27
 
 ### Session 3A — Command Profile Layer foundation + v1/v2 fallback (#61, #51, #74)
