@@ -46,6 +46,24 @@ _CC_MIN_INTERVAL_S = 180
 # between picking up legitimate changes and avoiding unnecessary calls.
 _CAPABILITIES_TTL = timedelta(hours=24)
 
+# Per-VIN failure tolerance before marking the vehicle unavailable.
+# Pattern from `mitch-dc/volkswagen_we_connect_id` #215: a single failed
+# poll should not flip every entity on the vehicle to "unavailable" because
+# the VAG backend is intermittently flaky (especially weekends and during
+# software maintenance windows). Three consecutive failures is the same
+# threshold the official We Connect ID app uses before showing an offline
+# state to the user.
+_FAILURE_TOLERANCE = 3
+
+# Stale-cache window: even after exceeding the failure tolerance, keep
+# reporting the vehicle as available if we have data younger than this
+# window. Pattern from `skodaconnect/homeassistant-myskoda` #731: users
+# strongly prefer "old but visible" over "unavailable" — automations
+# triggered by the last known state are still useful, and the user can see
+# from `last_updated_at` that the data is stale. 6 hours covers normal
+# weekend backend outages without serving truly outdated data.
+_STALE_CACHE_WINDOW = timedelta(hours=6)
+
 
 @dataclass
 class FeatureState:
@@ -92,6 +110,19 @@ class VagConnectCoordinator(DataUpdateCoordinator):
         # Per-VIN poll success tracking — entities use this for availability
         # so a single failing vehicle doesn't blank out the others.
         self.vehicle_success: dict[str, bool] = {}
+
+        # Per-VIN consecutive-failure counter (v1.8.7). Reset to 0 on every
+        # successful poll. Used by ``is_vehicle_available`` to apply
+        # ``_FAILURE_TOLERANCE`` before flipping availability — prevents
+        # single-poll flicker from breaking automations.
+        self.vehicle_failure_count: dict[str, int] = {}
+
+        # Per-VIN timestamp of the last successful poll (v1.8.7). Used by
+        # ``is_vehicle_available`` together with ``_STALE_CACHE_WINDOW`` to
+        # keep entities visible during transient backend outages. Also
+        # exposed in diagnostics so users can see how stale the cached
+        # state is.
+        self.vehicle_last_good_at: dict[str, datetime] = {}
 
         # Per-VIN capabilities cache. Hydrated best-effort during setup.
         # 2A foundation only — entity platforms don't read from this yet.
@@ -254,6 +285,13 @@ class VagConnectCoordinator(DataUpdateCoordinator):
                 )
                 fresh: dict[str, Any] = {}
                 any_success = False
+                # Lazy-initialise v1.8.7 tracking dicts so tests that bypass
+                # __init__ (and pre-1.8.7 instances reloaded after upgrade)
+                # still work.
+                if not hasattr(self, "vehicle_failure_count"):
+                    self.vehicle_failure_count = {}
+                if not hasattr(self, "vehicle_last_good_at"):
+                    self.vehicle_last_good_at = {}
                 for vin, result in zip(vins, results):
                     if isinstance(result, Exception):
                         _LOGGER.debug("Poll failed for %s: %s", mask_vin(vin), result)
@@ -261,6 +299,9 @@ class VagConnectCoordinator(DataUpdateCoordinator):
                         old["_poll_failed"] = True
                         fresh[vin] = old
                         self.vehicle_success[vin] = False
+                        self.vehicle_failure_count[vin] = (
+                            self.vehicle_failure_count.get(vin, 0) + 1
+                        )
                     elif isinstance(result, VehicleData):
                         data = result.to_dict()
                         data["_client"] = self._cariad_client
@@ -268,9 +309,14 @@ class VagConnectCoordinator(DataUpdateCoordinator):
                         fresh[vin] = await self._enrich(data)
                         any_success = True
                         self.vehicle_success[vin] = True
+                        self.vehicle_failure_count[vin] = 0
+                        self.vehicle_last_good_at[vin] = datetime.now(tz=timezone.utc)
                     else:
                         fresh[vin] = self.vehicles.get(vin, {})
                         self.vehicle_success[vin] = False
+                        self.vehicle_failure_count[vin] = (
+                            self.vehicle_failure_count.get(vin, 0) + 1
+                        )
                 with self._vehicles_lock:
                     self.vehicles.update(fresh)
                 await self._async_push_update(fresh, success=any_success)
@@ -285,9 +331,18 @@ class VagConnectCoordinator(DataUpdateCoordinator):
                 _LOGGER.error("VAG Connect poll error: %s", err)
                 if not hasattr(self, "vehicle_success"):
                     self.vehicle_success = {}
-                # Mark all known VINs as failed — avoids stale-as-fresh
+                if not hasattr(self, "vehicle_failure_count"):
+                    self.vehicle_failure_count = {}
+                # Mark all known VINs as failed — avoids stale-as-fresh.
+                # ``is_vehicle_available`` still tolerates this for up to
+                # ``_FAILURE_TOLERANCE`` consecutive failures and within
+                # ``_STALE_CACHE_WINDOW`` so single-poll backend hiccups
+                # don't ripple through every entity (we_connect_id #215).
                 for vin in list(self.vehicles.keys()):
                     self.vehicle_success[vin] = False
+                    self.vehicle_failure_count[vin] = (
+                        self.vehicle_failure_count.get(vin, 0) + 1
+                    )
                 await self._async_push_update({}, success=False)
 
     async def async_shutdown(self) -> None:
@@ -302,15 +357,36 @@ class VagConnectCoordinator(DataUpdateCoordinator):
         return self._started
 
     def is_vehicle_available(self, vin: str) -> bool:
-        """Return True if the last poll for *vin* succeeded.
+        """Return True if *vin* should be reported available to entities.
 
-        Used by entities to expose per-VIN availability so a single failing
-        vehicle does not blank out entities of other vehicles in the same
-        account. Defaults to True for unknown VINs (covers initial setup).
+        Two-stage tolerance (v1.8.7):
+
+        1. Up to ``_FAILURE_TOLERANCE`` consecutive failed polls do not
+           flip the vehicle to unavailable. Single-poll backend hiccups
+           are common on the CARIAD BFF and would otherwise break
+           automations watching binary sensors (we_connect_id #215).
+        2. Even past the tolerance threshold, if we still have a recent
+           successful poll within ``_STALE_CACHE_WINDOW``, keep the
+           vehicle visible. The cached state is shown with its
+           ``last_updated_at`` so the user can tell it is stale; this
+           matches the UX preference documented in myskoda #731.
+
+        Defaults to True for unknown VINs (covers initial setup).
         """
-        # Lazy default so tests bypassing __init__ still work.
-        success: dict[str, bool] = getattr(self, "vehicle_success", {}) or {}
-        return bool(success.get(vin, True))
+        failures: dict[str, int] = getattr(self, "vehicle_failure_count", {}) or {}
+        count = failures.get(vin, 0)
+        if count < _FAILURE_TOLERANCE:
+            return True
+        last_good_map: dict[str, datetime] = (
+            getattr(self, "vehicle_last_good_at", {}) or {}
+        )
+        last_good = last_good_map.get(vin)
+        if last_good is not None:
+            age = datetime.now(tz=timezone.utc) - last_good
+            if age < _STALE_CACHE_WINDOW:
+                return True
+        # Truly unavailable — past tolerance and stale-cache window.
+        return False
 
     # ── Capabilities & feature-state plumbing (Session 2A foundation) ──────
 

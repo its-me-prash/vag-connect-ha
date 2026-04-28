@@ -23,6 +23,158 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ## [Unreleased]
 
+## [1.8.7] - 2026-04-29
+
+### Defensive Programming Pass — Retry-Härtung + Stale-Cache + Token-Refresh-Schutz
+
+Auswertung der unabhängigen Multi-Source-Audit (`docs/AUDIT_2026-04-29.md`):
+**Sechs von sechs untersuchten Reference-Repos** (we_connect_id, myskoda,
+audi_connect_ha, pycupra, volkswagencarnet, CarConnectivity-Connectors)
+haben dieselben Stabilitätsprobleme dokumentiert. v1.8.7 schließt vier
+davon zentral statt punktuell pro API-Client.
+
+**`cariad/api/base.py` — `_request()` Retry-Layer:**
+
+- **HTTP 504 Gateway Timeout** ist jetzt Teil der Retry-Liste (war vorher
+  fatal). Tritt regelmäßig auf der CARIAD BFF an Wochenenden auf
+  (Quelle: `mitch-dc/volkswagen_we_connect_id` #165).
+- **Server-Error Retries** auf 3 Versuche erhöht (war 2): 3s/6s/12s
+  exponential backoff für 500/502/503/504.
+- **Transiente Netzwerk-Fehler** werden jetzt mit demselben Backoff
+  gehandhabt: `ClientConnectorError` (DNS/Connection refused),
+  `ServerDisconnectedError` (Mid-Stream-Abbruch),
+  `ClientPayloadError`, `asyncio.TimeoutError`. Wurden vorher als fatal
+  raised und teilweise von oberen Schichten als Auth-Failure
+  fehlinterpretiert (Quelle: `mitch-dc/volkswagen_we_connect_id` #166).
+  Nach 4 erfolglosen Versuchen wird `APIError(0, ...)` mit prefix
+  `"transient: ..."` raised — eindeutig unterscheidbar von HTTP-Errors.
+
+**`cariad/api/base.py` — `_refresh_tokens()` Storm-Protection:**
+
+- **Maximal 3 Token-Refresh-Versuche pro rollender Stunde.** Sliding
+  Window mit `time.monotonic()`-Timestamps in `_refresh_history`. Bei
+  Überschreitung wird `AuthenticationError("Token refresh storm — please
+  reauthenticate")` raised; der Coordinator triggert daraufhin den
+  HA-Reauth-Flow statt weiter zu loopen. Verhindert das Spirale-Pattern
+  aus `skodaconnect/myskoda` #976 und
+  `robinostlund/homeassistant-volkswagencarnet` #683, bei dem das
+  Backend nach wiederholten Login-Versuchen die IP / das Konto temporär
+  sperrt.
+
+**`coordinator.py` — Failure-Tolerance + Stale-Cache:**
+
+- **`is_vehicle_available(vin)` toleriert jetzt bis zu 3 aufeinanderfolgende
+  Poll-Failures** bevor die Verfügbarkeit auf False kippt
+  (`_FAILURE_TOLERANCE = 3`, Pattern aus `mitch-dc/volkswagen_we_connect_id`
+  #215). Single-Poll-Hiccups auf der CARIAD BFF brechen Automatisierungen
+  nicht mehr ab.
+- **Stale-Cache-Window von 6 Stunden** (`_STALE_CACHE_WINDOW`):
+  selbst nach Überschreitung der Failure-Tolerance bleibt das Fahrzeug
+  verfügbar wenn der letzte erfolgreiche Poll innerhalb der letzten 6h
+  lag. Pattern aus `skodaconnect/homeassistant-myskoda` #731 — User
+  bevorzugen "alt aber sichtbar" über "unavailable", weil
+  Automatisierungen weiter funktionieren und `last_updated_at` die
+  Staleness signalisiert.
+- Neue per-VIN Tracking-Dicts: `vehicle_failure_count` (Reset auf 0 bei
+  jedem Erfolg) und `vehicle_last_good_at` (Timestamp letzter Erfolg —
+  später auch für Diagnostics in Session 4).
+- Lazy-Init mit `getattr(...)`-Fallback, damit Coordinators die vor
+  v1.8.7 ohne `__init__` instanziiert wurden (Tests, Reload nach
+  Upgrade) nicht crashen.
+
+**Tests:**
+
+- `tests/test_cariad.py::TestBaseClientHardening` — 5 neue Tests:
+  504-Retry, ClientConnectorError-Retry, persistente Transient → APIError(0),
+  Refresh-Storm-Protection, Refresh-Window-Pruning.
+- `tests/test_coordinator.py::TestVehicleAvailabilityTolerance` — 7 neue
+  Tests: Toleranz unter Schwelle, Verfügbarkeit über Schwelle ohne
+  Recent-Good, Stale-Window-Hit, Stale-Window-Miss, Legacy-Coord-Fallback.
+- `asyncio.sleep` wird in Retry-Tests gepatched, damit die Suite nicht
+  länger läuft — der existierende 500-Test wartete vorher 9s, jetzt
+  ohne Patch 21s; mit Patch in Sekundenbruchteilen.
+
+**Bewusst NICHT in dieser Session enthalten** (Scope-Disziplin):
+
+- EULA-Repair-Issue (`ir.async_create_issue` mit Direktlink): braucht
+  eigene Translation-Strings in 8 Sprachen, kommt in v1.8.8.
+- Generic-`except Exception` Audit quer durch alle API-Clients: größerer
+  Refactor, eigener Hotfix.
+
+### Defensive Programming Pass — Retry Hardening + Stale-Cache + Token-Refresh Guard (English)
+
+Synthesis of the independent multi-source audit
+(`docs/AUDIT_2026-04-29.md`): **six out of six reference repos**
+investigated (we_connect_id, myskoda, audi_connect_ha, pycupra,
+volkswagencarnet, CarConnectivity connectors) have documented the same
+stability issues. v1.8.7 closes four of them centrally instead of
+per-API-client.
+
+**`cariad/api/base.py` — `_request()` retry layer:**
+
+- **HTTP 504 Gateway Timeout** added to the retry list (was previously
+  fatal). Routine on the CARIAD BFF on weekends (source:
+  `mitch-dc/volkswagen_we_connect_id` #165).
+- **Server-error retries raised to 3 attempts** (was 2): 3s/6s/12s
+  exponential backoff for 500/502/503/504.
+- **Transient network errors** now retried with the same backoff:
+  `ClientConnectorError` (DNS / connection refused),
+  `ServerDisconnectedError` (mid-stream disconnect),
+  `ClientPayloadError`, `asyncio.TimeoutError`. Previously raised as
+  fatal and sometimes misclassified by upper layers as auth failure
+  (source: `mitch-dc/volkswagen_we_connect_id` #166). After 4 failed
+  attempts, surfaces as `APIError(0, ...)` with `"transient: ..."`
+  prefix — unambiguously distinguishable from HTTP errors.
+
+**`cariad/api/base.py` — `_refresh_tokens()` storm protection:**
+
+- **Maximum 3 token-refresh attempts per rolling hour.** Sliding window
+  using `time.monotonic()` timestamps in `_refresh_history`. Exceeding
+  raises `AuthenticationError("Token refresh storm — please
+  reauthenticate")`; the coordinator then triggers the HA reauth flow
+  instead of looping. Prevents the spiral pattern from
+  `skodaconnect/myskoda` #976 and
+  `robinostlund/homeassistant-volkswagencarnet` #683, where the backend
+  temporarily bans the IP / locks the account after repeated login
+  attempts.
+
+**`coordinator.py` — failure tolerance + stale-cache:**
+
+- **`is_vehicle_available(vin)` now tolerates up to 3 consecutive poll
+  failures** before flipping availability to False
+  (`_FAILURE_TOLERANCE = 3`, pattern from
+  `mitch-dc/volkswagen_we_connect_id` #215). Single-poll hiccups on the
+  CARIAD BFF no longer break automations.
+- **Stale-cache window of 6 hours** (`_STALE_CACHE_WINDOW`): even past
+  the failure tolerance, the vehicle stays available if the last
+  successful poll was within the last 6h. Pattern from
+  `skodaconnect/homeassistant-myskoda` #731 — users strongly prefer
+  "old but visible" over "unavailable", because automations keep
+  working and `last_updated_at` signals the staleness.
+- New per-VIN tracking dicts: `vehicle_failure_count` (reset to 0 on
+  each success) and `vehicle_last_good_at` (last-success timestamp,
+  also surfaced in diagnostics in Session 4).
+- Lazy-init with `getattr(...)` fallback so coordinators built before
+  v1.8.7 without `__init__` (tests, post-upgrade reload) don't crash.
+
+**Tests:**
+
+- `tests/test_cariad.py::TestBaseClientHardening` — 5 new tests:
+  504-retry, ClientConnectorError retry, persistent-transient →
+  APIError(0), refresh-storm protection, refresh-window pruning.
+- `tests/test_coordinator.py::TestVehicleAvailabilityTolerance` — 7 new
+  tests: tolerance under threshold, unavailable over threshold without
+  recent good, stale-window hit, stale-window miss, legacy coord fallback.
+- `asyncio.sleep` patched in retry tests so the suite doesn't slow down
+  — the existing 500 test previously waited 9s; without the patch now
+  21s; with the patch sub-second.
+
+**Deliberately NOT in this session** (scope discipline):
+
+- EULA repair issue (`ir.async_create_issue` with deeplink): needs its
+  own translation strings in 8 languages, ships in v1.8.8.
+- Generic-`except Exception` audit across all API clients: larger
+  refactor, its own hotfix.
 ## [1.8.6] - 2026-04-29
 
 ### Docs Truthfulness Hotfix — README + 8 translations + CI badge

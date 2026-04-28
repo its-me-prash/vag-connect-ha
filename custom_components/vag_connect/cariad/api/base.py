@@ -5,9 +5,16 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import time
 from typing import Any
 
-from aiohttp import ClientSession, ClientTimeout
+from aiohttp import (
+    ClientConnectorError,
+    ClientPayloadError,
+    ClientSession,
+    ClientTimeout,
+    ServerDisconnectedError,
+)
 
 from ..auth.idk import IDKAuth
 from .graphql import VehicleImageFetcher, VehicleImageData
@@ -17,6 +24,32 @@ from ..models import BrandConfig, TokenSet, VehicleData
 _LOGGER = logging.getLogger(__name__)
 
 _REQUEST_TIMEOUT = 60
+
+# Token-refresh storm protection (v1.8.7).
+# Capped at 3 successful-or-attempted refreshes per rolling hour. If the
+# CARIAD identity backend hands out short-lived tokens or returns transient
+# 401s, this prevents us from looping login → 401 → login until the IP gets
+# rate-limited or the account temporarily locked. Patterns from
+# `skodaconnect/myskoda` #976 and `robinostlund/homeassistant-volkswagencarnet`
+# #683 — both repos shipped fixes after users reported account suspensions
+# triggered by integrations refreshing tokens every poll cycle.
+_REFRESH_MAX_PER_HOUR = 3
+_REFRESH_WINDOW_S = 3600
+
+# Transient network exceptions that should be retried with the same
+# exponential backoff as 5xx server errors. Verified against:
+#   - `mitch-dc/volkswagen_we_connect_id` #166 (`socket.gaierror` /
+#     `ClientConnectorError` was being misclassified as auth failure)
+#   - `skodaconnect/homeassistant-myskoda` #731 ("server unavailable" UX)
+# DNS, connection refused, and mid-stream disconnects from the CARIAD BFF
+# happen routinely on weekends and during VAG maintenance windows. They are
+# not auth failures and must not trigger reauth.
+_TRANSIENT_NET_ERRORS: tuple[type[BaseException], ...] = (
+    ClientConnectorError,
+    ServerDisconnectedError,
+    ClientPayloadError,
+    asyncio.TimeoutError,
+)
 
 
 class CariadBaseClient:
@@ -42,6 +75,10 @@ class CariadBaseClient:
         self._tokens: TokenSet | None = None
         self._image_data: dict[str, VehicleImageData] = {}
         self._refresh_lock: asyncio.Lock | None = None
+        # Sliding window of token refresh attempt timestamps (monotonic seconds).
+        # Pruned to the last `_REFRESH_WINDOW_S` on every refresh attempt.
+        # Prevents the spiral documented in myskoda #976 / volkswagencarnet #683.
+        self._refresh_history: list[float] = []
         self._auth = IDKAuth(session, brand)
 
     @property
@@ -169,49 +206,99 @@ class CariadBaseClient:
     async def _request(
         self, method: str, url: str, retry: bool = True, _attempt: int = 0, **kwargs: Any
     ) -> Any:
-        """Execute an authenticated request with retry for transient errors."""
-        import asyncio as _aio  # noqa: PLC0415
+        """Execute an authenticated request with retry for transient errors.
 
+        Retry behaviour (v1.8.7 hardening):
+
+        - HTTP 401 → token refresh + 1 retry. Refresh itself is throttled
+          to ``_REFRESH_MAX_PER_HOUR`` per rolling hour (storm protection).
+        - HTTP 429 → exponential backoff up to 3 attempts (5s/10s/20s).
+        - HTTP 500/502/503/504 → exponential backoff up to 3 attempts
+          (3s/6s/12s). 504 added in v1.8.7 — Gateway Timeouts from the
+          CARIAD BFF are routine on weekends and were previously surfaced
+          as fatal API errors.
+        - Transient network errors (DNS / connection refused / mid-stream
+          disconnects / asyncio timeouts) → same backoff as server errors.
+          Verified pattern from we_connect_id #166 and myskoda #731.
+        """
         headers = kwargs.pop("headers", {})
         headers["Authorization"] = f"Bearer {self._access_token}"
         headers["Accept"] = "application/json"
         headers["Content-Type"] = headers.get("Content-Type", "application/json")
         headers["User-Agent"] = self._brand.user_agent
 
-        async with self._session.request(
-            method, url, headers=headers, timeout=ClientTimeout(total=_REQUEST_TIMEOUT), **kwargs
-        ) as resp:
-            if resp.status == 401 and retry:
-                await self._refresh_tokens()
-                return await self._request(method, url, retry=False, **kwargs)
-            if resp.status == 429 and _attempt < 3:
-                wait = (2 ** _attempt) * 5
-                _LOGGER.debug("Rate limited (429) — retrying in %ds", wait)
-                await _aio.sleep(wait)
-                return await self._request(method, url, retry=retry, _attempt=_attempt + 1, **kwargs)
-            if resp.status in (500, 502, 503) and _attempt < 2:
+        try:
+            async with self._session.request(
+                method, url, headers=headers, timeout=ClientTimeout(total=_REQUEST_TIMEOUT), **kwargs
+            ) as resp:
+                if resp.status == 401 and retry:
+                    await self._refresh_tokens()
+                    return await self._request(method, url, retry=False, **kwargs)
+                if resp.status == 429 and _attempt < 3:
+                    wait = (2 ** _attempt) * 5
+                    _LOGGER.debug("Rate limited (429) — retrying in %ds", wait)
+                    await asyncio.sleep(wait)
+                    return await self._request(method, url, retry=retry, _attempt=_attempt + 1, **kwargs)
+                if resp.status in (500, 502, 503, 504) and _attempt < 3:
+                    wait = (2 ** _attempt) * 3
+                    _LOGGER.debug("Server error %d — retrying in %ds", resp.status, wait)
+                    await asyncio.sleep(wait)
+                    return await self._request(method, url, retry=retry, _attempt=_attempt + 1, **kwargs)
+                if resp.status == 204:
+                    return None
+                if resp.status not in (200, 201, 202, 207):
+                    body = await resp.text()
+                    raise APIError(resp.status, url, body)
+                ct = resp.headers.get("Content-Type", "")
+                if "json" in ct:
+                    return await resp.json()
+                return await resp.text()
+        except _TRANSIENT_NET_ERRORS as err:
+            if _attempt < 3:
                 wait = (2 ** _attempt) * 3
-                _LOGGER.debug("Server error %d — retrying in %ds", resp.status, wait)
-                await _aio.sleep(wait)
-                return await self._request(method, url, retry=retry, _attempt=_attempt + 1, **kwargs)
-            if resp.status == 204:
-                return None
-            if resp.status not in (200, 201, 202, 207):
-                body = await resp.text()
-                raise APIError(resp.status, url, body)
-            ct = resp.headers.get("Content-Type", "")
-            if "json" in ct:
-                return await resp.json()
-            return await resp.text()
+                _LOGGER.debug(
+                    "Transient network error (%s) — retrying in %ds",
+                    type(err).__name__,
+                    wait,
+                )
+                await asyncio.sleep(wait)
+                return await self._request(
+                    method, url, retry=retry, _attempt=_attempt + 1, **kwargs
+                )
+            raise APIError(0, url, f"transient: {type(err).__name__}: {err}") from err
 
     async def _refresh_tokens(self) -> None:
         """Attempt token refresh; fall back to full re-login.
 
         Uses a lock to prevent concurrent refresh attempts from racing.
+
+        Storm protection (v1.8.7): if more than ``_REFRESH_MAX_PER_HOUR``
+        refresh attempts occur within ``_REFRESH_WINDOW_S`` seconds, raise
+        ``AuthenticationError`` to surface the problem instead of silently
+        looping. The coordinator catches this in its poll loop and triggers
+        the HA reauth flow — the user gets a UI prompt instead of a slowly
+        rate-limited account. Patterns from myskoda #976 and
+        volkswagencarnet #683.
         """
         if self._refresh_lock is None:
             self._refresh_lock = asyncio.Lock()
         async with self._refresh_lock:
+            now = time.monotonic()
+            cutoff = now - _REFRESH_WINDOW_S
+            self._refresh_history = [t for t in self._refresh_history if t > cutoff]
+            if len(self._refresh_history) >= _REFRESH_MAX_PER_HOUR:
+                _LOGGER.error(
+                    "Token refresh storm: %d attempts in last %ds for %s — pausing"
+                    " to prevent IP ban; please reauthenticate from the UI",
+                    len(self._refresh_history),
+                    _REFRESH_WINDOW_S,
+                    self._brand.name,
+                )
+                raise AuthenticationError(
+                    "Token refresh storm — please reauthenticate"
+                )
+            self._refresh_history.append(now)
+
             if self._tokens and self._tokens.refresh_token:
                 try:
                     self._tokens = await self._auth.refresh(self._tokens.refresh_token)
