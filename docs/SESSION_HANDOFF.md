@@ -1,9 +1,9 @@
 # VAG Connect HA — Session Handoff
 
-> Living document. Updated at the start of every session so the next chat /
+> Living document. Updated at the end of every session so the next chat /
 > contributor / maintainer has a single page to read.
 
-Last updated: 2026-04-26 — Session 1 (v1.8.0 PR #65)
+Last updated: 2026-04-27 — End of mega-session (v1.8.0 → v1.8.5)
 
 ---
 
@@ -11,166 +11,143 @@ Last updated: 2026-04-26 — Session 1 (v1.8.0 PR #65)
 
 | What | Where |
 |---|---|
-| Current sessioned roadmap | [`docs/ROADMAP.md`](ROADMAP.md) (mirrors README) |
+| Current sessioned roadmap | All 8 `README*.md` files (DE, EN, CS, ES, FR, NL, PL, SV) |
 | Code audit + status by P0/P1 finding | [`docs/AUDIT_2026-04-26.md`](AUDIT_2026-04-26.md) |
 | Active issues | https://github.com/its-me-prash/vag-connect-ha/issues |
-| Active PR | https://github.com/its-me-prash/vag-connect-ha/pull/65 |
 | Brand & API ecosystem map | [`research/VAG_GROUP_ECOSYSTEM.md`](research/VAG_GROUP_ECOSYSTEM.md) |
 | Image API | [`research/GRAPHQL_IMAGE_API.md`](research/GRAPHQL_IMAGE_API.md) |
-| Why no Bentley/Lamborghini | [`research/LUXURY_BRANDS.md`](research/LUXURY_BRANDS.md) |
+| Out of scope brands | [`research/LUXURY_BRANDS.md`](research/LUXURY_BRANDS.md) + #77 (Ford Explorer Electric) |
 
 ---
 
-## Current state — v1.8.0 (in PR #65)
+## Current state — v1.8.5
 
 ```
-Branch:        claude/analyze-test-coverage-gG3d8
-Manifest:      version 1.8.0, iot_class cloud_polling
-Quality scale: cleaned (no more hardcoded numbers — CI publishes badges)
-Open issues:   #56–#64 (P1 work for Sessions 2–6) + user bugs #42, #51, #53, #54
+Manifest:      version 1.8.5, iot_class cloud_polling
+Tags:          v1.8.0, v1.8.1, v1.8.2, v1.8.3, v1.8.4, v1.8.5
+Open issues:   27 (after closing #60, #68; #54 closed by user)
+Open PRs:      0
+CI:            all green (ruff + mypy strict + hassfest + HACS + pytest ≥65% coverage)
 ```
-
-### CI status (last run on commit `caf050a`)
-
-| Check | Status |
-|---|---|
-| Lint & Validate (ruff + mypy strict + manifest + JSON + CHANGELOG check) | ✅ green |
-| HA Hassfest | ✅ green |
-| HACS Validation | ✅ green |
-| CHANGELOG.md aktualisiert? | ✅ green |
-| Unit Tests + Coverage | 🔧 Two tests being fixed — `test_seat_commands` and `test_async_unlock_passes_spin` (both consequences of the v1.8.0 behaviour changes; tests now updated to match) |
-
-If Tests still fail after the next push, the `pytest-output` artifact uploaded by the workflow contains the full traceback.
 
 ---
 
-## Architecture map
+## Releases shipped this session
 
-```
-custom_components/vag_connect/
-  __init__.py          # PLATFORMS = 10 (sensor, binary_sensor, device_tracker,
-                       # switch, button, climate, number, lock, image, select)
-  coordinator.py       # Poll loop, per-VIN vehicle_success tracking,
-                       #   ServiceValidationError on missing S-PIN,
-                       #   reverse-geocoding behind enable_reverse_geocoding opt-in
-  entity_base.py       # available property = per-VIN poll success
-  config_flow.py       # Options flow now exposes enable_reverse_geocoding
-  cariad/
-    auth/idk.py        # IDK PKCE — VW EU, Audi, Škoda (proprietary), SEAT, CUPRA, VW NA
-    auth/porsche.py    # Auth0 PKCE — Porsche
-    api/base.py        # Abstract client; command_flash signature now accepts
-                       #   latitude/longitude kwargs (only SEAT/CUPRA use them)
-    api/vw_eu.py       # CARIAD BFF
-    api/audi.py        # CARIAD BFF + AZS token for vgql/render images
-    api/skoda.py       # mysmob + camelCase token + proprietary token exchange
-    api/seat_cupra.py  # OLA + CUPRA client_secret + honk-and-flash with userPosition
-    api/porsche.py     # api.ppa.porsche.com
-    api/vw_na.py       # VW US/CA UUID-based endpoints
-    api/graphql.py     # vgql GraphQL for vehicle render images (Audi confirmed)
-    exceptions.py      # APIError, AuthenticationError, RateLimitError, ...
-    models.py          # VehicleData, BrandConfig, TokenSet
-```
-
-Translation strings: English in `strings.json`, mirrored across
-`translations/{de,en,cs,es,fr,nl,pl,sv}.json`.
-
----
-
-## What changed in this session (v1.8.0 PR #65)
-
-7 P0 release blockers identified by an independent audit, all fixed in one
-atomic PR. See [`docs/AUDIT_2026-04-26.md`](AUDIT_2026-04-26.md) for the
-full table. Highlights:
-
-- Per-VIN availability tracking (was: all vehicles flashed `success=True`)
-- S-PIN fail-fast with `ServiceValidationError(spin_required)`
-- Removed `max_charge_current`, `seat_heating_switch`, `auto_unlock_switch`
-  entities (they only logged or mutated internal state)
-- Reverse geocoding off by default — opt-in via `enable_reverse_geocoding`
-- `iot_class` corrected to `cloud_polling`
-- `image` and `select` platforms actually loaded now (and use
-  `entry.runtime_data` instead of the old `hass.data[DOMAIN]` lookup)
-
-Plus a bug fix for #53: CUPRA/SEAT honk-and-flash payload was wrong —
-needs `{"mode": "flash", "userPosition": {…}}`, not `{"mode": "FLASH_ONLY"}`.
-
----
-
-## Sessioned roadmap (next steps)
-
-| Session | Version | Scope |
+| Tag | Session | Key content |
 |---|---|---|
-| 1 — Foundation Fix | v1.8.0 | **Current** — PR #65 awaiting CI green + merge |
-| 2 — Capabilities | v1.8.1 | #56 — capability-gated entity creation |
-| 3 — Command Profile | v1.8.2 | #61 + #51 — fixes Audi RS e-tron GT 404 |
-| 4 — Diagnostics + Fixtures | v1.8.3 | #62 + #58 — anonymised diagnostics, regression tests |
-| 5 — Process & Governance | — | #64 — issue forms, brand captains, CODEOWNERS |
-| 6 — Read-only + Locking | v1.9.0 | #63 + #55 — read-only mode, command lock, smart wake-up |
-| 7 — Push CUPRA/SEAT | v1.9.1 | #57 — Firebase FCM via mqtt.messagehub.de |
-| 8 — Push Škoda | v1.9.2 | #57 — MQTT broker integration |
-| 9 — Feature batch | v1.10.0 | #24, #35, #26, #33, #31 — trip stats, charging history, etc. |
-| 10 — HACS Default + v2.0.0 | v2.0.0 | #13, #59 — live tests all brands, EU Data Act ready |
-
-> Strict order. Sessions 1–4 must merge before any new features land.
+| **v1.8.0** | Session 1 Foundation Fix | iot_class fix, per-VIN availability, S-PIN fail-fast, fake writables removed, reverse geocoding opt-in, PLATFORMS list sync (image+select) |
+| **v1.8.1** | Privacy & Auth Polish | VIN masking (`mask_vin()` helper), diagnostics PII scrub (6 new fields), `ConfigEntryAuthFailed` on stale credentials (setup + poll loop), `userPosition` rationale documented |
+| **v1.8.2** | Session 2A Foundation | `CommandFailureReason` enum (9 values), `classify_command_failure()` helper, `FeatureState` dataclass (3 orthogonal flags), capabilities cache (24h TTL), `SeatCupraClient.get_capabilities()`, SEAT/CUPRA OAuth scope broadened to match official apps |
+| **v1.8.3** | Session 2B Button Gating | `vehicle_supports_capability()` three-valued helper, flash+wake buttons hidden for SEAT/CUPRA when capabilities say `False`, brand-scoped gating (only SEAT/CUPRA vocabulary verified), bilingual release notes generator |
+| **v1.8.4** | Session 2C Lock Fix | SEAT/CUPRA SecToken flow for lock/unlock (pycupra-verified), `_get_sec_token()` helper, `SpinError` wrapper, coordinator lock now requires S-PIN for SEAT/CUPRA, `get_capabilities()` for CARIAD BFF (VW EU + Audi) + stubs for Porsche/VW NA |
+| **v1.8.5** | Session 3A Command Profile | `CommandProfile` enum (12 values), coordinator `vehicle_command_profile` cache, VWEUClient `_post_command()` with per-VIN v1→v2 fallback on 404, 4 "set value" commands refactored (target_soc, climate_temp, charge_mode, min_soc), AudiClient inherits fix |
 
 ---
 
-## Known live issues (waiting on user verification with v1.8.0)
+## Hard rules (NEVER violate)
 
-| Issue | User | Brand / Model | What changed in v1.8.0 |
+1. **NEVER sign as Claude/AI** in commits, comments, releases, PR bodies
+2. **EN-first bilingual** in all user-facing text (issue templates, comments, release notes)
+3. **8 READMEs synchronized** at every version bump / roadmap change
+4. **CHANGELOG bilingual** (EN first, DE below each section)
+5. **VINs masked** everywhere (`mask_vin()` → `***` + last 6 chars) — never full VINs in logs, diagnostics, comments, prompts
+6. **Car-friendly translations** (Lichthupe not Lichtsignal, Klimaanlage not Klimatisierung)
+7. **Semver checked** before every bump — patch for bugfix, minor for new entities/features
+8. **git pull before git tag** — tags must point at the merge commit, not the old HEAD
+9. **Refresh PR page before clicking Merge** — race condition lost Session 2B once (#71 merged without 2B commit)
+10. **`config_entry.options` is for user settings only** — capabilities, feature_states, command_profile go in coordinator runtime cache
+
+---
+
+## Architecture: key modules
+
+| Module | Purpose |
+|---|---|
+| `cariad/exceptions.py` | `CommandFailureReason`, `CommandProfile`, `classify_command_failure()`, all exception classes |
+| `cariad/_util.py` | `mask_vin()` privacy helper |
+| `cariad/api/base.py` | `CariadBaseClient` with HTTP helpers, token refresh, `get_capabilities()` default |
+| `cariad/api/vw_eu.py` | VW EU + (via inheritance) Audi: status, commands, capabilities, **v1→v2 fallback** |
+| `cariad/api/seat_cupra.py` | SEAT/CUPRA OLA: status, commands, capabilities, **SecToken lock flow** |
+| `cariad/api/skoda.py` | Škoda mysmob: status, commands |
+| `cariad/api/porsche.py` | Porsche PPA: separate Auth0 auth, status, commands |
+| `cariad/api/vw_na.py` | VW US/CA: separate IDK auth per country |
+| `coordinator.py` | `FeatureState`, capabilities cache (24h TTL), `vehicle_command_profile`, `_trigger_reauth()`, per-VIN poll success, reverse geocoding opt-in |
+| `button.py` | Flash+wake **capability-gated** for SEAT/CUPRA only, brand-scoped via `_BRANDS_WITH_CAPABILITY_GATING` |
+| `diagnostics.py` | Recursive `_scrub()` with `_REDACT_KEYS` (10 PII fields), VIN masked in dict keys |
+| `__init__.py` | `ConfigEntryAuthFailed` on invalid_credentials, `ConfigEntryNotReady` for other errors |
+
+---
+
+## Active live testers
+
+| Issue | User | Vehicle | Status | Waiting for |
+|---|---|---|---|---|
+| **#53** | Gerhard2808 | CUPRA Born 2023 | **Paused** (NUC dead) | NUC repair, then v1.8.5 test |
+| **#42** | migendi | CUPRA Formentor 2023 | **Silent** since v1.8.0 | User reply (subscription expired, limited testing possible) |
+| **#51** | gleeballs | VW Tiguan 2022 UK | Free tier confirmed | v1.8.5 test (v1→v2 fallback might help some sensors) |
+| **#54** | GitHobi | Škoda Octavia 2025 | **✅ Closed — all sensors working on v1.8.4!** | — |
+| **#74** | Marco Grewe | VW Passat 2025 B9 | **New** — filed from Facebook | Debug log for PPE/PPC endpoint routing |
+| **#75** | Christian Müller | Škoda Kodiaq Mk2 | **New** — filed from Facebook | Debug log for mysmob v3 garage endpoint |
+| **#76** | Tobias Schmalzl | VW T6 Multivan 2016 | **New** — filed from Facebook | Command test + debug log (legacy MBB check) |
+
+### Facebook-only testers (not on GitHub yet)
+
+| User | Vehicle | Status |
+|---|---|---|
+| Richard Farmer | Ford Explorer Electric | Out of scope → `marq24/ha-fordpass` (#77) |
+| Grant Shewan | Audi RS e-tron GT | Same as #51 — should test v1.8.5 |
+
+---
+
+## Next sessions (roadmap from READMEs)
+
+| Session | Version | Scope | Depends on |
 |---|---|---|---|
-| #54 | @GitHobi | Škoda | Per-VIN availability + JSON path fixes still in place |
-| #53 | @Gerhard2808 | CUPRA Born | `command_flash` payload fix → should work after one status poll caches GPS |
-| #42 | @migendi | CUPRA Formentor 2023 | Same v1.6.x auth fix + better repair messages |
-| #51 | G.S. (Facebook) | Audi RS e-tron GT | **Not yet fixed** — Session 3 (#61) command profile layer |
+| **3B** | v1.8.6 | Lock/Climate/Charging v1→v2 fallback for Audi+VW EU; LEGACY_MBB profile for T6 Multivan | Tobias (#76) debug log |
+| **3C** | v1.8.7 | SKODA_MYSMOB_V3 for Kodiaq Mk2; Škoda garage endpoint v3 fallback | Christian (#75) debug log |
+| **4** | v1.8.8 | Diagnostics + Fixtures (#62): fixture-based regression tests, API tracing opt-in | Can start anytime |
+| **5** | — | Process & Governance (#64): Brand Captains, CODEOWNERS, CONTRIBUTING.md | Can start anytime |
+| **6** | v1.9.0 | Read-only mode, command locking, cloud/wake distinction (#63) | After Sessions 3–4 |
+| **7** | v1.9.1 | Firebase FCM push for CUPRA/SEAT (#57) | Research done, needs impl |
+| **8** | v1.9.2 | MQTT push for Škoda (#57) | After Session 7 |
+| **9** | v1.10.0 | Feature batch: consumption data, charging history, departure timer UI, alarm sensors, charge profiles (#24, #35, #26, #33, #31, #25, #28, #36, #23) | After Sessions 6–8 |
+| **10** | v2.0.0 | HACS default listing, compatibility matrix, EU Data Act prep (#13, #59) | Everything above |
 
 ---
 
-## Useful constants (do not hardcode in tests; import from code)
+## Cross-check audit results (ChatGPT 5.5 + Gemini Pro)
 
-```python
-# Auth
-IDK_BASE      = "https://identity.vwgroup.io"
-CARIAD_BFF    = "https://emea.bff.cariad.digital"
-AZS_TOKEN_URL = "https://emea.bff.cariad.digital/login/v1/audi/token"
-OLA_BASE      = "https://ola.prod.code.seat.cloud.vwgroup.com"
-SKODA_BASE    = "https://mysmob.api.connect.skoda-auto.cz"
-PORSCHE_PPA   = "https://api.ppa.porsche.com"
+Both AIs independently agreed on these design principles which are now implemented:
 
-# CUPRA confidential client (OAuth requires client_secret, unlike SEAT)
-CUPRA_SECRET  = "eb8814e6…"  # see cariad/models.py BRAND_CUPRA
+1. **Foundation first, then behaviour** — error taxonomy before entity gating (Session 2A before 2B)
+2. **Three different root causes** — `missing-capability` ≠ `expired-subscription` ≠ `free-tier-404`
+3. **Don't create entity at all** (not `available=False`) for truly unsupported features
+4. **Capabilities cached in coordinator runtime** — NOT in `config_entry.options`
+5. **TTL-based refresh** (24h) + error-triggered re-fetch on `MISSING_CAPABILITY` or `WRONG_API_PROFILE`
+6. **Conservative classifier** — ambiguous `400 internal-error` maps to `BACKEND_ERROR`, never `MISSING_CAPABILITY`
+7. **`userPosition` in OLA honk-and-flash is the vehicle GPS** despite the parameter name — verified against pycupra + myskoda
+8. **Rate limiting is the #1 enemy** of other VAG integrations — dynamic polling (Session 6) is critical
 
-# Audi vgql via AZS token (NOT IDK bearer)
-AZS_APP_API   = "app-api.live-my.audi.com"
+---
 
-# Reverse geocoding (opt-in)
-NOMINATIM     = "https://nominatim.openstreetmap.org/reverse"
+## How to start the next session
+
+```
+Read docs/SESSION_HANDOFF.md for full context.
+
+Then check:
+1. GitHub issues for new comments since 2026-04-27
+2. git log origin/main --oneline -5  (verify v1.8.5 is HEAD)
+3. Open issues needing attention: #53, #42, #51, #74, #75, #76
+
+Pick the next session based on which live testers responded:
+- If Marco (#74) or Tobias (#76) sent debug logs → Session 3B
+- If Christian (#75) sent debug logs → Session 3C
+- If nobody responded → Session 4 (Diagnostics + Fixtures)
+- If user wants something else → ask
 ```
 
 ---
 
-## Reference projects (clean-room, MIT/Apache-2.0)
-
-| Project | Used for |
-|---|---|
-| arjenvrh/audi_connect_ha | AZS token exchange for Audi vgql |
-| robinostlund/homeassistant-volkswagencarnet | VW EU endpoints reference |
-| skodaconnect/myskoda | Škoda mysmob endpoints |
-| WulfgarW/pycupra | SEAT/CUPRA OLA endpoints + honk-and-flash payload |
-| CJNE/pyporscheconnectapi | Porsche Auth0 + PPA |
-| matpoulin/CarConnectivity-connector-volkswagen-na | VW US/CA endpoints |
-
----
-
-## Hard rules ("learnings" — do not repeat the bugs)
-
-1. **Never sign as Claude or AI** — commits, comments, releases. Author lines and footers stay neutral.
-2. **Bilingual user-facing text** — contributor's language first, translation below.
-3. **README + 8 translations updated together** at every release.
-4. **CHANGELOG entry per version** — CI fails the PR otherwise.
-5. **VINs anonymised** — masked or example placeholders in code, docs, tests, fixtures.
-6. **Car-friendly translations** — "Lichthupe", "Klimaanlage", "Zentralverriegelung" — drivers' language, not API jargon.
-7. **Semver before bump** — patch = bug fix only, minor = new features, major = breaking change.
-8. **Do not guess API behaviour** — verify against pycupra / myskoda / audiconnect references and add the URL to the commit body.
-9. **Never expose tokens, S-PIN, account IDs, precise GPS** — in logs, diagnostics, fixtures, issue bodies.
-10. **Capability-first** — new entities check `capabilities` before being created (Session 2 #56 onwards).
+*Copyright 2026 Prash Balan (@its-me-prash) — Apache License 2.0*
