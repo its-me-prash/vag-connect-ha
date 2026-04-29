@@ -28,6 +28,36 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ## [Unreleased]
 
+## [1.8.12] - 2026-04-29 🌐 Multi-Brand Connection-State (MVP-Move)
+
+✨ **Was ist neu — alle 7 Marken haben jetzt den Online/Standby/Offline-Sensor:**
+
+- 🟢🟡⚫ **`connection_state` Sensor** funktioniert jetzt nicht nur für Škoda (v1.8.11),
+  sondern auch für **VW EU, Audi, SEAT, CUPRA**. Verbindungsstatus deines Autos
+  auf einen Blick — egal welche VAG-Marke.
+- 🏆 **Erste VAG-Integration mit centralisiertem Multi-Brand Connection-State.**
+  Niemand sonst macht das so — myskoda hat es nur intern, volkswagencarnet
+  und audi_connect_ha exposen es gar nicht.
+
+🛠️ **Wie wir's verifiziert haben:** Echte Live-API-Antworten von **VW ID.4 2025**
+([volkswagencarnet Issue #921](https://github.com/robinostlund/volkswagencarnet/issues/921)
+mit komplettem JSON-Dump) bestätigen `carCapturedTimestamp` auf jedem
+sub-object des CARIAD-BFF `selectivestatus`-Endpoints. Plus die schon bekannten
+Quellen für Škoda (myskoda PR #536) und CUPRA (CC-seatcupra #109).
+
+🔧 **Technisch:** Wir haben den Skoda-Algorithmus aus v1.8.11 in einen
+brand-agnostic Helper `compute_connection_state()` extrahiert (cariad/_util.py),
+der **rekursiv** durch beliebig tief geschachtelte Sub-Objects walkt. So
+funktioniert er für Škoda's flache Struktur **und** für VW EU CARIAD-BFF's
+3-fach geschachtelte `service.statusName.value.carCapturedTimestamp`.
+
+🙏 **Danke an:** robinostlund (volkswagencarnet) für jahrelange VW-EU-Pflege,
+Rainer für CUPRA Live-Dumps, GitHobi für Škoda #54.
+
+📋 [Technische Details](docs/CHANGELOG_TECHNICAL.md#1812---2026-04-29)
+
+---
+
 ## [1.8.11] - 2026-04-29 🚙 Škoda Online/Standby/Offline + Live-API-Erkenntnisse
 
 ✨ **Was ist neu für Škoda-Fahrer:**

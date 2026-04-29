@@ -12,6 +12,92 @@ weiterhin direkt in `CHANGELOG.md` zu finden.
 
 ---
 
+## [1.8.12] - 2026-04-29
+
+### MVP-Move — Multi-Brand Connection-State (Helper-Extraction + Apply auf alle 4 CARIAD-Brands)
+
+Erweitert das `carCapturedTimestamp` Pattern aus v1.8.11 (Skoda-only) auf
+**alle vier CARIAD-basierten Brand-Clients**: VW EU, Audi, SEAT, CUPRA.
+Macht uns zur **ersten VAG-HA-Integration mit centralisiertem
+Multi-Brand Connection-State**.
+
+**Methodik:** vor Implementation **3 parallele Recherche-Agents** losgeschickt
+(CC-skoda Issues, myskoda Issues + recent merged PRs, volkswagencarnet
+Issues + PRs). Plus laufender Agent für audi_connect_ha. Erkenntnisse alle
+verifiziert gegen echte Live-API-Responses (Hard Rule #8 — keine Spekulation).
+
+**Bestätigung aus volkswagencarnet Issue #921 (ID.4 2025 Live-Dump):**
+VW EU CARIAD-BFF `selectivestatus` returns `carCapturedTimestamp` auf
+JEDEM sub-object — aber **TIEFER geschachtelt** als Skoda mysmob:
+
+```
+access.accessStatus.value.carCapturedTimestamp
+charging.batteryStatus.value.carCapturedTimestamp
+charging.chargingStatus.value.carCapturedTimestamp
+charging.chargingSettings.value.carCapturedTimestamp
+charging.plugStatus.value.carCapturedTimestamp
+climatisation.climatisationStatus.value.carCapturedTimestamp
+climatisation.climatisationSettings.value.carCapturedTimestamp
+measurements.rangeStatus.value.carCapturedTimestamp
+measurements.odometerStatus.value.carCapturedTimestamp
+measurements.fuelLevelStatus.value.carCapturedTimestamp
+parkingposition.carCapturedTimestamp        ← separate endpoint
+```
+
+Format ist gemischt: ISO-Strings UND pre-parsed `datetime`-Objekte.
+
+**`cariad/_util.py` — neuer Helper `compute_connection_state(*sub_objects)`:**
+
+- **Rekursiver Walk** durch dicts und lists, sammelt jeden datetime
+  unter `carCapturedTimestamp` (oder konfigurierbarem `timestamp_keys` Tupel)
+- **Akzeptiert** sowohl ISO-Strings als auch pre-parsed `datetime`
+- **Naive datetimes** werden als UTC interpretiert
+- **Defensive** gegen: BaseException-Sub-Objects (asyncio.gather mit
+  `return_exceptions=True`), corrupt ISO-Strings, missing fields
+  (myskoda PR #565)
+- **Returns** `(state, last_seen_at)` — `(None, None)` wenn nichts gefunden
+- Thresholds: `<30 min → "online"`, `<24 h → "standby"`, `>=24 h → "offline"`
+
+**Apply auf 4 Brand-Clients:**
+
+1. `cariad/api/skoda.py` — Refactor: hardgekodeter v1.8.11-Block ersetzt
+   durch `compute_connection_state(...)` Aufruf. Behavior identisch, Code 40
+   Zeilen kürzer.
+2. `cariad/api/seat_cupra.py` — Apply: am Ende von `get_status` mit den
+   9 OLA-Sub-Objects.
+3. `cariad/api/vw_eu.py` — Apply: in `get_status` direkt nach `_parse_status`.
+   Helper handles die nested `.value.carCapturedTimestamp` Pfade durch
+   den rekursiven Walk.
+4. `cariad/api/audi.py` — Inheritance: `AudiClient(VWEUClient)` überschreibt
+   `get_status` nicht, profitiert daher automatisch.
+
+**Tests** (`tests/test_cariad.py::TestComputeConnectionState`, 12 neue):
+top-level + nested patterns, freshest wins, datetime + str + naive, corrupt
+strings, exception sub-objects, threshold boundaries, custom timestamp_keys.
+Plus alle 10 v1.8.11 Skoda-Tests bleiben grün (Refactor-Garantie).
+
+**`manifest.json`:** 1.8.11 → 1.8.12
+
+**Bewusst NICHT in v1.8.12 enthalten** (eigene Sessions geplant):
+
+- `readiness.connectionState.isOnline` als Master-Health-Sensor
+- `InsufficientBatteryLevel` Stale-Cache-Verlängerung (volkswagencarnet #940)
+- `devicePlatform: WCAR/MBB_ODP/PPC/PPE` Plattform-Routing
+- `engineType.primaryEngineType` für saubere EV/PHEV/ICE-Detection
+- `TermsAndConditionsError` spezifische Detection im Auth-Flow (volkswagencarnet PR #307)
+- `windowHeatingStatus[]` Array-Pfad für Audi/VW EU
+- Service Discovery Pattern (volkswagencarnet PR #314)
+
+**Bestätigt unsere Strategie 1:1**: skodaconnect/myskoda PR #536
+implementiert exakt dieselbe Logik intern (ältere Events ignorieren).
+Wir machen das gleiche, exposen aber als User-facing Sensor.
+
+**Quellen** (verifiziert):
+- robinostlund/volkswagencarnet Issue #921 (ID.4 2025), #940 (12V),
+  PRs #301 (Readiness), #307, #310, #314, #316/#317
+- tillsteinbach/CC-skoda Issue #50, CC-seatcupra #109
+- skodaconnect/myskoda PR #536, #565
+
 ## [1.8.11] - 2026-04-29
 
 ### Session 3S — Škoda `carCapturedTimestamp` connection-state + #50 Live-API-Erkenntnisse
