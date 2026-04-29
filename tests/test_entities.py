@@ -1099,10 +1099,17 @@ class TestRunCommand:
         return coord, v
 
     def test_async_lock_dispatches_to_run_command(self):
+        # v1.9.1 (#92): for Audi/VW EU the configured S-PIN is now passed
+        # to command_lock as a kwarg (CARIAD BFF returns 403 spin_error
+        # otherwise on premium models like the Audi S6 C8). The test
+        # fixture sets brand="audi" + spin="1234" so the new behaviour
+        # forwards the S-PIN.
         import asyncio
         coord, _ = self._make_coord()
         asyncio.get_event_loop().run_until_complete(coord.async_lock("VIN1"))
-        coord._cariad_client.command_lock.assert_awaited_once_with("VIN1")
+        coord._cariad_client.command_lock.assert_awaited_once_with(
+            "VIN1", spin="1234",
+        )
 
     def test_async_unlock_dispatches(self):
         import asyncio
