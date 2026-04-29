@@ -369,7 +369,7 @@ def detect_unexpected(
         return
     now = datetime.now(tz=timezone.utc).isoformat()
 
-    def _walk(node: Any, path: str, depth: int):
+    def _walk(node: Any, path: str, depth: int) -> Iterable[UnexpectedField]:
         if depth > max_depth:
             return
         if not isinstance(node, dict):
