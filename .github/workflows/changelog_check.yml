@@ -5,6 +5,8 @@ on:
     branches: [main]
     paths:
       - 'custom_components/**'
+      - 'CHANGELOG.md'
+      - 'docs/CHANGELOG_TECHNICAL.md'
 
 jobs:
   check:
