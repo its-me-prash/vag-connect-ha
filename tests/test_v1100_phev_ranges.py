@@ -72,6 +72,9 @@ class TestVWEUParseRanges:
 
         primaryEngine.type=electric, secondaryEngine.type=gasoline
         plus an explicit totalRange_km. Each goes to its own field.
+        ``has_battery`` is set from the primary engine's type, so
+        the parser picks the battery range as the back-compat
+        ``range_km`` headline.
         """
         client = self._client()
         raw = {
@@ -90,18 +93,13 @@ class TestVWEUParseRanges:
                     }
                 }
             },
-            # Make has_battery come out True so headline range_km picks
-            # the electric path (matches user expectation for a PHEV).
-            "measurements": {
-                "fuelLevelStatus": {
-                    "value": {"primaryEngineType": "electric"},
-                },
-            },
         }
         d = client._parse_status("VINX", raw, parking={})
         assert d.electric_range_km == 45
         assert d.combustion_range_km == 520
         assert d.total_range_km == 565
+        assert d.has_battery is True
+        assert d.has_combustion is True
         # Headline number for a PHEV with battery → battery range.
         assert d.range_km == 45
 
@@ -153,7 +151,14 @@ class TestVWEUParseRanges:
     def test_pure_ev_only_electric_range_set(self):
         """Pure EV: only batteryStatus.cruisingRangeElectric_km; no
         fuelStatus block. combustion_range_km must stay None so no
-        phantom entity is created."""
+        phantom entity is created.
+
+        The headline ``range_km`` is set from electric_range_km only
+        when ``has_battery`` is True, which is determined elsewhere
+        in the parser from ``measurements.fuelLevelStatus.value.carType``
+        (verified live on ID.4). We include carType="electric" so the
+        full pure-EV path runs and the headline picks up.
+        """
         client = self._client()
         raw = {
             "charging": {
@@ -163,7 +168,7 @@ class TestVWEUParseRanges:
             },
             "measurements": {
                 "fuelLevelStatus": {
-                    "value": {"primaryEngineType": "electric"},
+                    "value": {"carType": "electric"},
                 },
             },
         }
