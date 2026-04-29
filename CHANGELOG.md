@@ -28,6 +28,52 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ## [Unreleased]
 
+## [1.9.0] - 2026-04-29 🔬 Vehicle Data Scout + Error Reporter
+
+✨ **Was ist neu — zwei neue diagnostische Sensoren mit 1-Klick Bug-Report:**
+
+- 🛰️ **Vehicle Data Scout** (`sensor.vag_VIN_vehicle_data_scout`):
+  Erkennt automatisch unbekannte Felder in den API-Antworten deines
+  Fahrzeugs. Zählt, wie viele neue Felder gefunden wurden — Attribute
+  zeigen die letzten 5 Pfade. Brand-lokalisiert (DE: API-Beobachter,
+  FR: Observateur d'API, ES: Observador de API, NL: API-waarnemer, …).
+- 🚨 **Error Reporter** (`sensor.vag_VIN_error_reporter`):
+  Speichert die letzten 20 Integrationsfehler im Ring-Buffer. Zählt
+  aktuelle Fehler — Attribute zeigen die letzten 3 Exception-Typen.
+  Brand-lokalisiert (DE: Fehler-Berichter, FR: Rapporteur d'erreurs, …).
+- 🔘 **1-Klick Reporter Pipeline:** Beide Sensoren erstellen automatisch
+  HA-Repair-Notifications (Einstellungen → System → Reparaturen). Klick
+  auf **Mehr erfahren** → öffnet ein **vorausgefülltes GitHub-Issue**
+  im Browser. Für Facebook-Community: Diagnostics-Download enthält den
+  maskierten Bericht, fertig zum Reinkopieren. **NIEMALS Auto-Push.**
+
+🔒 **Datenschutz garantiert:**
+
+- VINs maskiert auf letzte 6 Zeichen (`***012345`)
+- GPS-Werte gerundet auf 1 Dezimalstelle (~11 km Genauigkeit)
+- userIDs (UUIDs), JWTs, Bearer-Tokens, opaque Tokens entfernt
+- E-Mail-Adressen ersetzt durch `***@***`
+- Keine rohen API-Responses, keine Zugangsdaten, nichts wird automatisch
+  gesendet (GDPR + HACS-Regeln + GitHub ToS)
+
+🤝 **Crowd-sourced Bug-Discovery:** Jeder Nutzer mit einem ungewöhnlichen
+Fahrzeug (neuer Modelljahrgang, andere Region, exotische Firmware) kann
+mit einem Klick verstecktes Wissen ans Repo zurückspielen. Folgt dem
+bewährten `tillsteinbach/CarConnectivity-*` "Unexpected Keys"-Pattern,
+das uns die richtigsten Live-API-Daten gebracht hat (CC-seatcupra #109,
+CC-skoda #50).
+
+🛠️ **Wo aktiv:** Vehicle Data Scout läuft bereits für Škoda, SEAT, CUPRA,
+Volkswagen EU und Audi — alle Brands mit registrierter
+`EXPECTED_KEYS`-Tabelle. Error Reporter ist account-weit aktiv.
+Andere Brands (Porsche, VW NA) bleiben still bis sie opt-in.
+
+🧪 **Verifiziert mit:** 18 neuen Tests in `tests/test_reporter.py`.
+
+> 💡 Vollständige technische Detail-Notes inkl. aller Code-Pfade,
+> Architektur-Entscheidungen und Issue-Referenzen findest du in
+> [`docs/CHANGELOG_TECHNICAL.md`](docs/CHANGELOG_TECHNICAL.md).
+
 ### 📚 Documentation refresh (2026-04-29, doc-only — no version bump)
 
 - 🆕 [`docs/RESEARCH_NOTES_2026-04-29.md`](docs/RESEARCH_NOTES_2026-04-29.md) — single archive of every verified live-API field name, every reference repo path, every pattern observation that informed v1.8.6→v1.8.12. Status per claim: ✅ verified / ⚠️ hypothesis / ❌ disproven. **Read this first if resuming this project**.

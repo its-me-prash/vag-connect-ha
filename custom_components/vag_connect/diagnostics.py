@@ -8,6 +8,7 @@ from typing import Any
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 
+from .cariad._error_reporter import serialise_for_diagnostics
 from .cariad._util import mask_vin
 from .const import CONF_PASSWORD, CONF_SPIN, CONF_USERNAME
 from .coordinator import VagConnectCoordinator
@@ -58,6 +59,27 @@ async def async_get_config_entry_diagnostics(
     for vin, vdata in coordinator.vehicles.items():
         vehicles_diag[mask_vin(vin)] = _scrub(vdata)
 
+    # v1.9.0 — Vehicle Data Scout findings + Error Reporter buffer.
+    # Already masked at the source (mask_value / _redact). Surfaced here so
+    # users who download diagnostics for forum / Facebook posts get the
+    # full anonymised picture in one file.
+    unexpected: dict[str, list[dict[str, Any]]] = {}
+    for vin, per_vin in getattr(coordinator, "unexpected_findings", {}).items():
+        unexpected[mask_vin(vin)] = [
+            {
+                "path": f.path,
+                "sample": f.sample_masked,
+                "endpoint": f.endpoint,
+                "first_seen_at": f.first_seen_at,
+            }
+            for f in per_vin.values()
+        ]
+
+    error_buffer = getattr(coordinator, "error_buffer", None)
+    error_records = (
+        serialise_for_diagnostics(error_buffer) if error_buffer is not None else []
+    )
+
     return {
         "config": config_diag,
         "options": options_diag,
@@ -65,4 +87,6 @@ async def async_get_config_entry_diagnostics(
         "vehicle_count": len(coordinator.vehicles),
         "last_update_success": coordinator.last_update_success,
         "cloud_push_active": coordinator.is_active,
+        "unexpected_findings": unexpected,
+        "error_buffer": error_records,
     }

@@ -57,6 +57,23 @@ class SkodaClient(CariadBaseClient):
         )
         status, charging, ac, parking, driving_range, maintenance, readiness = results
 
+        # v1.9.0 — Vehicle Data Scout opt-in. Stash raw responses keyed by
+        # the same endpoint names used in ``EXPECTED_KEYS["skoda"]`` so the
+        # coordinator can run drift detection without parsing twice.
+        # Exceptions are skipped — only successful dict responses are stashed.
+        self.last_raw_responses = {}
+        for name, payload in (
+            ("vehicle-status", status),
+            ("charging", charging),
+            ("air-conditioning", ac),
+            ("parking", parking),
+            ("driving-range", driving_range),
+            ("maintenance", maintenance),
+            ("readiness", readiness),
+        ):
+            if isinstance(payload, dict):
+                self.last_raw_responses[name] = payload
+
         # ── Access / doors / windows / detail ────────────────────────────────
         if isinstance(status, dict):
             access = v(status, "access") or {}

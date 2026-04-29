@@ -169,6 +169,12 @@
       },
       "adblue_range_km": {
         "name": "AdBlue bereik"
+      },
+      "api_observer_findings": {
+        "name": "API-waarnemer"
+      },
+      "error_reporter_count": {
+        "name": "Foutmelder"
       }
     },
     "binary_sensor": {
@@ -342,6 +348,14 @@
     "auth_failed": {
       "title": "Aanmelden mislukt — {brand}",
       "description": "Instellingen → Apparaten en diensten → VAG Connect → ⋮ → Opnieuw configureren."
+    },
+    "vehicle_data_scout_findings": {
+      "title": "API-waarnemer — {count} nieuw(e) veld(en) bij {brand}",
+      "description": "De API-waarnemer ontdekte **{count}** nieuw(e) veld(en) in de {brand}-API die VAG Connect nog niet uitleest.\n\nMeestal betekent dit dat je voertuig een functie of firmwareversie heeft die we nog niet kennen — jouw hulp leert de integratie deze te ondersteunen.\n\n**1-klik rapport:**\n📤 Klik hieronder op **Meer info** om een vooraf ingevulde GitHub-issue te openen.\n\n**Voor Facebook / forum:** Instellingen → Apparaten → VAG Connect → Diagnose → Downloaden — plak het gemaskeerde rapport.\n\n_Privacy: VINs gemaskeerd, GPS afgerond op 1 decimaal, userIDs/JWT/e-mails verwijderd. Er wordt niets automatisch verzonden._"
+    },
+    "error_reporter_findings": {
+      "title": "Foutmelder — {count} recente fout(en) bij {brand}",
+      "description": "De Foutmelder heeft **{count}** recente integratiefout(en) voor {brand} vastgelegd.\n\nMelden helpt ons bugs te vinden die alleen op specifieke voertuigen of firmwareversies optreden.\n\n**1-klik rapport:**\n📤 Klik hieronder op **Meer info** om een vooraf ingevulde GitHub-issue te openen.\n\n**Voor Facebook / forum:** Instellingen → Apparaten → VAG Connect → Diagnose → Downloaden — het rapport is bijgevoegd, VINs en tokens gemaskeerd.\n\n_Privacy: VINs gemaskeerd, Bearer/JWT/UUID/e-mail-tokens uit berichten en tracebacks verwijderd. Geen referenties opgenomen._"
     }
   },
   "exceptions": {

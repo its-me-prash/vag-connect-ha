@@ -165,6 +165,12 @@
       },
       "adblue_range_km": {
         "name": "AdBlue Reichweite"
+      },
+      "api_observer_findings": {
+        "name": "API-Beobachter"
+      },
+      "error_reporter_count": {
+        "name": "Fehler-Berichter"
       }
     },
     "binary_sensor": {
@@ -338,6 +344,14 @@
     "auth_failed": {
       "title": "Anmeldung fehlgeschlagen — {brand}",
       "description": "Die Verbindung zu {brand} ({username}) ist fehlgeschlagen.\n\nEinstellungen → Geräte & Dienste → VAG Connect → ⋮ → Neu konfigurieren."
+    },
+    "vehicle_data_scout_findings": {
+      "title": "API-Beobachter — {count} neue Felder bei {brand}",
+      "description": "Der API-Beobachter hat **{count}** neue Felder in der {brand}-API entdeckt, die VAG Connect noch nicht ausliest.\n\nMeistens bedeutet das: Dein Fahrzeug hat eine Funktion oder Firmware-Version, die wir noch nicht kennen — deine Hilfe würde uns die Unterstützung beibringen.\n\n**1-Klick-Bericht:**\n📤 Klicke unten auf **Mehr erfahren**, um ein vorausgefülltes GitHub-Issue zu öffnen.\n\n**Für Facebook / Forum:** Einstellungen → Geräte → VAG Connect → Diagnose → Herunterladen — dort den maskierten Bericht reinkopieren.\n\n_Datenschutz: VINs maskiert, GPS auf 1 Dezimalstelle gerundet, userIDs/JWTs/E-Mails entfernt. Es wird nichts automatisch gesendet._"
+    },
+    "error_reporter_findings": {
+      "title": "Fehler-Berichter — {count} aktuelle Fehler bei {brand}",
+      "description": "Der Fehler-Berichter hat **{count}** aktuelle Fehler in der Integration mit {brand} aufgezeichnet.\n\nDas Melden hilft uns, Fehler zu finden, die nur bei bestimmten Fahrzeugen oder Firmware-Versionen auftreten.\n\n**1-Klick-Bericht:**\n📤 Klicke unten auf **Mehr erfahren**, um ein vorausgefülltes GitHub-Issue zu öffnen.\n\n**Für Facebook / Forum:** Einstellungen → Geräte → VAG Connect → Diagnose → Herunterladen — der Bericht ist enthalten, VINs und Tokens maskiert.\n\n_Datenschutz: VINs maskiert, Bearer/JWT/UUID/E-Mail-Tokens aus Nachrichten und Tracebacks entfernt. Keine Zugangsdaten enthalten._"
     }
   },
   "exceptions": {

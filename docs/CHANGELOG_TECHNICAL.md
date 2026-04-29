@@ -12,6 +12,216 @@ weiterhin direkt in `CHANGELOG.md` zu finden.
 
 ---
 
+## [1.9.0] - 2026-04-29
+
+### Vehicle Data Scout + Error Reporter — Crowd-Sourced Bug-Discovery via 1-Klick Reporter Pipeline
+
+**Versionssprung-Begründung:** Erste **MINOR-Release nach strikter Semver-Disziplin**
+(siehe Roadmap-Sektion „Semver-Korrektur ab v1.9.0"). Zwei neue Sensoren = MINOR,
+nicht PATCH. Folgereihen entsprechend verschoben (v1.9.1 Capability-Filter,
+v1.9.2 Defensive Coding Phase 2, v1.9.3 Optimistic Lock/Climate, v1.10.0
+Diagnostics + Smart-Wake + 12V).
+
+**Pattern-Quelle:** `tillsteinbach/CarConnectivity-*` "Unexpected Keys found"
+War unsere ergiebigste API-Erkenntnisquelle (CC-seatcupra #109 Rainer's CUPRA Born,
+CC-skoda #50 Kodiaq iV 2026 Live-Dump). Wir bauen das gleiche Pattern in unsere
+Integration ein — plus Error-Sammlung — und senken die Hürde von „Issue selbst
+schreiben" auf „1 Klick auf vorausgefüllten GitHub-Link" oder „1 Klick auf Copy
+für Forum/Facebook".
+
+#### Neue Module (3, alle pure-Python — Unit-test-bar ohne HA)
+
+**`custom_components/vag_connect/cariad/_unexpected_keys.py`** (neu, 392 Zeilen):
+
+- `UnexpectedField` dataclass: `path`, `sample_masked`, `endpoint`, `first_seen_at`
+- `EXPECTED_KEYS: dict[brand][endpoint] -> set[str]` — registrierte Felder pro
+  Brand+Endpoint. SEAT inherits CUPRA, Audi inherits VW EU. 5 Brands aktiv,
+  jeweils 5–7 Endpoints abgedeckt.
+- `_path_matches(path, expected_paths)` — Wildcard-Matching mit `*` als Segment
+  (z.B. `doors.*.locked` matcht `doors.frontLeft.locked`)
+- `mask_value(value, max_len=80)` — anonymisiert: VIN-Regex (17-stellig) →
+  `mask_vin`, Email → `***@***`, JWT-shape → `[token]`, UUID → `[uuid]`,
+  Float → 1 Dezimalstelle (kills GPS-Präzision auf ~11 km)
+- `detect_unexpected(brand, endpoint, response, max_depth=6)` — Generator,
+  yieldet `UnexpectedField` für nicht-registrierte Pfade. Stoppt rekursiv
+  bei `max_depth` (Schutz gegen pathologische Responses). Brand/endpoint
+  ohne Registry-Eintrag → silent (keine false positives).
+
+**`custom_components/vag_connect/cariad/_error_reporter.py`** (neu, 208 Zeilen):
+
+- `ErrorRecord` dataclass — frozen, alle Felder maskiert
+- `ErrorRingBuffer` mit `_MAX_ERRORS = 20` (begrenzt Memory + Diagnostics-Größe)
+- 2 zusätzliche Regexes über `_unexpected_keys` hinaus:
+  - `_BEARER_RE` — `Bearer\s+[A-Za-z0-9._-]+`
+  - `_OPAQUE_TOKEN_RE` — `\b[A-Za-z0-9+/]{32,}={0,2}\b`
+- `_redact(text, max_len=500)` — strippt VIN/Email/JWT/UUID/Bearer/opaque
+- `record_error(buffer, *, exception, brand, vin, model_year, firmware, endpoint)` —
+  **NEVER raises**. Außenliegender try/except baut bei Buffer-Failure einen
+  minimal Fallback-Record `ErrorReporterFailure`. Hält letzte 12 Traceback-Zeilen
+  (~3 Frames + Headers — genug zum Debuggen, klein genug für GitHub-URL-Limit)
+- `serialise_for_diagnostics(buffer)` — JSON-safe Liste für HA-Diagnostics
+
+**`custom_components/vag_connect/cariad/_reporter_pipeline.py`** (neu, 230 Zeilen):
+
+- `build_unexpected_keys_report(findings, brand, model_year, firmware, integration_version)` —
+  Markdown mit Tabelle (Path | Sample | Endpoint | First seen) + Privacy-Footer
+- `build_error_report(records, brand, integration_version)` — Markdown mit Section
+  pro Error, Tracebacks in fenced code blocks
+- `github_issue_url(title, body, *, repo_url, labels, body_max=6500)` — baut
+  pre-filled Issue-URL mit URL-encoded Query-Params, **truncates body bei 6500B**
+  (GitHub URL limit ~8KB) und appendet Marker
+- `ensure_unexpected_keys_issue(hass, *, entry_id, findings, brand, ...)` — `ir.async_create_issue`
+  mit `translation_key="vehicle_data_scout_findings"`, `learn_more_url` zeigt auf
+  pre-filled GitHub-URL. Empty findings → `ir.async_delete_issue` (cleanup).
+- `ensure_error_reporter_issue(...)` — gleicher Aufbau, severity=ERROR statt
+  WARNING, `translation_key="error_reporter_findings"`
+- `clear_reporter_issues(hass, entry_id)` — wird beim Entfernen der Integration
+  gerufen
+
+#### Geänderte Dateien
+
+**`custom_components/vag_connect/cariad/api/base.py`** (+9 Zeilen):
+
+- `last_raw_responses: dict[str, dict[str, Any]] = {}` — opt-in Stash für
+  Brand-Clients. Coordinator iteriert das nach jedem erfolgreichen Poll und
+  füttert es in `detect_unexpected`. Brand-Client opt-in heißt: kein Forced-Change
+  in Audi/Porsche/VW NA — die bleiben silent bis sie selbst Endpoints stashen.
+
+**`custom_components/vag_connect/cariad/api/skoda.py`** (+15 Zeilen):
+
+- Stash der 7 gefetcheten Endpoints (vehicle-status, charging, air-conditioning,
+  parking, driving-range, maintenance, readiness) in `last_raw_responses`.
+  Skipped wenn payload kein dict (Exception aus `asyncio.gather`).
+
+**`custom_components/vag_connect/cariad/api/seat_cupra.py`** (+13 Zeilen):
+
+- Stash der 5 wichtigsten Endpoints (mycar, status, charging, charging-info,
+  climatisation). SEAT erbt automatisch über `EXPECTED_KEYS["seat"] = EXPECTED_KEYS["cupra"]`.
+
+**`custom_components/vag_connect/cariad/api/vw_eu.py`** (+10 Zeilen):
+
+- Stash von `selectivestatus` und `parkingposition`. Audi erbt über `AudiClient(VWEUClient)`
+  und `EXPECTED_KEYS["audi"] = EXPECTED_KEYS["volkswagen"]`.
+
+**`custom_components/vag_connect/coordinator.py`** (+125 Zeilen):
+
+- Imports: `ErrorRingBuffer`, `record_error`, `ensure_error_reporter_issue`,
+  `ensure_unexpected_keys_issue`, `UnexpectedField`, `detect_unexpected`
+- Neue Felder im `__init__`:
+  - `self.unexpected_findings: dict[str, dict[str, UnexpectedField]] = {}` —
+    per-VIN, de-duped per Path (gleiche Drift bei jedem Poll = nur 1 Record)
+  - `self.error_buffer: ErrorRingBuffer = ErrorRingBuffer()`
+- `_poll_loop` — neue Hooks:
+  - Nach erfolgreichem Poll für VIN: `self._scan_for_unexpected_keys(vin)` (try/except)
+  - Nach Per-VIN-Exception: `record_error(buffer, exception=result, brand, vin,
+    model_year, firmware, endpoint="get_status")` (try/except, NEVER raises)
+  - Nach jedem Poll-Cycle: `self._refresh_reporter_issues()` (try/except)
+  - Nach Outer-Exception: `record_error(buffer, exception=err, brand, endpoint="poll_loop")`
+    + `_refresh_reporter_issues()`
+- Neue Methoden:
+  - `_scan_for_unexpected_keys(vin)` — iteriert `client.last_raw_responses`,
+    de-duped per Path
+  - `_refresh_reporter_issues()` — flatten + delegiert an pipeline-Funktionen,
+    lazy-import um Circular zu vermeiden
+  - `reporter_findings_count()` — sum von distinct paths über alle VINs
+  - `reporter_error_count()` — `len(buffer)`
+
+**`custom_components/vag_connect/sensor.py`** (+85 Zeilen):
+
+- 2 neue `VagSensorDescription` mit `data_key=""`:
+  - `api_observer_findings` (icon `mdi:radar`, EntityCategory.DIAGNOSTIC)
+  - `error_reporter_count` (icon `mdi:alert-circle-outline`, EntityCategory.DIAGNOSTIC)
+- `_REPORTER_KEYS` frozenset für Dispatch in `async_setup_entry`
+- Neue Klasse `ReporterSensor(VagConnectSensor)`:
+  - `native_value` reads from `coordinator.unexpected_findings[vin]` (per-VIN)
+    bzw. `coordinator.reporter_error_count()` (account-wide)
+  - `extra_state_attributes` zeigt Preview (max 5 Pfade / 3 Exception-Typen)
+    + `report_url` Pointer auf GitHub Issues
+
+**`custom_components/vag_connect/diagnostics.py`** (+22 Zeilen):
+
+- Imports: `serialise_for_diagnostics`
+- Neue Felder in der Diagnostics-Response:
+  - `unexpected_findings`: `{masked_vin: [{path, sample, endpoint, first_seen_at}]}`
+  - `error_buffer`: full `serialise_for_diagnostics(buffer)`
+- Beide bereits in `mask_value` / `_redact` durchgelaufen — keine Doppel-Redaction nötig
+
+**`custom_components/vag_connect/strings.json` + 8 translations** (de/en/fr/es/nl/pl/cs/sv):
+
+- 2 neue Sensor-Namen (`api_observer_findings`, `error_reporter_count`),
+  brand-localized:
+  - DE: "API-Beobachter" / "Fehler-Berichter"
+  - EN: "Vehicle Data Scout" / "Error Reporter"
+  - FR: "Observateur d'API" / "Rapporteur d'erreurs"
+  - ES: "Observador de API" / "Reportador de errores"
+  - NL: "API-waarnemer" / "Foutmelder"
+  - PL: "Obserwator API" / "Raporter błędów"
+  - CS: "Pozorovatel API" / "Hlásič chyb"
+  - SV: "API-spanare" / "Felrapportör"
+- 2 neue Issue-Translations (`vehicle_data_scout_findings`, `error_reporter_findings`)
+  pro Sprache mit Title + ausführlicher Markdown-Description (1-Klick-Anleitung
+  + Facebook/Forum-Workflow + Privacy-Footer)
+
+**`custom_components/vag_connect/manifest.json`**:
+
+- `version`: `1.8.12` → `1.9.0`
+
+#### Tests
+
+**`tests/test_reporter.py`** (neu, 18 Tests):
+
+- `TestUnexpectedKeys` (10 Tests): registered-keys not flagged, unknown-keys
+  flagged, unregistered brand silent, SEAT==CUPRA inheritance, Audi==VW
+  inheritance, mask_value redaction (VIN, GPS, JWT, UUID, Email), wildcard
+  path matching
+- `TestErrorReporter` (4 Tests): ring buffer evicts oldest, record_error
+  masks all sensitive substrings, record_error never raises (BoomBuffer
+  fixture), serialise_for_diagnostics is JSON-safe
+- `TestReporterPipeline` (4 Tests): unexpected-keys report renders table,
+  empty findings = empty string, error report renders fenced traceback,
+  GitHub URL pre-filled and decodable, body truncation works,
+  ensure_*_issue creates/deletes via mocked HA registry, error-issue
+  severity is ERROR
+
+#### Privacy-Audit
+
+Jede der folgenden Substrings darf NICHT in der Diagnostics-Response landen:
+
+- Voller VIN (17 chars)
+- Bearer-Token, JWT, opaque base64 token (>=32 chars)
+- userID (UUID v4)
+- Email-Adresse
+- GPS-Koordinaten mit > 1 Dezimalstelle (~11 km Bucket)
+
+Verifiziert via `test_record_error_masks_sensitive_data` mit kombiniertem
+String, der alle 5 Pattern-Typen enthält. Plus dedizierte `mask_value`
+Unit-Tests für jeden Typ einzeln.
+
+#### Architektur-Notes
+
+- **Warum opt-in pro Brand-Client?** Audi inherits VW EU automatisch. Andere
+  Brands (Porsche, VW NA) bleiben silent bis sie eine `EXPECTED_KEYS`-Tabelle
+  und `last_raw_responses`-Stash haben. Verhindert false-positives für nicht-getunte Brands.
+- **Warum Per-VIN für Vehicle Data Scout, Account-wide für Error Reporter?**
+  Drift ist Vehicle-spezifisch (Firmware, Modelljahrgang). Errors sind oft
+  Auth/Rate-Limit (account-wide). Trennung spiegelt die Ursachen.
+- **Warum De-Dup per Path?** Drift bei jedem Poll → ohne De-Dup hätte der Buffer
+  in 1 Stunde 720 identische Einträge. De-Dup hält ihn klein und den Report lesbar.
+- **Warum NEVER-raises?** Error-Reporter ist Infrastruktur. Ein Bug im Reporter
+  würde sonst die Integration killen — genau das Gegenteil von dem, was wir wollen.
+- **Warum kein Auto-Push?** GDPR (Anwender muss aktiv konsentieren), HACS-Regeln
+  (kein automatischer Telemetry-Send), GitHub ToS (Bot-Issues = Spam-Risiko).
+  1-Klick + opt-in ist die Best Practice.
+
+#### Was kommt NICHT in v1.9.0
+
+- **Capability-Filter Phase 2** (#56) — separates Release v1.9.1
+- **Defensive Coding Phase 2** (#58) — separates Release v1.9.2
+- **Anonymized Diagnostics-Export Service** mit Reset-Button — Teil von v1.10.0
+- **Push notifications** für neue Findings — bewusst nicht (nutzt schon HA Repair-System)
+
+---
+
 ## [1.8.12] - 2026-04-29
 
 ### MVP-Move — Multi-Brand Connection-State (Helper-Extraction + Apply auf alle 4 CARIAD-Brands)

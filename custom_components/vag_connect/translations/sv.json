@@ -169,6 +169,12 @@
       },
       "adblue_range_km": {
         "name": "AdBlue-räckvidd"
+      },
+      "api_observer_findings": {
+        "name": "API-spanare"
+      },
+      "error_reporter_count": {
+        "name": "Felrapportör"
       }
     },
     "binary_sensor": {
@@ -342,6 +348,14 @@
     "auth_failed": {
       "title": "Inloggning misslyckades — {brand}",
       "description": "Inställningar → Enheter och tjänster → VAG Connect → ⋮ → Omkonfigurera."
+    },
+    "vehicle_data_scout_findings": {
+      "title": "API-spanare — {count} nytt fält på {brand}",
+      "description": "API-spanaren upptäckte **{count}** nya fält i {brand}-API-svaret som VAG Connect inte läser ännu.\n\nVanligtvis betyder det att ditt fordon har en funktion eller firmware-version vi inte har kartlagt — din hjälp lär integrationen att stödja den.\n\n**1-klick-rapport:**\n📤 Klicka på **Läs mer** nedan för att öppna ett förifyllt GitHub-ärende.\n\n**För Facebook / forum:** Inställningar → Enheter → VAG Connect → Diagnostik → Ladda ner — klistra in den maskerade rapporten.\n\n_Integritet: VIN maskerade, GPS avrundad till 1 decimal, userIDs/JWT/e-post borttagna. Ingenting skickas automatiskt._"
+    },
+    "error_reporter_findings": {
+      "title": "Felrapportör — {count} senaste fel på {brand}",
+      "description": "Felrapportören fångade **{count}** senaste integrationsfel för {brand}.\n\nAtt rapportera dem hjälper oss hitta buggar som bara uppstår på vissa fordon eller firmware-versioner.\n\n**1-klick-rapport:**\n📤 Klicka på **Läs mer** nedan för att öppna ett förifyllt GitHub-ärende.\n\n**För Facebook / forum:** Inställningar → Enheter → VAG Connect → Diagnostik → Ladda ner — rapporten ingår, VIN och tokens maskerade.\n\n_Integritet: VIN maskerade, Bearer/JWT/UUID/e-post-tokens borttagna från meddelanden och tracebacks. Inga inloggningsuppgifter._"
     }
   },
   "exceptions": {

@@ -132,6 +132,19 @@ class SeatCupraClient(CariadBaseClient):
         )
         mycar, parking, ranges, status, charge_status, charge_info, climate, maintenance, availability = results
 
+        # v1.9.0 — Vehicle Data Scout opt-in. Endpoint names match
+        # ``EXPECTED_KEYS["cupra"]`` (SEAT inherits the same table).
+        self.last_raw_responses = {}
+        for name, payload in (
+            ("mycar", mycar),
+            ("status", status),
+            ("charging", charge_status),
+            ("charging-info", charge_info),
+            ("climatisation", climate),
+        ):
+            if isinstance(payload, dict):
+                self.last_raw_responses[name] = payload
+
         # ── Main vehicle data (mycar) ────────────────────────────────────────
         if isinstance(mycar, dict):
             measurements = v(mycar, "measurements") or {}

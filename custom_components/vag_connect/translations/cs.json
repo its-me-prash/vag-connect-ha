@@ -169,6 +169,12 @@
       },
       "adblue_range_km": {
         "name": "Dojezd AdBlue"
+      },
+      "api_observer_findings": {
+        "name": "Pozorovatel API"
+      },
+      "error_reporter_count": {
+        "name": "Hlásič chyb"
       }
     },
     "binary_sensor": {
@@ -342,6 +348,14 @@
     "auth_failed": {
       "title": "Přihlášení selhalo — {brand}",
       "description": "Nastavení → Zařízení a služby → VAG Connect → ⋮ → Znovu nakonfigurovat."
+    },
+    "vehicle_data_scout_findings": {
+      "title": "Pozorovatel API — {count} nových polí v {brand}",
+      "description": "Pozorovatel API zjistil **{count}** nových polí v odpovědi API {brand}, která VAG Connect zatím nečte.\n\nObvykle to znamená, že vaše vozidlo má funkci nebo verzi firmwaru, kterou jsme ještě nepřiřadili — vaše pomoc naučí integraci její podpoře.\n\n**Hlášení jedním kliknutím:**\n📤 Klikněte níže na **Více informací** a otevřete předvyplněný GitHub issue.\n\n**Pro Facebook / fórum:** Nastavení → Zařízení → VAG Connect → Diagnostika → Stáhnout — vložte maskovanou zprávu.\n\n_Soukromí: VINy maskované, GPS zaokrouhleno na 1 desetinné místo, userIDs/JWT/e-maily odstraněny. Nic se neodesílá automaticky._"
+    },
+    "error_reporter_findings": {
+      "title": "Hlásič chyb — {count} nedávných chyb v {brand}",
+      "description": "Hlásič chyb zachytil **{count}** nedávných chyb integrace s {brand}.\n\nNahlášení nám pomáhá najít chyby, které se objevují pouze u konkrétních vozidel nebo verzí firmwaru.\n\n**Hlášení jedním kliknutím:**\n📤 Klikněte níže na **Více informací** a otevřete předvyplněný GitHub issue.\n\n**Pro Facebook / fórum:** Nastavení → Zařízení → VAG Connect → Diagnostika → Stáhnout — zpráva je obsažena, VINy a tokeny maskované.\n\n_Soukromí: VINy maskované, tokeny Bearer/JWT/UUID/e-mail odstraněny ze zpráv a tracebacků. Žádná přihlašovací data._"
     }
   },
   "exceptions": {

@@ -80,6 +80,14 @@ class CariadBaseClient:
         # Prevents the spiral documented in myskoda #976 / volkswagencarnet #683.
         self._refresh_history: list[float] = []
         self._auth = IDKAuth(session, brand)
+        # v1.9.0 — Vehicle Data Scout opt-in stash. Brand clients populate
+        # this in ``get_status`` so the coordinator can run
+        # ``detect_unexpected`` over the raw responses without each brand
+        # client having to import the detector. Keys are logical endpoint
+        # names matching ``EXPECTED_KEYS[brand][endpoint]`` (e.g.
+        # ``"vehicle-status"``); values are the unparsed dict from the
+        # backend. Re-populated per poll — never accumulates across polls.
+        self.last_raw_responses: dict[str, dict[str, Any]] = {}
 
     @property
     def brand(self) -> BrandConfig:
