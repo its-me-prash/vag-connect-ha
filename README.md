@@ -48,14 +48,41 @@ VAG Connect entwickelt sich aktiv weiter. Damit du weißt, was funktioniert und 
 - 🚙 **Škoda `detail.{sunroof,trunk,bonnet}`, `reliableLockStatus`, `fullyChargedAt`** (v1.8.11) aus Live-API-Erkenntnissen.
 - 🔐 **Token-Refresh-Storm-Schutz** (max 3/h, v1.8.7) — verhindert IP-Bans durch Backend-Spirale.
 
+### 🔬 Bald: 1-Klick Bug-Reports & Feature-Wünsche (v1.9.0)
+
+> **Du hilfst uns die Integration besser zu machen — ohne ein einziges Wort GitHub oder Markdown lernen zu müssen.**
+
+Zwei neue Diagnose-Sensoren in v1.9.0:
+
+| Sensor | Was er macht | Wie er dir hilft |
+|---|---|---|
+| 🔬 **API-Beobachter** | Erkennt automatisch neue Felder in der API deines Autos die wir noch nicht auswerten | Wenn dein Audi A4 2017 oder VW Golf 7 GTE Felder liefert die wir nicht kennen → wir bauen sie in der nächsten Version ein |
+| 🛠️ **Fehler-Berichter** | Sammelt die letzten Fehler mit anonymisiertem Kontext (Modell, Firmware, Stack-Trace) | Statt Forum-Screenshot ohne Info → strukturierter Bug-Report den wir sofort fixen können |
+
+**1-Klick-Workflow** (für beide Sensoren gleich):
+
+```
+1. HA zeigt eine Benachrichtigung wenn was Neues entdeckt wird
+2. Du klickst "Mehr Info" → Modal mit anonymisiertem Inhalt + 2 Buttons:
+
+   📤 Auf GitHub melden    ← öffnet pre-fertigen Bug-Report
+   📋 Copy für Forum/FB    ← Markdown ins Clipboard für Facebook-Gruppe
+
+3. Submit klicken → fertig in 30 Sekunden
+```
+
+🔒 **Privacy-Versprechen:** **Kein Auto-Push.** Nichts verlässt deine HA-Installation ohne deinen expliziten Klick. VINs, GPS, User-IDs werden vor dem Anzeigen anonymisiert. GDPR-konform, HACS-Default-kompatibel.
+
+🤝 **Warum wir das brauchen:** Wir sind die einzige aktive VAG-HA-Integration für alle 7 Marken. Jedes neue Modell liefert minimal andere API-Antworten. Mit deinem 1-Klick-Beitrag entdecken wir diese Unterschiede in **Tagen statt Monaten**.
+
 ### ⚠️ Was noch in Arbeit ist (geplante Sessions)
 
-- **Capability-Filter Phase 2** (v1.8.13) — Entities werden VOR dem Anlegen gegen `capability.active && user-enabled` geprüft. Behebt vermutlich noch mehr "missing entity" Reports.
-- **Defensive Coding Phase 2** (v1.8.14) — Generic-Exception-Audit + Enum-Tolerance (`CHARGING_INTERRUPTED`, `NOT_ACTIVATED` etc.).
-- **Anonymisierte Diagnostics** (Session 4) — User können Diagnostic-Dumps für Bug-Reports ohne Privacy-Risiko herunterladen.
-- **Read-only Mode + Smart-Wake mit 12V-Drain-Schutz** (Session 6, v1.9.0) — verhindert dass Auto-Wakeups die Batterie leersaugen.
-- **Push-Updates** (Sessions 7+8, v1.9.1/2) — Firebase FCM für CUPRA/SEAT, mysmob MQTT für Skoda.
-- **Trip-Statistics + EU Data Act ready** (Session 9+10, v1.10.0+).
+- **Capability-Filter Phase 2** (v1.9.1) — Entities werden VOR dem Anlegen gegen `capability.active && user-enabled` geprüft.
+- **Defensive Coding Phase 2** (v1.9.2) — Generic-Exception-Audit + Enum-Tolerance (`CHARGING_INTERRUPTED`, `NOT_ACTIVATED` etc.).
+- **Optimistic Lock/Climate** (v1.9.3) — myskoda #832 Pattern für sofortige UI-Reaktion.
+- **Anonymisierte Diagnostics + Smart-Wake + 12V-Drain-Schutz** (v1.10.0) — verhindert dass Auto-Wakeups die Batterie leersaugen.
+- **Push-Updates** (v1.10.x) — Firebase FCM für CUPRA/SEAT, mysmob MQTT für Skoda.
+- **Trip-Statistics + EU Data Act ready** (v1.11.0 / v2.0.0).
 
 ### 🚫 Bewusste Limits (funktioniert nicht und wird nicht funktionieren)
 

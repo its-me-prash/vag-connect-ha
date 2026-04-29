@@ -48,9 +48,36 @@ Od v0.14.1 integrace **přímo** komunikuje s CARIAD API — vlastní async klie
 - 🚪 **CUPRA / SEAT kompletní entity** s ověřenými OLA JSON cestami + binary sensors na okno (v1.8.9).
 - 🚙 **Škoda** `detail` block + `reliableLockStatus` + `fullyChargedAt` (v1.8.11).
 
+### 🔬 Brzy: Bug reporty 1 kliknutím & žádosti o funkce (v1.9.0)
+
+> **Pomáháš nám zlepšovat integraci — bez učení jediného slova GitHubu nebo Markdown.**
+
+Dva nové diagnostické sensory v v1.9.0:
+
+| Sensor | Co dělá | Jak ti pomáhá |
+|---|---|---|
+| 🔬 **Detektor nových dat** | Automaticky detekuje nová pole v API tvého auta která ještě nezpracováváme | Pokud tvoje Audi A4 2017 nebo VW Golf 7 GTE vrací neznámá pole → přidáme je v další verzi |
+| 🛠️ **Reportér chyb** | Sbírá nedávné chyby s anonymizovaným kontextem (model, firmware, stack trace) | Místo fórového screenshotu bez info → strukturovaný bug report který okamžitě opravíme |
+
+**1-klik workflow** (stejný pro oba sensory):
+
+```
+1. HA zobrazí notifikaci když je detekováno něco nového
+2. Klikneš "Více info" → modal s anonymizovaným obsahem + 2 tlačítka:
+
+   📤 Nahlásit na GitHub    ← otevře předvyplněný bug report
+   📋 Zkopírovat pro fórum/FB ← Markdown do schránky
+
+3. Submit → hotovo za 30 sekund
+```
+
+🔒 **Soukromí slib:** **Žádný auto-push.** Nic neopustí tvou HA instalaci bez tvého explicitního kliknutí. VINy, GPS, user-IDs anonymizovány. GDPR-compliant.
+
+🤝 **Proč to potřebujeme:** Jsme jediná aktivní VAG HA integrace pro všech 7 značek. Tvůj 1-klik příspěvek nám umožňuje objevovat rozdíly mezi modely v **dnech místo měsíců**.
+
 ### ⚠️ Ještě v procesu
 
-Capability filter fáze 2 (v1.8.13) · Defenzivní kódování fáze 2 (v1.8.14) · Anonymizované diagnostiky (Session 4) · Smart-wake + ochrana drain 12V (Session 6) · Push updates (v1.9.1/2) · Trip stats + EU Data Act (v1.10.0+).
+Capability filter fáze 2 (v1.9.1) · Defenzivní kódování fáze 2 (v1.9.2) · Optimistic Lock/Climate (v1.9.3) · Diagnostics + Smart-wake + ochrana drain 12V (v1.10.0) · Push updates (v1.10.x) · Trip stats + EU Data Act (v1.11.0 / v2.0.0).
 
 ### 🚫 Vědomé limity
 

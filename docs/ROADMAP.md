@@ -56,17 +56,15 @@ priority.
 
 | Session | Version | Scope | Issues |
 |---|---|---|---|
-| **Vehicle Data Scout + Error Reporter** | v1.8.13 | Zwei diagnostische Sensoren mit **gemeinsamer Reporter Pipeline** für crowd-sourced Bug-Discovery. (1) **Vehicle Data Scout** loggt unbekannte JSON-Felder (folgt tillsteinbach CC-* "Unexpected Keys"-Pattern, unsere beste API-Quelle). (2) **Error Reporter** captured letzte N Exceptions/API-Errors mit Brand+Model+Firmware-Context. **Reporter Pipeline (1-Klick, beide Quellen):** HA Repair Notification → User klickt "Mehr Info" → Modal mit anonymisiertem Inhalt + 2 Buttons: `📤 Bug auf GitHub melden` (pre-filled Issue) UND `📋 Copy für Forum/Facebook` (Markdown in Clipboard). **Besonders wertvoll für Facebook-Community** — nicht-technische User können in 1 Klick brauchbare Bug-Reports teilen ohne Markdown oder GitHub zu lernen. ~30 Sek. KEIN Auto-Push (GDPR + HACS + GitHub ToS); opt-in Telemetry eigene v1.9.x Session. Brand-localised sensor names (DE: "API-Beobachter" / "Fehler-Berichter", FR/ES/NL/PL/CS/SV equivalents). Implementation: `cariad/_unexpected_keys.py` + `cariad/_error_reporter.py` + shared `_reporter_pipeline.py` + 8-Sprach-Strings | new |
-| **Capability-Filter Phase 2** | v1.8.14 | `capability.active && capability.user-enabled` before entity creation. CC-seatcupra #64 pattern. Likely solves more "missing entity" reports across all brands | #56 |
-| **Defensive Coding Phase 2** | v1.8.15 | Generic `except Exception` audit across all API clients. Enum tolerance for `CHARGING_INTERRUPTED`, `NOT_ACTIVATED`, `NO_UPDATE_AVAILABLE` etc. Optional fields enforcement (myskoda PR #565 pattern) | #58 |
-| **3B-Part-3 — Optimistic Lock/Climate** | v1.8.16 | myskoda #832 pattern — optimistic update + state restoration after `set_*` commands so entities don't go "unavailable" between click and next poll | — |
-| **4 — Diagnostics + Fixtures** | v1.9.0-pre | Anonymized diagnostics export with `last_seen_at`, `command_profile`, `device_platform`, `connection_state`, `consecutive_failures`, `capability_404_endpoints`. Fixtures from CC-seatcupra #109, CC-skoda #50, volkswagencarnet #921 as test cases | #62, #58 |
-| **5 — Process & Governance** | — | Issue forms, brand captains, CODEOWNERS, privacy guide | #64 |
-| **6 — Read-only + Smart-Wake** | v1.9.0 | Read-only mode; persistent wake counter (max 3/day); `wake_count_today` sensor; **NEVER auto-wake** from coordinator. Plus 12V drain detection from `connectionWarning.insufficientBatteryLevelWarning` (volkswagencarnet #940) — extend stale-cache to 24-72h when 12V is low | #63, #55, #23 |
-| **7 — Push CUPRA/SEAT** | v1.9.1 | Firebase FCM via `mqtt.messagehub.de` | #57, #27 |
-| **8 — Push Škoda** | v1.9.2 | mysmob MQTT broker (Škoda-only, not portable to other brands per myskoda PR #566 / #533) | #57 |
-| **9 — Trip Stats + Image refactor** | v1.10.0 | Audi `tripstatistics/v1` schema (verified `audi_services.py:337`); per-trip data model (numeric aggregate in state, JSON in attrs per audi #113); image platform → user-supplied URL or removal (no official render API exists) | #24, #35, #36 |
-| **10 — HACS Default + v2.0.0** | v2.0.0 | Live tests all brands, compatibility matrix, EU Data Act ready (pycupra `EUDAConnection` reference implementation ready to port) | #13, #59 |
+| **Vehicle Data Scout + Error Reporter** | **v1.9.0** ⭐ | Zwei diagnostische Sensoren mit **gemeinsamer Reporter Pipeline** für crowd-sourced Bug-Discovery. (1) **Vehicle Data Scout** loggt unbekannte JSON-Felder (folgt tillsteinbach CC-* "Unexpected Keys"-Pattern). (2) **Error Reporter** captured letzte N Exceptions/API-Errors. **Reporter Pipeline (1-Klick):** HA Repair Notification → "Mehr Info" → Modal + 2 Buttons: `📤 GitHub melden` ODER `📋 Copy für Forum/Facebook`. **Facebook-Community-friendly.** KEIN Auto-Push. Brand-localised sensor names (8 Sprachen). **Semver: MINOR (neue Sensoren), nicht PATCH.** | new |
+| **Capability-Filter Phase 2** | v1.9.1 | `capability.active && capability.user-enabled` vor Entity-Creation. CC-seatcupra #64 pattern. PATCH. | #56 |
+| **Defensive Coding Phase 2** | v1.9.2 | Generic `except Exception` audit + Enum-Tolerance (`CHARGING_INTERRUPTED`, `NOT_ACTIVATED` etc.). PATCH. | #58 |
+| **3B-Part-3 — Optimistic Lock/Climate** | v1.9.3 | myskoda #832 pattern. PATCH. | — |
+| **Diagnostics + Smart-Wake + 12V protection** | **v1.10.0** ⭐ | MINOR: Anonymized diagnostics export (CC-seatcupra #109, CC-skoda #50, volkswagencarnet #921 als Fixtures), Read-only Mode, persistent wake counter (max 3/day), `wake_count_today` sensor, **NIE auto-wake**. Plus 12V drain detection (volkswagencarnet #940) — extend stale-cache to 24-72h when 12V low. | #62, #63, #55, #23 |
+| **Process & Governance** | — | Issue forms, brand captains, CODEOWNERS, privacy guide. Doc-only. | #64 |
+| **Push CUPRA/SEAT + Push Škoda** | v1.10.x | Firebase FCM via `mqtt.messagehub.de` (CUPRA/SEAT) + mysmob MQTT broker (Škoda-only — myskoda PR #566). PATCH each. | #57, #27 |
+| **Trip Stats + Image refactor** | **v1.11.0** ⭐ | MINOR: Audi `tripstatistics/v1` (verified `audi_services.py:337`); per-trip data model (numeric aggregate in state, JSON in attrs per audi #113); image platform → user-supplied URL or removal. | #24, #35, #36 |
+| **HACS Default + v2.0.0** | **v2.0.0** 🎉 | MAJOR: Live tests all brands, compatibility matrix, EU Data Act ready (pycupra `EUDAConnection` ready to port). | #13, #59 |
 
 ### Standalone enhancements (no version pin yet)
 
@@ -112,7 +110,7 @@ priority.
   (Lint, Tests, Hassfest, HACS, CHANGELOG). Merging with failing tests
   is now impossible (lesson from v1.8.9 incident).
 - Every command-sending entity must be capability-gated (#56) before
-  reaching v1.9.0.
+  reaching v2.0.0.
 - Translation strings: English in `strings.json`, mirrored across
   `translations/{de,en,cs,es,fr,nl,pl,sv}.json`.
 - CHANGELOG is now split: human-friendly in `CHANGELOG.md` (with emojis,
@@ -120,6 +118,22 @@ priority.
   citations in `docs/CHANGELOG_TECHNICAL.md`.
 - Research-Agent recipe documented in `docs/RESEARCH_NOTES_2026-04-29.md`
   section 7.
+
+### Semver-Korrektur (going-forward strict, ab v1.9.0)
+
+Historisch (v1.8.6 → v1.8.12) waren PATCH-Bumps auch für neue Features
+üblich (z.B. v1.8.11 hatte einen neuen `connection_state` Sensor — wäre
+nach strikter Lesart MINOR gewesen). Tags v1.8.11 + v1.8.12 sind released,
+die rebasen wir nicht.
+
+**Going forward — strict semver:**
+
+- **PATCH** (`1.x.Y`) — nur Bug-Fixes, keine neuen Entities, keine API-Änderungen
+- **MINOR** (`1.X.0`) — neue Sensoren, neue Services, neue Plattformen
+- **MAJOR** (`X.0.0`) — Breaking Changes, Architektur-Wechsel
+
+Konsequenz: `Vehicle Data Scout + Error Reporter` (zwei neue Sensoren)
+wird **v1.9.0**, nicht v1.8.13. Folgereihe entsprechend verschoben.
 
 ---
 

@@ -51,9 +51,36 @@ VAG Connect is under active development. So you know what works and what's comin
 - 🚙 **Škoda `detail.{sunroof,trunk,bonnet}`, `reliableLockStatus`, `fullyChargedAt`** (v1.8.11) from live API findings.
 - 🔐 **Token refresh storm protection** (max 3/h, v1.8.7) — prevents IP bans.
 
+### 🔬 Coming next: 1-click bug reports & feature requests (v1.9.0)
+
+> **You help us improve the integration — without learning a single word of GitHub or Markdown.**
+
+Two new diagnostic sensors in v1.9.0:
+
+| Sensor | What it does | How it helps you |
+|---|---|---|
+| 🔬 **Vehicle Data Scout** | Automatically detects new fields in your car's API that we don't parse yet | If your Audi A4 2017 or VW Golf 7 GTE returns fields we don't know → we add them in the next release |
+| 🛠️ **Error Reporter** | Collects recent errors with anonymised context (model, firmware, stack trace) | Instead of a forum screenshot without info → structured bug report we can fix immediately |
+
+**1-click workflow** (same for both sensors):
+
+```
+1. HA shows a notification when something new is detected
+2. You click "More info" → modal with anonymised content + 2 buttons:
+
+   📤 Report on GitHub    ← opens pre-filled bug report
+   📋 Copy for forum/FB   ← Markdown to clipboard for Facebook group
+
+3. Submit → done in 30 seconds
+```
+
+🔒 **Privacy promise:** **No auto-push.** Nothing leaves your HA installation without your explicit click. VINs, GPS, user IDs are anonymised before display. GDPR-compliant, HACS-Default-compatible.
+
+🤝 **Why we need it:** We are the only active VAG HA integration for all 7 brands. Every new model returns slightly different API responses. With your 1-click contribution we discover these differences in **days instead of months**.
+
 ### ⚠️ Still in progress
 
-- **Capability filter phase 2** (v1.8.13) · **Defensive coding phase 2** (v1.8.14) · **Anonymized diagnostics** (Session 4) · **Smart-wake + 12V drain protection** (Session 6, v1.9.0) · **Push updates** (v1.9.1/2) · **Trip statistics + EU Data Act** (v1.10.0+).
+- **Capability filter phase 2** (v1.9.1) · **Defensive coding phase 2** (v1.9.2) · **Optimistic Lock/Climate** (v1.9.3) · **Diagnostics + Smart-wake + 12V drain protection** (v1.10.0) · **Push updates** (v1.10.x) · **Trip statistics + EU Data Act** (v1.11.0 / v2.0.0).
 
 ### 🚫 Conscious limits
 

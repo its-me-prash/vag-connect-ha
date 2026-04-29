@@ -48,9 +48,36 @@ Od v0.14.1 integracja **bezpośrednio** komunikuje się z API CARIAD — własny
 - 🚪 **CUPRA / SEAT pełne encje** ze zweryfikowanymi ścieżkami JSON OLA + binary sensors na okno (v1.8.9).
 - 🚙 **Škoda** `detail` block + `reliableLockStatus` + `fullyChargedAt` (v1.8.11).
 
+### 🔬 Wkrótce: Bug reporty 1-kliknięciem & prośby o funkcje (v1.9.0)
+
+> **Pomagasz nam ulepszać integrację — bez uczenia się ani słowa GitHuba czy Markdown.**
+
+Dwa nowe sensory diagnostyczne w v1.9.0:
+
+| Sensor | Co robi | Jak ci pomaga |
+|---|---|---|
+| 🔬 **Wykrywacz nowych danych** | Wykrywa automatycznie nowe pola w API twojego auta których jeszcze nie parsujemy | Jeśli twoje Audi A4 2017 lub VW Golf 7 GTE zwraca nieznane pola → dodajemy je w następnej wersji |
+| 🛠️ **Reporter błędów** | Zbiera ostatnie błędy z anonimizowanym kontekstem (model, firmware, stack trace) | Zamiast screenshota z forum bez info → strukturalny bug report który od razu naprawiamy |
+
+**Workflow 1-kliknięciem** (jednakowy dla obu sensorów):
+
+```
+1. HA pokazuje powiadomienie gdy coś nowego zostanie wykryte
+2. Klikasz "Więcej info" → modal z anonimizowaną zawartością + 2 przyciski:
+
+   📤 Zgłoś na GitHub    ← otwiera prefilled bug report
+   📋 Kopiuj dla forum/FB ← Markdown do schowka
+
+3. Submit → gotowe w 30 sekund
+```
+
+🔒 **Obietnica prywatności:** **Bez auto-push.** Nic nie opuszcza twojej instalacji HA bez twojego kliknięcia. VINy, GPS, user-IDy anonimizowane. GDPR-compliant.
+
+🤝 **Dlaczego tego potrzebujemy:** Jesteśmy jedyną aktywną integracją HA VAG dla wszystkich 7 marek. Twój 1-kliknięcie wkład pomaga nam odkrywać różnice między modelami w **dniach zamiast miesięcy**.
+
 ### ⚠️ Jeszcze w toku
 
-Capability filter faza 2 (v1.8.13) · Defensive coding faza 2 (v1.8.14) · Anonimizowane diagnostics (Sesja 4) · Smart-wake + ochrona drain 12V (Sesja 6) · Push updates (v1.9.1/2) · Trip stats + EU Data Act (v1.10.0+).
+Capability filter faza 2 (v1.9.1) · Defensive coding faza 2 (v1.9.2) · Optimistic Lock/Climate (v1.9.3) · Diagnostics + Smart-wake + ochrona drain 12V (v1.10.0) · Push updates (v1.10.x) · Trip stats + EU Data Act (v1.11.0 / v2.0.0).
 
 ### 🚫 Świadome ograniczenia
 
