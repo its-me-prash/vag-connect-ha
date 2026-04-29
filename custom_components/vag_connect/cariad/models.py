@@ -243,6 +243,15 @@ class VehicleData:
     is_driving: bool = False
     is_online: bool = False
     last_updated_at: Any | None = None
+    # v1.8.11 (Session 3S) — when the *vehicle* last reported data to the
+    # backend, derived from ``carCapturedTimestamp`` on the status response
+    # sub-objects. ``last_updated_at`` above tracks when we last *polled*
+    # the backend; this tracks when the backend last actually heard from
+    # the car. The two diverge during weekend backend outages, when the
+    # car is asleep, or when 12V drops too low to send heartbeats.
+    # Currently populated by SkodaClient; other brands keep it None until
+    # they grow analogous parsing.
+    last_seen_at: Any | None = None
 
     # Service
     service_km: int | None = None

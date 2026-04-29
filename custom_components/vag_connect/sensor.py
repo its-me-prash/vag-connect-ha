@@ -220,6 +220,19 @@ SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
         data_key="vehicle_state",
         icon="mdi:car-info",
     ),
+    # v1.8.11 (Session 3S) — Connection-State Sensor.
+    # Closes #54 (GitHobi). Three-state derived from carCapturedTimestamp:
+    # online (<30 min), standby (<24 h, wakeable), offline (>=24 h, 12V flat
+    # / underground / service mode). Currently only populated for Škoda;
+    # other brands keep it None so HA shows "unknown" instead of false data.
+    # Pattern verified against `homeassistant-myskoda` issues #751, #731.
+    VagSensorDescription(
+        key="connection_state",
+        translation_key="connection_state",
+        data_key="connection_state",
+        icon="mdi:car-connected",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
 
     VagSensorDescription(
         key="parking_address",

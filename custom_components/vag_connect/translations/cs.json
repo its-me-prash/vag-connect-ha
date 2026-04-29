@@ -143,6 +143,9 @@
       "vehicle_state": {
         "name": "Stav vozu"
       },
+      "connection_state": {
+        "name": "Stav připojení"
+      },
       "parking_address": {
         "name": "Zaparkováno"
       },

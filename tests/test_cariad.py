@@ -1321,6 +1321,196 @@ class TestSkodaGetStatus:
         result = asyncio.get_event_loop().run_until_complete(client.get_status("TMB_EV"))
         assert result.vin == "TMB_EV"
 
+    # ── v1.8.11 Session 3S: connection-state via carCapturedTimestamp ─────
+
+    def _url_routing_client(self, by_path: dict):
+        """Returns a SkodaClient whose session.request routes by URL substring.
+        Lets each Skoda endpoint return a different JSON body."""
+        from custom_components.vag_connect.cariad.api.skoda import SkodaClient
+        from custom_components.vag_connect.cariad.models import TokenSet
+
+        def _resp(json_data):
+            r = AsyncMock()
+            r.status = 200
+            r.headers = {"Content-Type": "application/json"}
+            r.json = AsyncMock(return_value=json_data)
+            r.text = AsyncMock(return_value="")
+            r.__aenter__ = AsyncMock(return_value=r)
+            r.__aexit__ = AsyncMock(return_value=False)
+            return r
+
+        empty = _resp({})
+
+        def side_effect(method, url, **kwargs):
+            for pattern, body in by_path.items():
+                if pattern in url:
+                    return _resp(body)
+            return empty
+
+        session = MagicMock()
+        session.request = MagicMock(side_effect=side_effect)
+        client = SkodaClient(session, "u@t.de", "pw")
+        client._tokens = TokenSet("acc", "ref", "id")
+        return client
+
+    def test_v1811_connection_state_online_when_recent(self):
+        """v1.8.11 (Session 3S, closes #54): carCapturedTimestamp <30min ago
+        → connection_state="online"."""
+        from datetime import datetime, timezone, timedelta
+        recent = (datetime.now(tz=timezone.utc) - timedelta(minutes=10)).isoformat()
+        client = self._url_routing_client({
+            "/api/v2/vehicle-status/": {"carCapturedTimestamp": recent},
+        })
+        result = asyncio.get_event_loop().run_until_complete(
+            client.get_status("TMB_TEST"))
+        assert result.connection_state == "online"
+        assert result.last_seen_at is not None
+
+    def test_v1811_connection_state_standby_under_24h(self):
+        """v1.8.11: carCapturedTimestamp <24h ago → standby (wakeable)."""
+        from datetime import datetime, timezone, timedelta
+        hours_ago = (datetime.now(tz=timezone.utc) - timedelta(hours=5)).isoformat()
+        client = self._url_routing_client({
+            "/api/v2/vehicle-status/": {"carCapturedTimestamp": hours_ago},
+        })
+        result = asyncio.get_event_loop().run_until_complete(
+            client.get_status("TMB_TEST"))
+        assert result.connection_state == "standby"
+
+    def test_v1811_connection_state_offline_over_24h(self):
+        """v1.8.11: carCapturedTimestamp >=24h ago → offline (12V flat etc.)."""
+        from datetime import datetime, timezone, timedelta
+        days_ago = (datetime.now(tz=timezone.utc) - timedelta(days=2)).isoformat()
+        client = self._url_routing_client({
+            "/api/v2/vehicle-status/": {"carCapturedTimestamp": days_ago},
+        })
+        result = asyncio.get_event_loop().run_until_complete(
+            client.get_status("TMB_TEST"))
+        assert result.connection_state == "offline"
+
+    def test_v1811_connection_state_none_when_no_timestamp(self):
+        """v1.8.11: missing carCapturedTimestamp → connection_state stays None.
+        Verified pattern from skodaconnect/myskoda PR #565: the field is NOT
+        guaranteed to be present (e.g. SoftwareStatus NO_UPDATE_AVAILABLE
+        doesn't include it). Must not crash, must not invent a value."""
+        client = self._url_routing_client({
+            "/api/v2/vehicle-status/": {"overall": {"locked": "YES"}},
+        })
+        result = asyncio.get_event_loop().run_until_complete(
+            client.get_status("TMB_TEST"))
+        assert result.connection_state is None
+        assert result.last_seen_at is None
+
+    def test_v1811_freshest_timestamp_across_subobjects(self):
+        """v1.8.11: when multiple sub-objects each carry their own
+        carCapturedTimestamp, the freshest one wins. Pattern verified
+        in myskoda PR #536 (process_charging_event compares against
+        snapshot timestamp)."""
+        from datetime import datetime, timezone, timedelta
+        old = (datetime.now(tz=timezone.utc) - timedelta(hours=10)).isoformat()
+        fresh = (datetime.now(tz=timezone.utc) - timedelta(minutes=5)).isoformat()
+        client = self._url_routing_client({
+            "/api/v2/vehicle-status/": {"carCapturedTimestamp": old},
+            "/api/v1/charging/":       {"carCapturedTimestamp": fresh},
+        })
+        result = asyncio.get_event_loop().run_until_complete(
+            client.get_status("TMB_TEST"))
+        # Fresh charging timestamp wins → online
+        assert result.connection_state == "online"
+
+    def test_v1811_detail_block_sunroof_trunk_bonnet(self):
+        """v1.8.11 (CC-skoda issue #50, Kodiaq iV 2026 Live-Response):
+        vehicle-status.detail = {sunroof, trunk, bonnet} with values
+        CLOSED/OPEN/UNSUPPORTED. Pre-v1.8.11 these never populated for
+        any Skoda."""
+        client = self._url_routing_client({
+            "/api/v2/vehicle-status/": {
+                "detail": {
+                    "sunroof": "OPEN",
+                    "trunk":   "CLOSED",
+                    "bonnet":  "CLOSED",
+                },
+            },
+        })
+        result = asyncio.get_event_loop().run_until_complete(
+            client.get_status("TMB_TEST"))
+        assert result.sunroof_open is True
+        assert result.trunk_open is False
+        assert result.hood_open is False  # bonnet → hood
+
+    def test_v1811_detail_unsupported_stays_none(self):
+        """v1.8.11: 'UNSUPPORTED' must NOT be parsed as True or False —
+        the field doesn't apply to this vehicle (e.g. Karoq Diesel
+        without sunroof should not show a sunroof_open=False entity)."""
+        client = self._url_routing_client({
+            "/api/v2/vehicle-status/": {
+                "detail": {"sunroof": "UNSUPPORTED", "trunk": "CLOSED"},
+            },
+        })
+        result = asyncio.get_event_loop().run_until_complete(
+            client.get_status("TMB_TEST"))
+        assert result.sunroof_open is None
+        assert result.trunk_open is False
+
+    def test_v1811_reliable_lock_status_preferred(self):
+        """v1.8.11 (CC-skoda #50): overall.reliableLockStatus is the
+        trustworthy lock field on Kodiaq 2026+ — prefer it over
+        doorsLocked which can lag."""
+        client = self._url_routing_client({
+            "/api/v2/vehicle-status/": {
+                "overall": {
+                    "doorsLocked": "NO",        # stale
+                    "reliableLockStatus": "LOCKED",  # truth
+                },
+            },
+        })
+        result = asyncio.get_event_loop().run_until_complete(
+            client.get_status("TMB_TEST"))
+        assert result.doors_locked is True
+
+    def test_v1811_charging_fully_charged_at_iso_timestamp(self):
+        """v1.8.11 (CC-skoda #50): charging.fullyChargedAt is an absolute
+        ISO timestamp — prefer it over remainingTimeToFullyChargedInMinutes
+        (which drifts because it's car-side computed and we receive it
+        with poll latency)."""
+        from datetime import datetime, timezone
+        eta = "2026-12-31T23:59:00Z"
+        client = self._url_routing_client({
+            "/api/v1/charging/": {
+                "status": {
+                    "state": "CHARGING",
+                    "fullyChargedAt": eta,
+                    "remainingTimeToFullyChargedInMinutes": 99999,  # ignored
+                    "battery": {"stateOfChargeInPercent": 50},
+                },
+            },
+        })
+        result = asyncio.get_event_loop().run_until_complete(
+            client.get_status("TMB_TEST"))
+        assert result.charge_complete_eta is not None
+        # Absolute timestamp used, NOT now()+99999min
+        expected = datetime.fromisoformat(eta.replace("Z", "+00:00"))
+        assert result.charge_complete_eta == expected
+
+    def test_v1811_charging_interrupted_state_not_charging(self):
+        """v1.8.11 (myskoda issue #503): CHARGING_INTERRUPTED is a new
+        ChargingState added Feb 2026. Our `is_charging = state == "CHARGING"`
+        is correct-by-design — interrupted ≠ active charging. Test exists
+        so a future refactor doesn't accidentally treat interrupted as
+        active."""
+        client = self._url_routing_client({
+            "/api/v1/charging/": {
+                "status": {
+                    "state": "CHARGING_INTERRUPTED",
+                    "battery": {"stateOfChargeInPercent": 50},
+                },
+            },
+        })
+        result = asyncio.get_event_loop().run_until_complete(
+            client.get_status("TMB_TEST"))
+        assert result.charging_state == "CHARGING_INTERRUPTED"
+        assert result.is_charging is False  # NOT True
+
 
 # ── SEAT/CUPRA get_status ──────────────────────────────────────────────────────
 
