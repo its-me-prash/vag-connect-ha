@@ -28,6 +28,14 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ## [Unreleased]
 
+### 📚 Documentation refresh (2026-04-29, doc-only — no version bump)
+
+- 🆕 [`docs/RESEARCH_NOTES_2026-04-29.md`](docs/RESEARCH_NOTES_2026-04-29.md) — single archive of every verified live-API field name, every reference repo path, every pattern observation that informed v1.8.6→v1.8.12. Status per claim: ✅ verified / ⚠️ hypothesis / ❌ disproven. **Read this first if resuming this project**.
+- 🔄 [`docs/SESSION_HANDOFF.md`](docs/SESSION_HANDOFF.md) — refreshed to v1.8.12 state. New: process improvements section, full architecture map with per-file v1.8.X-change comments, 17 hard rules, 15-step "How to start the next session" recipe.
+- 🔄 [`docs/ROADMAP.md`](docs/ROADMAP.md) — full version achievement table, sprint summary, expanded "won't be implemented" section, "How an AI tool resumes this work" guide.
+- 🔄 All 8 READMEs — "Aktueller Stand & ehrliche Limits" section refreshed from v1.8.5 to v1.8.12. New 4-tier structure: ✅ what works NOW / ⚠️ in progress / 🚫 conscious limits / 🔧 privacy + 📚 doc links.
+- 🆕 v1.8.13 planned: **Vehicle Data Scout** — user-facing sensor that detects unparsed JSON fields, with 1-click GitHub-Reporter pipeline (no auto-push, GDPR-compliant). Enables crowd-sourced API discovery.
+
 ## [1.8.12] - 2026-04-29 🌐 Multi-Brand Connection-State (MVP-Move)
 
 ✨ **Was ist neu — alle 7 Marken haben jetzt den Online/Standby/Offline-Sensor:**
