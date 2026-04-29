@@ -95,6 +95,15 @@
       "range_km": {
         "name": "Autonomía"
       },
+      "electric_range_km": {
+        "name": "Autonomía eléctrica"
+      },
+      "combustion_range_km": {
+        "name": "Autonomía combustible"
+      },
+      "total_range_km": {
+        "name": "Autonomía total"
+      },
       "odometer_km": {
         "name": "Kilometraje"
       },

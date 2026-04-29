@@ -482,9 +482,10 @@ class VWEUClient(CariadBaseClient):
             d.charge_complete_eta = datetime.now(tz=timezone.utc) + timedelta(minutes=int(remaining_min))
 
         d.battery_soc = v(raw, "charging", "batteryStatus", "value", "currentSOC_pct")
-        battery_range = v(raw, "charging", "batteryStatus", "value", "cruisingRangeElectric_km")
-        if battery_range is not None:
-            d.range_km = int(battery_range)
+        # v1.10.0 (#94) — ``range_km`` headline assignment moved to the
+        # consolidated PHEV-range block further down. Reading the battery
+        # range here would clobber the per-engine logic for hybrids where
+        # the battery range and the engine block disagree.
 
         plug_state = v(raw, "charging", "plugStatus", "value", "plugConnectionState")
         d.plug_state = plug_state
@@ -534,13 +535,87 @@ class VWEUClient(CariadBaseClient):
 
         # ── Fuel / range ──────────────────────────────────────────────────────
         d.fuel_level = v(raw, "measurements", "fuelLevelStatus", "value", "currentFuelLevel_pct")
+
+        # v1.10.0 (#94) — explicit per-energy-source range fields, plus
+        # backward-compatible ``range_km``. Logic order matters:
+        #
+        # 1. Read the two CARIAD BFF engine blocks. Each carries its own
+        #    ``type`` (electric/gasoline/diesel/...) plus its own
+        #    ``remainingRange_km``. Older Audi diesels expose
+        #    ``measurements.rangeStatus.value.dieselRange`` instead, so
+        #    we fall through to that path when the engine blocks are empty.
+        # 2. Map by *engine type* not by *position* — primary != electric
+        #    forever. A Golf 7 GTE 2015 has primary=gasoline, secondary=
+        #    electric in early firmware; modern PHEVs flip them around.
+        # 3. ``total_range_km`` is its own field — only set when the API
+        #    explicitly publishes it (PHEVs do, pure EVs don't).
+        # 4. ``range_km`` (back-compat headline number) prefers electric
+        #    for EV/PHEV, otherwise total, otherwise combustion.
+        electric_types = {"electric", "ev"}
+        combustion_types = {"gasoline", "petrol", "diesel", "gas", "cng", "lpg"}
+
+        for engine_path in (
+            ("fuelStatus", "rangeStatus", "value", "primaryEngine"),
+            ("fuelStatus", "rangeStatus", "value", "secondaryEngine"),
+        ):
+            engine = v(raw, *engine_path)
+            if not isinstance(engine, dict):
+                continue
+            engine_type = (engine.get("type") or "").lower()
+            engine_range = engine.get("remainingRange_km")
+            if engine_range is None:
+                continue
+            try:
+                value = int(engine_range)
+            except (TypeError, ValueError):
+                continue
+            if engine_type in electric_types:
+                d.electric_range_km = value
+            elif engine_type in combustion_types:
+                d.combustion_range_km = value
+
+        # Older Audi models (S6 TDI 2021, A6 e-tron, etc.) expose only the
+        # combustion range under ``measurements.rangeStatus.value.dieselRange``
+        # / ``gasolineRange`` — no ``fuelStatus.rangeStatus.value`` block.
+        # Verified live on Audi S6 C8 2021 (#91).
+        if d.combustion_range_km is None:
+            for ms_field in ("dieselRange", "gasolineRange"):
+                ms_val = v(raw, "measurements", "rangeStatus", "value", ms_field)
+                if ms_val is None:
+                    continue
+                # CARIAD-BFF returns either a scalar km value OR a wrapped
+                # ``{"distanceInKm": int}`` shape (the same dual-form shape
+                # Skoda uses for its electricRange/combustionRange blocks).
+                if isinstance(ms_val, dict):
+                    ms_val = ms_val.get("distanceInKm")
+                try:
+                    d.combustion_range_km = int(ms_val) if ms_val is not None else None
+                except (TypeError, ValueError):
+                    pass
+
+        # Total range — from explicit field if present.
         total_range = v(raw, "fuelStatus", "rangeStatus", "value", "totalRange_km")
         if total_range is not None:
-            d.range_km = int(total_range)
+            try:
+                d.total_range_km = int(total_range)
+            except (TypeError, ValueError):
+                pass
 
-        elec_range = v(raw, "fuelStatus", "rangeStatus", "value", "primaryEngine", "remainingRange_km")
-        if elec_range is not None and d.has_battery:
-            d.range_km = int(elec_range)
+        # Back-compat ``range_km`` headline. Preference order matches
+        # users' intuitive expectation — EVs/PHEVs see battery range as
+        # primary, ICE see combustion or total.
+        battery_range = v(raw, "charging", "batteryStatus", "value", "cruisingRangeElectric_km")
+        if d.electric_range_km is None and battery_range is not None:
+            try:
+                d.electric_range_km = int(battery_range)
+            except (TypeError, ValueError):
+                pass
+        if d.has_battery and d.electric_range_km is not None:
+            d.range_km = d.electric_range_km
+        elif d.total_range_km is not None:
+            d.range_km = d.total_range_km
+        elif d.combustion_range_km is not None:
+            d.range_km = d.combustion_range_km
 
         adblue = v(raw, "measurements", "rangeStatus", "value", "adBlueRange")
         if adblue is not None:

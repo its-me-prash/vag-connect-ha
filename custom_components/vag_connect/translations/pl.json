@@ -95,6 +95,15 @@
       "range_km": {
         "name": "Zasięg"
       },
+      "electric_range_km": {
+        "name": "Zasięg elektryczny"
+      },
+      "combustion_range_km": {
+        "name": "Zasięg paliwa"
+      },
+      "total_range_km": {
+        "name": "Zasięg łączny"
+      },
       "odometer_km": {
         "name": "Przebieg"
       },

@@ -95,6 +95,15 @@
       "range_km": {
         "name": "Räckvidd"
       },
+      "electric_range_km": {
+        "name": "Elektrisk räckvidd"
+      },
+      "combustion_range_km": {
+        "name": "Bränsleräckvidd"
+      },
+      "total_range_km": {
+        "name": "Total räckvidd"
+      },
       "odometer_km": {
         "name": "Mätarställning"
       },

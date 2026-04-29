@@ -95,6 +95,15 @@
       "range_km": {
         "name": "Actieradius"
       },
+      "electric_range_km": {
+        "name": "Elektrisch bereik"
+      },
+      "combustion_range_km": {
+        "name": "Brandstofbereik"
+      },
+      "total_range_km": {
+        "name": "Totaal bereik"
+      },
       "odometer_km": {
         "name": "Kilometerstand"
       },

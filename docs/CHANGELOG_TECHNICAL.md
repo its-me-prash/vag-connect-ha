@@ -12,6 +12,129 @@ weiterhin direkt in `CHANGELOG.md` zu finden.
 
 ---
 
+## [1.10.0] - 2026-04-29
+
+### PHEV Range Triple + Audi Diesel Range — Issue #94 + Scout-driven Entities aus #91
+
+**Auslöser:** Issue #94 (PHEV-User wollen elektrische + Verbrennungs-Reichweite separat sehen), Issue #91 (Audi S6 C8 2021 Live-Test zeigt `measurements.rangeStatus.value.dieselRange = 190` als unbekannten Pfad). Erste MINOR-Release die die Vehicle Data Scout findings (v1.9.0) in echte HA-Entitäten überführt.
+
+#### Neue Felder
+
+**`custom_components/vag_connect/cariad/models.py`** — VehicleData um 3 Felder erweitert:
+
+```python
+electric_range_km: int | None = None     # batterie-only Reichweite
+combustion_range_km: int | None = None   # Petrol/Diesel/CNG/LPG Reichweite
+total_range_km: int | None = None        # kombinierte Reichweite (PHEVs)
+```
+
+`range_km` bleibt als "Headline-Number" für Backwards-Compat — existierende Dashboards / Automatisierungen brechen nicht.
+
+#### Parser-Änderungen
+
+**`custom_components/vag_connect/cariad/api/vw_eu.py:_parse_status`** — komplett umgebaute Range-Logik:
+
+API-Pfade pro Drivetrain:
+
+| Quelle | Pfad | Beispiel-Vehicle |
+|---|---|---|
+| Pure EV | `charging.batteryStatus.value.cruisingRangeElectric_km` | ID.4, e-tron GT |
+| PHEV (modern) | `fuelStatus.rangeStatus.value.{primaryEngine,secondaryEngine}.{type,remainingRange_km}` | Golf 7 GTE 2015+ (#90) |
+| Total (Hybrid) | `fuelStatus.rangeStatus.value.totalRange_km` | Golf 7 GTE |
+| Diesel (Audi älter) | `measurements.rangeStatus.value.dieselRange` | S6 C8 2021 (#91, sample 190 km) |
+| Benzin (Audi älter) | `measurements.rangeStatus.value.gasolineRange` | (proaktiv für ICE-Audis) |
+
+Neue Logik:
+
+1. **Iteration über beide Engine-Blöcke** (`primaryEngine` + `secondaryEngine`). Klassifizierung nach `engine.type` (`electric`/`ev` → `electric_range_km`, `gasoline`/`petrol`/`diesel`/`gas`/`cng`/`lpg` → `combustion_range_km`). Kein Hardcoding "primary == electric" — manche Firmwares vertauschen es.
+2. **Fallback auf `measurements.rangeStatus`-Pfad** wenn kein `fuelStatus`-Block (Audi S6 C8 2021). Akzeptiert sowohl skalare `int`-Werte als auch `{distanceInKm: int}`-Wrapper.
+3. **`total_range_km` separat** — nur gesetzt wenn `totalRange_km` explizit publiziert wird.
+4. **Headline `range_km` Priorität:** elektrisch (für `has_battery=True`) → total → Verbrennung.
+
+Pre-1.10.0 hatte 2 Bugs:
+- `battery_range` von `cruisingRangeElectric_km` überschrieb manchmal den `total_range_km` (Reihenfolge im Code)
+- `combustionRange` wurde nirgends in ein eigenes Feld geschrieben — verloren für PHEV-User
+
+**`custom_components/vag_connect/cariad/api/skoda.py:get_status`** — Driving-Range Block:
+
+Skoda mysmob hat dieselbe Per-Engine-Struktur, aber unter `electricRange.distanceInKm` + `combustionRange.distanceInKm` + `totalRangeInKm`. Pre-1.10.0 las nur `combustionRange` als Skalar — auf neueren Firmwares mit Wrapper-Form (Kodiaq iV) war das `None`. Fix: liest jetzt beide Formen (gewrappt als Default, flacher Skalar als Fallback) und befüllt alle 3 Felder.
+
+#### Sensor-Definitionen
+
+**`custom_components/vag_connect/sensor.py`** — 3 neue `VagSensorDescription`:
+
+| Key | Translation Key | Icon | Condition | Unit |
+|---|---|---|---|---|
+| `electric_range_km` | electric_range_km | mdi:battery-charging-outline | electric | km |
+| `combustion_range_km` | combustion_range_km | mdi:gas-station | combustion | km |
+| `total_range_km` | total_range_km | mdi:map-marker-distance | (none) | km |
+
+Alle drei: `device_class=DISTANCE`, `state_class=MEASUREMENT`, `suggested_display_precision=0`.
+
+#### Phantom-Entity-Schutz (#94 acceptance criteria)
+
+Neuer `_DATA_PRESENT_REQUIRED` Frozenset in `sensor.py`:
+
+```python
+_DATA_PRESENT_REQUIRED: frozenset[str] = frozenset({
+    "electric_range_km",
+    "combustion_range_km",
+    "total_range_km",
+})
+```
+
+`async_setup_entry` filtert pro VIN: wenn `vehicle.get(desc.data_key) is None` UND der Key im `_DATA_PRESENT_REQUIRED`-Set ist → Entity wird NICHT erstellt. Reine EVs bekommen also nicht den `combustion_range_km`-Sensor als "unknown", reine ICE keinen `electric_range_km`. Per-key opt-in — bestehende Sensoren behalten ihr "create-immer, populate-später" Verhalten.
+
+Wichtig: das Set ist **additiv zur** `condition`-Filterung (`electric`/`combustion`). Beide müssen gleichzeitig "ja" sagen damit eine Entity entsteht. Verhindert double-trouble: ein PHEV mit `has_battery=True` + `has_combustion=True` aber ohne API-Daten für eines der beiden → richtige Filterung.
+
+#### Translations
+
+8 Sprachen (de/en/fr/es/nl/pl/cs/sv) mit konsistenten Begriffen:
+
+| Sprache | Electric | Combustion | Total |
+|---|---|---|---|
+| DE | Elektrische Reichweite | Kraftstoff-Reichweite | Gesamtreichweite |
+| EN | Electric Range | Fuel Range | Total Range |
+| FR | Autonomie électrique | Autonomie carburant | Autonomie totale |
+| ES | Autonomía eléctrica | Autonomía combustible | Autonomía total |
+| NL | Elektrisch bereik | Brandstofbereik | Totaal bereik |
+| PL | Zasięg elektryczny | Zasięg paliwa | Zasięg łączny |
+| CS | Elektrický dojezd | Dojezd na palivo | Celkový dojezd |
+| SV | Elektrisk räckvidd | Bränsleräckvidd | Total räckvidd |
+
+#### Tests
+
+**`tests/test_v1100_phev_ranges.py`** (neu, 13 Tests):
+
+- `TestVehicleDataFields` (2): Defaults sind None, to_dict round-trips
+- `TestVWEUParseRanges` (5): PHEV mit primary=electric/secondary=gasoline; vertauschte Engine-Positionen; Audi diesel-only Fallback; pure EV (kein combustion); wrapped `{distanceInKm: int}` form
+- `TestSkodaParseRangesUnit` (1): Kodiaq PHEV shape mit allen 3 Werten
+- `TestSensorGating` (5): `_DATA_PRESENT_REQUIRED` enthält die 3 Keys; alle 3 SensorDescriptions registriert; combustion hat gas-station icon + condition; electric hat battery icon + condition; total hat keine condition
+
+#### Was NICHT in v1.10.0 ist
+
+- **`vehicleHealthWarnings` als neue Binary-Sensors:** Parser + Felder existieren schon seit v1.0 (warning_engine/oil/tyre/brakes — gefüllt aus `vehicleHealthWarnings.warningLights.value`). Die Vehicle Data Scout Findings #90 + #91 hatten den Pfad nur als top-level `vehicleHealthWarnings` gemeldet (ungeparster wrapper) — v1.9.1 hat das `EXPECTED_KEYS` registriert, der Parser darunter funktioniert seit jeher.
+- **`vehicleHealthInspection` als neuer Date-Sensor:** existiert schon als `service_due_at` (DATE-device-class, parsed aus `inspectionDue_days`), v1.9.1 hat den Top-Level-Pfad registriert.
+- **`maxChargeCurrentAC_A` als Number-Entity:** Feld existiert bereits in VehicleData als `max_charge_current` (float). Das Number-Platform-Wiring kommt in v1.10.1 separat.
+- **Defensive Coding Phase 2 (#58):** verschoben auf v1.10.1 — eigene Session, separater PR.
+- **`automation` + `departureProfiles` Plattform:** Architekturarbeit, kommt in v1.11.0+.
+
+#### Auswirkung auf Bestandsbenutzer
+
+- **Reine EV-Besitzer (ID.4 etc.):** sehen jetzt `electric_range_km` zusätzlich zur bestehenden `range_km`. Kein neuer Verbrennungs-Sensor (Phantom-Schutz).
+- **Reine ICE-Besitzer:** sehen jetzt `combustion_range_km`. Kein neuer Elektro-Sensor.
+- **Audi S6 C8 2021 (TDI):** sieht jetzt korrekten `combustion_range_km` (z.B. 190 km) statt nichts.
+- **PHEV-Besitzer (Golf GTE etc.):** sehen alle drei (45 elektrisch + 520 Sprit + 565 gesamt) statt nur eines.
+
+#### Hard Rules eingehalten
+
+- ✅ Nichts spekuliert — alle Pfade sind verifiziert (gegen #90 #91 Live-Daten + bestehende Skoda-Fixtures + audi_connect_ha source).
+- ✅ Keine bestehenden Tests gebrochen — Backwards-Compat via `range_km`.
+- ✅ Brand-localized Translations in 8 Sprachen.
+- ✅ Strict-Semver — MINOR weil neue Sensoren (3 neue Entitäten).
+
+---
+
 ## [1.9.1] - 2026-04-29
 
 ### Hotfix #92 (Audi S6 C8 2021 Lock + Wake) + Vehicle Data Scout Coverage (#90, #91) + Capability-Filter Phase 2 (#56)

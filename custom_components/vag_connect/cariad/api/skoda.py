@@ -199,11 +199,49 @@ class SkodaClient(CariadBaseClient):
 
         # ── Driving range ────────────────────────────────────────────────────
         if isinstance(driving_range, dict):
+            # v1.10.0 (#94) — Skoda mysmob exposes the same per-engine
+            # split as the CARIAD BFF, just under different keys:
+            #   electricRange.distanceInKm
+            #   combustionRange.distanceInKm  (was previously read as the
+            #     scalar ``combustionRange`` only — wrong on Kodiaq iV)
+            #   totalRangeInKm
+            # Each is its own entity now; ``range_km`` keeps its old
+            # "headline" semantics (electric for EV/PHEV, total for ICE).
             electric = v(driving_range, "electricRange", "distanceInKm")
             total = v(driving_range, "totalRangeInKm")
-            d.range_km = electric or total
-            fuel = v(driving_range, "combustionRange")
-            d.has_combustion = fuel is not None
+            combustion = v(driving_range, "combustionRange", "distanceInKm")
+            if combustion is None:
+                # Older firmwares published a flat scalar without the
+                # ``distanceInKm`` wrapper — keep that path as a fallback.
+                flat_combustion = v(driving_range, "combustionRange")
+                if isinstance(flat_combustion, (int, float)):
+                    combustion = flat_combustion
+            try:
+                if electric is not None:
+                    d.electric_range_km = int(electric)
+            except (TypeError, ValueError):
+                pass
+            try:
+                if combustion is not None:
+                    d.combustion_range_km = int(combustion)
+            except (TypeError, ValueError):
+                pass
+            try:
+                if total is not None:
+                    d.total_range_km = int(total)
+            except (TypeError, ValueError):
+                pass
+            d.has_combustion = combustion is not None
+            # Headline number priority: electric for EV/PHEV, then total,
+            # then combustion. Matches VW EU/Audi semantics from vw_eu.py.
+            if d.has_battery and d.electric_range_km is not None:
+                d.range_km = d.electric_range_km
+            elif d.total_range_km is not None:
+                d.range_km = d.total_range_km
+            elif d.combustion_range_km is not None:
+                d.range_km = d.combustion_range_km
+            else:
+                d.range_km = electric or total
             adblue = v(driving_range, "adBlueRange", "distanceInKm")
             if adblue is not None:
                 d.adblue_range_km = int(adblue)

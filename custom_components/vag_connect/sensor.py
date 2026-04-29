@@ -75,6 +75,49 @@ SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
         suggested_display_precision=0,
     ),
 
+    # v1.10.0 (#94, #91) — explicit per-energy-source range sensors.
+    # Conditional creation in ``async_setup_entry`` is data-present-gated
+    # in addition to the ``condition`` flag: even an EV that *has*
+    # has_battery=True won't get a phantom ``electric_range_km`` entity
+    # if the API didn't actually publish ``electric_range_km`` for it.
+    # That solves the "unknown" clutter complaint in #94.
+    VagSensorDescription(
+        key="electric_range_km",
+        translation_key="electric_range_km",
+        data_key="electric_range_km",
+        native_unit_of_measurement=UnitOfLength.KILOMETERS,
+        device_class=SensorDeviceClass.DISTANCE,
+        state_class=SensorStateClass.MEASUREMENT,
+        icon="mdi:battery-charging-outline",
+        condition="electric",
+        suggested_display_precision=0,
+    ),
+    VagSensorDescription(
+        key="combustion_range_km",
+        translation_key="combustion_range_km",
+        data_key="combustion_range_km",
+        native_unit_of_measurement=UnitOfLength.KILOMETERS,
+        device_class=SensorDeviceClass.DISTANCE,
+        state_class=SensorStateClass.MEASUREMENT,
+        icon="mdi:gas-station",
+        condition="combustion",
+        suggested_display_precision=0,
+    ),
+    VagSensorDescription(
+        key="total_range_km",
+        translation_key="total_range_km",
+        data_key="total_range_km",
+        native_unit_of_measurement=UnitOfLength.KILOMETERS,
+        device_class=SensorDeviceClass.DISTANCE,
+        state_class=SensorStateClass.MEASUREMENT,
+        icon="mdi:map-marker-distance",
+        suggested_display_precision=0,
+        # No ``condition`` — total is meaningful for any drivetrain that
+        # publishes the field. Pure EVs typically don't (so the gating
+        # below filters it out anyway), but plug-in hybrids and ICE
+        # vehicles with a combined trip-meter range get it.
+    ),
+
     VagSensorDescription(
         key="odometer_km",
         translation_key="odometer_km",
@@ -335,6 +378,18 @@ _REPORTER_KEYS: frozenset[str] = frozenset({
     "error_reporter_count",
 })
 
+# v1.10.0 (#94) — keys that require the field to be non-None at setup
+# time before the entity is created. Prevents phantom "unknown" entities
+# on vehicles whose API simply doesn't publish a particular range source.
+# Adding to this set is a deliberate per-key opt-in: most existing sensors
+# legitimately start as None and populate later, so they should NOT be
+# gated this way.
+_DATA_PRESENT_REQUIRED: frozenset[str] = frozenset({
+    "electric_range_km",
+    "combustion_range_km",
+    "total_range_km",
+})
+
 
 async def async_setup_entry(
     hass: HomeAssistant,
@@ -353,6 +408,18 @@ async def async_setup_entry(
             if desc.condition == "electric" and not has_battery:
                 continue
             if desc.condition == "combustion" and not has_combustion:
+                continue
+            # v1.10.0 (#94 acceptance criteria) — additional data-present
+            # gating for the new range entities. Avoids "unknown"
+            # phantom entities on vehicles that don't publish a
+            # particular range source. Only applied to keys that opted
+            # in via ``_DATA_PRESENT_REQUIRED`` so existing entities
+            # (which may legitimately start as None and populate later)
+            # keep their current creation semantics.
+            if (
+                desc.key in _DATA_PRESENT_REQUIRED
+                and vehicle.get(desc.data_key) is None
+            ):
                 continue
             if desc.key in _REPORTER_KEYS:
                 # v1.9.0 — reporter sensors read from coordinator helpers
