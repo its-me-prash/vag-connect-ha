@@ -48,9 +48,36 @@ Vanaf v0.14.1 communiceert de integratie **rechtstreeks** met de CARIAD API — 
 - 🚪 **CUPRA / SEAT volledige entities** met geverifieerde OLA JSON paden + binary sensors per venster (v1.8.9).
 - 🚙 **Škoda** `detail` block + `reliableLockStatus` + `fullyChargedAt` (v1.8.11).
 
+### 🔬 Binnenkort: 1-klik bug reports & feature requests (v1.9.0)
+
+> **Jij helpt ons de integratie te verbeteren — zonder een woord GitHub of Markdown te leren.**
+
+Twee nieuwe diagnose-sensoren in v1.9.0:
+
+| Sensor | Wat het doet | Hoe het je helpt |
+|---|---|---|
+| 🔬 **Voertuigdata-verkenner** | Detecteert automatisch nieuwe velden in de API van je auto die we nog niet uitlezen | Als je Audi A4 2017 of VW Golf 7 GTE velden levert die we niet kennen → we voegen ze toe in de volgende versie |
+| 🛠️ **Foutrapport** | Verzamelt recente fouten met geanonimiseerde context (model, firmware, stack trace) | In plaats van forum-screenshot zonder info → gestructureerd bug report dat we direct kunnen fixen |
+
+**1-klik workflow** (gelijk voor beide sensoren):
+
+```
+1. HA toont een notificatie wanneer iets nieuws gedetecteerd wordt
+2. Klik "Meer info" → modal met geanonimiseerde inhoud + 2 knoppen:
+
+   📤 Op GitHub melden    ← opent vooringevuld bug report
+   📋 Kopiëren voor forum/FB ← Markdown naar clipboard
+
+3. Submit → klaar in 30 seconden
+```
+
+🔒 **Privacy-belofte:** **Geen auto-push.** Niets verlaat je HA-installatie zonder jouw expliciete klik. VINs, GPS, user-IDs anoniem. GDPR-compliant.
+
+🤝 **Waarom we dit nodig hebben:** We zijn de enige actieve VAG HA-integratie voor alle 7 merken. Met jouw 1-klik bijdrage ontdekken we verschillen tussen modellen in **dagen in plaats van maanden**.
+
 ### ⚠️ Nog in uitvoering
 
-Capability filter fase 2 (v1.8.13) · Defensive coding fase 2 (v1.8.14) · Geanonimiseerde diagnostics (Sessie 4) · Smart-wake + 12V drain bescherming (Sessie 6) · Push updates (v1.9.1/2) · Trip stats + EU Data Act (v1.10.0+).
+Capability filter fase 2 (v1.9.1) · Defensive coding fase 2 (v1.9.2) · Optimistic Lock/Climate (v1.9.3) · Diagnostics + Smart-wake + 12V drain bescherming (v1.10.0) · Push updates (v1.10.x) · Trip stats + EU Data Act (v1.11.0 / v2.0.0).
 
 ### 🚫 Bewuste beperkingen
 

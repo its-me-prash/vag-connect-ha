@@ -48,9 +48,36 @@ Från v0.14.1 kommunicerar integrationen **direkt** med CARIAD API — egen asyn
 - 🚪 **CUPRA / SEAT fullständiga entiteter** med verifierade OLA JSON-vägar + binary sensors per fönster (v1.8.9).
 - 🚙 **Škoda** `detail` block + `reliableLockStatus` + `fullyChargedAt` (v1.8.11).
 
+### 🔬 Kommer snart: 1-klick bug rapporter & feature-önskemål (v1.9.0)
+
+> **Du hjälper oss att förbättra integrationen — utan att lära dig ett enda ord GitHub eller Markdown.**
+
+Två nya diagnostiska sensorer i v1.9.0:
+
+| Sensor | Vad den gör | Hur den hjälper dig |
+|---|---|---|
+| 🔬 **Fordonsdata-spårare** | Upptäcker automatiskt nya fält i din bils API som vi inte parsar än | Om din Audi A4 2017 eller VW Golf 7 GTE returnerar okända fält → vi lägger till dem i nästa version |
+| 🛠️ **Fel-rapportör** | Samlar in senaste fel med anonymiserad kontext (modell, firmware, stack trace) | Istället för forum-skärmdump utan info → strukturerad bug report vi kan fixa direkt |
+
+**1-klick workflow** (samma för båda sensorer):
+
+```
+1. HA visar en notifikation när något nytt upptäcks
+2. Klicka "Mer info" → modal med anonymiserat innehåll + 2 knappar:
+
+   📤 Rapportera på GitHub  ← öppnar förifyllt bug report
+   📋 Kopiera för forum/FB  ← Markdown till urklipp
+
+3. Submit → klart på 30 sekunder
+```
+
+🔒 **Integritetslöfte:** **Ingen auto-push.** Inget lämnar din HA-installation utan din explicita klick. VINs, GPS, user-IDs anonymiseras. GDPR-compliant.
+
+🤝 **Varför vi behöver det:** Vi är den enda aktiva VAG HA-integrationen för alla 7 märken. Med ditt 1-klick bidrag upptäcker vi skillnader mellan modeller på **dagar istället för månader**.
+
 ### ⚠️ Fortfarande pågår
 
-Capability filter fas 2 (v1.8.13) · Defensiv kodning fas 2 (v1.8.14) · Anonymiserade diagnostics (Session 4) · Smart-wake + 12V drain-skydd (Session 6) · Push updates (v1.9.1/2) · Trip stats + EU Data Act (v1.10.0+).
+Capability filter fas 2 (v1.9.1) · Defensiv kodning fas 2 (v1.9.2) · Optimistic Lock/Climate (v1.9.3) · Diagnostics + Smart-wake + 12V drain-skydd (v1.10.0) · Push updates (v1.10.x) · Trip stats + EU Data Act (v1.11.0 / v2.0.0).
 
 ### 🚫 Medvetna begränsningar
 

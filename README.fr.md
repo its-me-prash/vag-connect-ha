@@ -48,9 +48,36 @@ Depuis v0.14.1, l'intégration parle **directement** à l'API CARIAD — client 
 - 🚪 **CUPRA / SEAT entités complètes** avec chemins JSON OLA vérifiés + binary sensors par fenêtre (v1.8.9).
 - 🚙 **Škoda** `detail` block + `reliableLockStatus` + `fullyChargedAt` (v1.8.11).
 
+### 🔬 Bientôt : Rapports de bugs en 1-clic & demandes de fonctionnalités (v1.9.0)
+
+> **Tu nous aides à améliorer l'intégration — sans apprendre un seul mot de GitHub ou Markdown.**
+
+Deux nouveaux capteurs de diagnostic dans v1.9.0 :
+
+| Capteur | Ce qu'il fait | Comment il t'aide |
+|---|---|---|
+| 🔬 **Détecteur de nouvelles données** | Détecte automatiquement les nouveaux champs dans l'API de ta voiture que nous ne traitons pas encore | Si ton Audi A4 2017 ou VW Golf 7 GTE renvoie des champs que nous ne connaissons pas → nous les ajoutons à la prochaine version |
+| 🛠️ **Rapporteur d'erreurs** | Collecte les erreurs récentes avec contexte anonymisé (modèle, firmware, stack trace) | Au lieu d'une capture forum sans info → rapport de bug structuré que nous corrigeons immédiatement |
+
+**Workflow en 1-clic** (identique pour les deux capteurs) :
+
+```
+1. HA affiche une notification quand quelque chose de nouveau est détecté
+2. Tu cliques "Plus d'info" → modal avec contenu anonymisé + 2 boutons :
+
+   📤 Signaler sur GitHub    ← ouvre un rapport pré-rempli
+   📋 Copier pour forum/FB   ← Markdown dans le presse-papiers
+
+3. Submit → terminé en 30 secondes
+```
+
+🔒 **Promesse confidentialité :** **Pas d'auto-push.** Rien ne quitte ton installation HA sans ton clic explicite. VIN, GPS, user-IDs sont anonymisés avant affichage. GDPR-compatible.
+
+🤝 **Pourquoi on en a besoin :** Nous sommes la seule intégration HA VAG active pour les 7 marques. Avec ta contribution en 1-clic, nous découvrons les différences entre modèles en **jours au lieu de mois**.
+
 ### ⚠️ Encore en cours
 
-Capability filter phase 2 (v1.8.13) · Defensive coding phase 2 (v1.8.14) · Diagnostics anonymisés (Session 4) · Smart-wake + protection 12V (Session 6) · Push updates (v1.9.1/2) · Trip stats + EU Data Act (v1.10.0+).
+Capability filter phase 2 (v1.9.1) · Defensive coding phase 2 (v1.9.2) · Optimistic Lock/Climate (v1.9.3) · Diagnostics + Smart-wake + protection 12V (v1.10.0) · Push updates (v1.10.x) · Trip stats + EU Data Act (v1.11.0 / v2.0.0).
 
 ### 🚫 Limites conscientes
 

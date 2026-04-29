@@ -34,7 +34,7 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 - 🔄 [`docs/SESSION_HANDOFF.md`](docs/SESSION_HANDOFF.md) — refreshed to v1.8.12 state. New: process improvements section, full architecture map with per-file v1.8.X-change comments, 17 hard rules, 15-step "How to start the next session" recipe.
 - 🔄 [`docs/ROADMAP.md`](docs/ROADMAP.md) — full version achievement table, sprint summary, expanded "won't be implemented" section, "How an AI tool resumes this work" guide.
 - 🔄 All 8 READMEs — "Aktueller Stand & ehrliche Limits" section refreshed from v1.8.5 to v1.8.12. New 4-tier structure: ✅ what works NOW / ⚠️ in progress / 🚫 conscious limits / 🔧 privacy + 📚 doc links.
-- 🆕 v1.8.13 planned: **Vehicle Data Scout** — user-facing sensor that detects unparsed JSON fields, with 1-click GitHub-Reporter pipeline (no auto-push, GDPR-compliant). Enables crowd-sourced API discovery.
+- 🆕 **v1.9.0 announced** (was v1.8.13 — corrected to strict semver because two new sensors qualify as MINOR bump): **Vehicle Data Scout + Error Reporter** sharing a 1-click Reporter Pipeline (`📤 GitHub` OR `📋 Copy for Forum/Facebook`). Especially Facebook-community-friendly: non-technical users get usable bug reports without learning Markdown or GitHub. NO auto-push, GDPR-compliant. Roadmap session sequence renumbered: v1.9.1 = Capability-Filter Phase 2, v1.9.2 = Defensive Coding Phase 2, v1.9.3 = Optimistic Lock/Climate, v1.10.0 = Diagnostics + Smart-Wake + 12V protection, v1.11.0 = Trip Stats + Image refactor, v2.0.0 = HACS Default + EU Data Act.
 
 ## [1.8.12] - 2026-04-29 🌐 Multi-Brand Connection-State (MVP-Move)
 
