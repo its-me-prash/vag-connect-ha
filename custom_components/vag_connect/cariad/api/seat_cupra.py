@@ -151,40 +151,223 @@ class SeatCupraClient(CariadBaseClient):
             d.adblue_range_km = v(ranges, "adBlueRange")
 
         # ── Detailed vehicle status (doors, windows, trunk) ──────────────────
+        # OLA `/v2/vehicles/{vin}/status` for SEAT/CUPRA returns a structured
+        # tree, NOT the flat ``doorsOpenedCount`` shape that CARIAD BFF uses.
+        # The real shape (verified against `WulfgarW/pycupra/vehicle.py` lines
+        # ~3100–3325, the pycupra dashboard reads identical paths):
+        #
+        #   status:
+        #     doors:
+        #       frontLeft:  { locked: bool, open: bool }
+        #       frontRight: { locked: bool, open: bool }
+        #       rearLeft:   { locked: bool, open: bool }
+        #       rearRight:  { locked: bool, open: bool }
+        #     windows:
+        #       frontLeft:  "closed" | "open"      # string state
+        #       frontRight: "closed" | "open"
+        #       rearLeft:   "closed" | "open"
+        #       rearRight:  "closed" | "open"
+        #       sunroof:    "closed" | "open"      # sometimes here, sometimes top-level
+        #     trunk:   { open: bool, locked?: bool }
+        #     hood:    { open: bool }              # newer firmware
+        #     sunroof: "closed" | "open"           # legacy/alternative position
+        #
+        # Pre-v1.8.9 used CARIAD-BFF flat keys (``doorsOpenedCount``,
+        # ``doorClosedLeftFront`` etc.) which do not exist on OLA — so for
+        # CUPRA Born / Formentor / Tavascan the door, window, trunk, hood
+        # and sunroof entities silently never populated. Fix verified via
+        # pycupra source — the legacy-flat fallback below stays in place
+        # for the rare model that sends the older shape.
         if isinstance(status, dict):
             access_s = v(status, "access") or status
-            d.doors_open = v(access_s, "doorsOpenedCount", default=0) > 0
-            d.windows_open = v(access_s, "windowsOpenedCount", default=0) > 0
-            d.trunk_open = v(access_s, "trunk") == "OPEN" or v(access_s, "trunkOpen") is True
-            d.trunk_locked = v(access_s, "trunkLocked") is True or v(access_s, "trunkStatus") == "LOCKED"
-            d.hood_open = v(access_s, "hood") == "OPEN" or v(access_s, "hoodOpen") is True
-            d.sunroof_open = v(access_s, "sunroof") == "OPEN" or v(access_s, "sunroofOpen") is True
+            doors_obj = v(status, "doors") or {}
+            windows_obj = v(status, "windows") or {}
+            trunk_obj = v(status, "trunk") or {}
+            hood_obj = v(status, "hood") or {}
 
-            doors = {}
-            for key in ("doorClosedLeftFront", "doorClosedRightFront", "doorClosedLeftBack", "doorClosedRightBack"):
-                val = v(access_s, key)
-                if val is not None:
-                    door_id = key.replace("doorClosed", "").replace("LeftFront", "frontLeft").replace("RightFront", "frontRight").replace("LeftBack", "rearLeft").replace("RightBack", "rearRight")
-                    doors[door_id] = not val
-            if doors:
-                d.doors_individual = doors
+            # Per-door (locked + open). Aggregate ``doors_open`` and
+            # ``doors_locked`` are derived once we have the dict.
+            door_individual: dict[str, bool] = {}
+            for pos in ("frontLeft", "frontRight", "rearLeft", "rearRight"):
+                door = v(doors_obj, pos) or {}
+                if not door:
+                    continue
+                # ``open`` may be bool or "open"/"closed" string — normalise
+                open_raw = door.get("open")
+                if isinstance(open_raw, bool):
+                    is_closed = not open_raw
+                elif isinstance(open_raw, str):
+                    is_closed = open_raw.lower() == "closed"
+                else:
+                    is_closed = None
+                if is_closed is not None:
+                    door_individual[pos] = is_closed
+            if door_individual:
+                d.doors_individual = door_individual
+                d.doors_open = any(not closed for closed in door_individual.values())
+                # ``doors_locked`` is True only when every position reports
+                # locked=True. If any position doesn't report (None),
+                # fall back to the access endpoint or stay False.
+                locked_states = []
+                for pos in ("frontLeft", "frontRight", "rearLeft", "rearRight"):
+                    door = v(doors_obj, pos) or {}
+                    locked = door.get("locked")
+                    if locked is not None:
+                        locked_states.append(bool(locked))
+                if locked_states:
+                    d.doors_locked = all(locked_states)
+
+            # Per-window (string-state). New ``windows_individual`` dict
+            # mirrors ``doors_individual`` so binary sensors can expose
+            # one entity per window.
+            window_individual: dict[str, bool] = {}
+            for pos in ("frontLeft", "frontRight", "rearLeft", "rearRight"):
+                wstate = v(windows_obj, pos)
+                if isinstance(wstate, str):
+                    window_individual[pos] = wstate.lower() == "closed"
+                elif isinstance(wstate, bool):
+                    # Some firmware returns bool. Convention: True == closed.
+                    window_individual[pos] = wstate
+            if window_individual:
+                d.windows_individual = window_individual
+                d.windows_open = any(not closed for closed in window_individual.values())
+
+            # Trunk + hood — both as nested {open, locked}. Sunroof can be
+            # at status.sunroof OR status.windows.sunroof (pycupra checks
+            # both due to firmware variance).
+            if trunk_obj:
+                trunk_open = trunk_obj.get("open")
+                if trunk_open is not None:
+                    d.trunk_open = bool(trunk_open) if isinstance(trunk_open, bool) else trunk_open == "open"
+                trunk_locked = trunk_obj.get("locked")
+                if trunk_locked is not None:
+                    d.trunk_locked = bool(trunk_locked)
+            if hood_obj:
+                hood_open = hood_obj.get("open")
+                if hood_open is not None:
+                    d.hood_open = bool(hood_open) if isinstance(hood_open, bool) else hood_open == "open"
+            # Sunroof can be at three different positions depending on
+            # firmware/model. Issue #5 (CC-seatcupra) confirms ``sunRoof``
+            # (camelCase with capital R) as a top-level field on Seat Leon
+            # KL — verified live. pycupra checks both ``sunroof`` and
+            # ``windows.sunroof`` due to firmware variance. Accept all three.
+            sunroof_state = (
+                v(status, "sunRoof")                # CC-seatcupra #5 — verified
+                or v(status, "sunroof")              # pycupra path
+                or v(windows_obj, "sunroof")         # pycupra alternative
+            )
+            if isinstance(sunroof_state, str):
+                d.sunroof_open = sunroof_state.lower() == "open"
+            elif isinstance(sunroof_state, bool):
+                d.sunroof_open = sunroof_state
+
+            # Engine state — top-level field on OLA `/v2/vehicles/{vin}/status`.
+            # CC-seatcupra issue #50 reports ``engine: 'on' | 'off'`` from
+            # multiple users (Seat Leon KL, Cupra Born). When 'on' the car
+            # is being driven; this is the only reliable signal for driving
+            # state because the official ``vehicle.state`` field stays at
+            # ``parked`` for many users (CC-seatcupra issue #18).
+            engine_state = v(status, "engine")
+            if isinstance(engine_state, str):
+                d.is_driving = engine_state.lower() == "on"
+                if d.is_driving:
+                    d.vehicle_state = "DRIVING"
+
+            # ── Legacy CARIAD-BFF-style flat fallback ────────────────────
+            # If the new structured paths produced nothing (older firmware,
+            # corrupted response, or a future OLA API change) fall back to
+            # the pre-v1.8.9 flat shape. Defensive only — should not fire
+            # for any current SEAT/CUPRA model verified against pycupra.
+            if not door_individual and not window_individual:
+                d.doors_open = v(access_s, "doorsOpenedCount", default=0) > 0
+                d.windows_open = v(access_s, "windowsOpenedCount", default=0) > 0
+                if d.trunk_open is None:
+                    d.trunk_open = v(access_s, "trunk") == "OPEN" or v(access_s, "trunkOpen") is True
+                if d.trunk_locked is None:
+                    d.trunk_locked = v(access_s, "trunkLocked") is True or v(access_s, "trunkStatus") == "LOCKED"
+                if d.hood_open is None:
+                    d.hood_open = v(access_s, "hood") == "OPEN" or v(access_s, "hoodOpen") is True
+                if d.sunroof_open is None:
+                    d.sunroof_open = v(access_s, "sunroof") == "OPEN" or v(access_s, "sunroofOpen") is True
+
+                doors_legacy: dict[str, bool] = {}
+                for key in ("doorClosedLeftFront", "doorClosedRightFront",
+                            "doorClosedLeftBack", "doorClosedRightBack"):
+                    val = v(access_s, key)
+                    if val is not None:
+                        door_id = (key.replace("doorClosed", "")
+                                   .replace("LeftFront", "frontLeft")
+                                   .replace("RightFront", "frontRight")
+                                   .replace("LeftBack", "rearLeft")
+                                   .replace("RightBack", "rearRight"))
+                        doors_legacy[door_id] = not val
+                if doors_legacy:
+                    d.doors_individual = doors_legacy
 
         # ── Charging status ──────────────────────────────────────────────────
+        # OLA charging endpoint field-name variance. Path order is now
+        # **real-world response first, legacy guesses last** (v1.8.9
+        # methodology fix): the older paths in this file were inferred
+        # from CARIAD-BFF / pycupra back when we had no live OLA dump.
+        # Now that we have a verified live CUPRA Born response from
+        # `tillsteinbach/CarConnectivity-connector-seatcupra` issue #109
+        # (user "Rainer", 2026-03-27 — same OLA host, same brand),
+        # those field names are known good and must be tried first so a
+        # vehicle that returns BOTH shapes doesn't accidentally pick a
+        # zero from a legacy field.
+        #
+        # /v1/vehicles/{vin}/charging — observed shapes:
+        #   Real-world (Rainer #109 shape B):
+        #     {"state": "notReadyForCharging", "chargedPowerInKw": 0.0,
+        #      "remainingTimeInMinutes": 0, "type": "invalid", "mode": "manual"}
+        #   Real-world (Rainer #109 shape A — same endpoint, alt firmware):
+        #     {"status": "NotReadyForCharging", "currentPct": 43,
+        #      "remainingTime": 0, "chargeMode": "manual",
+        #      "preferredChargeMode": "manual", "active": false}
+        #   Legacy (pre-v1.8.9 inferred, kept as defensive fallback):
+        #     {"chargingState": ..., "chargePowerInKw": ...,
+        #      "remainingTimeToFullyChargedInMinutes": ..., "chargeType": ...}
         if isinstance(charge_status, dict):
             bat = v(charge_status, "battery") or charge_status
             if d.battery_soc is None:
-                d.battery_soc = v(bat, "stateOfChargeInPercent") or v(bat, "currentSOC_pct")
+                d.battery_soc = (
+                    v(charge_status, "currentPct")  # Rainer #109 shape A — verified
+                    or v(bat, "stateOfChargeInPercent")
+                    or v(bat, "currentSOC_pct")
+                )
                 d.has_battery = d.battery_soc is not None
 
             chg = v(charge_status, "charging") or charge_status
-            d.charging_state = v(chg, "state") or v(chg, "chargingState")
-            d.is_charging = d.charging_state == "CHARGING"
-            d.charging_power_kw = v(chg, "chargePowerInKw") or v(chg, "chargePower_kW")
+            d.charging_state = (
+                v(chg, "state")             # Rainer #109 shape B — verified
+                or v(chg, "status")         # Rainer #109 shape A — verified
+                or v(chg, "chargingState")  # Legacy — inferred pre-v1.8.9
+            )
+            # Charging-state values are camelCase or PascalCase depending on
+            # firmware; treat case-insensitively.
+            d.is_charging = (
+                isinstance(d.charging_state, str)
+                and d.charging_state.lower() == "charging"
+            )
+            d.charging_power_kw = (
+                v(chg, "chargedPowerInKw")  # Rainer #109 shape B — verified
+                or v(chg, "chargePowerInKw")  # Legacy
+                or v(chg, "chargePower_kW")   # Legacy
+            )
             d.charging_rate_kmh = v(chg, "chargeRateInKmPerHour") or v(chg, "chargeRate_kmph")
-            remaining = v(chg, "remainingTimeToFullyChargedInMinutes") or v(chg, "remainingChargingTime")
+            remaining = (
+                v(chg, "remainingTimeInMinutes")  # Rainer #109 shape B — verified
+                or v(chg, "remainingTime")        # Rainer #109 shape A — verified
+                or v(chg, "remainingTimeToFullyChargedInMinutes")  # Legacy
+                or v(chg, "remainingChargingTime")                  # Legacy
+            )
             if remaining:
                 d.charge_complete_eta = datetime.now(tz=timezone.utc) + timedelta(minutes=int(remaining))
-            d.charging_type = v(chg, "chargeType") or v(chg, "chargingType")
+            d.charging_type = (
+                v(chg, "type")          # Rainer #109 shape B — verified
+                or v(chg, "chargeType")  # Legacy
+                or v(chg, "chargingType")  # Legacy
+            )
 
             plug = v(charge_status, "plug") or {}
             plug_state = v(plug, "connectionState") or v(plug, "plugConnectionState")
@@ -193,21 +376,52 @@ class SeatCupraClient(CariadBaseClient):
             d.connector_locked = v(plug, "lockState") == "LOCKED" or v(plug, "externalPower") == "READY"
 
         # ── Charging info (settings) ─────────────────────────────────────────
+        # OLA `/v2/vehicles/{vin}/charging/settings` field variance.
+        # Real-world (Rainer #109): {"targetSoc_pct": 80, "maxChargeCurrentAC":
+        # "maximum", "autoUnlockPlugWhenCharged": "off" | "on" | "permanent"}.
+        # The "permanent" value is documented in issue #51 and means the
+        # connector unlocks at any SoC, not just at full charge — so
+        # ``auto_unlock_charge`` is True for both "on" and "permanent".
         if isinstance(charge_info, dict):
-            d.target_soc = v(charge_info, "targetSOC_pct") or v(charge_info, "targetStateOfChargeInPercent")
+            d.target_soc = (
+                v(charge_info, "targetSoc_pct")  # Rainer #109 — verified
+                or v(charge_info, "targetSOC_pct")          # Legacy uppercase
+                or v(charge_info, "targetStateOfChargeInPercent")  # Legacy verbose
+            )
             d.max_charge_current = v(charge_info, "maxChargeCurrentAC") or v(charge_info, "maxChargeCurrent")
-            d.auto_unlock_charge = v(charge_info, "autoUnlockPlugWhenCharged") == "ON" or v(charge_info, "autoUnlockPlugWhenChargedAC") is True
+            auto_raw = v(charge_info, "autoUnlockPlugWhenCharged")
+            auto_str = auto_raw.lower() if isinstance(auto_raw, str) else None
+            d.auto_unlock_charge = (
+                # #51: "permanent" is also "yes, unlock". Only "off"/None means no.
+                auto_str in ("on", "permanent")
+                or v(charge_info, "autoUnlockPlugWhenChargedAC") is True
+            )
 
         # ── Climate ──────────────────────────────────────────────────────────
+        # CC-seatcupra issue #21 + #8 documented that ``climatisationTrigger``
+        # can return ``"unsupported"`` on older Born firmware; pre-v1.8.9
+        # treated this state as if the climate was off (since it didn't
+        # match "off"/"on" exactly), which still happened to be correct,
+        # but a bool ``is_climate_supported`` would let entity platforms
+        # hide controls cleanly. For v1.8.9 we keep ``climatisation_active``
+        # behaviour stable and just ensure ``"off"``, ``"OFF"``,
+        # ``"unsupported"``, and any ``None`` all evaluate to False.
         if isinstance(climate, dict):
             cs = v(climate, "status") or climate
             d.climatisation_state = v(cs, "climatisationState") or v(cs, "state")
-            d.climatisation_active = d.climatisation_state not in (None, "OFF", "off")
+            _inactive_states = (None, "OFF", "off", "Off", "unsupported")
+            d.climatisation_active = d.climatisation_state not in _inactive_states
             d.target_temperature = v(climate, "settings", "targetTemperature_K")
             if d.target_temperature:
                 d.target_temperature = round(float(d.target_temperature) - 273.15, 1)
             if not d.target_temperature:
-                d.target_temperature = v(climate, "settings", "targetTemperatureInCelsius")
+                # `targetTemperatureCelsius` (no "In") is the Rainer #109
+                # Live-response variant; `targetTemperatureInCelsius` is the
+                # newer settings-endpoint variant. Try both.
+                d.target_temperature = (
+                    v(climate, "settings", "targetTemperatureInCelsius")
+                    or v(cs, "targetTemperatureCelsius")  # Rainer #109
+                )
             d.outside_temp = v(cs, "outsideTemperature")
             if d.outside_temp and d.outside_temp > 100:
                 d.outside_temp = round(float(d.outside_temp) - 273.15, 1)

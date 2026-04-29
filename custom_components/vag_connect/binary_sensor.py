@@ -173,6 +173,13 @@ async def async_setup_entry(
     for vin, vehicle in coordinator.vehicles.items():
         await _async_setup_door_sensors(coordinator, vin, vehicle, entities)
 
+    # v1.8.9 (Session 3C) — per-window binary sensors. Currently only
+    # populated for SEAT/CUPRA via the corrected OLA status paths;
+    # other brands leave ``windows_individual`` empty so no entities
+    # are created for them.
+    for vin, vehicle in coordinator.vehicles.items():
+        await _async_setup_window_sensors(coordinator, vin, vehicle, entities)
+
     async_add_entities(entities)
 
 
@@ -236,3 +243,57 @@ async def _async_setup_door_sensors(
     doors = vehicle.get("doors_individual", {})
     for door_id in doors:
         entities.append(VagDoorSensor(coordinator, vin, door_id))
+
+
+# v1.8.9 (Session 3C) — per-window binary sensors.
+# Layout mirrors ``_DOOR_NAMES``; populated by SEAT/CUPRA OLA paths
+# (``status.windows.{position}``). State convention: ``True`` means
+# *open* (BinarySensorDeviceClass.WINDOW reports True for "the
+# detected event", i.e. open). Internally we store ``True`` for
+# *closed* in ``windows_individual`` (consistent with
+# ``doors_individual``), so ``is_on`` inverts that.
+
+_WINDOW_NAMES = {
+    "frontLeft":  "Window Front Left",
+    "frontRight": "Window Front Right",
+    "rearLeft":   "Window Rear Left",
+    "rearRight":  "Window Rear Right",
+}
+
+
+class VagWindowSensor(VagConnectEntity, BinarySensorEntity):
+    """Binary Sensor für ein einzelnes Fenster (CUPRA/SEAT initial)."""
+
+    _attr_device_class = BinarySensorDeviceClass.WINDOW
+
+    def __init__(
+        self,
+        coordinator: VagConnectCoordinator,
+        vin: str,
+        window_id: str,
+    ) -> None:
+        super().__init__(coordinator, vin, f"window_{window_id}")
+        self._window_id = window_id
+        self._attr_name = _WINDOW_NAMES.get(window_id, window_id)
+        self._attr_icon = "mdi:car-door"
+
+    @property
+    def is_on(self) -> bool | None:
+        windows = self._vehicle.get("windows_individual", {})
+        val = windows.get(self._window_id)
+        # Stored value: True == closed. is_on for WINDOW device_class
+        # means "open detected" — invert.
+        return (not val) if val is not None else None
+
+
+async def _async_setup_window_sensors(
+    coordinator: VagConnectCoordinator,
+    vin: str,
+    vehicle: dict,
+    entities: list,
+) -> None:
+    """Legt individuelle Fenster-Sensoren an, wenn die Fahrzeug-Antwort
+    sie liefert. Heute: SEAT/CUPRA OLA. Andere Marken: leer → keine Entities."""
+    windows = vehicle.get("windows_individual", {})
+    for window_id in windows:
+        entities.append(VagWindowSensor(coordinator, vin, window_id))

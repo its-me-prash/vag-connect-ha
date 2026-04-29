@@ -1397,6 +1397,250 @@ class TestSeatCupraGetStatus:
         vins = asyncio.get_event_loop().run_until_complete(client.get_vehicles())
         assert "VSSZZE1KZLR000001" in vins
 
+    # ── v1.8.9 Session 3C: OLA /v2/.../status JSON-paths ──────────────────
+
+    @staticmethod
+    def _resp(json_data):
+        resp = AsyncMock()
+        resp.status = 200
+        resp.headers = {"Content-Type": "application/json"}
+        resp.json = AsyncMock(return_value=json_data)
+        resp.text = AsyncMock(return_value="")
+        resp.__aenter__ = AsyncMock(return_value=resp)
+        resp.__aexit__ = AsyncMock(return_value=False)
+        return resp
+
+    def _client_with_url_routing(self, brand: str, by_path: dict):
+        """Return a SeatCupraClient whose session.request routes by URL substring.
+        ``by_path`` maps URL substring → JSON body. Unknown URLs return ``{}``."""
+        from custom_components.vag_connect.cariad.api.seat_cupra import SeatCupraClient
+        from custom_components.vag_connect.cariad.models import TokenSet
+
+        empty = self._resp({})
+
+        def side_effect(method, url, **kwargs):
+            for pattern, body in by_path.items():
+                if pattern in url:
+                    return self._resp(body)
+            return empty
+
+        session = MagicMock()
+        session.request = MagicMock(side_effect=side_effect)
+        client = SeatCupraClient(session, brand, "u@t.de", "pw")
+        client._tokens = TokenSet("acc", "ref", "id")
+        client._user_id = "USER_TEST"
+        return client
+
+    def test_v189_status_parses_doors_per_position(self):
+        """v1.8.9 (Session 3C): pycupra-style ``status.doors.{position}.{locked,open}``
+        is parsed into ``doors_individual`` and aggregates ``doors_open`` /
+        ``doors_locked`` are derived correctly."""
+        status_body = {
+            "doors": {
+                "frontLeft":  {"locked": True, "open": False},
+                "frontRight": {"locked": True, "open": True},   # this one is open
+                "rearLeft":   {"locked": True, "open": False},
+                "rearRight":  {"locked": False, "open": False}, # this one not locked
+            },
+        }
+        client = self._client_with_url_routing("cupra", {"/v2/vehicles/": status_body})
+        result = asyncio.get_event_loop().run_until_complete(
+            client.get_status("VSSZZE1KZLR000001"))
+
+        assert result.doors_individual == {
+            "frontLeft":  True,
+            "frontRight": False,  # open
+            "rearLeft":   True,
+            "rearRight":  True,
+        }
+        assert result.doors_open is True       # frontRight open → at least one
+        assert result.doors_locked is False    # rearRight not locked → not all
+
+    def test_v189_status_parses_windows_per_position(self):
+        """v1.8.9: pycupra-style ``status.windows.{position}`` (string state)
+        populates the new ``windows_individual`` dict and ``windows_open``."""
+        status_body = {
+            "windows": {
+                "frontLeft":  "closed",
+                "frontRight": "open",     # one open
+                "rearLeft":   "closed",
+                "rearRight":  "closed",
+            },
+        }
+        client = self._client_with_url_routing("cupra", {"/v2/vehicles/": status_body})
+        result = asyncio.get_event_loop().run_until_complete(
+            client.get_status("VSSZZE1KZLR000002"))
+
+        assert result.windows_individual == {
+            "frontLeft":  True,
+            "frontRight": False,  # open
+            "rearLeft":   True,
+            "rearRight":  True,
+        }
+        assert result.windows_open is True
+
+    def test_v189_status_parses_trunk_hood_nested_objects(self):
+        """v1.8.9: ``status.trunk`` and ``status.hood`` are nested objects
+        with ``open`` (and optionally ``locked``), not flat strings."""
+        status_body = {
+            "trunk": {"open": False, "locked": True},
+            "hood":  {"open": True},
+        }
+        client = self._client_with_url_routing("cupra", {"/v2/vehicles/": status_body})
+        result = asyncio.get_event_loop().run_until_complete(
+            client.get_status("VSSZZE1KZLR000003"))
+
+        assert result.trunk_open is False
+        assert result.trunk_locked is True
+        assert result.hood_open is True
+
+    def test_v189_status_sunroof_in_windows_subtree(self):
+        """v1.8.9: pycupra reads sunroof from BOTH ``status.sunroof`` and
+        ``status.windows.sunroof`` because firmware varies."""
+        status_body = {"windows": {"sunroof": "open"}}
+        client = self._client_with_url_routing("cupra", {"/v2/vehicles/": status_body})
+        result = asyncio.get_event_loop().run_until_complete(
+            client.get_status("VSSZZE1KZLR000004"))
+        assert result.sunroof_open is True
+
+    def test_v189_charging_shape_b_chargedPowerInKw_remaining_minutes(self):
+        """v1.8.9 / Issue tillsteinbach/CarConnectivity-connector-seatcupra#109:
+        OLA `/v1/vehicles/{vin}/charging` returns `chargedPowerInKw` (with
+        the extra "d") and `remainingTimeInMinutes` on current CUPRA Born
+        firmware. Pre-v1.8.9 only knew variants without the "d", so power
+        and ETA never populated."""
+        charging_body = {
+            "state": "charging",
+            "chargedPowerInKw": 11.0,
+            "remainingTimeInMinutes": 75,
+            "type": "AC",
+            "mode": "manual",
+        }
+        client = self._client_with_url_routing("cupra", {
+            "/v1/vehicles/": charging_body,  # routes both /charging/status and others
+        })
+        # Disambiguate URL routing — only /charging/status URLs match
+        # because the helper picks substring; charging/info, mileage etc.
+        # also contain "/v1/vehicles/". For this focused test we only
+        # care that the field is parsed when present, not that other
+        # endpoints stay untouched. Status endpoint also gets this body
+        # but won't write into door fields because there's no `doors` key.
+        result = asyncio.get_event_loop().run_until_complete(
+            client.get_status("VSSZZE1KZLR000006"))
+
+        assert result.charging_power_kw == 11.0, "chargedPowerInKw not parsed"
+        assert result.charge_complete_eta is not None, "remainingTimeInMinutes not used for ETA"
+        assert result.charging_state == "charging"
+        assert result.is_charging is True
+        assert result.charging_type == "AC"
+
+    def test_v189_charging_settings_targetSoc_pct_lowercase(self):
+        """v1.8.9 / Issue #109: charging/settings uses `targetSoc_pct`
+        (lowercase "soc") on current Born firmware, not `targetSOC_pct`."""
+        # Route /charging/info to body with the lowercase variant
+        client = self._client_with_url_routing("cupra", {
+            "/v1/vehicles/": {"targetSoc_pct": 80, "maxChargeCurrentAC": "maximum"},
+        })
+        result = asyncio.get_event_loop().run_until_complete(
+            client.get_status("VSSZZE1KZLR000007"))
+        assert result.target_soc == 80, "targetSoc_pct (lowercase) not parsed"
+
+    def test_v189_status_sunroof_top_level_camelCase(self):
+        """v1.8.9 / CC-seatcupra issue #5: ``sunRoof`` (camelCase with capital R)
+        is a top-level field on Seat Leon KL — verified live in #5
+        comments. Pre-v1.8.9 only checked ``status.sunroof`` (lowercase) and
+        ``status.windows.sunroof``, so Leon owners never saw the entity."""
+        status_body = {"sunRoof": "open"}
+        client = self._client_with_url_routing("cupra", {"/v2/vehicles/": status_body})
+        result = asyncio.get_event_loop().run_until_complete(
+            client.get_status("VSSZZE1KZLR000008"))
+        assert result.sunroof_open is True
+
+    def test_v189_status_engine_on_implies_driving(self):
+        """v1.8.9 / CC-seatcupra #50 + #18: ``engine: 'on'`` is the only
+        reliable signal that the car is being driven — official ``vehicle.state``
+        often stays at "parked" (issue #18). When engine='on', set
+        ``is_driving=True`` AND ``vehicle_state="DRIVING"``."""
+        status_body = {"engine": "on"}
+        client = self._client_with_url_routing("cupra", {"/v2/vehicles/": status_body})
+        result = asyncio.get_event_loop().run_until_complete(
+            client.get_status("VSSZZE1KZLR000009"))
+        assert result.is_driving is True
+        assert result.vehicle_state == "DRIVING"
+
+    def test_v189_status_engine_off_does_not_force_driving(self):
+        """v1.8.9: ``engine: 'off'`` must NOT force ``vehicle_state``;
+        coordinator decides between PARKED/CHARGING/OFFLINE elsewhere."""
+        status_body = {"engine": "off"}
+        client = self._client_with_url_routing("cupra", {"/v2/vehicles/": status_body})
+        result = asyncio.get_event_loop().run_until_complete(
+            client.get_status("VSSZZE1KZLR000010"))
+        assert result.is_driving is False
+        # vehicle_state may be None (default) — important is we don't
+        # accidentally set it to "DRIVING".
+        assert result.vehicle_state != "DRIVING"
+
+    def test_v189_auto_unlock_permanent_is_truthy(self):
+        """v1.8.9 / CC-seatcupra issue #51: ``autoUnlockPlugWhenCharged``
+        can be ``"permanent"`` (always unlocked) in addition to "on"/"off".
+        Pre-v1.8.9 only checked exact "ON" and missed "permanent" → user
+        couldn't see the actual config."""
+        client = self._client_with_url_routing("cupra", {
+            "/v1/vehicles/": {
+                "targetSoc_pct": 80,
+                "autoUnlockPlugWhenCharged": "permanent",
+            },
+        })
+        result = asyncio.get_event_loop().run_until_complete(
+            client.get_status("VSSZZE1KZLR000011"))
+        assert result.auto_unlock_charge is True
+
+    def test_v189_climatisation_trigger_unsupported_is_inactive(self):
+        """v1.8.9 / CC-seatcupra issues #21 + #8: ``climatisationState`` can
+        return ``"unsupported"`` on older Born firmware. Must be treated as
+        inactive (climate off), not as an error or 'on'."""
+        # Route /v2/vehicles/...climatisation to a body with unsupported state
+        client = self._client_with_url_routing("cupra", {
+            "climatisation": {"status": {"climatisationState": "unsupported"}},
+        })
+        result = asyncio.get_event_loop().run_until_complete(
+            client.get_status("VSSZZE1KZLR000012"))
+        assert result.climatisation_active is False
+
+    def test_v189_status_legacy_flat_fallback_still_works(self):
+        """v1.8.9: defensive — if a (rare/older) firmware sends the
+        pre-v1.8.9 flat CARIAD-BFF-style fields, the legacy fallback
+        path still populates doors_individual."""
+        status_body = {
+            "access": {
+                "doorClosedLeftFront":  False,  # → frontLeft open
+                "doorClosedRightFront": True,   # → frontRight closed
+                "doorClosedLeftBack":   True,
+                "doorClosedRightBack":  True,
+                "doorsOpenedCount":     1,
+                "windowsOpenedCount":   0,
+                "trunk":                "OPEN",
+                "trunkStatus":          "LOCKED",
+                "hoodOpen":             False,
+            },
+        }
+        client = self._client_with_url_routing("cupra", {"/v2/vehicles/": status_body})
+        result = asyncio.get_event_loop().run_until_complete(
+            client.get_status("VSSZZE1KZLR000005"))
+
+        # New-shape parsing produces nothing → legacy fallback fires
+        assert result.doors_individual == {
+            "frontLeft":  False,  # open
+            "frontRight": True,
+            "rearLeft":   True,
+            "rearRight":  True,
+        }
+        assert result.doors_open is True
+        assert result.windows_open is False
+        assert result.trunk_open is True
+        assert result.trunk_locked is True
+        assert result.hood_open is False
+
     def test_fetch_user_id(self):
         from custom_components.vag_connect.cariad.api.seat_cupra import SeatCupraClient
         from custom_components.vag_connect.cariad.models import TokenSet
