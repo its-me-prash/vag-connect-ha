@@ -169,6 +169,12 @@
       },
       "adblue_range_km": {
         "name": "Alcance AdBlue"
+      },
+      "api_observer_findings": {
+        "name": "Observador de API"
+      },
+      "error_reporter_count": {
+        "name": "Reportador de errores"
       }
     },
     "binary_sensor": {
@@ -342,6 +348,14 @@
     "auth_failed": {
       "title": "Autenticación fallida — {brand}",
       "description": "Ajustes → Dispositivos y servicios → VAG Connect → ⋮ → Reconfigurar."
+    },
+    "vehicle_data_scout_findings": {
+      "title": "Observador de API — {count} campo(s) nuevo(s) en {brand}",
+      "description": "El Observador de API ha detectado **{count}** campo(s) nuevo(s) en la respuesta de la API de {brand} que VAG Connect aún no lee.\n\nNormalmente significa que tu vehículo tiene una función o versión de firmware que no hemos mapeado — tu ayuda enseñaría a la integración a soportarla.\n\n**Reporte en 1 clic:**\n📤 Pulsa **Más información** abajo para abrir un issue de GitHub prellenado.\n\n**Para Facebook / foro:** Ajustes → Dispositivos → VAG Connect → Diagnóstico → Descargar — pega el informe enmascarado.\n\n_Privacidad: VIN enmascarados, GPS redondeado a 1 decimal, userIDs/JWT/correos eliminados. Nada se envía automáticamente._"
+    },
+    "error_reporter_findings": {
+      "title": "Reportador de errores — {count} error(es) reciente(s) en {brand}",
+      "description": "El Reportador de errores ha capturado **{count}** error(es) reciente(s) de la integración {brand}.\n\nReportarlos ayuda a encontrar fallos que solo aparecen en vehículos o versiones de firmware específicos.\n\n**Reporte en 1 clic:**\n📤 Pulsa **Más información** abajo para abrir un issue de GitHub prellenado.\n\n**Para Facebook / foro:** Ajustes → Dispositivos → VAG Connect → Diagnóstico → Descargar — el informe se incluye, VIN y tokens enmascarados.\n\n_Privacidad: VIN enmascarados, tokens Bearer/JWT/UUID/correo eliminados de mensajes y trazas. No se incluyen credenciales._"
     }
   },
   "exceptions": {

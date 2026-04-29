@@ -169,6 +169,12 @@
       },
       "adblue_range_km": {
         "name": "Autonomie AdBlue"
+      },
+      "api_observer_findings": {
+        "name": "Observateur d'API"
+      },
+      "error_reporter_count": {
+        "name": "Rapporteur d'erreurs"
       }
     },
     "binary_sensor": {
@@ -342,6 +348,14 @@
     "auth_failed": {
       "title": "Connexion échouée — {brand}",
       "description": "Paramètres → Appareils et services → VAG Connect → ⋮ → Reconfigurer."
+    },
+    "vehicle_data_scout_findings": {
+      "title": "Observateur d'API — {count} nouveau(x) champ(s) sur {brand}",
+      "description": "L'Observateur d'API a détecté **{count}** nouveau(x) champ(s) dans la réponse de l'API {brand} que VAG Connect ne lit pas encore.\n\nCela signifie souvent que votre véhicule possède une fonction ou une version de firmware non mappée — votre aide nous permettrait de la prendre en charge.\n\n**Rapport en 1 clic :**\n📤 Cliquez sur **En savoir plus** ci-dessous pour ouvrir un ticket GitHub pré-rempli.\n\n**Pour Facebook / forum :** Paramètres → Appareils → VAG Connect → Diagnostics → Télécharger — collez le rapport masqué.\n\n_Confidentialité : VIN masqués, GPS arrondi à 1 décimale, userIDs/JWT/e-mails supprimés. Rien n'est envoyé automatiquement._"
+    },
+    "error_reporter_findings": {
+      "title": "Rapporteur d'erreurs — {count} erreur(s) récente(s) sur {brand}",
+      "description": "Le Rapporteur d'erreurs a capturé **{count}** erreur(s) récente(s) de l'intégration {brand}.\n\nLes signaler nous aide à trouver des bugs qui n'apparaissent que sur certains véhicules ou versions de firmware.\n\n**Rapport en 1 clic :**\n📤 Cliquez sur **En savoir plus** ci-dessous pour ouvrir un ticket GitHub pré-rempli.\n\n**Pour Facebook / forum :** Paramètres → Appareils → VAG Connect → Diagnostics → Télécharger — le rapport est inclus, VIN et tokens masqués.\n\n_Confidentialité : VIN masqués, tokens Bearer/JWT/UUID/e-mail supprimés des messages et tracebacks. Aucun identifiant n'est inclus._"
     }
   },
   "exceptions": {

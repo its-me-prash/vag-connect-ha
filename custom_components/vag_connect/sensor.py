@@ -303,7 +303,37 @@ SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
         condition="combustion",
         suggested_display_precision=0,
     ),
+
+    # ── v1.9.0 Vehicle Data Scout + Error Reporter ────────────────────────────
+    # Two diagnostic sensors that surface drift / runtime errors detected
+    # by the integration so users can 1-click report them via the HA Repair
+    # dashboard. data_key="" — value comes from coordinator helpers, not
+    # the vehicle dict — see ``ReporterSensor.native_value``.
+    VagSensorDescription(
+        key="api_observer_findings",
+        translation_key="api_observer_findings",
+        data_key="",
+        icon="mdi:radar",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        state_class=SensorStateClass.MEASUREMENT,
+    ),
+    VagSensorDescription(
+        key="error_reporter_count",
+        translation_key="error_reporter_count",
+        data_key="",
+        icon="mdi:alert-circle-outline",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        state_class=SensorStateClass.MEASUREMENT,
+    ),
 )
+
+# Sensor keys that read from coordinator helpers instead of the per-vehicle
+# data dict. Kept in a frozenset so ``async_setup_entry`` can dispatch to
+# the right entity class without scattering branch logic.
+_REPORTER_KEYS: frozenset[str] = frozenset({
+    "api_observer_findings",
+    "error_reporter_count",
+})
 
 
 async def async_setup_entry(
@@ -324,7 +354,12 @@ async def async_setup_entry(
                 continue
             if desc.condition == "combustion" and not has_combustion:
                 continue
-            entities.append(VagConnectSensor(coordinator, vin, desc))
+            if desc.key in _REPORTER_KEYS:
+                # v1.9.0 — reporter sensors read from coordinator helpers
+                # rather than per-vehicle data fields.
+                entities.append(ReporterSensor(coordinator, vin, desc))
+            else:
+                entities.append(VagConnectSensor(coordinator, vin, desc))
 
     async_add_entities(entities)
 
@@ -378,3 +413,67 @@ class VagConnectSensor(VagConnectEntity, SensorEntity):
                     return None
 
         return val
+
+
+class ReporterSensor(VagConnectSensor):
+    """v1.9.0 — Vehicle Data Scout / Error Reporter sensor.
+
+    Reads from coordinator-level state (``unexpected_findings`` /
+    ``error_buffer``) rather than the per-vehicle data dict. Surfaces
+    counts so users can see drift / failures at a glance, and points at
+    the HA Repair issue (raised by the reporter pipeline) for the 1-click
+    GitHub-or-Copy workflow.
+
+    Per-VIN even though Error Reporter is account-wide — keeps the entity
+    layout consistent with every other diagnostic sensor and means the
+    sensor still appears even when a single vehicle in a multi-VIN setup
+    becomes unavailable.
+    """
+
+    @property
+    def native_value(self) -> Any:
+        key = self.entity_description.key
+        coord = self.coordinator
+        if key == "api_observer_findings":
+            # Per-VIN count (not aggregate) so each vehicle's sensor reflects
+            # only its own drift. Aggregate goes into the repair issue.
+            findings: dict[str, dict[str, Any]] = (
+                getattr(coord, "unexpected_findings", {}) or {}
+            )
+            return len(findings.get(self._vin, {}))
+        if key == "error_reporter_count":
+            # Account-wide count — auth/rate-limit errors aren't per-VIN
+            # and the buffer is shared across all vehicles in the account.
+            return coord.reporter_error_count() if hasattr(
+                coord, "reporter_error_count"
+            ) else 0
+        return None
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any] | None:
+        """Surface a tiny preview so the entity card is informative.
+
+        Privacy: every value here has already passed through
+        ``mask_value`` / ``_redact`` upstream. Don't add raw fields.
+        """
+        key = self.entity_description.key
+        coord = self.coordinator
+        if key == "api_observer_findings":
+            findings = (getattr(coord, "unexpected_findings", {}) or {}).get(
+                self._vin, {}
+            )
+            # Up to 5 most recent paths — keeps the attributes panel tidy
+            # and avoids hammering the recorder with huge state dicts.
+            preview = list(findings.keys())[-5:]
+            return {
+                "paths": preview,
+                "report_url": "https://github.com/its-me-prash/vag-connect-ha/issues/new",
+            }
+        if key == "error_reporter_count":
+            buffer = getattr(coord, "error_buffer", None)
+            records = (buffer.records if buffer is not None else [])[-3:]
+            return {
+                "recent_types": [r.exception_type for r in records],
+                "report_url": "https://github.com/its-me-prash/vag-connect-ha/issues/new",
+            }
+        return None

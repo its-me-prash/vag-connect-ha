@@ -134,6 +134,15 @@ class VWEUClient(CariadBaseClient):
 
         d = self._parse_status(vin, raw, parking)
 
+        # v1.9.0 — Vehicle Data Scout opt-in. Endpoint names match
+        # ``EXPECTED_KEYS["volkswagen"]`` (Audi inherits the table via
+        # AudiClient(VWEUClient) — same backend, same shape).
+        self.last_raw_responses = {}
+        if isinstance(raw, dict):
+            self.last_raw_responses["selectivestatus"] = raw
+        if isinstance(parking, dict):
+            self.last_raw_responses["parkingposition"] = parking
+
         # ── carCapturedTimestamp → connection_state (v1.8.12 Multi-Brand) ────
         # CARIAD-BFF returns ``carCapturedTimestamp`` on the .value of every
         # status sub-object — confirmed live in

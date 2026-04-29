@@ -5,8 +5,8 @@
 > mirrors it for archive/historical purposes and links the active GitHub
 > issues for each session.
 
-**Last updated:** 2026-04-29 — post v1.8.12 sprint (Multi-Brand
-Connection-State live)
+**Last updated:** 2026-04-29 — post v1.9.0 (Vehicle Data Scout +
+Error Reporter live; first MINOR after strict-semver switch)
 
 ---
 
@@ -40,6 +40,7 @@ Connection-State live)
 | **v1.8.10** | Hotfix — legacy CARIAD-flat doors fallback inversion (1-line) | **2026-04-29** |
 | **v1.8.11** | **Session 3S** — Škoda `carCapturedTimestamp` connection-state + `detail` block + `reliableLockStatus` + `fullyChargedAt` from CC-skoda #50 Live-Dump (10 new tests, closes #54) | **2026-04-29** |
 | **v1.8.12** | **MVP-Move** — Multi-Brand connection-state (Skoda + CUPRA + SEAT + VW EU + Audi via inheritance). Brand-agnostic helper `compute_connection_state` with recursive timestamp walk. Verified via volkswagencarnet #921 ID.4 2025 Live-Dump (12 new tests) | **2026-04-29** |
+| **v1.9.0** | 🔬 **Vehicle Data Scout + Error Reporter** — 2 neue Diagnostik-Sensoren mit gemeinsamer 1-Klick Reporter Pipeline. Brand-localized in 8 Sprachen. HA Repair-Issues mit pre-filled GitHub-URL + Diagnostics-Export für Facebook/Forum-Community. Privacy: VIN/GPS/JWT/UUID/Email maskiert, NIE Auto-Push. Aktiv für Skoda + SEAT + CUPRA + VW EU + Audi (18 neue Tests) | **2026-04-29** |
 
 **Sprint summary 2026-04-29:** 7 releases, ~50 new tests, branch
 protection activated, CHANGELOG split into human + technical, 4 parallel
@@ -56,7 +57,7 @@ priority.
 
 | Session | Version | Scope | Issues |
 |---|---|---|---|
-| **Vehicle Data Scout + Error Reporter** | **v1.9.0** ⭐ | Zwei diagnostische Sensoren mit **gemeinsamer Reporter Pipeline** für crowd-sourced Bug-Discovery. (1) **Vehicle Data Scout** loggt unbekannte JSON-Felder (folgt tillsteinbach CC-* "Unexpected Keys"-Pattern). (2) **Error Reporter** captured letzte N Exceptions/API-Errors. **Reporter Pipeline (1-Klick):** HA Repair Notification → "Mehr Info" → Modal + 2 Buttons: `📤 GitHub melden` ODER `📋 Copy für Forum/Facebook`. **Facebook-Community-friendly.** KEIN Auto-Push. Brand-localised sensor names (8 Sprachen). **Semver: MINOR (neue Sensoren), nicht PATCH.** | new |
+| ~~**Vehicle Data Scout + Error Reporter**~~ | ~~**v1.9.0**~~ ✅ | ✅ Geshipped 2026-04-29 — siehe Achievement-Tabelle oben. | done |
 | **Capability-Filter Phase 2** | v1.9.1 | `capability.active && capability.user-enabled` vor Entity-Creation. CC-seatcupra #64 pattern. PATCH. | #56 |
 | **Defensive Coding Phase 2** | v1.9.2 | Generic `except Exception` audit + Enum-Tolerance (`CHARGING_INTERRUPTED`, `NOT_ACTIVATED` etc.). PATCH. | #58 |
 | **3B-Part-3 — Optimistic Lock/Climate** | v1.9.3 | myskoda #832 pattern. PATCH. | — |

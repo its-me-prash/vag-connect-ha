@@ -32,6 +32,12 @@ from .const import (
     DOMAIN,
 )
 from homeassistant.helpers import device_registry as dr
+from .cariad._error_reporter import ErrorRingBuffer, record_error
+from .cariad._reporter_pipeline import (
+    ensure_error_reporter_issue,
+    ensure_unexpected_keys_issue,
+)
+from .cariad._unexpected_keys import UnexpectedField, detect_unexpected
 from .cariad._util import mask_vin
 from .cariad.exceptions import CommandFailureReason, CommandProfile
 from .cariad.models import VehicleData
@@ -144,6 +150,19 @@ class VagConnectCoordinator(DataUpdateCoordinator):
 
         # Reverse-geocoding cache: {(round(lat,3), round(lon,3)): result}
         self._geocode_cache: dict[tuple[float, float], dict[str, str | None]] = {}
+
+        # v1.9.0 — Vehicle Data Scout state. Per-VIN dict of
+        # {path -> UnexpectedField}, de-duped so the same drift seen on
+        # every poll only reports once. Surfaced via the
+        # ``api_observer_findings`` sensor and the
+        # ``vehicle_data_scout_findings`` HA repair issue.
+        self.unexpected_findings: dict[str, dict[str, UnexpectedField]] = {}
+
+        # v1.9.0 — Error Reporter ring buffer (last 20 captured exceptions).
+        # Surfaced via the ``error_reporter_count`` sensor and the
+        # ``error_reporter_findings`` HA repair issue. Bounded so memory
+        # and the diagnostics export size stay predictable.
+        self.error_buffer: ErrorRingBuffer = ErrorRingBuffer()
 
         # update_interval=None: no HA-level polling
         # Updates arrive reactively via _on_cc_update → async_set_updated_data
@@ -302,6 +321,22 @@ class VagConnectCoordinator(DataUpdateCoordinator):
                         self.vehicle_failure_count[vin] = (
                             self.vehicle_failure_count.get(vin, 0) + 1
                         )
+                        # v1.9.0 — Error Reporter capture. Per-VIN poll failure
+                        # gets logged in the ring buffer with masked context so
+                        # users can 1-click report it. Wrapped in try/except —
+                        # error reporting must NEVER raise.
+                        try:
+                            record_error(
+                                self.error_buffer,
+                                exception=result,
+                                brand=self.entry.data.get(CONF_BRAND, ""),
+                                vin=vin,
+                                model_year=self.vehicles.get(vin, {}).get("model_year"),
+                                firmware=self.vehicles.get(vin, {}).get("firmware_version"),
+                                endpoint="get_status",
+                            )
+                        except Exception:  # noqa: BLE001
+                            pass
                     elif isinstance(result, VehicleData):
                         data = result.to_dict()
                         data["_client"] = self._cariad_client
@@ -311,6 +346,13 @@ class VagConnectCoordinator(DataUpdateCoordinator):
                         self.vehicle_success[vin] = True
                         self.vehicle_failure_count[vin] = 0
                         self.vehicle_last_good_at[vin] = datetime.now(tz=timezone.utc)
+                        # v1.9.0 — Vehicle Data Scout. Inspect raw responses
+                        # the brand client opted to stash; never blocks the
+                        # poll if the detector itself raises.
+                        try:
+                            self._scan_for_unexpected_keys(vin)
+                        except Exception:  # noqa: BLE001
+                            pass
                     else:
                         fresh[vin] = self.vehicles.get(vin, {})
                         self.vehicle_success[vin] = False
@@ -319,6 +361,10 @@ class VagConnectCoordinator(DataUpdateCoordinator):
                         )
                 with self._vehicles_lock:
                     self.vehicles.update(fresh)
+                # v1.9.0 — Refresh the two reporter repair issues. Cheap to
+                # call: ``ensure_*_issue`` deletes when empty and updates
+                # in-place when the IDs already exist.
+                self._refresh_reporter_issues()
                 await self._async_push_update(fresh, success=any_success)
             except Exception as err:  # noqa: BLE001
                 # Auth failure that survived the client's refresh-then-relogin
@@ -329,6 +375,19 @@ class VagConnectCoordinator(DataUpdateCoordinator):
                     await self._async_push_update({}, success=False)
                     return
                 _LOGGER.error("VAG Connect poll error: %s", err)
+                # v1.9.0 — Error Reporter: outer poll-loop crash gets a
+                # buffer entry too. Critical because these are the kind of
+                # errors users hit and never know about (silent except).
+                try:
+                    record_error(
+                        self.error_buffer,
+                        exception=err,
+                        brand=self.entry.data.get(CONF_BRAND, ""),
+                        endpoint="poll_loop",
+                    )
+                    self._refresh_reporter_issues()
+                except Exception:  # noqa: BLE001
+                    pass
                 if not hasattr(self, "vehicle_success"):
                     self.vehicle_success = {}
                 if not hasattr(self, "vehicle_failure_count"):
@@ -350,6 +409,89 @@ class VagConnectCoordinator(DataUpdateCoordinator):
         self._started = False
         self._cariad_client = None
         _LOGGER.debug("VAG Connect: shutdown complete")
+
+    # ── Vehicle Data Scout + Error Reporter (v1.9.0) ───────────────────────
+
+    def _scan_for_unexpected_keys(self, vin: str) -> None:
+        """Run ``detect_unexpected`` over the brand client's stashed responses.
+
+        Brand clients opt in by populating ``last_raw_responses`` in
+        ``get_status`` with logical endpoint names matching the
+        ``EXPECTED_KEYS`` table. Findings are de-duped per VIN — the same
+        drift seen on every poll only takes one slot in the buffer and one
+        line in the report.
+
+        Caller wraps in try/except so a detector bug never breaks polling.
+        """
+        client = self._cariad_client
+        if client is None or not hasattr(client, "last_raw_responses"):
+            return
+        brand = self.entry.data.get(CONF_BRAND, "")
+        if not brand:
+            return
+        if not hasattr(self, "unexpected_findings"):
+            self.unexpected_findings = {}
+        per_vin = self.unexpected_findings.setdefault(vin, {})
+        for endpoint, payload in (client.last_raw_responses or {}).items():
+            for finding in detect_unexpected(brand, endpoint, payload):
+                # De-dupe by path — keep the first observation timestamp.
+                per_vin.setdefault(finding.path, finding)
+
+    def _refresh_reporter_issues(self) -> None:
+        """Recreate / delete the two HA repair issues from current buffers.
+
+        Called after every poll cycle. The pipeline functions handle the
+        empty case (delete the issue) and the populated case (create or
+        refresh in-place — registry de-dupes by issue_id).
+
+        Wrapped here so a registry hiccup can't take down the poll loop.
+        """
+        brand = self.entry.data.get(CONF_BRAND, "")
+        entry_id = getattr(self.entry, "entry_id", "") or ""
+
+        # Flatten per-VIN findings into a single chronological list.
+        all_findings = []
+        for per_vin in getattr(self, "unexpected_findings", {}).values():
+            all_findings.extend(per_vin.values())
+
+        try:
+            ensure_unexpected_keys_issue(
+                self.hass,
+                entry_id=entry_id,
+                findings=all_findings,
+                brand=brand,
+            )
+        except Exception:  # noqa: BLE001
+            pass
+
+        try:
+            buffer = getattr(self, "error_buffer", None)
+            records = list(buffer.records) if buffer is not None else []
+            ensure_error_reporter_issue(
+                self.hass,
+                entry_id=entry_id,
+                records=records,
+                brand=brand,
+            )
+        except Exception:  # noqa: BLE001
+            pass
+
+    def reporter_findings_count(self) -> int:
+        """Return the total number of distinct unexpected-key findings.
+
+        Surfaced by the ``api_observer_findings`` sensor as its native
+        value. Counting distinct paths (not raw observations) avoids
+        misleadingly large numbers when the same drift hits every poll.
+        """
+        total = 0
+        for per_vin in getattr(self, "unexpected_findings", {}).values():
+            total += len(per_vin)
+        return total
+
+    def reporter_error_count(self) -> int:
+        """Return the number of records in the error reporter ring buffer."""
+        buffer = getattr(self, "error_buffer", None)
+        return len(buffer) if buffer is not None else 0
 
     @property
     def is_active(self) -> bool:
