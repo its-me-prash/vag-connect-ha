@@ -23,6 +23,90 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ## [Unreleased]
 
+## [1.8.10] - 2026-04-29
+
+### Hotfix — Legacy CARIAD-flat doors fallback Inversionsbug (Pre-v1.8.9-Bug)
+
+Ein-Zeilen-Hotfix gegen einen latenten Bug der seit Einführung des
+Legacy-Fallback-Pfads in v1.8.9 vorhanden war. Aufgedeckt durch den
+v1.8.9 Regression-Test `test_v189_status_legacy_flat_fallback_still_works`,
+der in CI im PR #82 als FAIL durchlief. Der PR wurde trotzdem gemerged
+weil Branch-Protection auf required-checks im Repo nicht aktiviert ist —
+das ist eine separate Process-Lücke die in einem eigenen Hotfix adressiert
+wird.
+
+**Bug:**
+
+Im `cariad/api/seat_cupra.py` Legacy-Fallback-Block (für sehr alte
+Firmware oder zukünftige API-Änderungen wo unsere neuen pycupra-Pfade
+nichts liefern) stand:
+
+```python
+for key in ("doorClosedLeftFront", "doorClosedRightFront", ...):
+    val = v(access_s, key)
+    ...
+    doors_legacy[door_id] = not val   # ❌ INVERSION-BUG
+```
+
+Das `not val` invertierte die Semantik: das CARIAD-BFF-Field heißt
+`doorClosed*` — also `True` bedeutet "Tür IST geschlossen", was unserer
+`doors_individual`-Konvention (True == closed) **direkt** entspricht.
+Das `not val` war daher falsch, und Tür-Entities würden für jedes
+Modell, das tatsächlich diese flachen Pfade liefert, die invertierte
+Information melden.
+
+**Fix:**
+
+```python
+doors_legacy[door_id] = bool(val)   # ✅ direkt, ohne Inversion
+```
+
+**Impact:** Aktuelle CUPRA Born / Formentor / Tavascan Modelle nutzen die
+neuen `status.doors.{position}.{locked,open}` Pfade aus v1.8.9, also
+trifft sie der Bug **nicht** in Praxis. Der Bug betrifft nur den
+defensiven Fallback-Pfad — der nur fires wenn keine der neuen
+strukturierten Pfade Daten liefert. Realistisch dürfte das auf keinem
+heute aktiven SEAT/CUPRA-Modell passieren. Trotzdem wichtig zu fixen
+weil:
+
+1. Der bestehende Regression-Test (12. Test in v1.8.9) muss grün sein
+2. Kommt eine zukünftige OLA-API-Änderung die uns auf den Fallback
+   wirft, würden Tür-Entities silently invertierte Werte zeigen
+3. CI auf main muss grün sein — `main` mit failing tests blockt jede
+   nachfolgende PR
+
+**Tests:** keine Änderungen nötig — der bestehende v1.8.9 Test
+`test_v189_status_legacy_flat_fallback_still_works` testet das korrekte
+Verhalten und passt jetzt mit dem gefixten Code.
+
+### Hotfix — Legacy CARIAD-flat doors fallback inversion bug (English)
+
+One-line hotfix for a latent bug present since the legacy-fallback path
+was introduced in v1.8.9. Caught by the v1.8.9 regression test
+`test_v189_status_legacy_flat_fallback_still_works` which failed in CI on
+PR #82 but the PR was merged anyway because branch protection on
+required checks is not enabled in the repo (separate process gap to be
+addressed).
+
+**Bug:** in `seat_cupra.py` legacy-fallback block, `doors_legacy[door_id]
+= not val` inverted the semantics — the CARIAD-BFF field is named
+`doorClosed*`, so `True` means "door IS closed", matching our
+`doors_individual` convention (True == closed) directly. The `not val`
+was wrong.
+
+**Fix:** `doors_legacy[door_id] = bool(val)`.
+
+**Impact:** current CUPRA Born / Formentor / Tavascan models use the new
+`status.doors.{position}.{locked,open}` paths from v1.8.9, so the bug
+doesn't hit them in practice. Only matters if a future OLA API change
+forces us onto the fallback path. Still must be fixed because: (1)
+existing regression test must pass, (2) silent inversion in fallback
+would hide as a real bug later, (3) main with failing tests blocks
+every subsequent PR.
+
+**Tests:** no changes needed — the existing v1.8.9 test now passes with
+the fixed code.
+
 ## [1.8.9] - 2026-04-29
 
 ### Session 3C — CUPRA/SEAT OLA Status JSON-Pfade gefixt + Per-Window Entities + Live-API-Erkenntnisse

@@ -300,7 +300,17 @@ class SeatCupraClient(CariadBaseClient):
                                    .replace("RightFront", "frontRight")
                                    .replace("LeftBack", "rearLeft")
                                    .replace("RightBack", "rearRight"))
-                        doors_legacy[door_id] = not val
+                        # v1.8.10 hotfix: pre-v1.8.9 legacy code had
+                        # ``doors_legacy[door_id] = not val`` which inverted
+                        # the semantics — the field is named "doorClosed*"
+                        # so ``True`` means the door IS closed, matching our
+                        # ``doors_individual`` convention (True == closed).
+                        # The accidental ``not val`` was caught by the v1.8.9
+                        # regression test ``test_v189_status_legacy_flat_fallback_still_works``
+                        # which failed in CI on the v1.8.9 PR (#82) but the
+                        # PR was merged anyway because branch protection on
+                        # required-checks isn't enabled.
+                        doors_legacy[door_id] = bool(val)
                 if doors_legacy:
                     d.doors_individual = doors_legacy
 
