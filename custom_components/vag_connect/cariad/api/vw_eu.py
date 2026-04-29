@@ -7,6 +7,7 @@ from datetime import datetime, timedelta, timezone
 import logging
 from typing import Any
 
+from .._util import compute_connection_state
 from ..exceptions import APIError
 from ..models import BRAND_VW_EU, VehicleData
 from .base import CariadBaseClient
@@ -131,7 +132,25 @@ class VWEUClient(CariadBaseClient):
         except Exception:  # noqa: BLE001
             pass
 
-        return self._parse_status(vin, raw, parking)
+        d = self._parse_status(vin, raw, parking)
+
+        # ── carCapturedTimestamp → connection_state (v1.8.12 Multi-Brand) ────
+        # CARIAD-BFF returns ``carCapturedTimestamp`` on the .value of every
+        # status sub-object — confirmed live in
+        # `robinostlund/volkswagencarnet` issue #921 (ID.4 2025 dump):
+        #   access.accessStatus.value.carCapturedTimestamp
+        #   charging.chargingStatus.value.carCapturedTimestamp
+        #   charging.batteryStatus.value.carCapturedTimestamp
+        #   climatisation.climatisationStatus.value.carCapturedTimestamp
+        #   measurements.{range,odometer,fuelLevel}Status.value.carCapturedTimestamp
+        #   parkingposition.carCapturedTimestamp (separate endpoint)
+        # The recursive walk in compute_connection_state() handles the
+        # nested .value.carCapturedTimestamp paths without per-brand
+        # configuration. AudiClient inherits this since it uses the same
+        # selectivestatus endpoint via VWEUClient.
+        d.connection_state, d.last_seen_at = compute_connection_state(raw, parking)
+
+        return d
 
     async def command_lock(self, vin: str) -> None:
         """Lock vehicle — combined endpoint with separate-endpoint fallback,

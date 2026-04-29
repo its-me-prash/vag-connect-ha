@@ -13,6 +13,7 @@ from typing import Any
 
 from aiohttp import ClientSession
 
+from .._util import compute_connection_state
 from ..models import BRAND_SKODA, VehicleData
 from .base import CariadBaseClient
 
@@ -210,50 +211,18 @@ class SkodaClient(CariadBaseClient):
             d.is_online = unreachable is None or unreachable is False
             d.is_driving = v(readiness, "inMotion") is True
 
-        # ── carCapturedTimestamp → connection_state (v1.8.11 Session 3S) ────
-        # Closes #54 (GitHobi). The official Škoda Connect app shows a
-        # three-state "Online / Standby / Offline" indicator that is NOT
-        # backed by any single API field — it is derived from
-        # ``carCapturedTimestamp`` which appears on every status sub-object
-        # in the mysmob response. Verified against `skodaconnect/myskoda`
-        # source: 9 model files (`models/air_conditioning.py`, `charging.py`,
-        # `status.py`, `driving_range.py`, `software_status.py`,
-        # `departure.py`, `auxiliary_heating.py`, `chargingprofiles.py`,
-        # plus the v2 air_conditioning variant) all decorate
-        # `field_options(alias="carCapturedTimestamp")`.
-        #
-        # Semantics — derived from `homeassistant-myskoda` issues #751, #731:
-        #   age < 30 min   → "online"   (live data, just heard from the car)
-        #   age < 24 h     → "standby"  (asleep but reachable via /wakeup)
-        #   age >= 24 h    → "offline"  (12V flat / underground / service)
-        #
-        # The freshest timestamp across all sub-objects wins — different
-        # systems update independently (e.g. charging publishes more
-        # frequently than door state).
-        latest_ts: datetime | None = None
-        for sub in (status, charging, ac, parking, driving_range, maintenance, readiness):
-            if not isinstance(sub, dict):
-                continue
-            for ts_key in ("carCapturedTimestamp",):
-                ts_str = sub.get(ts_key)
-                if isinstance(ts_str, str):
-                    try:
-                        ts = datetime.fromisoformat(ts_str.replace("Z", "+00:00"))
-                        if latest_ts is None or ts > latest_ts:
-                            latest_ts = ts
-                    except ValueError:
-                        # Bad timestamp from backend — ignore, don't crash.
-                        pass
-
-        if latest_ts is not None:
-            d.last_seen_at = latest_ts
-            age_s = (datetime.now(tz=timezone.utc) - latest_ts).total_seconds()
-            if age_s < 1800:        # < 30 min
-                d.connection_state = "online"
-            elif age_s < 86400:     # < 24 h
-                d.connection_state = "standby"
-            else:
-                d.connection_state = "offline"
+        # ── carCapturedTimestamp → connection_state (v1.8.12 refactor) ────
+        # v1.8.11 introduced this logic Skoda-only; v1.8.12 extracted the
+        # algorithm into ``cariad/_util.compute_connection_state`` so VW EU,
+        # Audi and CUPRA/SEAT can apply the same Pattern (Multi-Brand
+        # Connection-State). The recursive timestamp walk in the helper
+        # also handles VW EU CARIAD-BFF's deeper-nested structure
+        # (``service.statusName.value.carCapturedTimestamp`` — verified
+        # via robinostlund/volkswagencarnet issue #921 ID.4 2025
+        # Live-Response).
+        d.connection_state, d.last_seen_at = compute_connection_state(
+            status, charging, ac, parking, driving_range, maintenance, readiness,
+        )
 
         return d
 

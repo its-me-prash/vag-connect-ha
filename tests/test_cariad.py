@@ -93,6 +93,147 @@ class TestModels:
 
 # ── exceptions ─────────────────────────────────────────────────────────────────
 
+# ── v1.8.12 — Multi-Brand connection-state helper ───────────────────────────
+
+class TestComputeConnectionState:
+    """v1.8.12 — ``cariad/_util.compute_connection_state`` is the brand-
+    agnostic helper that maps `carCapturedTimestamp` from arbitrarily
+    nested status sub-objects to (state, last_seen_at). Used by Škoda
+    (v1.8.11), SEAT/CUPRA, VW EU and Audi (via VWEUClient inheritance).
+    """
+
+    def test_returns_none_when_no_subobjects(self):
+        from custom_components.vag_connect.cariad._util import compute_connection_state
+        assert compute_connection_state() == (None, None)
+
+    def test_returns_none_when_no_timestamp_anywhere(self):
+        """v1.8.12 / myskoda PR #565: carCapturedTimestamp may be missing.
+        Helper must not crash and not invent a value."""
+        from custom_components.vag_connect.cariad._util import compute_connection_state
+        state, ts = compute_connection_state(
+            {"random": "data"}, {"other": [1, 2, 3]}, None,
+        )
+        assert state is None
+        assert ts is None
+
+    def test_top_level_timestamp_skoda_pattern(self):
+        """Škoda mysmob: timestamp at top level of each sub-object."""
+        from datetime import datetime, timezone, timedelta
+        from custom_components.vag_connect.cariad._util import compute_connection_state
+        recent = (datetime.now(tz=timezone.utc) - timedelta(minutes=5)).isoformat()
+        state, ts = compute_connection_state({"carCapturedTimestamp": recent})
+        assert state == "online"
+        assert ts is not None
+
+    def test_nested_timestamp_vw_eu_pattern(self):
+        """VW EU CARIAD-BFF: timestamp is at .value.carCapturedTimestamp,
+        nested 2-3 levels deep in service.statusName.value structure.
+        Verified via robinostlund/volkswagencarnet issue #921 ID.4 dump."""
+        from datetime import datetime, timezone, timedelta
+        from custom_components.vag_connect.cariad._util import compute_connection_state
+        recent = (datetime.now(tz=timezone.utc) - timedelta(minutes=10)).isoformat()
+        # Mimic the actual VW EU selectivestatus shape
+        raw = {
+            "access": {
+                "accessStatus": {
+                    "value": {
+                        "overallStatus": "safe",
+                        "carCapturedTimestamp": recent,
+                    },
+                },
+            },
+            "charging": {
+                "chargingStatus": {"value": {"chargingState": "off"}},
+            },
+        }
+        state, ts = compute_connection_state(raw)
+        assert state == "online"
+        assert ts is not None
+
+    def test_freshest_wins_across_subobjects(self):
+        """The freshest timestamp from any sub-object wins —
+        different sub-systems update at different cadences."""
+        from datetime import datetime, timezone, timedelta
+        from custom_components.vag_connect.cariad._util import compute_connection_state
+        old = (datetime.now(tz=timezone.utc) - timedelta(hours=10)).isoformat()
+        fresh = (datetime.now(tz=timezone.utc) - timedelta(minutes=2)).isoformat()
+        state, ts = compute_connection_state(
+            {"carCapturedTimestamp": old},
+            {"deeply": {"nested": {"carCapturedTimestamp": fresh}}},
+        )
+        assert state == "online"  # freshest wins → 2 min ago
+
+    def test_accepts_datetime_objects_too(self):
+        """volkswagencarnet's lib pre-parses timestamps to datetime
+        objects before storing — we must accept both str and datetime
+        (verified in issue #921: mixed format in same response)."""
+        from datetime import datetime, timezone, timedelta
+        from custom_components.vag_connect.cariad._util import compute_connection_state
+        recent = datetime.now(tz=timezone.utc) - timedelta(minutes=5)
+        state, ts = compute_connection_state({"carCapturedTimestamp": recent})
+        assert state == "online"
+        assert ts == recent
+
+    def test_naive_datetime_treated_as_utc(self):
+        """Some backends return tz-naive datetimes — assume UTC for them
+        instead of crashing in tz-arithmetic."""
+        from datetime import datetime, timedelta
+        from custom_components.vag_connect.cariad._util import compute_connection_state
+        recent_naive = datetime.utcnow() - timedelta(minutes=5)
+        state, ts = compute_connection_state({"carCapturedTimestamp": recent_naive})
+        assert state == "online"
+        assert ts is not None
+
+    def test_corrupt_timestamp_string_does_not_crash(self):
+        """Bad backend response with non-ISO timestamp → ignore that
+        sub-object, keep checking the others."""
+        from datetime import datetime, timezone, timedelta
+        from custom_components.vag_connect.cariad._util import compute_connection_state
+        good = (datetime.now(tz=timezone.utc) - timedelta(minutes=5)).isoformat()
+        state, ts = compute_connection_state(
+            {"carCapturedTimestamp": "not a date"},
+            {"carCapturedTimestamp": good},
+        )
+        assert state == "online"
+        assert ts is not None
+
+    def test_exception_subobject_skipped(self):
+        """asyncio.gather(..., return_exceptions=True) returns Exception
+        instances for failed sub-fetches — helper must skip them."""
+        from datetime import datetime, timezone, timedelta
+        from custom_components.vag_connect.cariad._util import compute_connection_state
+        recent = (datetime.now(tz=timezone.utc) - timedelta(minutes=5)).isoformat()
+        state, ts = compute_connection_state(
+            ValueError("timeout"), {"carCapturedTimestamp": recent}, RuntimeError("..."),
+        )
+        assert state == "online"
+
+    def test_standby_threshold_just_under_24h(self):
+        from datetime import datetime, timezone, timedelta
+        from custom_components.vag_connect.cariad._util import compute_connection_state
+        ts_str = (datetime.now(tz=timezone.utc) - timedelta(hours=23, minutes=30)).isoformat()
+        state, _ = compute_connection_state({"carCapturedTimestamp": ts_str})
+        assert state == "standby"
+
+    def test_offline_threshold_just_over_24h(self):
+        from datetime import datetime, timezone, timedelta
+        from custom_components.vag_connect.cariad._util import compute_connection_state
+        ts_str = (datetime.now(tz=timezone.utc) - timedelta(hours=24, minutes=1)).isoformat()
+        state, _ = compute_connection_state({"carCapturedTimestamp": ts_str})
+        assert state == "offline"
+
+    def test_custom_timestamp_keys(self):
+        """Future-proofing: caller can override the field name to look for."""
+        from datetime import datetime, timezone, timedelta
+        from custom_components.vag_connect.cariad._util import compute_connection_state
+        recent = (datetime.now(tz=timezone.utc) - timedelta(minutes=5)).isoformat()
+        state, _ = compute_connection_state(
+            {"capturedAt": recent},
+            timestamp_keys=("capturedAt",),
+        )
+        assert state == "online"
+
+
 class TestExceptions:
     def test_terms_error_message(self):
         from custom_components.vag_connect.cariad.exceptions import TermsAndConditionsError

@@ -13,6 +13,7 @@ from typing import Any
 
 from aiohttp import ClientSession
 
+from .._util import compute_connection_state
 from ..exceptions import APIError, SpinError
 from ..models import BRAND_CUPRA, BRAND_SEAT, BrandConfig, VehicleData
 from .base import CariadBaseClient
@@ -465,6 +466,19 @@ class SeatCupraClient(CariadBaseClient):
         # ── Drivetrain ───────────────────────────────────────────────────────
         d.is_electric = d.has_battery and not d.has_combustion
         d.is_hybrid = d.has_battery and d.has_combustion
+
+        # ── carCapturedTimestamp → connection_state (v1.8.12 Multi-Brand) ────
+        # OLA backend returns ``carCapturedTimestamp`` on multiple
+        # sub-responses (verified live in
+        # `tillsteinbach/CarConnectivity-connector-seatcupra` issue #109,
+        # Rainer's CUPRA Born 2026-03-27 dump shows it on
+        # ``climatisationStatus`` and ``chargingSettings``).
+        # Same Pattern as Škoda + VW EU; helper handles nested paths and
+        # both string + datetime values.
+        d.connection_state, d.last_seen_at = compute_connection_state(
+            mycar, parking, ranges, status, charge_status, charge_info,
+            climate, maintenance, availability,
+        )
 
         return d
 
