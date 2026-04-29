@@ -21,602 +21,139 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ---
 
+> 💡 **Für Entwickler / Contributors:** Vollständige technische Detail-Notes
+> für v1.8.6+ findest du in [`docs/CHANGELOG_TECHNICAL.md`](docs/CHANGELOG_TECHNICAL.md)
+> — mit jeder geänderten Datei, jeder Zeile, jeder Issue-Referenz und der
+> Methodik dahinter.
+
 ## [Unreleased]
 
-## [1.8.10] - 2026-04-29
-
-### Hotfix — Legacy CARIAD-flat doors fallback Inversionsbug (Pre-v1.8.9-Bug)
-
-Ein-Zeilen-Hotfix gegen einen latenten Bug der seit Einführung des
-Legacy-Fallback-Pfads in v1.8.9 vorhanden war. Aufgedeckt durch den
-v1.8.9 Regression-Test `test_v189_status_legacy_flat_fallback_still_works`,
-der in CI im PR #82 als FAIL durchlief. Der PR wurde trotzdem gemerged
-weil Branch-Protection auf required-checks im Repo nicht aktiviert ist —
-das ist eine separate Process-Lücke die in einem eigenen Hotfix adressiert
-wird.
-
-**Bug:**
-
-Im `cariad/api/seat_cupra.py` Legacy-Fallback-Block (für sehr alte
-Firmware oder zukünftige API-Änderungen wo unsere neuen pycupra-Pfade
-nichts liefern) stand:
-
-```python
-for key in ("doorClosedLeftFront", "doorClosedRightFront", ...):
-    val = v(access_s, key)
-    ...
-    doors_legacy[door_id] = not val   # ❌ INVERSION-BUG
-```
-
-Das `not val` invertierte die Semantik: das CARIAD-BFF-Field heißt
-`doorClosed*` — also `True` bedeutet "Tür IST geschlossen", was unserer
-`doors_individual`-Konvention (True == closed) **direkt** entspricht.
-Das `not val` war daher falsch, und Tür-Entities würden für jedes
-Modell, das tatsächlich diese flachen Pfade liefert, die invertierte
-Information melden.
-
-**Fix:**
-
-```python
-doors_legacy[door_id] = bool(val)   # ✅ direkt, ohne Inversion
-```
-
-**Impact:** Aktuelle CUPRA Born / Formentor / Tavascan Modelle nutzen die
-neuen `status.doors.{position}.{locked,open}` Pfade aus v1.8.9, also
-trifft sie der Bug **nicht** in Praxis. Der Bug betrifft nur den
-defensiven Fallback-Pfad — der nur fires wenn keine der neuen
-strukturierten Pfade Daten liefert. Realistisch dürfte das auf keinem
-heute aktiven SEAT/CUPRA-Modell passieren. Trotzdem wichtig zu fixen
-weil:
-
-1. Der bestehende Regression-Test (12. Test in v1.8.9) muss grün sein
-2. Kommt eine zukünftige OLA-API-Änderung die uns auf den Fallback
-   wirft, würden Tür-Entities silently invertierte Werte zeigen
-3. CI auf main muss grün sein — `main` mit failing tests blockt jede
-   nachfolgende PR
-
-**Tests:** keine Änderungen nötig — der bestehende v1.8.9 Test
-`test_v189_status_legacy_flat_fallback_still_works` testet das korrekte
-Verhalten und passt jetzt mit dem gefixten Code.
-
-### Hotfix — Legacy CARIAD-flat doors fallback inversion bug (English)
-
-One-line hotfix for a latent bug present since the legacy-fallback path
-was introduced in v1.8.9. Caught by the v1.8.9 regression test
-`test_v189_status_legacy_flat_fallback_still_works` which failed in CI on
-PR #82 but the PR was merged anyway because branch protection on
-required checks is not enabled in the repo (separate process gap to be
-addressed).
-
-**Bug:** in `seat_cupra.py` legacy-fallback block, `doors_legacy[door_id]
-= not val` inverted the semantics — the CARIAD-BFF field is named
-`doorClosed*`, so `True` means "door IS closed", matching our
-`doors_individual` convention (True == closed) directly. The `not val`
-was wrong.
-
-**Fix:** `doors_legacy[door_id] = bool(val)`.
-
-**Impact:** current CUPRA Born / Formentor / Tavascan models use the new
-`status.doors.{position}.{locked,open}` paths from v1.8.9, so the bug
-doesn't hit them in practice. Only matters if a future OLA API change
-forces us onto the fallback path. Still must be fixed because: (1)
-existing regression test must pass, (2) silent inversion in fallback
-would hide as a real bug later, (3) main with failing tests blocks
-every subsequent PR.
-
-**Tests:** no changes needed — the existing v1.8.9 test now passes with
-the fixed code.
-
-## [1.8.9] - 2026-04-29
-
-### Session 3C — CUPRA/SEAT OLA Status JSON-Pfade gefixt + Per-Window Entities + Live-API-Erkenntnisse
-
-**Bug-Fix-Bündel** für Gerhards 19 fehlende Entities (CUPRA Born) und alle
-SEAT/CUPRA-Modelle. Vor v1.8.9 las unser Parser aus
-`/v2/vehicles/{vin}/status` mit CARIAD-BFF-typischen flachen Feldnamen
-(`doorsOpenedCount`, `doorClosedLeftFront`, `trunk: "OPEN"` etc.). Diese
-Felder existieren auf dem OLA-Backend
-(`ola.prod.code.seat.cloud.vwgroup.com`) **nicht** — Konsequenz: Tür-,
-Fenster-, Kofferraum-, Motorhauben- und Schiebedach-Entities blieben
-permanent leer.
-
-**Methodik (wichtig):** Wo möglich nehmen wir Field-Namen aus echten
-Live-API-Responses (verifiziert via `tillsteinbach/CarConnectivity-connector-seatcupra`
-Issues #5, #8, #18, #21, #50, #51, #109) und stellen sie an die Spitze der
-`v(...) or v(...) or ...` Pfad-Listen. Die alten geratenen Pfade bleiben als
-defensiver Fallback.
-
-#### `cariad/api/seat_cupra.py` — `_parse_status` Status-Block neu geschrieben
-
-**Doors / Windows / Trunk / Hood / Sunroof** (verifiziert gegen
-`WulfgarW/pycupra/vehicle.py` ~Z. 3100-3325):
-
-- **Per-Door:** `status.doors.{frontLeft,frontRight,rearLeft,rearRight}.{locked,open}`
-  → `doors_individual` dict + abgeleitete `doors_open` und `doors_locked` aggregates
-- **Per-Window (NEU):** `status.windows.{frontLeft,...}` (string `"closed"`/`"open"`)
-  → `windows_individual` dict + `windows_open` aggregate
-- **Trunk:** `status.trunk.{open,locked}` als nested object (statt flat string)
-- **Hood:** `status.hood.open` (newer firmware)
-- **Sunroof:** dreifach-Pfad `status.sunRoof` (Großbuchstabe R, top-level —
-  CC-seatcupra **#5** verifiziert) ODER `status.sunroof` (pycupra) ODER
-  `status.windows.sunroof` (firmware variance)
-- **Engine (NEU):** top-level `status.engine: 'on'/'off'` (CC-seatcupra
-  **#50**) → setzt `is_driving=True` und `vehicle_state="DRIVING"` wenn
-  `engine='on'`. Behebt das verbreitete "vehicle_state immer parked"-Problem
-  (CC-seatcupra **#18**)
-
-**Defensiv:** Wenn keine der neuen Pfade Daten liefert, Fallback auf den
-pre-v1.8.9 CARIAD-BFF-style Code (für sehr alte Firmware oder zukünftige
-API-Änderungen).
-
-#### `cariad/api/seat_cupra.py` — Charging-Endpoint Live-Response Erkenntnisse (#109)
-
-**Methodik-Korrektur:** Reihenfolge der Pfad-Suche umgedreht — Rainer's
-verifizierte Live-Response-Felder zuerst, alte geratene Pfade als Fallback.
-
-OLA `/v1/vehicles/{vin}/charging` returns one of two shapes (live verifiziert):
-- **Shape A:** `{"status": ..., "currentPct": ..., "remainingTime": ...,
-  "chargeMode": ..., "preferredChargeMode": ..., "active": false}`
-- **Shape B:** `{"state": ..., "chargedPowerInKw": ...,
-  "remainingTimeInMinutes": ..., "type": ..., "mode": ...}`
-
-Field-Reihenfolge jetzt korrekt:
-- `charging_state`: `state` → `status` → `chargingState` (Legacy)
-- `charging_power_kw`: **`chargedPowerInKw` (mit "d", verified)** → `chargePowerInKw` (Legacy)
-- `remaining`: **`remainingTimeInMinutes` / `remainingTime` (verified)** → `remainingTimeToFullyChargedInMinutes` (Legacy)
-- `charging_type`: `type` → `chargeType` (Legacy)
-- `target_soc`: **`targetSoc_pct` (lowercase soc, verified)** → `targetSOC_pct` (Legacy uppercase)
-- `is_charging` jetzt case-insensitive (`charging` ODER `CHARGING`)
-- **`autoUnlockPlugWhenCharged: 'permanent'`** als 3. truthy-Wert (CC-seatcupra **#51** —
-  vorher nur `"on"` matched, `"permanent"` Konfiguration wurde fälschlich
-  als deaktiviert angezeigt)
-
-#### `cariad/api/seat_cupra.py` — Climate robustness (#8, #21)
-
-- `climatisation_state == "unsupported"` (CC-seatcupra **#21**) wird jetzt
-  korrekt als inaktiv behandelt — vorher leer (zufällig korrekt, aber
-  unklar dokumentiert)
-- `targetTemperatureCelsius` (Rainer #109 Variante ohne "In") als zusätzlicher
-  Pfad neben `targetTemperatureInCelsius`
-- `climatisation_active` False-Set erweitert auf `(None, "OFF", "off", "Off", "unsupported")`
-
-#### `cariad/models.py` — neues Field `windows_individual: dict[str, bool]`
-
-Mirror von `doors_individual`. Keys: `frontLeft` / `frontRight` / `rearLeft` /
-`rearRight`. Value `True` == Fenster geschlossen.
-
-#### `binary_sensor.py` — neuer `VagWindowSensor` + Setup-Hook
-
-Pro Fenster eine Binary-Sensor-Entity (`device_class=WINDOW`), Naming
-`Window Front Left` etc. Nur erstellt wenn `windows_individual` Daten enthält
-(SEAT/CUPRA initial; andere Marken folgen wenn deren API es liefert).
-
-#### Tests (12 neue) — `tests/test_cariad.py::TestSeatCupraGetStatus`
-
-1. `test_v189_status_parses_doors_per_position` — pycupra-Pfade door-Mapping
-2. `test_v189_status_parses_windows_per_position` — neuer windows_individual
-3. `test_v189_status_parses_trunk_hood_nested_objects` — nested {open, locked}
-4. `test_v189_status_sunroof_in_windows_subtree` — sunroof in windows.sunroof
-5. `test_v189_status_sunroof_top_level_camelCase` — `sunRoof` Großbuchstabe (#5)
-6. `test_v189_status_engine_on_implies_driving` — engine='on' → DRIVING (#50, #18)
-7. `test_v189_status_engine_off_does_not_force_driving` — engine='off' lässt vehicle_state in Ruhe
-8. `test_v189_charging_shape_b_chargedPowerInKw_remaining_minutes` — #109 Shape B
-9. `test_v189_charging_settings_targetSoc_pct_lowercase` — #109 lowercase variant
-10. `test_v189_auto_unlock_permanent_is_truthy` — `permanent` als truthy (#51)
-11. `test_v189_climatisation_trigger_unsupported_is_inactive` — `unsupported` → inaktiv (#21)
-12. `test_v189_status_legacy_flat_fallback_still_works` — defensiver Fallback intakt
-
-#### Bewusst NICHT in v1.8.9 enthalten (eigener Scope, geplant für v1.8.10+)
-
-Alles aus dem Deep-Dive der CC-seatcupra-Issues, was eigene Entities oder
-zusätzliche API-Calls braucht:
-
-- **Capability-Filter** (CC-seatcupra **#64**) — `capability.active &&
-  capability.user-enabled` vor Entity-Creation prüfen. Sehr wahrscheinlich
-  weiteres Stück für Gerhards 19 fehlende Entities. Eigene Session
-  (Erweiterung des bestehenden Capability-Cache).
-- **`/maintenance` Endpoint** (CC-seatcupra **#44**) — separater API-Call mit
-  4 neuen Sensoren (inspectionDueDays/Km, oilServiceDueDays/Km).
-- **Multi-Zone Klima** (CC-seatcupra **#10, #109**) — `zoneFrontLeftEnabled`,
-  `zoneFrontRightEnabled` als eigene Switches.
-- **Battery Care Mode** (CC-seatcupra **#20, #51**) —
-  `batteryCareModeEnabled`, `batteryCareTargetSocPercentage` als eigene
-  Switch + Number.
-- **`windowHeatingStatus[]` Array** (CC-seatcupra **#5, #8**) — strukturierter
-  Array `[{windowLocation, windowHeatingState}]` statt unsere flat
-  `windowHeatingStateFront/Rear` Pfade. Eigene Refactor-Session.
-- **`/ventilation/start|stop` Service** (CC-seatcupra **#43**) — neuer
-  HA-Service.
-- **Trip-Statistics** (CC-seatcupra **#22**, MasterTim17 fork hat Code) —
-  v1.10.x.
-- **Departure-Timer Toggle** (CC-seatcupra **#70**) — v1.9.x.
-- **`carCapturedTimestamp`-Freshness-Pattern** für CUPRA — wird in v1.8.10
-  zentral für Škoda eingeführt (Session 3S) und kann später auf CUPRA + Audi
-  expandiert werden.
-
-### Session 3C — CUPRA/SEAT OLA Status JSON Paths Fixed + Per-Window Entities + Live-API Findings (English)
-
-Bug-fix bundle for Gerhard's 19 missing entities (CUPRA Born) and all
-SEAT/CUPRA models. Pre-v1.8.9 read `/v2/vehicles/{vin}/status` using
-CARIAD-BFF-style flat field names that don't exist on the OLA backend.
-
-**Methodology:** real-world API field names (verified via tillsteinbach
-`CarConnectivity-connector-seatcupra` issues #5, #8, #18, #21, #50, #51,
-#109) are placed at the head of `v(...) or v(...) or ...` chains. Old
-inferred paths kept as defensive fallback.
-
-**`seat_cupra.py` `_parse_status`** — verified against pycupra source:
-per-door `status.doors.{position}.{locked,open}`, per-window
-`status.windows.{position}`, nested `status.trunk.{open,locked}` and
-`status.hood.open`, sunroof at THREE positions (`sunRoof` top-level from
-#5, plus pycupra paths), engine top-level → DRIVING inference (#50, #18).
-
-**Charging endpoint #109 paths reordered** — `chargedPowerInKw` (with "d"),
-`remainingTimeInMinutes`, `targetSoc_pct` (lowercase) now first;
-`auto_unlock_charge` recognises `"permanent"` (#51); climate handles
-`"unsupported"` state (#21).
-
-**`models.py`** — new `windows_individual` field. **`binary_sensor.py`** —
-new `VagWindowSensor` per-window entity.
-
-**12 new tests** in `TestSeatCupraGetStatus` covering both the new
-structured paths and all live-API-response findings.
-
-**Deliberately NOT in v1.8.9** (own scope): capability filter (#64),
-`/maintenance` endpoint (#44), multi-zone climate (#10, #109), battery
-care mode (#20, #51), `windowHeatingStatus[]` array (#5, #8),
-`/ventilation` service (#43), trip stats (#22), departure timer toggle
-(#70). All planned for v1.8.10+.
-
-## [1.8.8] - 2026-04-29
-
-### Session 3B — CARIAD v1/v2 + combined/separate endpoint dispatch für Lock/Climate/Charging
-
-Erweitert das v1/v2-Fallback-Pattern aus Session 3A (4 Set-Value-Commands)
-auf die sechs verbleibenden Hauptkommandos: `lock`, `unlock`,
-`climate_start`, `climate_stop`, `charging_start`, `charging_stop`. Plus:
-schließt einen versteckten Bug aus dem Pre-1.8.8-Code, in dem `except
-Exception` Auth-Failures, Rate-Limits und 5xx-Errors als
-Endpoint-Mismatches fehlinterpretierte und still den Fallback-Pfad
-ansprach.
-
-**`cariad/api/vw_eu.py` — neuer Helper `_post_command_with_fallback_paths`:**
-
-Dispatcht in dieser Reihenfolge, jeder Aufruf via bestehendes
-`_post_command` (das schon v1→v2 Fallback macht):
-
-1. `primary_suffix` (combined endpoint) auf v1
-2. `primary_suffix` auf v2 (bei v1-404)
-3. `fallback_suffix` (separate endpoint) auf v1 (bei v2-404)
-4. `fallback_suffix` auf v2 (bei v1-404)
-
-**Kritische Verschärfung**: Fallback wird **nur** bei HTTP 404 ausgelöst.
-Auth-Failures (401), Permission-Errors (403), Rate-Limits (429),
-Backend-5xx und transiente Netzwerk-Fehler propagieren wie sie sollen
-und werden vom Coordinator über `classify_command_failure` korrekt
-klassifiziert.
-
-**Refactor — 6 Commands nutzen den Helper:**
-
-- `command_lock`: `access/lock-unlock` → `access/lock`
-- `command_unlock`: `access/lock-unlock` → `access/unlock` (S-PIN in
-  beiden Payloads, falls gesetzt)
-- `command_start_climate`: `climatisation/start-stop` →
-  `climatisation/start` (mit Default-Parametern wie vorher: 21°C,
-  Window-Heating, ohne externe Stromversorgung)
-- `command_stop_climate`: `climatisation/start-stop` →
-  `climatisation/stop`
-- `command_start_charging`: `charging/start-stop` → `charging/start`
-- `command_stop_charging`: `charging/start-stop` → `charging/stop`
-
-**`AudiClient` profitiert automatisch** über `VWEUClient`-Inheritance —
-keine separaten Audi-Änderungen.
-
-**Tests** (`tests/test_cariad.py::TestVWEUFallbackPaths`):
-
-- 4 neue Tests:
-  1. v1-Primary 404 → v2-Primary genutzt (kein Fallback-Endpoint
-     berührt)
-  2. Beide Primaries 404 → Fallback-Endpoint v1 genutzt
-  3. **Regressionstest**: 500 vom Primary löst KEINEN Fallback aus
-     (Hauptzweck dieser Session — vorheriger Code hätte still den
-     Fallback-Endpoint angefragt und einen Backend-Hiccup als
-     Endpoint-Mismatch maskiert)
-  4. `command_unlock` mit S-PIN passt PIN in alle drei Payloads
-     (combined v1, combined v2, separate v1)
-- Existing Smoke-Tests in `TestVWEUCommands` bleiben ohne Anpassung
-  pass — alle 6 Commands akzeptieren weiterhin 204 vom ersten Endpoint
-  und brauchen nie den Fallback-Pfad im Happy-Path-Test.
-
-**Bewusst NICHT in dieser Session enthalten** (Scope-Disziplin):
-
-- **PPC/PPE Graceful Degradation per VIN-Heuristik** (`devicePlatform`
-  Detection, Skip command-entities für E³-1.2-Vehicles): kommt in
-  v1.8.9 — eigener Scope mit Repair-Notice + Tracking-Issue.
-- **Optimistic-Update + State-Restoration** für lock/climate
-  (`skodaconnect/homeassistant-myskoda` #832 Pattern): braucht eigenen
-  Hotfix mit UI-Layer (entity availability state machine), nicht hier.
-- **LEGACY_MBB Routing** für ältere T6/MQB Vehicles: blockiert auf
-  T6-Logs von Tobias (#76); kein spekulatives Code-Schreiben.
-
-### Session 3B — CARIAD v1/v2 + Combined/Separate Endpoint Dispatch for Lock/Climate/Charging (English)
-
-Extends the v1/v2 fallback pattern from Session 3A (4 set-value commands)
-to the six remaining main commands: `lock`, `unlock`, `climate_start`,
-`climate_stop`, `charging_start`, `charging_stop`. Also: closes a
-hidden bug in pre-1.8.8 code where `except Exception` misclassified
-auth failures, rate limits and 5xx errors as endpoint mismatches and
-silently called the fallback path.
-
-**`cariad/api/vw_eu.py` — new helper `_post_command_with_fallback_paths`:**
-
-Dispatches in this order, each call via the existing `_post_command`
-(which already handles v1→v2 fallback):
-
-1. `primary_suffix` (combined endpoint) on v1
-2. `primary_suffix` on v2 (on v1-404)
-3. `fallback_suffix` (separate endpoint) on v1 (on v2-404)
-4. `fallback_suffix` on v2 (on v1-404)
-
-**Critical narrowing**: fallback fires **only** on HTTP 404. Auth
-failures (401), permission errors (403), rate limits (429), backend
-5xx and transient network errors propagate as they should and are
-correctly classified by the coordinator via `classify_command_failure`.
-
-**Refactor — 6 commands use the helper:** `command_lock`,
-`command_unlock`, `command_start_climate`, `command_stop_climate`,
-`command_start_charging`, `command_stop_charging`. `AudiClient` benefits
-automatically via `VWEUClient` inheritance.
-
-**Tests** (`tests/test_cariad.py::TestVWEUFallbackPaths`):
-
-4 new tests including the key regression test that a 500 on the
-primary endpoint must NOT trigger the fallback (the main purpose of
-this session — the previous code would have silently called the
-fallback and masked a backend hiccup as an endpoint mismatch).
-
-**Deliberately NOT in this session** (scope discipline):
-
-- PPC/PPE graceful degradation via VIN heuristic — v1.8.9.
-- Optimistic-update + state restoration for lock/climate (myskoda
-  #832) — needs its own UI-layer hotfix.
-- LEGACY_MBB routing for older T6/MQB — blocked on T6 logs from
-  Tobias (#76); no speculative code.
-## [1.8.7] - 2026-04-29
-
-### Defensive Programming Pass — Retry-Härtung + Stale-Cache + Token-Refresh-Schutz
-
-Auswertung der unabhängigen Multi-Source-Audit (`docs/AUDIT_2026-04-29.md`):
-**Sechs von sechs untersuchten Reference-Repos** (we_connect_id, myskoda,
-audi_connect_ha, pycupra, volkswagencarnet, CarConnectivity-Connectors)
-haben dieselben Stabilitätsprobleme dokumentiert. v1.8.7 schließt vier
-davon zentral statt punktuell pro API-Client.
-
-**`cariad/api/base.py` — `_request()` Retry-Layer:**
-
-- **HTTP 504 Gateway Timeout** ist jetzt Teil der Retry-Liste (war vorher
-  fatal). Tritt regelmäßig auf der CARIAD BFF an Wochenenden auf
-  (Quelle: `mitch-dc/volkswagen_we_connect_id` #165).
-- **Server-Error Retries** auf 3 Versuche erhöht (war 2): 3s/6s/12s
-  exponential backoff für 500/502/503/504.
-- **Transiente Netzwerk-Fehler** werden jetzt mit demselben Backoff
-  gehandhabt: `ClientConnectorError` (DNS/Connection refused),
-  `ServerDisconnectedError` (Mid-Stream-Abbruch),
-  `ClientPayloadError`, `asyncio.TimeoutError`. Wurden vorher als fatal
-  raised und teilweise von oberen Schichten als Auth-Failure
-  fehlinterpretiert (Quelle: `mitch-dc/volkswagen_we_connect_id` #166).
-  Nach 4 erfolglosen Versuchen wird `APIError(0, ...)` mit prefix
-  `"transient: ..."` raised — eindeutig unterscheidbar von HTTP-Errors.
-
-**`cariad/api/base.py` — `_refresh_tokens()` Storm-Protection:**
-
-- **Maximal 3 Token-Refresh-Versuche pro rollender Stunde.** Sliding
-  Window mit `time.monotonic()`-Timestamps in `_refresh_history`. Bei
-  Überschreitung wird `AuthenticationError("Token refresh storm — please
-  reauthenticate")` raised; der Coordinator triggert daraufhin den
-  HA-Reauth-Flow statt weiter zu loopen. Verhindert das Spirale-Pattern
-  aus `skodaconnect/myskoda` #976 und
-  `robinostlund/homeassistant-volkswagencarnet` #683, bei dem das
-  Backend nach wiederholten Login-Versuchen die IP / das Konto temporär
-  sperrt.
-
-**`coordinator.py` — Failure-Tolerance + Stale-Cache:**
-
-- **`is_vehicle_available(vin)` toleriert jetzt bis zu 3 aufeinanderfolgende
-  Poll-Failures** bevor die Verfügbarkeit auf False kippt
-  (`_FAILURE_TOLERANCE = 3`, Pattern aus `mitch-dc/volkswagen_we_connect_id`
-  #215). Single-Poll-Hiccups auf der CARIAD BFF brechen Automatisierungen
-  nicht mehr ab.
-- **Stale-Cache-Window von 6 Stunden** (`_STALE_CACHE_WINDOW`):
-  selbst nach Überschreitung der Failure-Tolerance bleibt das Fahrzeug
-  verfügbar wenn der letzte erfolgreiche Poll innerhalb der letzten 6h
-  lag. Pattern aus `skodaconnect/homeassistant-myskoda` #731 — User
-  bevorzugen "alt aber sichtbar" über "unavailable", weil
-  Automatisierungen weiter funktionieren und `last_updated_at` die
-  Staleness signalisiert.
-- Neue per-VIN Tracking-Dicts: `vehicle_failure_count` (Reset auf 0 bei
-  jedem Erfolg) und `vehicle_last_good_at` (Timestamp letzter Erfolg —
-  später auch für Diagnostics in Session 4).
-- Lazy-Init mit `getattr(...)`-Fallback, damit Coordinators die vor
-  v1.8.7 ohne `__init__` instanziiert wurden (Tests, Reload nach
-  Upgrade) nicht crashen.
-
-**Tests:**
-
-- `tests/test_cariad.py::TestBaseClientHardening` — 5 neue Tests:
-  504-Retry, ClientConnectorError-Retry, persistente Transient → APIError(0),
-  Refresh-Storm-Protection, Refresh-Window-Pruning.
-- `tests/test_coordinator.py::TestVehicleAvailabilityTolerance` — 7 neue
-  Tests: Toleranz unter Schwelle, Verfügbarkeit über Schwelle ohne
-  Recent-Good, Stale-Window-Hit, Stale-Window-Miss, Legacy-Coord-Fallback.
-- `asyncio.sleep` wird in Retry-Tests gepatched, damit die Suite nicht
-  länger läuft — der existierende 500-Test wartete vorher 9s, jetzt
-  ohne Patch 21s; mit Patch in Sekundenbruchteilen.
-
-**Bewusst NICHT in dieser Session enthalten** (Scope-Disziplin):
-
-- EULA-Repair-Issue (`ir.async_create_issue` mit Direktlink): braucht
-  eigene Translation-Strings in 8 Sprachen, kommt in v1.8.8.
-- Generic-`except Exception` Audit quer durch alle API-Clients: größerer
-  Refactor, eigener Hotfix.
-
-### Defensive Programming Pass — Retry Hardening + Stale-Cache + Token-Refresh Guard (English)
-
-Synthesis of the independent multi-source audit
-(`docs/AUDIT_2026-04-29.md`): **six out of six reference repos**
-investigated (we_connect_id, myskoda, audi_connect_ha, pycupra,
-volkswagencarnet, CarConnectivity connectors) have documented the same
-stability issues. v1.8.7 closes four of them centrally instead of
-per-API-client.
-
-**`cariad/api/base.py` — `_request()` retry layer:**
-
-- **HTTP 504 Gateway Timeout** added to the retry list (was previously
-  fatal). Routine on the CARIAD BFF on weekends (source:
-  `mitch-dc/volkswagen_we_connect_id` #165).
-- **Server-error retries raised to 3 attempts** (was 2): 3s/6s/12s
-  exponential backoff for 500/502/503/504.
-- **Transient network errors** now retried with the same backoff:
-  `ClientConnectorError` (DNS / connection refused),
-  `ServerDisconnectedError` (mid-stream disconnect),
-  `ClientPayloadError`, `asyncio.TimeoutError`. Previously raised as
-  fatal and sometimes misclassified by upper layers as auth failure
-  (source: `mitch-dc/volkswagen_we_connect_id` #166). After 4 failed
-  attempts, surfaces as `APIError(0, ...)` with `"transient: ..."`
-  prefix — unambiguously distinguishable from HTTP errors.
-
-**`cariad/api/base.py` — `_refresh_tokens()` storm protection:**
-
-- **Maximum 3 token-refresh attempts per rolling hour.** Sliding window
-  using `time.monotonic()` timestamps in `_refresh_history`. Exceeding
-  raises `AuthenticationError("Token refresh storm — please
-  reauthenticate")`; the coordinator then triggers the HA reauth flow
-  instead of looping. Prevents the spiral pattern from
-  `skodaconnect/myskoda` #976 and
-  `robinostlund/homeassistant-volkswagencarnet` #683, where the backend
-  temporarily bans the IP / locks the account after repeated login
-  attempts.
-
-**`coordinator.py` — failure tolerance + stale-cache:**
-
-- **`is_vehicle_available(vin)` now tolerates up to 3 consecutive poll
-  failures** before flipping availability to False
-  (`_FAILURE_TOLERANCE = 3`, pattern from
-  `mitch-dc/volkswagen_we_connect_id` #215). Single-poll hiccups on the
-  CARIAD BFF no longer break automations.
-- **Stale-cache window of 6 hours** (`_STALE_CACHE_WINDOW`): even past
-  the failure tolerance, the vehicle stays available if the last
-  successful poll was within the last 6h. Pattern from
-  `skodaconnect/homeassistant-myskoda` #731 — users strongly prefer
-  "old but visible" over "unavailable", because automations keep
-  working and `last_updated_at` signals the staleness.
-- New per-VIN tracking dicts: `vehicle_failure_count` (reset to 0 on
-  each success) and `vehicle_last_good_at` (last-success timestamp,
-  also surfaced in diagnostics in Session 4).
-- Lazy-init with `getattr(...)` fallback so coordinators built before
-  v1.8.7 without `__init__` (tests, post-upgrade reload) don't crash.
-
-**Tests:**
-
-- `tests/test_cariad.py::TestBaseClientHardening` — 5 new tests:
-  504-retry, ClientConnectorError retry, persistent-transient →
-  APIError(0), refresh-storm protection, refresh-window pruning.
-- `tests/test_coordinator.py::TestVehicleAvailabilityTolerance` — 7 new
-  tests: tolerance under threshold, unavailable over threshold without
-  recent good, stale-window hit, stale-window miss, legacy coord fallback.
-- `asyncio.sleep` patched in retry tests so the suite doesn't slow down
-  — the existing 500 test previously waited 9s; without the patch now
-  21s; with the patch sub-second.
-
-**Deliberately NOT in this session** (scope discipline):
-
-- EULA repair issue (`ir.async_create_issue` with deeplink): needs its
-  own translation strings in 8 languages, ships in v1.8.8.
-- Generic-`except Exception` audit across all API clients: larger
-  refactor, its own hotfix.
-## [1.8.6] - 2026-04-29
-
-### Docs Truthfulness Hotfix — README + 8 translations + CI badge
-
-Pure documentation release. Kein Code-Change, keine Verhaltensänderung —
-nur die README-Familie auf den realen v1.8.5-Stand bringen und die strategische
-Multi-Brand-Successor-Positionierung aufnehmen.
-
-**Was korrigiert wurde:**
-
-- **README.en.md sagte "cloud-push architecture"** — falsch seit v1.8.0
-  (`iot_class` ist `cloud_polling`). Jetzt korrekt.
-- **README.en.md sagte "14 services"**, README.md sagte "16 services" —
-  beide jetzt vereinheitlicht auf die echte Zahl (14, verifiziert in
-  `services.yaml`).
-- **Hardcoded Test-Badge** ("Tests-337/337" in 7 Übersetzungen,
-  "Tests-363/363" im DE-Master) ersetzt durch dynamischen
-  GitHub-Actions-CI-Badge — driftet nicht mehr auseinander.
-
-**Was neu hinzugekommen ist (in allen 8 Sprachen identisch):**
-
-1. **Successor-Box** direkt nach dem Pitch: Aktiv gepflegter Multi-Brand-Nachfolger
-   für `mitch-dc/volkswagen_we_connect_id` (archiviert 2025-10-29) und
-   `skodaconnect/homeassistant-skodaconnect` (deprecated 2025-03-14). Eine
-   Integration für Audi, VW, Škoda, SEAT, CUPRA, Porsche und VW US/CA.
-2. **"Aktueller Stand & ehrliche Limits (v1.8.5)" Section** mit fünf
-   transparenten Disclaimern:
-   - Capability-Gating aktuell nur SEAT/CUPRA Flash/Wake
-   - CARIAD v1/v2 Auto-Fallback aktuell nur 4 Set-Value Commands
-   - Image-Plattform: kein offizielles Render-API existiert
-   - PPC/PPE-Plattform (Audi Q5 2025, Q6 e-tron, A5/S5, A6 e-tron):
-     Graceful Degradation statt 404, Endpoints noch nicht reverse-engineered
-   - Privacy-Voraussetzung "Standort teilen" in der App muss aktiv sein
-
-**Warum jetzt:**
-
-Die unabhängige Multi-Source-Audit vom 29.04.2026 (siehe
-`docs/AUDIT_2026-04-29.md`) hat festgestellt: Code und Releases sind weiter
-als die README. Vor neuen Features (Session 3B/3C/3S) sollten Tester und
-HACS-Browser realistische Erwartungen bekommen — sonst sieht die Integration
-für sich beim ersten Klick "kaputt" aus, obwohl sie bewusst capability-gated
-oder graceful-degraded.
-
-### Docs Truthfulness Hotfix — README + 8 Translations + CI Badge (English)
-
-Pure documentation release. No code change, no behaviour change — just
-aligning the README family to the actual v1.8.5 state and adding the
-strategic multi-brand-successor positioning.
-
-**What was corrected:**
-
-- README.en.md said "cloud-push architecture" — wrong since v1.8.0
-  (`iot_class` is `cloud_polling`). Now correct.
-- README.en.md said "14 services", README.md said "16 services" — both
-  now unified to the real count (14, verified in `services.yaml`).
-- Hardcoded test badge ("Tests-337/337" in 7 translations,
-  "Tests-363/363" in the DE master) replaced by a dynamic
-  GitHub Actions CI badge — no more drift.
-
-**What was added (identically in all 8 languages):**
-
-1. **Successor box** right after the pitch: active multi-brand successor
-   to `mitch-dc/volkswagen_we_connect_id` (archived 2025-10-29) and
-   `skodaconnect/homeassistant-skodaconnect` (deprecated 2025-03-14).
-   One integration for Audi, VW, Škoda, SEAT, CUPRA, Porsche and VW US/CA.
-2. **"Current state & honest limits (v1.8.5)" section** with five
-   transparent disclaimers:
-   - Capability-gating currently only SEAT/CUPRA flash/wake
-   - CARIAD v1/v2 auto-fallback currently only 4 set-value commands
-   - Image platform: no official render API exists
-   - PPC/PPE platform (Audi Q5 2025, Q6 e-tron, A5/S5, A6 e-tron):
-     graceful degradation instead of 404, endpoints not yet
-     reverse-engineered publicly
-   - Privacy prerequisite "Share my position" must be enabled in the app
-
-**Why now:**
-
-The independent multi-source audit on 2026-04-29 (see
-`docs/AUDIT_2026-04-29.md`) found: code and releases are ahead of the
-README. Before shipping new features (Session 3B/3C/3S), testers and
-HACS browsers should get realistic expectations — otherwise the
-integration looks "broken" on first click, when it is in fact
-deliberately capability-gated or graceful-degraded.
+## [1.8.10] - 2026-04-29 🩹 Hotfix
+
+🐛 **Behoben:** Im seltenen Fallback-Pfad für sehr alte CUPRA/SEAT-Firmware
+wurden Türstatus invertiert angezeigt (offen ↔ zu vertauscht).
+
+📊 **Wer ist betroffen?** In der Praxis aktuell **niemand** — alle getesteten
+CUPRA-Born/Formentor/Tavascan-Modelle nutzen den neuen Pfad aus v1.8.9.
+Aber: der Fallback hätte später bei API-Änderungen Probleme gemacht.
+
+📋 [Technische Details](docs/CHANGELOG_TECHNICAL.md#1810---2026-04-29)
+
+---
+
+## [1.8.9] - 2026-04-29 🚗 CUPRA Born Bug-Fix-Bündel
+
+✨ **Was ist neu für CUPRA/SEAT-Fahrer:**
+
+- 🚪 **Türen, Fenster, Kofferraum, Motorhaube, Schiebedach** werden jetzt
+  korrekt angezeigt (vorher waren sie permanent leer)
+- 🚗 **"Auto fährt gerade"** funktioniert wieder — vorher klebte der Status
+  oft auf "geparkt"
+- ⚡ **Lade-Power und Restzeit** werden korrekt angezeigt
+- 🔓 **Auto-Entriegelung** beim Laden zeigt auch "permanent" als aktiviert an
+
+🆕 **Neue Entities:** Pro-Fenster Binary-Sensoren (`Window Front Left`,
+`Window Rear Right` etc.) — analog zu den bisherigen Pro-Tür-Sensoren.
+
+🛠️ **Was war kaputt?** Unser Code hat die falschen JSON-Felder von der
+CUPRA/SEAT-API gelesen. Wir hatten Felder aus der CARIAD-API (für VW/Audi)
+übernommen, aber CUPRA/SEAT nutzt eine andere API (OLA) mit komplett
+anderen Feldnamen. Das wurde verifiziert mit:
+
+- Quellcode der pycupra-Library
+- Echten Live-API-Antworten von CUPRA-Born-Fahrern aus dem
+  [CarConnectivity-Issue-Tracker](https://github.com/tillsteinbach/CarConnectivity-connector-seatcupra/issues)
+  (#5, #8, #18, #21, #50, #51, #109)
+
+🙏 **Danke an:** Gerhard für den ursprünglichen Bug-Report (CUPRA Born),
+Rainer (#109) für die Live-API-Daten, und alle Tester die "Unexpected Keys"
+in den CC-seatcupra Issues dokumentiert haben.
+
+📋 [Technische Details](docs/CHANGELOG_TECHNICAL.md#189---2026-04-29)
+
+---
+
+## [1.8.8] - 2026-04-29 🔓 Lock / Climate / Charging für Audi 2025+ und Passat B9
+
+✨ **Was ist neu für Audi RS e-tron GT, VW Passat 2025 und neuere Modelle:**
+
+- 🔒 **Lock/Unlock** funktioniert auf neuen Audi-Modellen (war vorher 404)
+- ❄️ **Klimatisierung Start/Stop** funktioniert auf neuen Modellen
+- ⚡ **Laden Start/Stop** funktioniert auf neuen Modellen
+
+🛠️ **Was war kaputt?** Audi und VW haben für neuere Modelle (RS e-tron GT,
+Passat B9 etc.) ihre API-Pfade von `/v1/` auf `/v2/` umgestellt. Unser Code
+versuchte nur `/v1/` — Ergebnis: HTTP 404 bei jedem Befehl. Jetzt probiert
+die Integration automatisch beide Pfade und merkt sich pro Fahrzeug welcher
+funktioniert.
+
+🐛 **Bonus-Bug-Fix:** Vor v1.8.8 hat unser Code bei *jedem* Server-Fehler
+(500/401/429) den Fallback-Endpoint angefragt. Konsequenz: vorübergehende
+Backend-Hiccups wurden als "Endpoint existiert nicht" interpretiert. Jetzt
+nur bei echtem 404.
+
+🙏 **Danke an:** G.S. (Audi RS e-tron GT, #51) und Marco Grewe (VW Passat
+2025, #74) für die ausführlichen Bug-Reports.
+
+📋 [Technische Details](docs/CHANGELOG_TECHNICAL.md#188---2026-04-29)
+
+---
+
+## [1.8.7] - 2026-04-29 🛡️ Stabilität — kein "Unavailable"-Flackern mehr
+
+✨ **Was ist neu für alle Marken:**
+
+- 🌐 **Wochenend-Backend-Probleme** werden jetzt ausgesessen — Auto bleibt
+  bis zu 6 Stunden mit den letzten bekannten Werten verfügbar, statt sofort
+  auf "Unavailable" zu kippen
+- 🔁 **Einzelne fehlgeschlagene Polls** lösen kein "Unavailable" mehr aus —
+  erst nach 3 aufeinanderfolgenden Fehlern wird das Auto als nicht erreichbar
+  gemeldet
+- 🐢 **Gateway-Timeouts (504)** werden automatisch nochmal versucht statt zu
+  scheitern
+- 🌐 **DNS-/Verbindungsprobleme** werden als vorübergehend behandelt (vorher
+  wurde das fälschlich als "Login fehlgeschlagen" interpretiert)
+- 🔐 **IP-Bann-Schutz:** maximal 3 Token-Refreshes pro Stunde — verhindert
+  dass das VW-Backend dein Konto bei einem Refresh-Loop sperrt
+
+🛠️ **Warum das wichtig ist?** Automatisierungen die auf Türen, Position oder
+Ladestatus reagieren funktionieren jetzt zuverlässig auch wenn die VW-Server
+mal hicksen. Das Auto bleibt sichtbar mit "Letzte Aktualisierung vor 30 Min",
+statt komplett zu verschwinden.
+
+🧪 **Hinweis für Tester:** 12 neue Unit-Tests prüfen alle Edge-Cases ab.
+
+📋 [Technische Details](docs/CHANGELOG_TECHNICAL.md#187---2026-04-29)
+
+---
+
+## [1.8.6] - 2026-04-29 📚 Docs-Truthfulness Hotfix
+
+✨ **Was ist neu (nur Doku, kein Code):**
+
+- 🏆 **Multi-Brand-Successor-Position:** README sagt jetzt klar dass VAG Connect
+  der aktive Nachfolger für die archivierten Repos
+  [`mitch-dc/volkswagen_we_connect_id`](https://github.com/mitch-dc/volkswagen_we_connect_id)
+  (archived 2025-10-29) und
+  [`skodaconnect/homeassistant-skodaconnect`](https://github.com/skodaconnect/homeassistant-skodaconnect)
+  (deprecated 2025-03-14) ist. Eine Integration für 7 Marken, kein separates
+  Plugin nötig.
+- 🏷️ **Dynamic CI-Badge:** Statt hardcoded Test-Counts (die schnell veraltet
+  sind) zeigt das Badge jetzt den aktuellen Build-Status
+- 📝 **Aktuelle Stand & ehrliche Limits Section** in allen 8 README-Sprachen:
+  was funktioniert, was noch nicht, was bewusst ausgeklammert ist
+  (z.B. PPC/PPE-Plattform für Audi 2025+ und Image-Entities)
+- 🔧 **Korrekturen:** Das EN README sagte fälschlich "cloud-push" (war seit
+  v1.8.0 falsch — wir pollen). Service-Count uneinheitlich (16 vs 14) →
+  beide jetzt auf echte 14.
+
+🛠️ **Warum?** Tester die HACS durchblättern sollen realistische Erwartungen
+bekommen. Die Integration soll nicht "kaputt" wirken nur weil eine Funktion
+bewusst capability-gated ist.
+
+📋 [Technische Details](docs/CHANGELOG_TECHNICAL.md#186---2026-04-29)
+
+---
 
 ## [1.8.5] - 2026-04-27
 
