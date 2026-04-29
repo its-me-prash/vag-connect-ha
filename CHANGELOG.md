@@ -28,6 +28,32 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ## [Unreleased]
 
+## [1.10.0] - 2026-04-29 🔋⛽ PHEV-Range-Triple + Audi-Diesel-Range (Issue #94)
+
+✨ **Drei neue Sensoren für plug-in Hybride und Diesel-Modelle:**
+
+- 🔋 **`electric_range_km`** ("Elektrische Reichweite") — Batterie-only Reichweite (mdi:battery-charging-outline)
+- ⛽ **`combustion_range_km`** ("Kraftstoff-Reichweite") — Benzin/Diesel/CNG/LPG Reichweite (mdi:gas-station)
+- 🛣️ **`total_range_km`** ("Gesamtreichweite") — kombinierte Reichweite (für Hybride relevant)
+
+**Was war das Problem (Issue #94):**
+
+Pre-1.10.0 hat unser Parser für VW EU + Audi alle Range-Quellen in das eine `range_km`-Feld gemappt — dabei überschrieb die Batterie-Reichweite die Verbrennungs-Reichweite oder den Gesamtwert. Ein Golf 7 GTE konnte deshalb nicht gleichzeitig "45 km elektrisch" + "520 km Sprit" + "565 km gesamt" anzeigen — nur einen davon.
+
+**Was wir gemacht haben:**
+
+- 🆕 **VW EU / Audi Parser:** liest jetzt `fuelStatus.rangeStatus.value.{primaryEngine,secondaryEngine}.{type,remainingRange_km}` und klassifiziert nach **Engine-Typ** (nicht nach Position) — primär=Verbrennung + sekundär=elektrisch oder umgekehrt funktionieren beide.
+- 🆕 **Audi `dieselRange` Fallback** (verifiziert auf Audi S6 C8 2021 via #91): wenn kein `fuelStatus`-Block existiert, kommt `combustion_range_km` aus `measurements.rangeStatus.value.dieselRange` / `gasolineRange`. Akzeptiert sowohl skalare Werte als auch `{distanceInKm: int}`-Wrapper.
+- 🆕 **Skoda Parser:** liest `electricRange.distanceInKm` + `combustionRange.distanceInKm` + `totalRangeInKm` jetzt in die 3 expliziten Felder. Vorher wurde nur `combustionRange` als Skalar gelesen — auf Kodiaq iV ein Bug.
+- 🛡️ **Phantom-Entity-Schutz:** neue Sensoren werden NUR erstellt wenn der API-Wert tatsächlich `not None` ist. Reine EVs bekommen kein "unknown"-Spritmesser, reine ICE keinen "unknown"-Akku. Per `_DATA_PRESENT_REQUIRED` Frozenset in `sensor.py` — pro-Key opt-in.
+- 🔄 **`range_km` Backwards-Compat:** bleibt als Headline-Number erhalten. Priorität: elektrisch (für EV/PHEV) → total → Verbrennung. Existierende Automatisierungen und Dashboards funktionieren unverändert.
+
+🌍 **Übersetzungen** in allen 8 Sprachen (DE: Elektrische/Kraftstoff/Gesamt-Reichweite, FR/ES/NL/PL/CS/SV äquivalent).
+
+🧪 **Tests:** 13 neue Tests in `tests/test_v1100_phev_ranges.py` decken alle Engine-Klassifikations-Pfade, Audi-Diesel-Fallback, Skoda-Wrapper, EV-Phantom-Vermeidung.
+
+> 💡 Vollständige technische Details inkl. Vergleichstabelle der API-Pfade pro Brand in [`docs/CHANGELOG_TECHNICAL.md`](docs/CHANGELOG_TECHNICAL.md).
+
 ## [1.9.1] - 2026-04-29 🔧 Audi/VW Lock + Wake Hotfix + Capability-Filter Phase 2
 
 🐛 **Bug-Fixes (Issue #92, Audi S6 C8 2021 Live-Test):**

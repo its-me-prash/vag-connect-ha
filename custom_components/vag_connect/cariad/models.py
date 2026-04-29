@@ -189,6 +189,22 @@ class VehicleData:
     battery_temp: float | None = None
     fuel_level: int | None = None
     range_km: int | None = None
+    # v1.10.0 (#94 — PHEV range triple).
+    # ``range_km`` stays as the headline number (back-compat — existing
+    # automations and dashboards keep working). Three new explicit fields
+    # let PHEVs and EVs surface what the API actually distinguishes:
+    #   electric_range_km — battery-only remaining range
+    #   combustion_range_km — petrol/diesel/CNG/LPG remaining range
+    #   total_range_km — combined range (only meaningful for hybrids)
+    # Brand clients populate these from per-engine blocks
+    # (``fuelStatus.rangeStatus.value.{primaryEngine,secondaryEngine}``
+    # plus ``measurements.rangeStatus.value.{dieselRange,gasolineRange}``
+    # for older Audi models). Conditional sensor creation in sensor.py
+    # uses ``is not None`` so pure EVs never get a phantom combustion
+    # entity and pure ICE never get an electric one.
+    electric_range_km: int | None = None
+    combustion_range_km: int | None = None
+    total_range_km: int | None = None
     range_estimated_full_km: int | None = None
     range_wltp_km: int | None = None
     odometer_km: int | None = None

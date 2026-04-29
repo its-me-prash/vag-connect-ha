@@ -95,6 +95,15 @@
       "range_km": {
         "name": "Dojezd"
       },
+      "electric_range_km": {
+        "name": "Elektrický dojezd"
+      },
+      "combustion_range_km": {
+        "name": "Dojezd na palivo"
+      },
+      "total_range_km": {
+        "name": "Celkový dojezd"
+      },
       "odometer_km": {
         "name": "Nájezd"
       },

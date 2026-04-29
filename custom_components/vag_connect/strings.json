@@ -95,6 +95,15 @@
       "range_km": {
         "name": "Range"
       },
+      "electric_range_km": {
+        "name": "Electric Range"
+      },
+      "combustion_range_km": {
+        "name": "Fuel Range"
+      },
+      "total_range_km": {
+        "name": "Total Range"
+      },
       "odometer_km": {
         "name": "Odometer"
       },

@@ -91,6 +91,15 @@
       "range_km": {
         "name": "Reichweite"
       },
+      "electric_range_km": {
+        "name": "Elektrische Reichweite"
+      },
+      "combustion_range_km": {
+        "name": "Kraftstoff-Reichweite"
+      },
+      "total_range_km": {
+        "name": "Gesamtreichweite"
+      },
       "odometer_km": {
         "name": "Kilometerstand"
       },
