@@ -23,6 +23,167 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ## [Unreleased]
 
+## [1.8.9] - 2026-04-29
+
+### Session 3C — CUPRA/SEAT OLA Status JSON-Pfade gefixt + Per-Window Entities + Live-API-Erkenntnisse
+
+**Bug-Fix-Bündel** für Gerhards 19 fehlende Entities (CUPRA Born) und alle
+SEAT/CUPRA-Modelle. Vor v1.8.9 las unser Parser aus
+`/v2/vehicles/{vin}/status` mit CARIAD-BFF-typischen flachen Feldnamen
+(`doorsOpenedCount`, `doorClosedLeftFront`, `trunk: "OPEN"` etc.). Diese
+Felder existieren auf dem OLA-Backend
+(`ola.prod.code.seat.cloud.vwgroup.com`) **nicht** — Konsequenz: Tür-,
+Fenster-, Kofferraum-, Motorhauben- und Schiebedach-Entities blieben
+permanent leer.
+
+**Methodik (wichtig):** Wo möglich nehmen wir Field-Namen aus echten
+Live-API-Responses (verifiziert via `tillsteinbach/CarConnectivity-connector-seatcupra`
+Issues #5, #8, #18, #21, #50, #51, #109) und stellen sie an die Spitze der
+`v(...) or v(...) or ...` Pfad-Listen. Die alten geratenen Pfade bleiben als
+defensiver Fallback.
+
+#### `cariad/api/seat_cupra.py` — `_parse_status` Status-Block neu geschrieben
+
+**Doors / Windows / Trunk / Hood / Sunroof** (verifiziert gegen
+`WulfgarW/pycupra/vehicle.py` ~Z. 3100-3325):
+
+- **Per-Door:** `status.doors.{frontLeft,frontRight,rearLeft,rearRight}.{locked,open}`
+  → `doors_individual` dict + abgeleitete `doors_open` und `doors_locked` aggregates
+- **Per-Window (NEU):** `status.windows.{frontLeft,...}` (string `"closed"`/`"open"`)
+  → `windows_individual` dict + `windows_open` aggregate
+- **Trunk:** `status.trunk.{open,locked}` als nested object (statt flat string)
+- **Hood:** `status.hood.open` (newer firmware)
+- **Sunroof:** dreifach-Pfad `status.sunRoof` (Großbuchstabe R, top-level —
+  CC-seatcupra **#5** verifiziert) ODER `status.sunroof` (pycupra) ODER
+  `status.windows.sunroof` (firmware variance)
+- **Engine (NEU):** top-level `status.engine: 'on'/'off'` (CC-seatcupra
+  **#50**) → setzt `is_driving=True` und `vehicle_state="DRIVING"` wenn
+  `engine='on'`. Behebt das verbreitete "vehicle_state immer parked"-Problem
+  (CC-seatcupra **#18**)
+
+**Defensiv:** Wenn keine der neuen Pfade Daten liefert, Fallback auf den
+pre-v1.8.9 CARIAD-BFF-style Code (für sehr alte Firmware oder zukünftige
+API-Änderungen).
+
+#### `cariad/api/seat_cupra.py` — Charging-Endpoint Live-Response Erkenntnisse (#109)
+
+**Methodik-Korrektur:** Reihenfolge der Pfad-Suche umgedreht — Rainer's
+verifizierte Live-Response-Felder zuerst, alte geratene Pfade als Fallback.
+
+OLA `/v1/vehicles/{vin}/charging` returns one of two shapes (live verifiziert):
+- **Shape A:** `{"status": ..., "currentPct": ..., "remainingTime": ...,
+  "chargeMode": ..., "preferredChargeMode": ..., "active": false}`
+- **Shape B:** `{"state": ..., "chargedPowerInKw": ...,
+  "remainingTimeInMinutes": ..., "type": ..., "mode": ...}`
+
+Field-Reihenfolge jetzt korrekt:
+- `charging_state`: `state` → `status` → `chargingState` (Legacy)
+- `charging_power_kw`: **`chargedPowerInKw` (mit "d", verified)** → `chargePowerInKw` (Legacy)
+- `remaining`: **`remainingTimeInMinutes` / `remainingTime` (verified)** → `remainingTimeToFullyChargedInMinutes` (Legacy)
+- `charging_type`: `type` → `chargeType` (Legacy)
+- `target_soc`: **`targetSoc_pct` (lowercase soc, verified)** → `targetSOC_pct` (Legacy uppercase)
+- `is_charging` jetzt case-insensitive (`charging` ODER `CHARGING`)
+- **`autoUnlockPlugWhenCharged: 'permanent'`** als 3. truthy-Wert (CC-seatcupra **#51** —
+  vorher nur `"on"` matched, `"permanent"` Konfiguration wurde fälschlich
+  als deaktiviert angezeigt)
+
+#### `cariad/api/seat_cupra.py` — Climate robustness (#8, #21)
+
+- `climatisation_state == "unsupported"` (CC-seatcupra **#21**) wird jetzt
+  korrekt als inaktiv behandelt — vorher leer (zufällig korrekt, aber
+  unklar dokumentiert)
+- `targetTemperatureCelsius` (Rainer #109 Variante ohne "In") als zusätzlicher
+  Pfad neben `targetTemperatureInCelsius`
+- `climatisation_active` False-Set erweitert auf `(None, "OFF", "off", "Off", "unsupported")`
+
+#### `cariad/models.py` — neues Field `windows_individual: dict[str, bool]`
+
+Mirror von `doors_individual`. Keys: `frontLeft` / `frontRight` / `rearLeft` /
+`rearRight`. Value `True` == Fenster geschlossen.
+
+#### `binary_sensor.py` — neuer `VagWindowSensor` + Setup-Hook
+
+Pro Fenster eine Binary-Sensor-Entity (`device_class=WINDOW`), Naming
+`Window Front Left` etc. Nur erstellt wenn `windows_individual` Daten enthält
+(SEAT/CUPRA initial; andere Marken folgen wenn deren API es liefert).
+
+#### Tests (12 neue) — `tests/test_cariad.py::TestSeatCupraGetStatus`
+
+1. `test_v189_status_parses_doors_per_position` — pycupra-Pfade door-Mapping
+2. `test_v189_status_parses_windows_per_position` — neuer windows_individual
+3. `test_v189_status_parses_trunk_hood_nested_objects` — nested {open, locked}
+4. `test_v189_status_sunroof_in_windows_subtree` — sunroof in windows.sunroof
+5. `test_v189_status_sunroof_top_level_camelCase` — `sunRoof` Großbuchstabe (#5)
+6. `test_v189_status_engine_on_implies_driving` — engine='on' → DRIVING (#50, #18)
+7. `test_v189_status_engine_off_does_not_force_driving` — engine='off' lässt vehicle_state in Ruhe
+8. `test_v189_charging_shape_b_chargedPowerInKw_remaining_minutes` — #109 Shape B
+9. `test_v189_charging_settings_targetSoc_pct_lowercase` — #109 lowercase variant
+10. `test_v189_auto_unlock_permanent_is_truthy` — `permanent` als truthy (#51)
+11. `test_v189_climatisation_trigger_unsupported_is_inactive` — `unsupported` → inaktiv (#21)
+12. `test_v189_status_legacy_flat_fallback_still_works` — defensiver Fallback intakt
+
+#### Bewusst NICHT in v1.8.9 enthalten (eigener Scope, geplant für v1.8.10+)
+
+Alles aus dem Deep-Dive der CC-seatcupra-Issues, was eigene Entities oder
+zusätzliche API-Calls braucht:
+
+- **Capability-Filter** (CC-seatcupra **#64**) — `capability.active &&
+  capability.user-enabled` vor Entity-Creation prüfen. Sehr wahrscheinlich
+  weiteres Stück für Gerhards 19 fehlende Entities. Eigene Session
+  (Erweiterung des bestehenden Capability-Cache).
+- **`/maintenance` Endpoint** (CC-seatcupra **#44**) — separater API-Call mit
+  4 neuen Sensoren (inspectionDueDays/Km, oilServiceDueDays/Km).
+- **Multi-Zone Klima** (CC-seatcupra **#10, #109**) — `zoneFrontLeftEnabled`,
+  `zoneFrontRightEnabled` als eigene Switches.
+- **Battery Care Mode** (CC-seatcupra **#20, #51**) —
+  `batteryCareModeEnabled`, `batteryCareTargetSocPercentage` als eigene
+  Switch + Number.
+- **`windowHeatingStatus[]` Array** (CC-seatcupra **#5, #8**) — strukturierter
+  Array `[{windowLocation, windowHeatingState}]` statt unsere flat
+  `windowHeatingStateFront/Rear` Pfade. Eigene Refactor-Session.
+- **`/ventilation/start|stop` Service** (CC-seatcupra **#43**) — neuer
+  HA-Service.
+- **Trip-Statistics** (CC-seatcupra **#22**, MasterTim17 fork hat Code) —
+  v1.10.x.
+- **Departure-Timer Toggle** (CC-seatcupra **#70**) — v1.9.x.
+- **`carCapturedTimestamp`-Freshness-Pattern** für CUPRA — wird in v1.8.10
+  zentral für Škoda eingeführt (Session 3S) und kann später auf CUPRA + Audi
+  expandiert werden.
+
+### Session 3C — CUPRA/SEAT OLA Status JSON Paths Fixed + Per-Window Entities + Live-API Findings (English)
+
+Bug-fix bundle for Gerhard's 19 missing entities (CUPRA Born) and all
+SEAT/CUPRA models. Pre-v1.8.9 read `/v2/vehicles/{vin}/status` using
+CARIAD-BFF-style flat field names that don't exist on the OLA backend.
+
+**Methodology:** real-world API field names (verified via tillsteinbach
+`CarConnectivity-connector-seatcupra` issues #5, #8, #18, #21, #50, #51,
+#109) are placed at the head of `v(...) or v(...) or ...` chains. Old
+inferred paths kept as defensive fallback.
+
+**`seat_cupra.py` `_parse_status`** — verified against pycupra source:
+per-door `status.doors.{position}.{locked,open}`, per-window
+`status.windows.{position}`, nested `status.trunk.{open,locked}` and
+`status.hood.open`, sunroof at THREE positions (`sunRoof` top-level from
+#5, plus pycupra paths), engine top-level → DRIVING inference (#50, #18).
+
+**Charging endpoint #109 paths reordered** — `chargedPowerInKw` (with "d"),
+`remainingTimeInMinutes`, `targetSoc_pct` (lowercase) now first;
+`auto_unlock_charge` recognises `"permanent"` (#51); climate handles
+`"unsupported"` state (#21).
+
+**`models.py`** — new `windows_individual` field. **`binary_sensor.py`** —
+new `VagWindowSensor` per-window entity.
+
+**12 new tests** in `TestSeatCupraGetStatus` covering both the new
+structured paths and all live-API-response findings.
+
+**Deliberately NOT in v1.8.9** (own scope): capability filter (#64),
+`/maintenance` endpoint (#44), multi-zone climate (#10, #109), battery
+care mode (#20, #51), `windowHeatingStatus[]` array (#5, #8),
+`/ventilation` service (#43), trip stats (#22), departure timer toggle
+(#70). All planned for v1.8.10+.
+
 ## [1.8.8] - 2026-04-29
 
 ### Session 3B — CARIAD v1/v2 + combined/separate endpoint dispatch für Lock/Climate/Charging

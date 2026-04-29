@@ -224,6 +224,11 @@ class VehicleData:
     doors_open: bool = False
     windows_open: bool = False
     doors_individual: dict[str, bool] = field(default_factory=dict)
+    # v1.8.9 (Session 3C) — per-window state, mirrors ``doors_individual``.
+    # Keys: frontLeft / frontRight / rearLeft / rearRight. Value True ==
+    # window closed, False == open. Populated by SEAT/CUPRA OLA paths
+    # (status.windows.{position}); other brands leave it empty for now.
+    windows_individual: dict[str, bool] = field(default_factory=dict)
 
     # Location
     latitude: float | None = None
