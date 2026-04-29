@@ -161,22 +161,34 @@ class VWEUClient(CariadBaseClient):
 
         return d
 
-    async def command_lock(self, vin: str) -> None:
+    async def command_lock(self, vin: str, spin: str = "") -> None:
         """Lock vehicle — combined endpoint with separate-endpoint fallback,
         each tried on both /vehicle/v1/ and /vehicle/v2/ paths.
 
-        v1.8.8 (Session 3B): replaces the bare-except-then-fallback pattern
-        with HTTP-404-only fallback via ``_post_command_with_fallback_paths``.
-        Auth failures, rate limits and 5xx errors no longer mask as
-        endpoint-version mismatches and now propagate to the coordinator
-        for proper ``classify_command_failure`` handling.
+        v1.8.8 (Session 3B): HTTP-404-only fallback via
+        ``_post_command_with_fallback_paths``. Auth failures, rate limits
+        and 5xx errors propagate so ``classify_command_failure`` handles them.
+
+        v1.9.1 (#92, Audi S6 C8 2021): the CARIAD BFF returns
+        ``403 spin_error`` for **lock too** on premium Audi models when no
+        S-PIN is sent (same behaviour the unlock path had). The S-PIN, when
+        configured, is now included in the lock-unlock payload exactly the
+        same way as ``command_unlock``. When the user has no S-PIN
+        configured the call still proceeds and may legitimately succeed
+        on older / non-premium models that don't enforce the S-PIN
+        requirement on lock.
         """
+        primary_payload: dict[str, Any] = {"action": "lock"}
+        fallback_payload: dict[str, Any] = {}
+        if spin or self._spin:
+            primary_payload["spin"] = spin or self._spin
+            fallback_payload["spin"] = spin or self._spin
         await self._post_command_with_fallback_paths(
             vin,
             primary_suffix="access/lock-unlock",
-            primary_payload={"action": "lock"},
+            primary_payload=primary_payload,
             fallback_suffix="access/lock",
-            fallback_payload={},
+            fallback_payload=fallback_payload,
         )
 
     async def command_unlock(self, vin: str, spin: str = "") -> None:
@@ -265,8 +277,16 @@ class VWEUClient(CariadBaseClient):
         )
 
     async def command_wake(self, vin: str) -> None:
-        """Wake vehicle."""
-        await self._post(f"{_BASE}/vehicle/v1/vehicles/{vin}/vehicleWakeup")
+        """Wake vehicle.
+
+        v1.9.1 (#92, Audi S6 C8 2021): premium Audi models return ``404``
+        on the legacy ``/vehicle/v1/vehicles/{vin}/vehicleWakeup`` path.
+        Same v1 → v2 dispatch we use for every other command — the
+        ``_post_command`` helper auto-falls-back to ``/vehicle/v2/...``
+        on a 404 and remembers the result per VIN so subsequent calls
+        skip the dead path.
+        """
+        await self._post_command(vin, "vehicleWakeup", json={})
 
     # ── v1/v2 endpoint dispatch (Session 3A — #51, #74) ─────────────────────
     #

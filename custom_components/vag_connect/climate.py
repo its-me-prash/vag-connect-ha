@@ -45,6 +45,10 @@ class VagClimate(VagConnectEntity, ClimateEntity):
     _attr_min_temp = MIN_TEMP
     _attr_max_temp = MAX_TEMP
     _attr_target_temperature_step = TEMP_STEP
+    # v1.9.1 — Phase 2 gating. We use the "start" command as the gating
+    # signal because the read side (current_temperature, hvac_mode) is
+    # purely cosmetic — only the actuation matters for entitlement.
+    _command_id = "command_start_climate"
 
     def __init__(self, coordinator: VagConnectCoordinator, vin: str) -> None:
         super().__init__(coordinator, vin, "climate")

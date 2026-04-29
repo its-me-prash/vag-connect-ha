@@ -86,6 +86,24 @@ def classify_command_failure(exc: BaseException) -> CommandFailureReason:
     ``BACKEND_ERROR`` rather than ``MISSING_CAPABILITY``. The latter
     leads to entities being permanently hidden, so we only return it for
     backend responses that explicitly say so.
+
+    v1.9.1 (Capability-Filter Phase 2, #56) — body-content sniffing for
+    common subscription / spin-error markers so the coordinator can
+    auto-update ``FeatureState`` instead of treating every 4xx as
+    ``BACKEND_ERROR``. Verified marker strings:
+
+    - ``spin_error`` / ``spinState`` — confirmed live on Audi S6 C8 2021
+      (#92): CARIAD BFF returns ``403`` with body
+      ``{"error":{"message":"spin_error", "spinState":"DEFINED",
+      "remainingTries":3}}`` when S-PIN is required but absent.
+    - ``subscription`` / ``expired`` / ``license_required`` — the
+      vocabulary used by audi_connect_ha #47 and migendi's #42 reports
+      for paid online-services lapses.
+    - ``not_entitled`` / ``entitlement`` — the OLA vocabulary used by
+      gleeballs's free-tier We Connect Go report (#51).
+
+    If the body has none of these markers we fall back to the
+    HTTP-status-only classification.
     """
     if not isinstance(exc, APIError):
         return CommandFailureReason.UNKNOWN
@@ -93,8 +111,24 @@ def classify_command_failure(exc: BaseException) -> CommandFailureReason:
     status = getattr(exc, "status", 0) or 0
     body = str(exc).lower()
 
+    # Body-content first — these are unambiguous markers regardless of
+    # which 4xx the backend used.
     if "missing-capability" in body or "missing_capability" in body:
         return CommandFailureReason.MISSING_CAPABILITY
+    if "spin_error" in body or "spinstate" in body:
+        return CommandFailureReason.SPIN_REQUIRED
+    if "subscription" in body and ("expired" in body or "lapsed" in body):
+        return CommandFailureReason.SUBSCRIPTION_EXPIRED
+    if (
+        "not_entitled" in body
+        or "not-entitled" in body
+        or "license_required" in body
+        or "license-required" in body
+        or "entitlement" in body
+    ):
+        return CommandFailureReason.NOT_ENTITLED
+
+    # Fall back to status-code-only classification.
     if status == 403:
         return CommandFailureReason.NOT_ENTITLED
     if status == 404:

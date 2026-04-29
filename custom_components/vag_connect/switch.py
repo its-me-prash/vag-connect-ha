@@ -39,6 +39,8 @@ class VagLockSwitch(VagConnectEntity, SwitchEntity):
 
     _attr_translation_key = "lock_switch"
     _attr_icon = "mdi:car-door-lock"
+    # v1.9.1 — Phase 2 gating mirrors VagDoorLock (same backend command).
+    _command_id = "command_lock"
 
     def __init__(self, coordinator: VagConnectCoordinator, vin: str) -> None:
         super().__init__(coordinator, vin, "lock_switch")
@@ -59,6 +61,8 @@ class VagClimatisationSwitch(VagConnectEntity, SwitchEntity):
 
     _attr_translation_key = "climatisation_switch"
     _attr_icon = "mdi:thermometer"
+    # v1.9.1 — Phase 2 gating.
+    _command_id = "command_start_climate"
 
     def __init__(self, coordinator: VagConnectCoordinator, vin: str) -> None:
         super().__init__(coordinator, vin, "climatisation_switch")
@@ -82,6 +86,8 @@ class VagChargingSwitch(VagConnectEntity, SwitchEntity):
 
     _attr_translation_key = "charging_switch"
     _attr_icon = "mdi:ev-plug-type2"
+    # v1.9.1 — Phase 2 gating.
+    _command_id = "command_start_charging"
 
     def __init__(self, coordinator: VagConnectCoordinator, vin: str) -> None:
         super().__init__(coordinator, vin, "charging_switch")
@@ -105,6 +111,8 @@ class VagWindowHeatingSwitch(VagConnectEntity, SwitchEntity):
 
     _attr_translation_key = "window_heating_switch"
     _attr_icon = "mdi:car-windshield"
+    # v1.9.1 — Phase 2 gating.
+    _command_id = "command_start_window_heating"
 
     def __init__(self, coordinator: VagConnectCoordinator, vin: str) -> None:
         super().__init__(coordinator, vin, "window_heating_switch")

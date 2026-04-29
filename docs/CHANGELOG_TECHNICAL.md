@@ -12,6 +12,160 @@ weiterhin direkt in `CHANGELOG.md` zu finden.
 
 ---
 
+## [1.9.1] - 2026-04-29
+
+### Hotfix #92 (Audi S6 C8 2021 Lock + Wake) + Vehicle Data Scout Coverage (#90, #91) + Capability-Filter Phase 2 (#56)
+
+Erste reale Bug-Reports an die v1.9.0 Vehicle Data Scout & Error Reporter
+Pipeline. Maintainer Prash testete v1.9.0 sofort nach Release auf seinem
+Audi S6 C8 (2021, MJ 2021) + VW Golf 7 GTE — beide Reports kamen via
+1-Klick-Workflow ins Repo (#90, #91, #92), genau wie das v1.9.0 Design
+es vorgesehen hatte. Erfolgs-Validierung für die ganze Reporter-Pipeline.
+
+#### Änderungen
+
+**`custom_components/vag_connect/cariad/api/vw_eu.py`** (2 Bug-Fixes):
+
+- `command_lock(vin, spin="")` — Signatur erweitert. Pre-1.9.1 sandte
+  immer `{"action": "lock"}` ohne S-PIN. Premium Audi-Modelle wie der
+  S6 C8 antworten mit `403 spin_error` (Body:
+  `{"error":{"message":"spin_error","spinState":"DEFINED","remainingTries":3}}`).
+  Fix: gleiche S-PIN-Behandlung wie `command_unlock` — wenn die S-PIN
+  konfiguriert ist, wird sie ins Payload aufgenommen sowohl beim
+  combined `/access/lock-unlock`-Endpoint als auch beim separaten
+  `/access/lock`-Fallback.
+- `command_wake(vin)` — von bareem `self._post` auf `self._post_command`
+  umgestellt. Pre-1.9.1 traf `vehicle/v1/.../vehicleWakeup` direkt; bei
+  premium Audi-Modellen gibt's das nur unter `/vehicle/v2/...`. Der
+  `_post_command`-Helper hat seit v1.8.5 (Session 3A) den v1→v2 Fallback,
+  jetzt wird er auch für Wake genutzt.
+
+**`custom_components/vag_connect/coordinator.py`**:
+
+- `async_lock(vin)` — Brand-Erkennung erweitert: bei `audi`/`volkswagen`
+  wird die S-PIN aus den Options/Data gelesen und an `command_lock(vin, spin=...)`
+  übergeben. Bei SEAT/CUPRA bleibt der Pre-Check für fehlende S-PIN
+  (raises `ServiceValidationError`); bei Audi/VW wird der Call ohne S-PIN
+  zugelassen (für ältere Modelle ohne Premium-S-PIN-Anforderung) — schlägt
+  er dann fehl, klassifiziert ihn die neue Phase-2-Pipeline automatisch
+  als `SPIN_REQUIRED`.
+- `_cariad_cmd` — komplett umgebaut für Phase 2:
+  - Bei Erfolg: `record_command_success(vin, method)` — flippt
+    `supported_by_vehicle` + `entitled_by_account` + `available_now`
+    auf True und löscht `last_error`.
+  - Bei Fehler: `classify_command_failure(err)` → ableitet
+    `CommandFailureReason` aus Body + Status; `record_command_failure(...)`
+    aktualisiert die FeatureState. Exception wird trotzdem propagiert.
+  - Beide Calls in try/except — Bookkeeping darf nie das Command-Ergebnis
+    beeinflussen.
+- `is_command_known_unsupported(vin, command)` — neuer Helper.
+  Konservativ: nur True wenn `supported_by_vehicle is False` ODER
+  `entitled_by_account is False`. Transient errors (UNKNOWN, BACKEND_ERROR,
+  VEHICLE_UNREACHABLE) lassen die Flags auf None und der Helper bleibt False.
+
+**`custom_components/vag_connect/entity_base.py`**:
+
+- `_command_id: str | None = None` — neues Class-Attribut. Subklassen
+  setzen es auf z.B. `"command_lock"` um Phase-2-Gating zu aktivieren.
+- `available` Property erweitert: zusätzlich zur per-VIN Verfügbarkeit
+  prüft sie jetzt `coordinator.is_command_known_unsupported(vin, command)`
+  wenn `_command_id` gesetzt ist. Sensoren ohne Command bleiben
+  unverändert.
+
+**`_command_id` Annotationen** in command-bound Entities:
+
+- `lock.py:VagDoorLock` → `command_lock`
+- `button.py:VagFlashButton` → `command_flash`
+- `button.py:VagWakeButton` → `command_wake`
+- `climate.py:VagClimate` → `command_start_climate`
+- `switch.py:VagLockSwitch` → `command_lock`
+- `switch.py:VagClimatisationSwitch` → `command_start_climate`
+- `switch.py:VagChargingSwitch` → `command_start_charging`
+- `switch.py:VagWindowHeatingSwitch` → `command_start_window_heating`
+
+**`custom_components/vag_connect/cariad/exceptions.py`**:
+
+- `classify_command_failure(exc)` — Body-Content-Sniffing vor
+  Status-Code-Klassifikation:
+  - `spin_error` / `spinState` (case-insensitive) → `SPIN_REQUIRED`
+    (vorher fälschlich `NOT_ENTITLED` weil 403)
+  - `subscription` + (`expired`|`lapsed`) → `SUBSCRIPTION_EXPIRED`
+  - `not_entitled` / `not-entitled` / `license_required` /
+    `license-required` / `entitlement` → `NOT_ENTITLED`
+- Verifizierte Marker-Strings dokumentiert mit Issue-Quellen
+  (#92 für spin_error, #47/#42 für subscription, #51 für not_entitled).
+
+**`custom_components/vag_connect/cariad/_unexpected_keys.py`** —
+`EXPECTED_KEYS["volkswagen"]["selectivestatus"]` (Audi inherits)
+um 13 neue Pfade erweitert basierend auf Issues #90 + #91:
+
+| Path | Quelle | Bemerkung |
+|---|---|---|
+| `measurements.rangeStatus.value.dieselRange` | #91 (S6 TDI) | sample 190km |
+| `measurements.rangeStatus.value.gasolineRange` | proaktiv (Petrol-Pendant) | |
+| `measurements.fuelLevelStatus.value.currentFuelLevel_pct` | #91 | sample 26% |
+| `charging.chargingSettings.value.maxChargeCurrentAC_A` | #90 (Golf 7 GTE) | sample 16A |
+| `charging.chargeMode` | #90 | top-level Block |
+| `climatisation.climatisationSettings.value.targetTemperature_F` | #90 | sample 73°F |
+| `climatisation.climatisationSettings.value.climatisationWithoutExternalPower` | #90 | bool |
+| `vehicleLights.lightsStatus.value.carCapturedTimestamp` | #90+#91 | timestamp |
+| `vehicleLights.lightsStatus.value.lights` | #90+#91 | array |
+| `userCapabilities` | #90+#91 | top-level |
+| `fuelStatus` | #90+#91 | top-level (verschieden von `measurements.fuelLevelStatus`) |
+| `vehicleHealthInspection` | #90+#91 | service-due Block |
+| `vehicleHealthWarnings` | #90+#91 | warning Block |
+| `automation` | #90 | smart-charging Block |
+| `departureProfiles` | #90 | Nachfolger von `departureTimers` |
+
+#### Tests
+
+**`tests/test_v191_hotfix.py`** (neu, 18 Tests):
+
+- `TestAudiLockSpin` (4): no-spin omits field, spin kwarg → payload,
+  client default spin, coordinator forwards Audi spin
+- `TestVWEUWake` (2): wake → `_post_command` dispatch, v1 404 → v2
+- `TestClassifyAndAutoRecord` (7): spin_error in body, subscription,
+  not_entitled, status fallback, `is_command_known_unsupported`
+  state machine (transient = False, missing-capability = True,
+  subscription = True, success = back to False), `_cariad_cmd`
+  auto-recording on failure
+- `TestScoutKeyRegistration` (5): diesel range, max charge ampere,
+  top-level diagnostic blocks, lights nested, audi == volkswagen
+  inheritance smoke
+
+#### Architektur-Notes
+
+- **Warum kein "MISSING_CAPABILITY" auto-flip auf 404?** 404 kann auch
+  ein Endpoint-Versions-Mismatch sein (Hauptgrund für den v1→v2
+  Fallback). Wir bleiben bei `WRONG_API_PROFILE` für 404 und nur
+  explizite Body-Marker (`missing-capability`, `missing_capability`)
+  führen zu permanenter Hide.
+- **Warum nicht alle Brand-Capabilities-IDs in button.py erweitern?**
+  Wir haben verifizierte Capability-IDs nur für SEAT/CUPRA (OLA Vocab).
+  Audi/VW EU haben eine andere Capability-Vokabular die wir noch nicht
+  gegen Live-Vehicles abgeglichen haben — Phase 2 nutzt deshalb das
+  Per-Command-FeatureState-System (lernt durch Beobachten von 403er),
+  nicht Capability-Lookup-vor-Entity-Creation.
+- **Warum Lock + Window-Heating-Switch + Climatisation-Switch _command_id
+  haben aber nicht jeden Sensor?** Sensors haben kein Backend-Action;
+  die Phase-2-Logik bringt nur Wert für Entitäten die ein Command auslösen.
+  Read-only-Entities bleiben sichtbar solange `is_vehicle_available` True
+  ist.
+- **Warum keine UI-Texte für die Phase-2 "unavailable"-States?** HA's
+  Standard-Mechanik ist gut: Entity wird ausgegraut, State zeigt
+  "Unavailable". Eigene Repair-Issues für Subscription-Renewal kommen
+  in v1.10.0 (Diagnostics + Smart-Wake Sprint).
+
+#### Rückwärtskompatibilität
+
+- Alle Änderungen sind additive Verhaltens-Verbesserungen.
+- `_command_id` defaults to `None` → keine alte Subklasse bekommt
+  unbeabsichtigtes Hide-Verhalten.
+- `record_command_success` / `record_command_failure` existieren seit
+  v1.8.2 — Phase 2 nutzt sie nur konsequenter.
+
+---
+
 ## [1.9.0] - 2026-04-29
 
 ### Vehicle Data Scout + Error Reporter — Crowd-Sourced Bug-Discovery via 1-Klick Reporter Pipeline
