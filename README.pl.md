@@ -38,17 +38,33 @@ Od v0.14.1 integracja **bezpośrednio** komunikuje się z API CARIAD — własny
 
 > ✅ **Aktywnie utrzymywany wieloprodukcyjny następca** projektów [`mitch-dc/volkswagen_we_connect_id`](https://github.com/mitch-dc/volkswagen_we_connect_id) (zarchiwizowany 2025-10-29) i [`skodaconnect/homeassistant-skodaconnect`](https://github.com/skodaconnect/homeassistant-skodaconnect) (deprecated 2025-03-14). Jedna integracja dla Audi, VW, Škoda, SEAT, CUPRA, Porsche i VW US/CA — bez osobnej wtyczki dla każdej marki.
 
-## Bieżący stan i uczciwe ograniczenia (v1.8.5)
+## Bieżący stan i uczciwe ograniczenia (v1.8.12)
 
-VAG Connect jest aktywnie rozwijany. Żebyś wiedział, co działa, a co nie:
+### ✅ Co działa TERAZ (wszystkie 7 marek)
 
-- **Capability-gating:** Obecnie aktywny tylko dla przycisków flash i wake SEAT/CUPRA. Dla innych marek encje są tworzone bez sprawdzania capability — mogą więc pokazywać "niedostępne", jeśli twój model nie ma danej funkcji. Wdrażanie marka po marce (Sesje 3B / 3C / 3S).
-- **Automatyczny fallback CARIAD v1/v2:** Obecnie aktywny tylko dla 4 komend set-value (cel ładowania, temperatura klimatyzacji, tryb ładowania, minimalny SoC). Odblokowuje to Audi RS e-tron GT i VW Passat 2025 od v1.8.5. Lock/unlock, climate start/stop i charging start/stop pojawią się w Sesji 3B.
-- **Platforma image:** Nie istnieje oficjalne API renderowania obrazów w pipeline CARIAD. Encja image jest więc placeholderem i w v1.10.0 zostanie albo usunięta, albo przełączona na URL-e dostarczane przez użytkownika.
-- **Platforma PPC/PPE (Audi Q5 2025, Q6 e-tron, A5/S5, A6 e-tron):** Te modele 2025+ używają nowej architektury E³ 1.2. Żadne reverse-engineered endpointy nie są jeszcze publicznie znane. VAG Connect wykrywa te pojazdy i nie tworzy dla nich encji komend, zamiast generować błędy 404.
-- **Wymóg prywatności:** Pozycja GPS, status pojazdu i ogrzewanie postojowe wymagają włączonej opcji **"Udostępnij moją lokalizację"** w aplikacji My-VW / My-Audi / MySkoda / MyCupra — w przeciwnym razie backend odpowiada błędem 403.
+- 🟢🟡⚫ **Multi-Brand Connection-State sensor** — online / standby / offline dla wszystkich marek (v1.8.12).
+- 🛡️ **Defensywna stabilność** — retry 504, retry przejściowych błędów sieci, cache 6h + tolerancja 3 błędów (v1.8.7).
+- 🔓 **Komendy Lock / Climate / Charging** dla Audi 2024+ i VW Passat 2025 — 10 komend z fallback CARIAD `/v1/` ↔ `/v2/` (v1.8.5 + v1.8.8).
+- 🚪 **CUPRA / SEAT pełne encje** ze zweryfikowanymi ścieżkami JSON OLA + binary sensors na okno (v1.8.9).
+- 🚙 **Škoda** `detail` block + `reliableLockStatus` + `fullyChargedAt` (v1.8.11).
 
-Aktualny roadmap i szczegółowy stan: [`../docs/SESSION_HANDOFF.md`](../docs/SESSION_HANDOFF.md)
+### ⚠️ Jeszcze w toku
+
+Capability filter faza 2 (v1.8.13) · Defensive coding faza 2 (v1.8.14) · Anonimizowane diagnostics (Sesja 4) · Smart-wake + ochrona drain 12V (Sesja 6) · Push updates (v1.9.1/2) · Trip stats + EU Data Act (v1.10.0+).
+
+### 🚫 Świadome ograniczenia
+
+- **Platforma image:** nie istnieje oficjalne CARIAD render API. Zostanie usunięta lub przełączona na URL-e użytkownika w v1.10.0.
+- **PPC/PPE Audi 2025+** (Q5, A5/S5, A6 e-tron, Q6 e-tron, RS e-tron GT Facelift) — graceful degradation zamiast 404.
+- **Ford / marki spoza VAG:** poza zakresem — patrz [`marq24/ha-fordpass`](https://github.com/marq24/ha-fordpass).
+
+### 🔧 Wymóg prywatności
+
+**"Udostępnij moją lokalizację"** musi być włączone w My-VW / My-Audi / MySkoda / MyCupra — inaczej backend 403.
+
+### 📚 Więcej informacji
+
+- 🗺️ [`../docs/ROADMAP.md`](../docs/ROADMAP.md) · 📜 [`../docs/CHANGELOG_TECHNICAL.md`](../docs/CHANGELOG_TECHNICAL.md) · 🤝 [`../docs/SESSION_HANDOFF.md`](../docs/SESSION_HANDOFF.md) · 🔬 [`../docs/RESEARCH_NOTES_2026-04-29.md`](../docs/RESEARCH_NOTES_2026-04-29.md)
 
 ---
 

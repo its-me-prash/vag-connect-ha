@@ -38,17 +38,39 @@ Since v0.14.1, VAG Connect speaks **directly** to the CARIAD API via its own asy
 
 > ✅ **Active multi-brand successor** to [`mitch-dc/volkswagen_we_connect_id`](https://github.com/mitch-dc/volkswagen_we_connect_id) (archived 2025-10-29) and [`skodaconnect/homeassistant-skodaconnect`](https://github.com/skodaconnect/homeassistant-skodaconnect) (deprecated 2025-03-14). One integration for Audi, VW, Škoda, SEAT, CUPRA, Porsche and VW US/CA — no separate plugin per brand.
 
-## Current state & honest limits (v1.8.5)
+## Current state & honest limits (v1.8.12)
 
-VAG Connect is under active development. So you know what works and what doesn't:
+VAG Connect is under active development. So you know what works and what's coming:
 
-- **Capability-gating:** Currently active only for SEAT/CUPRA flash and wake buttons. Other brands still create entities without capability checks — they may show "unavailable" if your model lacks the feature. Rolling out brand-by-brand (Sessions 3B / 3C / 3S).
-- **CARIAD v1/v2 auto-fallback:** Currently active only for 4 set-value commands (charge target, climate temperature, charge mode, min SoC). This unblocks Audi RS e-tron GT and VW Passat 2025 from v1.8.5. Lock/unlock, climate start/stop and charging start/stop follow in Session 3B.
-- **Image platform:** There is no official render-image API in the CARIAD pipeline. The image entity is therefore a placeholder and will be either removed or switched to user-supplied URLs in v1.10.0.
-- **PPC/PPE platform (Audi Q5 2025, Q6 e-tron, A5/S5, A6 e-tron):** These 2025+ models use the new E³ 1.2 architecture. No reverse-engineered endpoints are publicly known yet. VAG Connect detects these vehicles and skips command entities instead of producing 404 errors.
-- **Privacy prerequisite:** GPS position, vehicle status and pre-heating require **"Share my position"** enabled in your My-VW / My-Audi / MySkoda / MyCupra app — otherwise the backend responds with 403.
+### ✅ What works NOW (all 7 brands)
 
-Current roadmap and detailed state: [`../docs/SESSION_HANDOFF.md`](../docs/SESSION_HANDOFF.md)
+- 🟢🟡⚫ **Multi-brand connection-state sensor** — online / standby / offline for Audi, VW EU, Škoda, SEAT, CUPRA (v1.8.12). First VAG integration with centralized connection status across all brands.
+- 🛡️ **Defensive stability** — 504 retry, transient-network-error retry, 6h stale-cache + 3-failure tolerance (v1.8.7). Weekend backend hiccups no longer break automations.
+- 🔓 **Lock / Climate / Charging commands** for modern Audi 2024+ and VW Passat 2025 — 10 commands have automatic CARIAD `/v1/` ↔ `/v2/` fallback (v1.8.5 + v1.8.8).
+- 🚪 **CUPRA / SEAT complete door / window / trunk / sunroof entities** with verified OLA paths + per-window binary sensors (v1.8.9).
+- 🚙 **Škoda `detail.{sunroof,trunk,bonnet}`, `reliableLockStatus`, `fullyChargedAt`** (v1.8.11) from live API findings.
+- 🔐 **Token refresh storm protection** (max 3/h, v1.8.7) — prevents IP bans.
+
+### ⚠️ Still in progress
+
+- **Capability filter phase 2** (v1.8.13) · **Defensive coding phase 2** (v1.8.14) · **Anonymized diagnostics** (Session 4) · **Smart-wake + 12V drain protection** (Session 6, v1.9.0) · **Push updates** (v1.9.1/2) · **Trip statistics + EU Data Act** (v1.10.0+).
+
+### 🚫 Conscious limits
+
+- **Image platform:** no official CARIAD render-image API exists. Will be removed or replaced with user-supplied URLs in v1.10.0.
+- **PPC/PPE Audi 2025+** (Q5, A5/S5, A6 e-tron, Q6 e-tron, RS e-tron GT Facelift) — new E³ 1.2 architecture, not publicly reverse-engineered. **Graceful degradation** instead of 404 errors.
+- **Ford / non-VAG brands:** out of scope — see [`marq24/ha-fordpass`](https://github.com/marq24/ha-fordpass) for Ford.
+
+### 🔧 Privacy prerequisite
+
+GPS position, vehicle status and pre-heating require **"Share my position"** enabled in your My-VW / My-Audi / MySkoda / MyCupra app — otherwise the backend responds with 403.
+
+### 📚 More info
+
+- 🗺️ Roadmap: [`../docs/ROADMAP.md`](../docs/ROADMAP.md)
+- 📜 Tech changelog: [`../docs/CHANGELOG_TECHNICAL.md`](../docs/CHANGELOG_TECHNICAL.md)
+- 🤝 Session handoff (for contributors & AI tools): [`../docs/SESSION_HANDOFF.md`](../docs/SESSION_HANDOFF.md)
+- 🔬 Verified API paths: [`../docs/RESEARCH_NOTES_2026-04-29.md`](../docs/RESEARCH_NOTES_2026-04-29.md)
 
 ## Supported Brands
 
