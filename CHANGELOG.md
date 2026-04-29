@@ -28,6 +28,58 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ## [Unreleased]
 
+## [1.9.1] - 2026-04-29 🔧 Audi/VW Lock + Wake Hotfix + Capability-Filter Phase 2
+
+🐛 **Bug-Fixes (Issue #92, Audi S6 C8 2021 Live-Test):**
+
+- 🔓 **Audi/VW EU Lock funktioniert wieder** — der CARIAD BFF antwortete
+  mit `403 spin_error` auf `/access/lock` weil die S-PIN bei premium
+  Audi-Modellen für Lock genauso erforderlich ist wie für Unlock.
+  Der `command_lock` der VW EU/Audi-Clients hängt jetzt dieselbe S-PIN
+  ans Payload (sofern konfiguriert) wie es `command_unlock` schon tat.
+- 🚀 **Audi Wake-Endpoint v1→v2 Fallback** — `/vehicle/v1/.../vehicleWakeup`
+  gibt 404 auf premium Audi Modellen (S6 C8). Der Wake-Befehl nutzt jetzt
+  den gleichen `_post_command`-Dispatcher wie alle anderen Commands und
+  fällt bei 404 automatisch auf `/vehicle/v2/...` zurück.
+
+🛰️ **Vehicle Data Scout — 27 neue Felder registriert (Issues #90, #91):**
+
+Aus den ersten zwei Live-Reports vom Maintainer (Audi S6 + VW Golf 7 GTE)
+sind diese Felder jetzt im `EXPECTED_KEYS`-Katalog (firingen damit nicht
+mehr beim nächsten Poll). Fundament für künftige Entity-Arbeit:
+
+- **Audi S6 (Diesel):** `dieselRange`, `currentFuelLevel_pct`,
+  `vehicleLights.lightsStatus.{lights,carCapturedTimestamp}`,
+  `userCapabilities`, `fuelStatus`, `vehicleHealthInspection`,
+  `vehicleHealthWarnings`
+- **VW Golf 7 GTE:** `maxChargeCurrentAC_A` (Ampere statt Enum),
+  `targetTemperature_F` (Fahrenheit), `climatisationWithoutExternalPower`,
+  `automation`, `departureProfiles` (Nachfolger von `departureTimers`),
+  `chargeMode`-Block
+
+🛡️ **Capability-Filter Phase 2 (Issue #56):**
+
+- 🧠 **Smartere Fehler-Klassifikation** — `classify_command_failure`
+  schaut jetzt im Body nach `spin_error`, `subscription expired`,
+  `not_entitled`, `license_required` etc. Pre-1.9.1 wurden alle 4xx als
+  generischer "BACKEND_ERROR" klassifiziert.
+- 🤖 **Auto-Recording** — `_cariad_cmd` füttert jetzt jedes Command-Ergebnis
+  automatisch in den `FeatureState`. Erfolge flippen `entitled_by_account`
+  und `supported_by_vehicle` auf `True` zurück (z.B. nach Abo-Verlängerung);
+  definitive Fehler markieren das Command als nicht verfügbar.
+- 👁️ **Entity-Availability hört auf FeatureState** — Lock, Climate,
+  Charging-Switch, Window-Heating-Switch und die Buttons (Flash, Wake)
+  gehen automatisch auf "unavailable" wenn das Backend explizit
+  "missing capability" oder "subscription expired" zurückmeldet. Statt
+  bei jedem Tap denselben 403 zu produzieren.
+
+🧪 **Tests:** 18 neue Tests in `tests/test_v191_hotfix.py` (Lock-S-PIN,
+Wake-v1/v2-Fallback, Klassifikator-Body-Sniffing, FeatureState-Logik,
+Scout-Key-Registrierung).
+
+> 💡 Vollständige technische Details inkl. aller Code-Pfade in
+> [`docs/CHANGELOG_TECHNICAL.md`](docs/CHANGELOG_TECHNICAL.md).
+
 ## [1.9.0] - 2026-04-29 🔬 Vehicle Data Scout + Error Reporter
 
 ✨ **Was ist neu — zwei neue diagnostische Sensoren mit 1-Klick Bug-Report:**

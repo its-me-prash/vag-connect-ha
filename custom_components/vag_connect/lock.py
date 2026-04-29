@@ -30,6 +30,10 @@ class VagDoorLock(VagConnectEntity, LockEntity):
     """Vehicle door lock — uses HA's native LockEntity."""
 
     _attr_translation_key = "door_lock"
+    # v1.9.1 — Phase 2 gating. If a previous lock/unlock attempt was
+    # rejected as missing-capability or not-entitled, the entity goes
+    # unavailable instead of throwing 403/400 on every press.
+    _command_id = "command_lock"
 
     def __init__(self, coordinator: VagConnectCoordinator, vin: str) -> None:
         super().__init__(coordinator, vin, "door_lock")

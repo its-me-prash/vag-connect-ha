@@ -65,6 +65,8 @@ class VagFlashButton(VagConnectEntity, ButtonEntity):
 
     _attr_translation_key = "flash_button"
     _attr_icon = "mdi:car-light-high"
+    # v1.9.1 — Phase 2 gating: hide once a 403/missing-capability is seen.
+    _command_id = "command_flash"
 
     def __init__(self, coordinator: VagConnectCoordinator, vin: str) -> None:
         super().__init__(coordinator, vin, "flash_button")
@@ -91,6 +93,8 @@ class VagWakeButton(VagConnectEntity, ButtonEntity):
 
     _attr_translation_key = "wake_button"
     _attr_icon = "mdi:car-connected"
+    # v1.9.1 — Phase 2 gating.
+    _command_id = "command_wake"
 
     def __init__(self, coordinator: VagConnectCoordinator, vin: str) -> None:
         super().__init__(coordinator, vin, "wake_button")

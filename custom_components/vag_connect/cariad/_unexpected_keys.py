@@ -213,8 +213,15 @@ EXPECTED_KEYS: dict[str, dict[str, set[str]]] = {
             "charging.chargingSettings", "charging.chargingSettings.value",
             "charging.chargingSettings.value.targetSOC_pct",
             "charging.chargingSettings.value.maxChargeCurrentAC",
+            # v1.9.1 (#90, Golf 7 GTE Live-Dump) — VW EU added the
+            # explicit ampere variant alongside the legacy enum string.
+            "charging.chargingSettings.value.maxChargeCurrentAC_A",
             "charging.chargingSettings.value.autoUnlockPlugWhenChargedAC",
             "charging.chargingSettings.value.carCapturedTimestamp",
+            # v1.9.1 (#90) — top-level chargeMode block on selectivestatus.
+            # Same content as chargingStatus.value.chargeMode, just exposed
+            # at the brand level too. Don't recurse — already covered above.
+            "charging.chargeMode",
             "charging.plugStatus", "charging.plugStatus.value",
             "charging.plugStatus.value.plugConnectionState",
             "charging.plugStatus.value.plugLockState",
@@ -229,6 +236,10 @@ EXPECTED_KEYS: dict[str, dict[str, set[str]]] = {
             "climatisation.climatisationSettings",
             "climatisation.climatisationSettings.value",
             "climatisation.climatisationSettings.value.targetTemperature_C",
+            # v1.9.1 (#90) — Fahrenheit pair to celsius (US-region exposure).
+            "climatisation.climatisationSettings.value.targetTemperature_F",
+            # v1.9.1 (#90) — flag indicating climate without external power.
+            "climatisation.climatisationSettings.value.climatisationWithoutExternalPower",
             "climatisation.climatisationSettings.value.carCapturedTimestamp",
             "climatisation.windowHeatingStatus",
             "climatisation.windowHeatingStatus.value",
@@ -237,6 +248,11 @@ EXPECTED_KEYS: dict[str, dict[str, set[str]]] = {
             "measurements", "measurements.rangeStatus",
             "measurements.rangeStatus.value",
             "measurements.rangeStatus.value.electricRange",
+            # v1.9.1 (#91, Audi S6 TDI) — diesel range alongside electric
+            # for ICE / plug-in vehicles. Same pattern as Skoda's
+            # adblue_range exposure.
+            "measurements.rangeStatus.value.dieselRange",
+            "measurements.rangeStatus.value.gasolineRange",
             "measurements.rangeStatus.value.totalRange_km",
             "measurements.rangeStatus.value.carCapturedTimestamp",
             "measurements.odometerStatus",
@@ -246,6 +262,9 @@ EXPECTED_KEYS: dict[str, dict[str, set[str]]] = {
             "measurements.fuelLevelStatus",
             "measurements.fuelLevelStatus.value",
             "measurements.fuelLevelStatus.value.currentSOC_pct",
+            # v1.9.1 (#91) — combustion fuel level percentage. Same key
+            # pattern as currentSOC_pct but for the petrol/diesel tank.
+            "measurements.fuelLevelStatus.value.currentFuelLevel_pct",
             "measurements.fuelLevelStatus.value.primaryEngineType",
             "measurements.fuelLevelStatus.value.carType",
             "measurements.fuelLevelStatus.value.carCapturedTimestamp",
@@ -262,6 +281,22 @@ EXPECTED_KEYS: dict[str, dict[str, set[str]]] = {
             "readiness.readinessStatus.value.connectionWarning",
             "vehicleLights", "vehicleLights.lightsStatus",
             "vehicleLights.lightsStatus.value",
+            # v1.9.1 (#90 + #91) — explicit nested fields on lightsStatus.
+            "vehicleLights.lightsStatus.value.carCapturedTimestamp",
+            "vehicleLights.lightsStatus.value.lights",
+            # v1.9.1 (#90 + #91) — top-level diagnostic blocks added
+            # in newer firmware. We don't read them yet, but registering
+            # them silences the Vehicle Data Scout for these well-known
+            # branches. Future feature work can drill into the children.
+            "userCapabilities",
+            "fuelStatus",
+            "vehicleHealthInspection",
+            "vehicleHealthWarnings",
+            # v1.9.1 (#90, Golf 7 GTE) — automation block (timers, smart
+            # charging schedules) and departureProfiles (replacement for
+            # the older departureTimers — see ROADMAP "PPE Climate Body").
+            "automation",
+            "departureProfiles",
         },
         "parkingposition": {
             "data", "data.lon", "data.lat", "data.carCapturedTimestamp",

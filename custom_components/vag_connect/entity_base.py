@@ -29,10 +29,22 @@ class VagConnectEntity(CoordinatorEntity[VagConnectCoordinator]):
 
     available: per-VIN — entity is unavailable when its vehicle's last poll
     failed, even if other vehicles in the same account succeeded.
+
+    v1.9.1 (Capability-Filter Phase 2, #56) — command-bound entities can
+    set ``_command_id`` on subclass init. When set, the ``available``
+    property additionally consults
+    ``coordinator.is_command_known_unsupported(vin, command)`` and returns
+    ``False`` once the backend has explicitly rejected the command (missing
+    capability, subscription expired, not entitled). Entities without a
+    command (sensors, binary sensors) leave ``_command_id`` as ``None``
+    and behave exactly as before.
     """
 
     _attr_has_entity_name = True
     _attr_parallel_updates = 0  # coordinator owns all API requests
+    # v1.9.1 — set on subclasses that map 1:1 to a coordinator command.
+    # ``None`` means "not a command-bound entity, never use Phase-2 gating".
+    _command_id: str | None = None
 
     def __init__(
         self,
@@ -61,10 +73,25 @@ class VagConnectEntity(CoordinatorEntity[VagConnectCoordinator]):
         Reflects the success of the last per-vehicle poll, so that a single
         failing vehicle does not affect entities for other vehicles in the
         same account.
+
+        v1.9.1 (Capability-Filter Phase 2): for command-bound entities,
+        also returns False if the coordinator's ``FeatureState`` records a
+        definitive "command not supported" outcome from a previous attempt.
         """
         if not super().available:
             return False
-        return bool(self.coordinator.is_vehicle_available(self._vin))
+        if not self.coordinator.is_vehicle_available(self._vin):
+            return False
+        if self._command_id is not None:
+            try:
+                if self.coordinator.is_command_known_unsupported(
+                    self._vin, self._command_id
+                ):
+                    return False
+            except Exception:  # noqa: BLE001
+                # Bookkeeping must never affect availability negatively
+                pass
+        return True
 
     @property
     def device_info(self) -> DeviceInfo:

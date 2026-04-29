@@ -5,8 +5,8 @@
 > mirrors it for archive/historical purposes and links the active GitHub
 > issues for each session.
 
-**Last updated:** 2026-04-29 — post v1.9.0 (Vehicle Data Scout +
-Error Reporter live; first MINOR after strict-semver switch)
+**Last updated:** 2026-04-29 — post v1.9.1 hotfix (Audi S6 C8 Lock + Wake
+fix, Vehicle Data Scout coverage of #90 + #91 + Capability-Filter Phase 2)
 
 ---
 
@@ -41,6 +41,7 @@ Error Reporter live; first MINOR after strict-semver switch)
 | **v1.8.11** | **Session 3S** — Škoda `carCapturedTimestamp` connection-state + `detail` block + `reliableLockStatus` + `fullyChargedAt` from CC-skoda #50 Live-Dump (10 new tests, closes #54) | **2026-04-29** |
 | **v1.8.12** | **MVP-Move** — Multi-Brand connection-state (Skoda + CUPRA + SEAT + VW EU + Audi via inheritance). Brand-agnostic helper `compute_connection_state` with recursive timestamp walk. Verified via volkswagencarnet #921 ID.4 2025 Live-Dump (12 new tests) | **2026-04-29** |
 | **v1.9.0** | 🔬 **Vehicle Data Scout + Error Reporter** — 2 neue Diagnostik-Sensoren mit gemeinsamer 1-Klick Reporter Pipeline. Brand-localized in 8 Sprachen. HA Repair-Issues mit pre-filled GitHub-URL + Diagnostics-Export für Facebook/Forum-Community. Privacy: VIN/GPS/JWT/UUID/Email maskiert, NIE Auto-Push. Aktiv für Skoda + SEAT + CUPRA + VW EU + Audi (18 neue Tests) | **2026-04-29** |
+| **v1.9.1** | 🔧 **Audi/VW Lock+Wake Hotfix + Capability-Filter Phase 2** — Issue #92: `command_lock` schickt jetzt S-PIN für Audi/VW (CARIAD BFF antwortete `403 spin_error`); `command_wake` nutzt v1→v2 Fallback. Issues #90+#91: 27 Vehicle Data Scout Findings vom Maintainer registriert (`dieselRange`, `currentFuelLevel_pct`, `maxChargeCurrentAC_A`, `userCapabilities`, `fuelStatus`, `vehicleHealthInspection`, `vehicleHealthWarnings`, `automation`, `departureProfiles`, etc.). Issue #56: Capability-Filter Phase 2 — `classify_command_failure` mit Body-Sniffing (spin_error/subscription/not_entitled), `_cariad_cmd` schreibt jedes Command-Ergebnis in FeatureState, command-bound Entities (Lock/Climate/Switch/Buttons) gehen automatisch unavailable bei definitivem Backend-No. (18 neue Tests) | **2026-04-29** |
 
 **Sprint summary 2026-04-29:** 7 releases, ~50 new tests, branch
 protection activated, CHANGELOG split into human + technical, 4 parallel
@@ -58,10 +59,10 @@ priority.
 | Session | Version | Scope | Issues |
 |---|---|---|---|
 | ~~**Vehicle Data Scout + Error Reporter**~~ | ~~**v1.9.0**~~ ✅ | ✅ Geshipped 2026-04-29 — siehe Achievement-Tabelle oben. | done |
-| **Capability-Filter Phase 2** | v1.9.1 | `capability.active && capability.user-enabled` vor Entity-Creation. CC-seatcupra #64 pattern. PATCH. | #56 |
+| ~~**Capability-Filter Phase 2**~~ | ~~**v1.9.1**~~ ✅ | ✅ Geshipped 2026-04-29 mit Audi/VW Lock+Wake Hotfix kombiniert. Per-Command FeatureState reicht für jetzt aus, das vollständige `capability.active && capability.user-enabled` Pattern wird in v1.10.0 als Teil von "Diagnostics + Smart-Wake + 12V" gemacht. | done |
 | **Defensive Coding Phase 2** | v1.9.2 | Generic `except Exception` audit + Enum-Tolerance (`CHARGING_INTERRUPTED`, `NOT_ACTIVATED` etc.). PATCH. | #58 |
 | **3B-Part-3 — Optimistic Lock/Climate** | v1.9.3 | myskoda #832 pattern. PATCH. | — |
-| **Diagnostics + Smart-Wake + 12V protection** | **v1.10.0** ⭐ | MINOR: Anonymized diagnostics export (CC-seatcupra #109, CC-skoda #50, volkswagencarnet #921 als Fixtures), Read-only Mode, persistent wake counter (max 3/day), `wake_count_today` sensor, **NIE auto-wake**. Plus 12V drain detection (volkswagencarnet #940) — extend stale-cache to 24-72h when 12V low. | #62, #63, #55, #23 |
+| **Diagnostics + Smart-Wake + 12V protection + Scout-driven Entities** | **v1.10.0** ⭐ | MINOR: Anonymized diagnostics export (CC-seatcupra #109, CC-skoda #50, volkswagencarnet #921 als Fixtures), Read-only Mode, persistent wake counter (max 3/day), `wake_count_today` sensor, **NIE auto-wake**. Plus 12V drain detection (volkswagencarnet #940) — extend stale-cache to 24-72h when 12V low. **Plus: Entity-Implementation für die in v1.9.1 registrierten Scout-Felder** — `range_diesel_km` Sensor (Audi S6 TDI), `currentFuelLevel_pct` als zweite Quelle für `fuel_level`, `maxChargeCurrentAC_A` als Number, `vehicleHealthWarnings.*` als Binary-Sensors, `vehicleHealthInspection` als Service-Date-Sensor. Plus Capability-Filter Phase 3 (`capability.active && capability.user-enabled` pre-Entity-Creation für SEAT/CUPRA, dann Audi/VW). | #62, #63, #55, #23, #56 |
 | **Process & Governance** | — | Issue forms, brand captains, CODEOWNERS, privacy guide. Doc-only. | #64 |
 | **Push CUPRA/SEAT + Push Škoda** | v1.10.x | Firebase FCM via `mqtt.messagehub.de` (CUPRA/SEAT) + mysmob MQTT broker (Škoda-only — myskoda PR #566). PATCH each. | #57, #27 |
 | **Trip Stats + Image refactor** | **v1.11.0** ⭐ | MINOR: Audi `tripstatistics/v1` (verified `audi_services.py:337`); per-trip data model (numeric aggregate in state, JSON in attrs per audi #113); image platform → user-supplied URL or removal. | #24, #35, #36 |

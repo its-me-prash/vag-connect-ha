@@ -586,6 +586,33 @@ class VagConnectCoordinator(DataUpdateCoordinator):
             return False
         return bool(datetime.now(tz=timezone.utc) - fetched_at < _CAPABILITIES_TTL)
 
+    def is_command_known_unsupported(self, vin: str, command: str) -> bool:
+        """Return True only if a previous attempt established the command
+        is *definitely* not available for *vin*.
+
+        v1.9.1 (Capability-Filter Phase 2, #56) — entity platforms read
+        this in their ``available`` property to gracefully hide commands
+        that the backend has already rejected with a definitive reason
+        (missing capability, expired subscription, not entitled). The
+        2A foundation populated ``FeatureState`` but no entity yet read
+        from it; Phase 2 wires the read side.
+
+        Conservative: returns ``True`` *only* when at least one of the
+        explicit "definitive no" flags is set. Transient backend errors
+        leave both flags as ``None`` so the entity stays visible.
+        """
+        states = getattr(self, "feature_states", None)
+        if not states:
+            return False
+        state = states.get(vin, {}).get(command)
+        if state is None:
+            return False
+        if state.supported_by_vehicle is False:
+            return True
+        if state.entitled_by_account is False:
+            return True
+        return False
+
     def get_command_profile(self, vin: str) -> CommandProfile:
         """Return the cached command profile for *vin*, or ``UNKNOWN``.
 
@@ -906,21 +933,31 @@ class VagConnectCoordinator(DataUpdateCoordinator):
         # SEAT/CUPRA lock requires a SecToken obtained from S-PIN verify.
         # Surface the missing-PIN case before the API call so HA shows a
         # clean translation key rather than a low-level SpinError trace.
+        #
+        # v1.9.1 (#92): Audi/VW EU also need the S-PIN for lock on premium
+        # models (CARIAD BFF returns ``403 spin_error`` otherwise). We pass
+        # the configured S-PIN through to ``command_lock``; if it's empty
+        # the call still goes through (older/non-premium models that don't
+        # enforce S-PIN on lock keep working) but premium models will
+        # hit the 403 with ``spinState=DEFINED`` — that's then a clear
+        # signal to configure the S-PIN, not an integration bug.
         brand = self.entry.data.get(CONF_BRAND, "").lower()
-        if brand in ("seat", "cupra"):
-            options = getattr(self.entry, "options", None) or {}
-            data = getattr(self.entry, "data", None) or {}
-            spin = ""
-            if isinstance(options, dict):
-                spin = str(options.get(CONF_SPIN) or "")
-            if not spin and isinstance(data, dict):
-                spin = str(data.get(CONF_SPIN) or "")
-            if not spin:
-                raise ServiceValidationError(
-                    translation_domain=DOMAIN,
-                    translation_key="spin_required",
-                )
-        await self._cariad_cmd(vin, "command_lock")
+        options = getattr(self.entry, "options", None) or {}
+        data = getattr(self.entry, "data", None) or {}
+        spin = ""
+        if isinstance(options, dict):
+            spin = str(options.get(CONF_SPIN) or "")
+        if not spin and isinstance(data, dict):
+            spin = str(data.get(CONF_SPIN) or "")
+        if brand in ("seat", "cupra") and not spin:
+            raise ServiceValidationError(
+                translation_domain=DOMAIN,
+                translation_key="spin_required",
+            )
+        if brand in ("audi", "volkswagen") and spin:
+            await self._cariad_cmd(vin, "command_lock", spin=spin)
+        else:
+            await self._cariad_cmd(vin, "command_lock")
 
     async def async_unlock(self, vin: str) -> None:
         # Prefer options (Options Flow) over data (initial config). Use real
@@ -986,7 +1023,24 @@ class VagConnectCoordinator(DataUpdateCoordinator):
         )
 
     async def _cariad_cmd(self, vin: str, method: str, **kwargs: Any) -> None:
-        """Dispatch a command to the CARIAD client then refresh state."""
+        """Dispatch a command to the CARIAD client then refresh state.
+
+        v1.9.1 (Capability-Filter Phase 2, #56) — every command outcome
+        flows into ``FeatureState`` automatically:
+
+        - **Success** → ``record_command_success(vin, method)`` flips
+          ``supported_by_vehicle`` and ``entitled_by_account`` to ``True``
+          and clears ``last_error``. So a once-broken command that starts
+          working again (e.g. after subscription renewal) re-appears
+          without a HA restart.
+        - **Failure** → ``classify_command_failure(err)`` derives a
+          ``CommandFailureReason`` from the body content (spin_error,
+          subscription, entitlement keywords) plus HTTP status, and
+          ``record_command_failure(vin, method, reason)`` updates the
+          ``FeatureState`` flags accordingly. The exception still
+          propagates so HA shows the user a service-call error — auto-
+          classification is purely additive bookkeeping.
+        """
         if self._cariad_client is None:
             _LOGGER.error("VAG Connect: no CARIAD client — cannot execute %s", method)
             return
@@ -994,8 +1048,23 @@ class VagConnectCoordinator(DataUpdateCoordinator):
             fn = getattr(self._cariad_client, method)
             await fn(vin, **kwargs)
             await self.async_request_refresh()
+            try:
+                self.record_command_success(vin, method)
+            except Exception:  # noqa: BLE001
+                pass  # bookkeeping must never affect command outcome
             _LOGGER.debug("VAG Connect: %s(%s) OK", method, mask_vin(vin))
         except Exception as err:  # noqa: BLE001
+            from .cariad.exceptions import classify_command_failure  # noqa: PLC0415
+
+            try:
+                reason = classify_command_failure(err)
+                self.record_command_failure(vin, method, reason)
+                _LOGGER.info(
+                    "VAG Connect: %s(%s) classified as %s",
+                    method, mask_vin(vin), reason.value,
+                )
+            except Exception:  # noqa: BLE001
+                pass
             _LOGGER.error("VAG Connect: %s(%s) failed: %s", method, mask_vin(vin), err)
             raise
 
