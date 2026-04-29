@@ -143,6 +143,9 @@
       "vehicle_state": {
         "name": "Bilstatus"
       },
+      "connection_state": {
+        "name": "Anslutningsstatus"
+      },
       "parking_address": {
         "name": "Parkerad vid"
       },

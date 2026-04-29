@@ -28,6 +28,35 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ## [Unreleased]
 
+## [1.8.11] - 2026-04-29 🚙 Škoda Online/Standby/Offline + Live-API-Erkenntnisse
+
+✨ **Was ist neu für Škoda-Fahrer:**
+
+- 🟢🟡⚫ **Verbindungsstatus-Sensor** — zeigt klar ob das Auto gerade live ist (online),
+  schläft aber wakeable ist (standby) oder seit >24h nicht mehr da (offline).
+  Schließt das langjährige "Standby vs Offline"-Mysterium aus Issue #54.
+- 🚪 **Schiebedach, Kofferraum, Motorhaube** funktionieren jetzt — wurden für
+  Škoda nie populiert (Bug aus Issue #50 von Tillsteinbach's Connector).
+- 🔒 **Bessere Türschloss-Erkennung** auf neueren Modellen (Kodiaq 2026+) durch
+  den `reliableLockStatus`-Wert, der weniger lagt als das alte `doorsLocked`.
+- ⚡ **Lade-Endzeit präziser** — wir nutzen jetzt den absoluten ISO-Timestamp
+  (`fullyChargedAt`) statt "Restzeit + jetzt" zu rechnen (driftet nicht mehr).
+- ⚠️ **`CHARGING_INTERRUPTED`** als neuer Lade-Status wird sauber erkannt
+  (kommt vor wenn Wallbox die Sitzung unterbricht).
+
+🛠️ **Wie wir's verifiziert haben:** Echte Live-API-Antworten von Škoda Kodiaq
+iV 2026 PHEV (CC-skoda Issue #50, kompletter JSON-Dump) und Pull-Requests aus
+[skodaconnect/myskoda](https://github.com/skodaconnect/myskoda) (#503, #565
+und vor allem PR #536 die GENAU dieselbe `carCapturedTimestamp`-Strategie
+fährt — bestätigt unseren Ansatz 1:1).
+
+🙏 **Danke an:** GitHobi für den Bug-Report (#54), Rainer für den ausführlichen
+Kodiaq-iV-2026-Dump in CC-skoda #50.
+
+📋 [Technische Details](docs/CHANGELOG_TECHNICAL.md#1811---2026-04-29)
+
+---
+
 ## [1.8.10] - 2026-04-29 🩹 Hotfix
 
 🐛 **Behoben:** Im seltenen Fallback-Pfad für sehr alte CUPRA/SEAT-Firmware

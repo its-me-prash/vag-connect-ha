@@ -143,6 +143,9 @@
       "vehicle_state": {
         "name": "Auto-status"
       },
+      "connection_state": {
+        "name": "Verbindingsstatus"
+      },
       "parking_address": {
         "name": "Geparkeerd bij"
       },

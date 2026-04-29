@@ -139,6 +139,9 @@
       "vehicle_state": {
         "name": "Auto-Status"
       },
+      "connection_state": {
+        "name": "Verbindungsstatus"
+      },
       "parking_address": {
         "name": "Parkposition"
       },

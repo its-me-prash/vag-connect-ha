@@ -12,6 +12,92 @@ weiterhin direkt in `CHANGELOG.md` zu finden.
 
 ---
 
+## [1.8.11] - 2026-04-29
+
+### Session 3S — Škoda `carCapturedTimestamp` connection-state + #50 Live-API-Erkenntnisse
+
+Schließt **#54 (GitHobi)** "Standby vs Offline" und integriert die wichtigsten
+Live-API-Erkenntnisse aus dem Kodiaq iV 2026 Komplettdump in
+`tillsteinbach/CarConnectivity-connector-skoda` Issue **#50**. Plus: PRs aus
+`skodaconnect/myskoda` (#503, #536, #565) wurden ausgewertet — **myskoda PR #536
+fährt GENAU dieselbe `carCapturedTimestamp`-Strategie wie unsere v1.8.11**, was
+unseren Ansatz unabhängig bestätigt.
+
+**Methodisch (wichtig nach v1.8.9-Lerneinheit):** vor diesem PR wurden ZWEI
+parallele Recherche-Agents losgeschickt — einer für CC-skoda Issues, einer für
+myskoda Issues + recent merged PRs. Erst danach Code geschrieben, damit nichts
+wichtiges verpasst wird.
+
+**`cariad/api/skoda.py` — `_parse_status` erweitert:**
+
+1. **Neuer `compute_connection_state(...)` Block:** sammelt
+   `carCapturedTimestamp` aus allen 7 Status-Sub-Objects (status, charging,
+   ac, parking, driving_range, maintenance, readiness), nimmt den
+   freshesten Wert und mappt: `<30min` → `online`, `<24h` → `standby`,
+   `>=24h` → `offline`. Defensive `try/except ValueError` für korrupte
+   Backend-Timestamps. Wenn kein Timestamp gefunden → `None` (myskoda
+   PR #565 Pattern: das Feld ist nicht garantiert).
+2. **`vehicle-status.detail` Block:** parst `sunroof`, `trunk`, `bonnet`
+   (CLOSED/OPEN/UNSUPPORTED). Pre-v1.8.11 für Škoda nie populiert.
+   `UNSUPPORTED` lässt das Feld auf `None` (Karoq Diesel ohne Sunroof
+   zeigt korrekt keine Entity).
+3. **`overall.reliableLockStatus`** als bevorzugte Lock-Quelle vor
+   `doorsLocked`/`locked` (Kodiaq 2026+).
+4. **`charging.fullyChargedAt`** als ISO-Timestamp wird zuerst probiert
+   (kein Drift durch Poll-Latency). Fallback auf
+   `remainingTimeToFullyChargedInMinutes`.
+
+**`cariad/models.py`** — neues Field `last_seen_at: Any | None` mit
+Comment: "wann das AUTO zuletzt Daten geliefert hat" vs. das existierende
+`last_updated_at` "wann WIR zuletzt gepollt haben".
+
+**`sensor.py`** — neue `VagSensorDescription` für `connection_state`,
+`EntityCategory.DIAGNOSTIC`, icon `mdi:car-connected`.
+
+**Translations (9 Files)** — `connection_state` in EN/DE/FR/ES/NL/PL/CS/SV
++ strings.json.
+
+**Tests** (`tests/test_cariad.py::TestSkodaGetStatus`, 10 neue):
+
+1. `test_v1811_connection_state_online_when_recent`
+2. `test_v1811_connection_state_standby_under_24h`
+3. `test_v1811_connection_state_offline_over_24h`
+4. `test_v1811_connection_state_none_when_no_timestamp` — defensive (myskoda PR #565)
+5. `test_v1811_freshest_timestamp_across_subobjects` — multi-source (myskoda PR #536)
+6. `test_v1811_detail_block_sunroof_trunk_bonnet`
+7. `test_v1811_detail_unsupported_stays_none`
+8. `test_v1811_reliable_lock_status_preferred`
+9. `test_v1811_charging_fully_charged_at_iso_timestamp`
+10. `test_v1811_charging_interrupted_state_not_charging` — myskoda #503 Regression-Test
+
+Plus neuer helper `_url_routing_client(by_path)` für saubere Multi-Endpoint-Mocks.
+
+**Bewusst NICHT in v1.8.11 enthalten** (eigene Sessions geplant):
+
+- `/v3/garage` Fallback für #75 Kodiaq Mk2 — Hard Rule #8 (keine Spekulation,
+  myskoda-Source bestätigt v3 existiert nicht)
+- `specification` Felder (`trimLevel`, `engine.type`, `manufacturingDate`,
+  `systemModelId`) → Device-Info-Erweiterung
+- `renders` / `compositeRenders` (Light/Dark, 4 Auflösungen) → Image-Refactor v1.10
+- `batteryProtectionLimitOn` / `batteryCareModeTargetValueInPercent` →
+  Battery-Care eigene Session
+- `seatHeatingActivated` Dict → Seat-Heating eigene Session
+- `timers[]` / `runningRequests[]` → Departure-Timer eigene Session
+- `/api/v1/trip-statistics/{vin}/single-trips` → Trip-Stats v1.10.x
+- `/api/v1/charging/{vin}/history` mit Cursor-Pagination → eigene Session
+- `/v2/widgets/vehicle-status/{vin}` als leichter Endpoint → Session 6 Smart-Wake
+- `devicePlatform: MBB_ODP` vs `WCAR` Plattform-Routing → Capability-Filter Session
+- AdBlue Range für Diesel (CC-skoda #24) → eigene kleine Session
+- Token-Hardening / 429-Backoff → bereits in v1.8.7 Defensive Pass abgedeckt
+
+**Quellen** (verifiziert während Recherche):
+- `tillsteinbach/CarConnectivity-connector-skoda` Issue #50 (Kodiaq iV 2026
+  Live-Dump), #44, #23, #24, #8, #41
+- `skodaconnect/myskoda` Issue #503, #461, #495, #458, #416, #237, #207
+- `skodaconnect/myskoda` PRs #536 (Pattern-Bestätigung), #565
+  (Optional fields), #537 (MY26 Capabilities)
+- `tillsteinbach/CarConnectivity-connector-skoda` PR #36 (Maintenance fields)
+
 ## [1.8.10] - 2026-04-29
 
 ### Hotfix — Legacy CARIAD-flat doors fallback Inversionsbug (Pre-v1.8.9-Bug)

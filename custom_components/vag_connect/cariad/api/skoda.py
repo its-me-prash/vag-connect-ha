@@ -56,14 +56,77 @@ class SkodaClient(CariadBaseClient):
         )
         status, charging, ac, parking, driving_range, maintenance, readiness = results
 
-        # ── Access / doors / windows ─────────────────────────────────────────
+        # ── Access / doors / windows / detail ────────────────────────────────
         if isinstance(status, dict):
             access = v(status, "access") or {}
             d.doors_locked = v(access, "overallStatus") != "OPEN"
             d.doors_open = v(access, "doorsOpenedCount", default=0) > 0
             d.windows_open = v(access, "windowsOpenedCount", default=0) > 0
 
+            # v1.8.11 (Session 3S) — `vehicle-status` real shape verified
+            # against tillsteinbach/CarConnectivity-connector-skoda issue #50
+            # (Kodiaq iV 2026 Live-Response, posted 2026-03-25):
+            #
+            #   {"overall":  {"doorsLocked": "YES", "locked": "YES",
+            #                 "doors": "CLOSED", "windows": "CLOSED",
+            #                 "lights": "OFF",
+            #                 "reliableLockStatus": "LOCKED"},
+            #    "detail":   {"sunroof": "CLOSED", "trunk": "CLOSED",
+    #                          "bonnet": "CLOSED"},
+            #    "carCapturedTimestamp": "..."}
+            #
+            # Pre-v1.8.11 the Skoda parser ignored both ``overall.*`` flags
+            # AND the ``detail`` block entirely — sunroof, trunk and hood
+            # entities never populated for any Skoda model. Fix: read the
+            # detail block; treat "UNSUPPORTED" as "field doesn't apply"
+            # (entity stays None / unavailable) so Karoq Diesel doesn't
+    #     show a sunroof entity.
+            overall = v(status, "overall") or {}
+            detail = v(status, "detail") or {}
+
+            # Prefer the new ``reliableLockStatus`` (Kodiaq 2026+) over
+            # the older ``doorsLocked`` aggregate when available — the
+            # name itself signals it's the trustworthy field.
+            lock_raw = (
+                v(overall, "reliableLockStatus")
+                or v(overall, "doorsLocked")
+                or v(overall, "locked")
+            )
+            if isinstance(lock_raw, str):
+                d.doors_locked = lock_raw.upper() in ("YES", "LOCKED", "TRUE")
+
+            def _detail_open(field: str) -> bool | None:
+                """Map detail.{sunroof,trunk,bonnet} string to bool open.
+                Returns None for "UNSUPPORTED" so the entity stays None."""
+                raw = detail.get(field)
+                if not isinstance(raw, str):
+                    return None
+                up = raw.upper()
+                if up == "OPEN":
+                    return True
+                if up == "CLOSED":
+                    return False
+                # "UNSUPPORTED" or any other value → not applicable
+                return None
+
+            sunroof = _detail_open("sunroof")
+            if sunroof is not None:
+                d.sunroof_open = sunroof
+            trunk = _detail_open("trunk")
+            if trunk is not None:
+                d.trunk_open = trunk
+            bonnet = _detail_open("bonnet")  # mysmob calls it bonnet, our field is hood
+            if bonnet is not None:
+                d.hood_open = bonnet
+
         # ── Charging ─────────────────────────────────────────────────────────
+        # v1.8.11 (Session 3S): `charging.status.fullyChargedAt` is an
+        # absolute ISO timestamp returned by current Kodiaq iV 2026
+        # firmware (verified in CC-skoda issue #50). Prefer it over
+        # `remainingTimeToFullyChargedInMinutes + now()` because the
+        # latter drifts: if the backend value is computed at car-side
+        # and we receive it 5 minutes later via polling, our derived ETA
+        # is 5 minutes off. The absolute timestamp doesn't drift.
         if isinstance(charging, dict):
             c = charging.get("status", {})
             d.battery_soc = v(c, "battery", "stateOfChargeInPercent")
@@ -72,9 +135,17 @@ class SkodaClient(CariadBaseClient):
             d.charging_power_kw = v(c, "chargePowerInKw")
             d.charging_rate_kmh = v(c, "chargingRateInKilometersPerHour")
             d.charging_type = v(c, "chargeType")
-            remaining = v(c, "remainingTimeToFullyChargedInMinutes")
-            if remaining:
-                d.charge_complete_eta = datetime.now(tz=timezone.utc) + timedelta(minutes=int(remaining))
+            fully_at = v(c, "fullyChargedAt")
+            if isinstance(fully_at, str):
+                try:
+                    d.charge_complete_eta = datetime.fromisoformat(
+                        fully_at.replace("Z", "+00:00"))
+                except ValueError:
+                    fully_at = None  # Fall through to remaining-minutes calc below
+            if not d.charge_complete_eta:
+                remaining = v(c, "remainingTimeToFullyChargedInMinutes")
+                if remaining:
+                    d.charge_complete_eta = datetime.now(tz=timezone.utc) + timedelta(minutes=int(remaining))
             d.has_battery = d.battery_soc is not None
 
             settings = charging.get("settings", {})
@@ -138,6 +209,51 @@ class SkodaClient(CariadBaseClient):
             # to avoid setting is_online to a falsy default.
             d.is_online = unreachable is None or unreachable is False
             d.is_driving = v(readiness, "inMotion") is True
+
+        # ── carCapturedTimestamp → connection_state (v1.8.11 Session 3S) ────
+        # Closes #54 (GitHobi). The official Škoda Connect app shows a
+        # three-state "Online / Standby / Offline" indicator that is NOT
+        # backed by any single API field — it is derived from
+        # ``carCapturedTimestamp`` which appears on every status sub-object
+        # in the mysmob response. Verified against `skodaconnect/myskoda`
+        # source: 9 model files (`models/air_conditioning.py`, `charging.py`,
+        # `status.py`, `driving_range.py`, `software_status.py`,
+        # `departure.py`, `auxiliary_heating.py`, `chargingprofiles.py`,
+        # plus the v2 air_conditioning variant) all decorate
+        # `field_options(alias="carCapturedTimestamp")`.
+        #
+        # Semantics — derived from `homeassistant-myskoda` issues #751, #731:
+        #   age < 30 min   → "online"   (live data, just heard from the car)
+        #   age < 24 h     → "standby"  (asleep but reachable via /wakeup)
+        #   age >= 24 h    → "offline"  (12V flat / underground / service)
+        #
+        # The freshest timestamp across all sub-objects wins — different
+        # systems update independently (e.g. charging publishes more
+        # frequently than door state).
+        latest_ts: datetime | None = None
+        for sub in (status, charging, ac, parking, driving_range, maintenance, readiness):
+            if not isinstance(sub, dict):
+                continue
+            for ts_key in ("carCapturedTimestamp",):
+                ts_str = sub.get(ts_key)
+                if isinstance(ts_str, str):
+                    try:
+                        ts = datetime.fromisoformat(ts_str.replace("Z", "+00:00"))
+                        if latest_ts is None or ts > latest_ts:
+                            latest_ts = ts
+                    except ValueError:
+                        # Bad timestamp from backend — ignore, don't crash.
+                        pass
+
+        if latest_ts is not None:
+            d.last_seen_at = latest_ts
+            age_s = (datetime.now(tz=timezone.utc) - latest_ts).total_seconds()
+            if age_s < 1800:        # < 30 min
+                d.connection_state = "online"
+            elif age_s < 86400:     # < 24 h
+                d.connection_state = "standby"
+            else:
+                d.connection_state = "offline"
 
         return d
 
