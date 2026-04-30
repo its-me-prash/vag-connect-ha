@@ -815,7 +815,10 @@ class TestNumberExtended:
         keys = {e.entity_description.key for e in added}
         assert "target_soc" in keys
         assert "target_temperature" in keys
-        assert "max_charge_current" not in keys  # Removed in v1.8.0
+        # v1.12.0 (#91 follow-up) — max_charge_current returned as a
+        # writeable Number entity once the CARIAD command was wired
+        # (was raise-only pre-1.12.0, now actually dispatches).
+        assert "max_charge_current" in keys
 
     def test_native_value_invalid_converts_to_none(self):
         from custom_components.vag_connect.number import VagConnectNumber, VagNumberDescription
