@@ -31,6 +31,92 @@ already redact these by default — if you paste a raw HA log, double-check.
 
 ---
 
+## Privacy & data handling (added 2026-04-30 after #53 review)
+
+This section is binding for **maintainers** and PR reviewers. Even when
+a tester pastes their own VIN/GPS/tokens publicly in an issue body, the
+maintainer-side rules below still apply.
+
+### What goes in the repo / fixtures / commits
+
+- ✅ Anonymised payload shapes — VIN replaced with placeholder, tokens
+  removed, GPS rounded to 1 decimal (~11 km bucket)
+- ✅ Issue / PR cross-references that name the contributor by
+  GitHub handle (which is already public)
+- ❌ Full VINs (17 chars), even from the tester's own car
+- ❌ Access / refresh / id-tokens, S-PIN values
+- ❌ User-IDs (UUIDs), account-IDs, email addresses
+- ❌ Exact GPS coordinates (more than 1 decimal place)
+- ❌ Home / parking address, license plates
+- ❌ Screenshots with personal data, even if the tester posted them
+- ❌ Raw HA logs without redaction
+
+### Fixture redaction template
+
+When converting a real-world payload into a regression fixture, save
+under `tests/fixtures/{brand}/{model}_{year}_{situation}_redacted.json`
+with this shape:
+
+```json
+{
+  "brand": "cupra",
+  "model": "born",
+  "model_year": 2023,
+  "region": "DE",
+  "subscription": "active",
+  "vin": "REDACTED_VIN",
+  "userId": "REDACTED_UUID",
+  "tokens": "REDACTED",
+  "location": {
+    "latitude": 48.0,
+    "longitude": 11.0,
+    "redacted": true,
+    "note": "rounded to 1 decimal"
+  }
+}
+```
+
+### Asking a tester for fixture consent
+
+```markdown
+Danke {Name} — deine Logs/Screenshots helfen sehr.
+
+Dürfen wir daraus eine vollständig anonymisierte Testfixture für
+{Brand} {Modell} erstellen? Wir entfernen vorher: VIN, Tokens,
+Account-IDs, E-Mail, exakte GPS, sonstige persönliche Daten.
+
+Die Fixture würde nur dazu dienen, künftige Regressionen zu
+verhindern — keine Weiterverwendung in Marketing oder anderen Kontexten.
+```
+
+### Self-check before posting on user issues
+
+1. **Diagnose vs. Annahme:** habe ich Beweise oder rate ich? Pauschale
+   "Abo abgelaufen" als generische 403-Antwort ist nicht OK wenn der
+   Tester seinen aktiven Vertrag erwähnt hat.
+2. **Verifiziert vs. spekulativ:** behauptungen über offizielle App-
+   Verhalten brauchen captured-traffic-Beweise oder `[Inference]` Marker.
+3. **Daten-Hygiene:** zitiere ich VIN/Token/GPS aus dem Issue? →
+   maskieren oder weglassen, auch wenn der User es selbst gepostet hat.
+
+### `[Inference]` marker für Code
+
+Wenn ein Code-Pfad pragmatisch funktioniert (Server akzeptiert Payload,
+Tests grün), aber semantische Korrektheit gegen offizielle App-Logik
+nicht verifiziert ist, dokumentiere das im Docstring + Code-Comment:
+
+```python
+# ⚠️ [Inference] — semantische Interpretation NICHT verifiziert gegen
+# official-app traffic. Pragmatischer Fix der Server-Validation
+# besteht; ob das semantisch der App-Logik entspricht, ist offen.
+```
+
+Beispiel im Repo: `cariad/api/seat_cupra.py:command_flash` — der OLA-
+Endpoint akzeptiert `userPosition = vehicle position`, aber wir wissen
+nicht ob die offizielle My CUPRA-App das gleich oder über phone-GPS macht.
+
+---
+
 ## Pull requests
 
 ```bash

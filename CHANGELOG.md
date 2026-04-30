@@ -28,6 +28,21 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ## [Unreleased]
 
+### 📋 Doc-only — User-Data Handling + `[Inference]` Marker (2026-04-30, no version bump)
+
+Nach Third-Party-Privacy-Review zu Issue #53 dokumentiert:
+
+- 🔒 **`docs/SESSION_HANDOFF.md`** neue "User-Data Handling" Sektion + 2 neue Hard Rules (#18 Privacy-by-default, #19 `[Inference]` Marker für unverifizierte semantische Claims)
+- 📝 **`CONTRIBUTING.md`** neue "Privacy & data handling" Sektion mit Fixture-Redaction-Template + Consent-Anfrage-Template + Maintainer-Self-Check
+- ⚠️ **`cariad/api/seat_cupra.py:command_flash`** Docstring mit explizitem `[Inference]` Marker — `userPosition` Semantik ist gegen offizielle My SEAT/CUPRA-App nicht verifiziert (verifiziert nur gegen pycupra/myskoda)
+- ⚠️ **`coordinator.py:async_flash_lights`** Cross-Reference auf den Inference-Marker
+
+Hintergrund: pre-1.11.1 wurden zwei inhaltliche Ungenauigkeiten in #53 / #56 Comments gemacht:
+1. Pauschale "subscription expired" Diagnose obwohl Gerhard's Vertrag aktiv ist
+2. Behauptung `userPosition` macht es "wie die offizielle MyCupra-App" ohne App-Traffic-Verifikation
+
+Folge-Comments auf #53 + #56 mit Korrektur kommen separat. Diese Doc-PR codifiziert die Lessons damit es nicht wieder passiert.
+
 ## [1.11.1] - 2026-04-30 🐛💨 Golf 7 GTE Fuel-Range Fix (#96) + Optimistic UI (3B-Part-3)
 
 🐛 **Bug-Fix #96 — Golf 7 GTE / Passat GTE Fuel-Range erscheint endlich:**

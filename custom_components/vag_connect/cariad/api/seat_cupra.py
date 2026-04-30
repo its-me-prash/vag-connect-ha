@@ -638,12 +638,29 @@ class SeatCupraClient(CariadBaseClient):
         returns HTTP 400 "internal-error". Mode must be lowercase "flash"
         (not "FLASH_ONLY"). Coordinates are truncated to 4 decimals (~11 m).
 
-        Despite the field name, OLA expects the **vehicle's** last-known
-        position, not the user's phone GPS. Verified against pycupra
-        `vehicle.set_honkandflash` (uses `findCarResponse` lat/lon) and the
-        myskoda equivalent (sends `PositionType.VEHICLE`). The name is a
-        misnomer in the OLA contract — the field acts as a server-side
-        sanity token bound to the car's known location.
+        ⚠️ **[Inference] — semantic interpretation NOT verified against
+        official My SEAT / My CUPRA app traffic.**
+
+        We send the **vehicle's** last-known position rather than the
+        user's phone GPS, because:
+
+        - **Verified**: pycupra `vehicle.set_honkandflash` reads
+          `findCarResponse.lat/lon` (vehicle position).
+        - **Verified**: myskoda equivalent sends `PositionType.VEHICLE`.
+        - **NOT verified**: whether the official My SEAT/CUPRA mobile
+          apps populate the field from phone GPS or from the cached
+          last-known vehicle position. We have NOT captured app traffic
+          to confirm.
+
+        Pragmatically the OLA endpoint accepts vehicle coordinates
+        (verified live across multiple users on #53). The field name
+        ``userPosition`` is likely a misnomer in the OLA contract — it
+        appears to act as a server-side sanity token bound to *some*
+        recent location. If a future capture of My SEAT/CUPRA app
+        traffic shows it actually wants phone GPS, this needs revisiting.
+
+        Status: **WORKING** for OLA endpoint, **INFERENCE** for
+        semantic mapping to the official apps.
         """
         if latitude is None or longitude is None:
             raise APIError(
