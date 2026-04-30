@@ -28,6 +28,49 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ## [Unreleased]
 
+## [1.10.1] - 2026-04-30 🛡️ Defensive Coding Phase 2 (Issue #58)
+
+🐛 **Robustheit gegen unerwartete API-Werte:**
+
+Drei neue Helfer in `cariad/_util.py` die NIE crashen, sondern bei
+seltsamen Werten den Default zurückgeben:
+
+- 🔢 **`safe_int(value, default=None)`** — akzeptiert int, float, bool,
+  numerischer String mit Whitespace, Decimal-String (`"12.5"` → `12`).
+  Garbage (None, leer, dict, list, "abc") → default.
+- 🔣 **`safe_float(value, default=None)`** — gleiche Robustheit für floats.
+- 🚦 **`safe_enum(value, known_values, *, log_name)`** — gibt den Wert
+  zurück wenn er in `known_values` ist, sonst loggt eine Warnung mit dem
+  Field-Namen + dem unerwarteten Wert und gibt None zurück.
+  **Forward-Kompatibilität:** wenn VAG morgen einen neuen Charging-State
+  wie `CHARGING_INTERRUPTED` ausrollt (siehe myskoda #503), bleibt
+  Integration online — Sensor zeigt einfach `unknown` statt zu crashen.
+
+🛠️ **Wo angewendet:**
+
+- **Skoda Parser** — `remainingTimeToFullyChargedInMinutes` als String
+  ("12.5") → keine Crash mehr (myskoda #503 Pattern). `targetTemperature`
+  ebenfalls.
+- **VW EU/Audi Parser** — `remainingChargingTimeToComplete_min`,
+  `maxChargeCurrentAC_A` (kann String "MAXIMUM" sein), `model_year`
+  (manchmal Int, manchmal "2021"-String) alle defensiv.
+- **SEAT/CUPRA Parser** — `remainingTimeToFullyChargedInMinutes`
+  ebenfalls über `safe_int`.
+
+🛡️ **Coordinator-Härtung:**
+
+- `to_dict()` + `_enrich()` für jedes Vehicle jetzt eigener try/except.
+  Pre-1.10.1 hat ein einzelnes Parser-Problem den ganzen Vehicle-Poll
+  zerschossen; jetzt bleibt das Vehicle mit seinen vorherigen Daten
+  sichtbar, der Fehler landet im Error Reporter Ring-Buffer für
+  1-Klick-Bug-Report (v1.9.0 Pipeline).
+
+🧪 **Tests:** 16 neue Tests in `tests/test_v1101_defensive.py` decken
+alle Helper-Pfade + Coordinator-Parse-Guard.
+
+> 💡 Vollständige technische Details inkl. Helper-Vertrag und
+> Anwendungs-Audit in [`docs/CHANGELOG_TECHNICAL.md`](docs/CHANGELOG_TECHNICAL.md).
+
 ## [1.10.0] - 2026-04-29 🔋⛽ PHEV-Range-Triple + Audi-Diesel-Range (Issue #94)
 
 ✨ **Drei neue Sensoren für plug-in Hybride und Diesel-Modelle:**

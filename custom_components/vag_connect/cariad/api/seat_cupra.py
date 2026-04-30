@@ -13,7 +13,7 @@ from typing import Any
 
 from aiohttp import ClientSession
 
-from .._util import compute_connection_state
+from .._util import compute_connection_state, safe_int
 from ..exceptions import APIError, SpinError
 from ..models import BRAND_CUPRA, BRAND_SEAT, BrandConfig, VehicleData
 from .base import CariadBaseClient
@@ -385,8 +385,12 @@ class SeatCupraClient(CariadBaseClient):
                 or v(chg, "remainingTimeToFullyChargedInMinutes")  # Legacy
                 or v(chg, "remainingChargingTime")                  # Legacy
             )
-            if remaining:
-                d.charge_complete_eta = datetime.now(tz=timezone.utc) + timedelta(minutes=int(remaining))
+            # v1.10.1 (#58) — safe_int. Multiple OLA firmwares ship the
+            # remaining-time field as a stringified decimal occasionally;
+            # bare int() crashed the entire status parse pre-1.10.1.
+            remaining_int = safe_int(remaining)
+            if remaining_int:
+                d.charge_complete_eta = datetime.now(tz=timezone.utc) + timedelta(minutes=remaining_int)
             d.charging_type = (
                 v(chg, "type")          # Rainer #109 shape B — verified
                 or v(chg, "chargeType")  # Legacy
