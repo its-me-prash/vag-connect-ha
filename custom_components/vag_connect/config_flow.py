@@ -30,6 +30,7 @@ from .const import (
     CONF_BRAND,
     CONF_ENABLE_REVERSE_GEOCODING,
     CONF_FORCE_ACCESS,
+    CONF_READ_ONLY,
     CONF_SCAN_INTERVAL,
     CONF_SPIN,
     DEFAULT_SCAN_INTERVAL,
@@ -405,6 +406,16 @@ class VagConnectOptionsFlow(config_entries.OptionsFlow):
                     default=current_options.get(
                         CONF_ENABLE_REVERSE_GEOCODING,
                         current_data.get(CONF_ENABLE_REVERSE_GEOCODING, False),
+                    ),
+                ): _BOOL_SELECTOR,
+                # v1.12.0 (#63) — Read-only Mode toggle. When True, the
+                # next reload will skip lock/switch/button(non-refresh)/
+                # climate/number entities. Sensors + binary_sensors stay.
+                vol.Optional(
+                    CONF_READ_ONLY,
+                    default=current_options.get(
+                        CONF_READ_ONLY,
+                        current_data.get(CONF_READ_ONLY, False),
                     ),
                 ): _BOOL_SELECTOR,
             }),

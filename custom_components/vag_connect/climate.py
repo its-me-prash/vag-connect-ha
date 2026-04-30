@@ -29,6 +29,9 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     coordinator: VagConnectCoordinator = entry.runtime_data
+    # v1.12.0 (#63) — Read-only Mode: climate sends commands, skip.
+    if coordinator.is_read_only():
+        return
     async_add_entities(
         [VagClimate(coordinator, vin) for vin in coordinator.vehicles]
     )

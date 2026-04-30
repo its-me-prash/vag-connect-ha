@@ -12,6 +12,155 @@ weiterhin direkt in `CHANGELOG.md` zu finden.
 
 ---
 
+## [1.12.0] - 2026-04-30
+
+### 5-in-1 Feature-Sprint: 12V (#23) + Per-Light Binary (#91 Welle 3) + Writeable Number (#91 follow-up) + Smart-Wake (#55) + Read-only Mode (#63)
+
+**Theme:** "More Control + Diagnostics" — kohärenter MINOR-Sprint vor v2.0.0 mit fünf orthogonalen aber thematisch passenden Features.
+
+#### Feature 1 — 12V Battery (Issue #23)
+
+**Field changes:**
+- `cariad/api/vw_eu.py:_SELECTIVE_STATUS_JOBS` um `lvBattery` erweitert
+- `cariad/models.py:VehicleData` neue Felder `voltage_12v: float | None` + `warning_12v_low: bool | None`
+
+**Parser:**
+```python
+voltage_raw = v(raw, "lvBattery", "lvBatteryStatus", "value", "batteryVoltage_V")
+d.voltage_12v = safe_float(voltage_raw)  # v1.10.1 helper
+if d.voltage_12v is not None:
+    d.warning_12v_low = d.voltage_12v < 11.5
+```
+
+Threshold-Quelle: volkswagencarnet PR #940 + ELM327-Praxis. 12.6V = healthy, 11.5V = "go to garage soon", 10.5V = "modem can't keep itself awake — silent API outage".
+
+**Entities:**
+- Sensor `voltage_12v` (V, DEVICE_CLASS.VOLTAGE, diagnostic)
+- Binary `warning_12v_low` (PROBLEM device-class)
+- Beide im `_DATA_PRESENT_REQUIRED` set → Phantom-protection für Vehicles ohne lvBattery
+
+#### Feature 2 — Per-Light Binary-Sensors (#91 Welle 3)
+
+**Pattern:** mirror der Door/Window dynamic-creation. v1.11.0 vw_eu light parser füllt `lights_individual: dict[str, bool]`. v1.12.0 binary_sensor.py erstellt eine Entity pro key:
+
+```python
+class VagLightSensor(VagConnectEntity, BinarySensorEntity):
+    _attr_device_class = BinarySensorDeviceClass.LIGHT
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+
+    def __init__(self, coordinator, vin, light_id):
+        super().__init__(coordinator, vin, f"light_{light_id}")
+        ...
+
+async def _async_setup_light_sensors(coordinator, vin, vehicle, entities):
+    lights = vehicle.get("lights_individual", {})
+    for light_id in lights:
+        entities.append(VagLightSensor(coordinator, vin, light_id))
+```
+
+Phantom-Protection: empty dict (vehicle deren API unbekannte Light-Element-Shape sendet) → keine Entities erstellt. Aggregate `lights_on` + `lights_count` bleiben unverändert.
+
+#### Feature 3 — Writeable max_charge_current Number (#91 follow-up)
+
+**Neuer Command:**
+```python
+async def command_set_max_charge_current(self, vin: str, ampere: int) -> None:
+    await self._post_command(
+        vin, "charging/settings", json={"maxChargeCurrentAC_A": int(ampere)},
+    )
+```
+
+Field-Name verifiziert via #90 (Golf 7 GTE Live-Dump zeigt `maxChargeCurrentAC_A = 16` von chargingSettings GET — symmetrische PUT mit gleichem Field-Name).
+
+**Coordinator:**
+- `async_set_max_charge_current` war pre-1.12.0 `raise ServiceValidationError("feature_not_supported")` → ist jetzt `await self._cariad_cmd("command_set_max_charge_current", ampere=ampere)` mit voller v1.10.1 parse-guard + v1.9.1 FeatureState pipeline.
+
+**Number entity:**
+- 6-32 A range, step=2, mode=SLIDER, condition="electric"
+- Dispatch-Branch in `VagConnectNumber.async_set_native_value` ergänzt für key=`max_charge_current`
+- `[Inference]` Marker im Docstring — WRITE side body-shape verified gegen READ shape, aber nicht gegen offizielle App-Traffic.
+
+#### Feature 4 — Smart-Wake Counter (Issue #55)
+
+**Konstante:**
+```python
+_WAKE_BUDGET_PER_DAY = 3  # soft-cap, matches CC-* maintainer recommendations
+```
+
+**Logic in `async_wake_vehicle`:**
+1. Read `today` (UTC date)
+2. Lookup `_wake_counts[vin] = (last_date, count)`, default `(today, 0)`
+3. Wenn `last_date != today`: reset count, last_date = today
+4. Wenn `count >= _WAKE_BUDGET_PER_DAY`: raise `ServiceValidationError("wake_budget_exhausted", {count, budget})`
+5. Increment count, push into `vehicle["wake_count_today"]`, notify HA via `async_set_updated_data`
+6. Call `_cariad_cmd("command_wake")`
+
+Wichtig: **Increment vor API-Call** (nicht nach Erfolg). Der Wake-Attempt zählt aus Backend-Perspektive auch wenn er nachträglich failed (Modem hat das Signal bereits empfangen).
+
+**Sensor:** `wake_count_today` (TOTAL_INCREASING, diagnostic) zeigt den Counter live.
+
+**Translation `wake_budget_exhausted`:**
+> "Daily wake-up budget exhausted ({count}/{budget}). To protect the 12V battery, no further wake-up requests are sent until midnight UTC. See sensor.wake_count_today."
+
+#### Feature 5 — Read-only Mode (#63 Phase 1)
+
+**Const:**
+```python
+CONF_READ_ONLY = "read_only_mode"
+```
+
+**Coordinator helper:**
+```python
+def is_read_only(self) -> bool:
+    options = getattr(self.entry, "options", None) or {}
+    data = getattr(self.entry, "data", None) or {}
+    return (
+        (isinstance(options, dict) and options.get(CONF_READ_ONLY) is True)
+        or (isinstance(data, dict) and data.get(CONF_READ_ONLY) is True)
+    )
+```
+
+**5 Platform-Gates:**
+
+| Platform | Gate-Verhalten |
+|---|---|
+| `lock.py` | `if coordinator.is_read_only(): return` (skip alles) |
+| `switch.py` | dito |
+| `climate.py` | dito |
+| `number.py` | dito |
+| `button.py` | VagRefreshButton bleibt; Flash + Wake werden geskipped |
+
+**Options-Flow:** neue `read_only_mode` Boolean-Toggle in `VagConnectOptionsFlow`. User muss Integration nach Toggle reload — Gate greift erst beim nächsten `async_setup_entry`.
+
+**Service-call Block:** weil die Entities gar nicht erst erstellt werden, kann der User auch keine Services callen. Ggf. extra Schutz für YAML-direct-service-call kommt in v1.12.x als Phase 2.
+
+#### What is NOT in v1.12.0 (deferred to v1.12.1+)
+
+- **Command Locking** (#63 Phase 2) — per-VIN per-command-class lock mit timeout, Anti-Double-Click. Eigene Session.
+- **Cloud refresh vs vehicle wake distinction** (#63 Phase 3) — neue Services `vag_connect.refresh_cloud_cache` vs `vag_connect.wake_vehicle`. Eigene Session.
+- **Anonymized Diagnostics-Export mit Fixtures** (#62) — eigene Session, braucht Fixture-Sammlung (siehe v1.10.2 Methodik-Note + Gerhard #53 Consent-Anfrage).
+- **userCapabilities Phase 3** (#56 Phase 3) — `capability.active && capability.user-enabled` PRE-Entity-Creation. Braucht verifiziertes Capability-Vokabular pro Brand.
+
+#### Tests
+
+**`tests/test_v1120_features.py`** (neu, ~25 Tests):
+
+- `Test12VBattery` (7): voltage parsing, threshold trigger/clear, no-lvBattery → None, string-form via safe_float, lvBattery in jobs list, sensor + binary registered + in `_DATA_PRESENT_REQUIRED`
+- `TestPerLightSensors` (3): setup creates one entity per light, empty dict → no entities, is_on reads dict
+- `TestSmartWakeCounter` (5): first wake = 1, increments, budget raises ServiceValidationError, daily reset, sensor registered
+- `TestWriteableMaxChargeCurrent` (4): command payload, coordinator dispatches, Number registered, ampere/electric/range
+- `TestReadOnlyMode` (6): helper reads options/data/default, lock/climate/number setup skipped, normal mode creates entities
+
+#### Hard Rules eingehalten
+
+- ✅ Strict-Semver: MINOR (5 neue Entitäten + 1 Option).
+- ✅ Phantom-Entity-Protection für 3 der 5 neuen Entities (voltage_12v, warning_12v_low — auch wake_count_today via TOTAL_INCREASING semantics).
+- ✅ `[Inference]` Marker für unverifizierte Pfade (max_charge_current WRITE body, lights element shape).
+- ✅ Backwards-Compat: alle bestehenden Entitäten + Defaults unverändert.
+- ✅ User-Data Handling: keine User-Daten in Tests/Fixtures, alle Test-Werte synthetisch.
+
+---
+
 ## [1.11.1] - 2026-04-30
 
 ### Issue #96 (Golf GTE Fuel-Range Fix) + 3B-Part-3 (Optimistic UI)

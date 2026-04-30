@@ -10,7 +10,12 @@ from homeassistant.components.number import (
     NumberMode,
 )
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import PERCENTAGE, EntityCategory, UnitOfTemperature
+from homeassistant.const import (
+    PERCENTAGE,
+    EntityCategory,
+    UnitOfElectricCurrent,
+    UnitOfTemperature,
+)
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
@@ -66,9 +71,28 @@ NUMBER_DESCRIPTIONS: tuple[VagNumberDescription, ...] = (
         entity_category=EntityCategory.CONFIG,
         condition="electric",
     ),
-    # max_charge_current removed in v1.8.0 — no real API command exists yet.
-    # Entity reappears once the CARIAD client implements command_set_max_charge_current.
-    # See issue #60.
+    # v1.12.0 (#91 follow-up) — writeable max AC charge current.
+    # The CARIAD command was wired in v1.12.0 (vw_eu.py:
+    # command_set_max_charge_current), so the Number entity returns.
+    # Range 6-32 A covers all common chargers; step=2 matches the values
+    # most VW EU vehicles accept (6, 8, 10, 12, 14, 16, 32). Values
+    # outside the vehicle's capability list will be rejected by the
+    # backend with a 4xx — surfaced via ServiceValidationError through
+    # the standard _cariad_cmd → classify_command_failure pipeline.
+    VagNumberDescription(
+        key="max_charge_current",
+        translation_key="max_charge_current",
+        data_key="max_charge_current",
+        native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
+        device_class=NumberDeviceClass.CURRENT,
+        native_min_value=6,
+        native_max_value=32,
+        native_step=2,
+        mode=NumberMode.SLIDER,
+        icon="mdi:current-ac",
+        entity_category=EntityCategory.CONFIG,
+        condition="electric",
+    ),
 )
 
 
@@ -78,6 +102,9 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     coordinator: VagConnectCoordinator = entry.runtime_data
+    # v1.12.0 (#63) — Read-only Mode: number sliders send commands, skip.
+    if coordinator.is_read_only():
+        return
     entities: list[VagConnectNumber] = []
 
     for vin, vehicle in coordinator.vehicles.items():
@@ -114,3 +141,7 @@ class VagConnectNumber(VagConnectEntity, NumberEntity):
             await self.coordinator.async_set_climatisation_temperature(self._vin, value)
         elif key == "min_soc":
             await self.coordinator.async_set_min_soc(self._vin, int(value))
+        elif key == "max_charge_current":
+            # v1.12.0 (#91 follow-up) — wired to the new
+            # vw_eu:command_set_max_charge_current command.
+            await self.coordinator.async_set_max_charge_current(self._vin, int(value))

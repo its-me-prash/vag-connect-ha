@@ -11,6 +11,12 @@ CONF_SPIN                     = "spin"
 CONF_SCAN_INTERVAL            = "scan_interval"
 CONF_FORCE_ACCESS             = "force_enable_access"
 CONF_ENABLE_REVERSE_GEOCODING = "enable_reverse_geocoding"
+# v1.12.0 (#63) — Read-only mode. When True, the integration creates
+# only status sensors + binary sensors (read-only), no switches/buttons/
+# locks/numbers/climate that would send commands. Useful for users who
+# want vehicle telemetry but no risk of accidental actuation or
+# subscription-counting commands.
+CONF_READ_ONLY                = "read_only_mode"
 
 # Supported brands — must match CariadClientFactory.create() keys
 BRANDS = {

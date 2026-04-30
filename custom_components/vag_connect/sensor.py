@@ -23,6 +23,7 @@ from homeassistant.const import (
     PERCENTAGE,
     EntityCategory,
     UnitOfElectricCurrent,
+    UnitOfElectricPotential,
     UnitOfLength,
     UnitOfPower,
     UnitOfSpeed,
@@ -394,9 +395,9 @@ SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
     # as a read-only Sensor. The v1.9.1 Vehicle Data Scout findings
     # showed this as ``charging.chargingSettings.value.maxChargeCurrentAC_A
     # = 16`` on the Golf 7 GTE — clean integer, suitable for direct
-    # display. The Number platform writeable variant is deferred to
-    # v1.12.0 (Capability-Filter Phase 3 ships the dispatch + capability
-    # check — without those, a writeable Number would 403 on most cars).
+    # display. v1.12.0 also exposes a writeable Number entity for the
+    # same field (see number.py); the read-only Sensor stays as a
+    # quick at-a-glance diagnostic.
     VagSensorDescription(
         key="max_charge_current_a",
         translation_key="max_charge_current_a",
@@ -406,6 +407,37 @@ SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
         state_class=SensorStateClass.MEASUREMENT,
         icon="mdi:current-ac",
         condition="electric",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        suggested_display_precision=0,
+    ),
+
+    # v1.12.0 (#23) — 12V starter battery voltage. Older vehicles see
+    # silent API outages when 12V drops below ~10.8 V because the
+    # cellular modem can't keep itself awake. This sensor surfaces the
+    # voltage so users see "go to garage" warnings before the integration
+    # appears to "stop working".
+    VagSensorDescription(
+        key="voltage_12v",
+        translation_key="voltage_12v",
+        data_key="voltage_12v",
+        native_unit_of_measurement=UnitOfElectricPotential.VOLT,
+        device_class=SensorDeviceClass.VOLTAGE,
+        state_class=SensorStateClass.MEASUREMENT,
+        icon="mdi:car-battery",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        suggested_display_precision=1,
+    ),
+
+    # v1.12.0 (#55) — daily wake-up counter. Vehicles cap remote wake-up
+    # commands per day (typically 3-5 depending on backend). Once
+    # exceeded the car silently ignores wake requests until midnight.
+    # This sensor surfaces the count so users + automations can budget.
+    VagSensorDescription(
+        key="wake_count_today",
+        translation_key="wake_count_today",
+        data_key="wake_count_today",
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        icon="mdi:alarm-multiple",
         entity_category=EntityCategory.DIAGNOSTIC,
         suggested_display_precision=0,
     ),
@@ -455,6 +487,9 @@ _DATA_PRESENT_REQUIRED: frozenset[str] = frozenset({
     # whose API doesn't expose ``vehicleLights.lightsStatus.value.lights[]``
     # shouldn't get a "0" sensor or default-False binary sensor.
     "lights_count",
+    # v1.12.0 (#23) — older vehicles + non-CARIAD backends don't expose
+    # ``lvBattery``; don't create a phantom 0 V sensor for them.
+    "voltage_12v",
 })
 
 

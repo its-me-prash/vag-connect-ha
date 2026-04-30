@@ -172,6 +172,12 @@
       "battery_temp": {
         "name": "Akkutemperatur"
       },
+      "voltage_12v": {
+        "name": "12V-Batterie"
+      },
+      "wake_count_today": {
+        "name": "Wake-Ups heute"
+      },
       "departure_timer_1_time": {
         "name": "Abfahrtstimer 1"
       },

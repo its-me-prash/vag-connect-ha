@@ -28,6 +28,55 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ## [Unreleased]
 
+## [1.12.0] - 2026-04-30 🔋💡⚡🧯🔒 5-in-1 Feature-Sprint
+
+✨ **Fünf neue Funktionen — alle in einer kohärenten "More Control + Diagnostics"-Theme:**
+
+| # | Was | Issue | Wer profitiert |
+|---|---|---|---|
+| 🔋 | **12V-Batterie Voltage + Low-Warnung** | #23 | Alle CARIAD-Owner — sehen jetzt `12V-Batterie` Voltage-Sensor + `12V-Batterie schwach` Binary bei <11.5V |
+| 💡 | **Per-Light Binary-Sensors** (#91 Welle 3) | #91 | Owner mit Vehicles deren Firmware bekannte Light-Element-Shapes ausliefert (frontLeft etc.) — eigene Binary pro Lichttyp |
+| ⚡ | **Writeable `Max. Ladestrom` Number** | #91 follow-up | EV/PHEV Owner — können jetzt 6-32 A Ladestrom über Slider setzen (war pre-1.12.0 nur Sensor) |
+| 🧯 | **Smart-Wake Counter + Budget** | #55 | Alle — neuer `Wake-Ups heute` Sensor + Soft-Cap auf 3/Tag schützt 12V-Batterie vor Über-Wakeup |
+| 🔒 | **Read-only Mode Option** | #63 | Privacy/Safety-konservative Owner — nur Status-Sensoren, keine Switches/Buttons/Locks/Climate/Number |
+
+🔋 **#23 — 12V Batterie:**
+- Neue `lvBattery` job in CARIAD `selectivestatus` Polling-Liste
+- Parser liest `lvBattery.lvBatteryStatus.value.batteryVoltage_V`
+- Neuer Sensor `voltage_12v` (V, DEVICE_CLASS.VOLTAGE)
+- Neue Binary `warning_12v_low` (PROBLEM-class) bei <11.5V
+- Threshold matcht volkswagencarnet PR #940 + ELM327-Praxis. Symptom "API stops responding for hours" wird endlich erklärbar bevor User die Integration als kaputt markiert.
+
+💡 **#91 Welle 3 — Per-Light Binary-Sensors:**
+- Dynamische Erstellung via `_async_setup_light_sensors` aus `lights_individual` dict (gefüllt vom v1.11.0 Light-Parser)
+- Mirror des Door/Window-Patterns: empty dict → keine Entities
+- Vehicles mit unbekanntem Light-Element-Shape sehen weiterhin nur das Aggregate `lights_on` + `lights_count`
+
+⚡ **#91 follow-up — Writeable Max-Charge-Current Number:**
+- Neuer `command_set_max_charge_current` in `vw_eu.py` POST `chargingSettings` mit `{"maxChargeCurrentAC_A": ampere}`
+- Number-Entity 6-32 A in 2er-Schritten (typische VW-EU-Werte: 6/8/10/12/14/16/32)
+- `coordinator.async_set_max_charge_current` umgestellt: war `raise ServiceValidationError` → ist jetzt `_cariad_cmd("command_set_max_charge_current")`. Ungültige Werte werden vom Backend abgelehnt + via `classify_command_failure` Pipeline an User reportet.
+
+🧯 **#55 — Smart-Wake:**
+- Neuer Sensor `wake_count_today` (TOTAL_INCREASING, diagnostic)
+- `async_wake_vehicle` trackt Counter pro VIN + Reset bei UTC-Mitternacht
+- Soft-Cap auf 3 Wakes/Tag (`_WAKE_BUDGET_PER_DAY`) — über-Wake raised `ServiceValidationError("wake_budget_exhausted")` BEVOR API-Call. Schützt 12V-Batterie + verhindert Account-Suspension durch Wake-Loops.
+
+🔒 **#63 — Read-only Mode (Phase 1):**
+- Neue Options-Toggle "Read-only Mode" → Settings → Devices → VAG Connect → Configure
+- Wenn aktiviert: lock/switch/button(non-refresh)/climate/number Plattformen skippen Entity-Creation komplett
+- Sensors + binary_sensors + device_tracker bleiben (read-only sowieso)
+- VagRefreshButton bleibt auch im Read-only Mode (cloud-poll, kein Vehicle-Command)
+- Use-Case: Privacy-konservative Owner die nur Telemetrie wollen, oder Account-Schutz vor versehentlichem Actuation in Auto-Repeat-Loops
+
+🌍 **Übersetzungen** in 8 Sprachen für alle 5 neuen Features inkl. die Read-only-Mode Option-Description (am ausführlichsten — User soll vor Aktivierung verstehen was passiert).
+
+🧪 **Tests:** 25 neue Tests in `tests/test_v1120_features.py` decken alle 5 Features einzeln + Phantom-Schutz + Backwards-Compat.
+
+> 💡 Vollständige Field-Mappings, Architektur-Notes und nicht-implementierte Punkte (was kommt in v1.12.1+) in [`docs/CHANGELOG_TECHNICAL.md`](docs/CHANGELOG_TECHNICAL.md).
+
+**Closes:** #23, #55. **Partial:** #63 (Read-only-Mode-Phase-1 ausgeliefert; Command-Locking + cloud-vs-vehicle-refresh Distinction sind eigene Sessions).
+
 ### 📋 Doc-only — User-Data Handling + `[Inference]` Marker (2026-04-30, no version bump)
 
 Nach Third-Party-Privacy-Review zu Issue #53 dokumentiert:

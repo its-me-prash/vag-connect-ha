@@ -74,12 +74,14 @@
         "data": {
           "scan_interval": "Update Interval",
           "spin": "S-PIN",
-          "enable_reverse_geocoding": "Reverse Geocoding (parking address)"
+          "enable_reverse_geocoding": "Reverse Geocoding (parking address)",
+          "read_only_mode": "Read-only Mode"
         },
         "data_description": {
           "scan_interval": "How often data is fetched (minutes). Minimum: 3.",
           "spin": "S-PIN for door locking. App → Security → S-PIN.",
-          "enable_reverse_geocoding": "Sends parking GPS to OpenStreetMap Nominatim to resolve street/city. Off by default for privacy."
+          "enable_reverse_geocoding": "Sends parking GPS to OpenStreetMap Nominatim to resolve street/city. Off by default for privacy.",
+          "read_only_mode": "When enabled, only status sensors are created — no switches, buttons, locks, climate or sliders that send commands. Useful if you want vehicle telemetry without any risk of accidental actuation. Reload the integration after toggling."
         }
       }
     }
@@ -176,6 +178,12 @@
       "battery_temp": {
         "name": "Battery Temperature"
       },
+      "voltage_12v": {
+        "name": "12V Battery"
+      },
+      "wake_count_today": {
+        "name": "Wake-ups Today"
+      },
       "departure_timer_1_time": {
         "name": "Departure Timer 1"
       },
@@ -255,6 +263,9 @@
       },
       "warning_brakes": {
         "name": "Brake Warning"
+      },
+      "warning_12v_low": {
+        "name": "12V Battery Low"
       }
     },
     "switch": {
@@ -295,6 +306,9 @@
       },
       "min_soc": {
         "name": "Minimum Charge Level (Hybrid)"
+      },
+      "max_charge_current": {
+        "name": "Max Charge Current"
       }
     },
     "button": {
@@ -391,6 +405,9 @@
     },
     "feature_not_supported": {
       "message": "The feature {feature} is not supported by your vehicle or the current API client. The action was not sent."
+    },
+    "wake_budget_exhausted": {
+      "message": "Daily wake-up budget exhausted ({count}/{budget}). To protect the 12V battery, no further wake-up requests are sent until midnight UTC. See sensor.wake_count_today."
     }
   }
 }
