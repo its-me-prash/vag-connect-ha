@@ -152,11 +152,6 @@ _NEW_BINARY: tuple[VagBinarySensorDescription, ...] = (
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
     # v1.11.0 (#91 closure) — vehicle lights aggregate "any light on?".
-    # Created data-present-gated (only when ``lights_on`` is non-None,
-    # which the vw_eu parser only sets when the
-    # ``vehicleLights.lightsStatus.value.lights[]`` array is present).
-    # Per-light entities are deferred to v1.12.0 when we have verified
-    # element shapes from multiple brand firmwares.
     VagBinarySensorDescription(
         key="lights_on",
         translation_key="lights_on",
@@ -165,15 +160,25 @@ _NEW_BINARY: tuple[VagBinarySensorDescription, ...] = (
         icon="mdi:lightbulb-on-outline",
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
+    # v1.12.0 (#23) — 12V starter battery low-voltage warning. Threshold
+    # 11.5 V applied in vw_eu parser. Surface as PROBLEM device class
+    # so HA's binary_sensor card shows a red alert when triggered.
+    VagBinarySensorDescription(
+        key="warning_12v_low",
+        translation_key="warning_12v_low",
+        data_key="warning_12v_low",
+        device_class=BinarySensorDeviceClass.PROBLEM,
+        icon="mdi:car-battery",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
 )
 BINARY_DESCRIPTIONS = BINARY_DESCRIPTIONS + _NEW_BINARY
 
 # v1.11.0 — same phantom-entity-prevention pattern as sensor.py.
-# Pre-1.11.0 every binary_sensor was unconditionally registered; with
-# this set, listed keys only get an entity when the field is non-None
-# at setup time. Per-key opt-in.
 _DATA_PRESENT_REQUIRED: frozenset[str] = frozenset({
     "lights_on",
+    # v1.12.0 (#23) — vehicles without lvBattery job don't get the warning.
+    "warning_12v_low",
 })
 
 
@@ -208,6 +213,15 @@ async def async_setup_entry(
     # are created for them.
     for vin, vehicle in coordinator.vehicles.items():
         await _async_setup_window_sensors(coordinator, vin, vehicle, entities)
+
+    # v1.12.0 (#91 leftover) — per-light binary sensors. Created
+    # dynamically from ``lights_individual`` populated by the v1.11.0
+    # vw_eu parser when the light element shape is recognised. Same
+    # phantom-protection pattern as doors/windows: dict empty → no
+    # entities. Vehicles whose firmware ships an unknown shape get
+    # only the aggregate ``lights_on`` + ``lights_count``.
+    for vin, vehicle in coordinator.vehicles.items():
+        await _async_setup_light_sensors(coordinator, vin, vehicle, entities)
 
     async_add_entities(entities)
 
@@ -326,3 +340,54 @@ async def _async_setup_window_sensors(
     windows = vehicle.get("windows_individual", {})
     for window_id in windows:
         entities.append(VagWindowSensor(coordinator, vin, window_id))
+
+
+# v1.12.0 (#91 leftover) — per-light binary sensors. Mirror the
+# door/window pattern: dynamically created at setup time based on
+# whatever names the v1.11.0 vw_eu light parser put into
+# ``lights_individual``. Vehicles whose firmware ships an unknown
+# light element shape leave that dict empty → no per-light entities,
+# only the aggregate ``lights_on`` + ``lights_count`` from v1.11.0.
+class VagLightSensor(VagConnectEntity, BinarySensorEntity):
+    """Binary Sensor für ein einzelnes Fahrzeuglicht (frontLeft etc.).
+
+    state: True == "this light is on" (BinarySensorDeviceClass.LIGHT
+    convention matches the parser's bool semantics directly).
+    """
+
+    _attr_device_class = BinarySensorDeviceClass.LIGHT
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_icon = "mdi:lightbulb-on-outline"
+
+    def __init__(
+        self,
+        coordinator: VagConnectCoordinator,
+        vin: str,
+        light_id: str,
+    ) -> None:
+        super().__init__(coordinator, vin, f"light_{light_id}")
+        self._light_id = light_id
+        # Friendly fallback name; HA will use translation_key if available.
+        self._attr_name = f"Light {light_id}"
+
+    @property
+    def is_on(self) -> bool | None:
+        lights = self._vehicle.get("lights_individual", {})
+        val = lights.get(self._light_id)
+        return bool(val) if val is not None else None
+
+
+async def _async_setup_light_sensors(
+    coordinator: VagConnectCoordinator,
+    vin: str,
+    vehicle: dict,
+    entities: list,
+) -> None:
+    """Create per-light binary sensors based on ``lights_individual`` dict.
+
+    Empty dict → no entities. Same phantom-protection pattern as
+    ``_async_setup_door_sensors`` / ``_async_setup_window_sensors``.
+    """
+    lights = vehicle.get("lights_individual", {})
+    for light_id in lights:
+        entities.append(VagLightSensor(coordinator, vin, light_id))

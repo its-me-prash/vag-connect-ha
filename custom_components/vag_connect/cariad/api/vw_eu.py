@@ -26,6 +26,11 @@ _SELECTIVE_STATUS_JOBS = ",".join([
     "departureProfiles",
     "departureTimers",
     "fuelStatus",
+    # v1.12.0 (#23) — 12V starter battery status. Critical for older
+    # vehicles with degrading 12V batteries that cause silent
+    # API-no-response weeks before total failure. The CARIAD BFF
+    # publishes voltage + warning state here.
+    "lvBattery",
     "measurements",
     "readiness",
     "userCapabilities",
@@ -409,6 +414,31 @@ class VWEUClient(CariadBaseClient):
             vin, "charging/settings", json={"minChargeLimit_pct": min_soc},
         )
 
+    async def command_set_max_charge_current(self, vin: str, ampere: int) -> None:
+        """Set max AC charge current in Amperes.
+
+        v1.12.0 (#91 follow-up + #90 verified) — body shape verified
+        live in #90 (Golf 7 GTE returns ``maxChargeCurrentAC_A = 16``
+        from chargingSettings GET, the symmetrical PUT body uses the
+        same field name). Same chargingSettings endpoint as
+        ``command_set_target_soc`` / ``command_set_charge_mode`` / etc.,
+        so v1 → v2 fallback comes for free via ``_post_command``.
+
+        Typical range: 6, 10, 13, 16, 32 A. The CARIAD BFF doesn't
+        clamp invalid values server-side reliably — entity layer
+        (``number.py``) enforces 6-32 A range.
+
+        ⚠️ [Inference] — verified on Golf 7 GTE READ side (#90 live
+        scout dump = 16 A); WRITE side semantics not yet captured
+        from official VW EU app traffic. If the backend rejects the
+        write, the response goes through the standard
+        ``classify_command_failure`` pipeline and surfaces as
+        ``ServiceValidationError`` with the actual reason.
+        """
+        await self._post_command(
+            vin, "charging/settings", json={"maxChargeCurrentAC_A": int(ampere)},
+        )
+
     async def command_start_window_heating(self, vin: str) -> None:
         """Start window heating (front windscreen + rear window)."""
         await self._post(
@@ -698,6 +728,18 @@ class VWEUClient(CariadBaseClient):
         bat_min = v(raw, "measurements", "temperatureBatteryStatus", "value", "temperatureHvBatteryMin_K")
         if bat_min is not None:
             d.battery_temp = round(float(bat_min) - 273.15, 1)
+
+        # v1.12.0 (#23) — 12V starter battery voltage. The CARIAD BFF
+        # ``lvBattery`` job publishes voltage in volts (decimal, e.g.
+        # 12.6 = healthy). Threshold for warning is 11.5 V (matches
+        # volkswagencarnet PR #940 + ELM327 readings widely cited as
+        # the "go to garage soon" line). Below 10.5 V the modem can't
+        # keep itself awake and the integration will silently fail to
+        # poll — that's the symptom users keep blaming on us.
+        voltage_raw = v(raw, "lvBattery", "lvBatteryStatus", "value", "batteryVoltage_V")
+        d.voltage_12v = safe_float(voltage_raw)
+        if d.voltage_12v is not None:
+            d.warning_12v_low = d.voltage_12v < 11.5
 
         # ── Access / doors / windows ──────────────────────────────────────────
         d.doors_locked = v(raw, "access", "accessStatus", "value", "doorLockStatus") == "LOCKED"

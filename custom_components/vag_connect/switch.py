@@ -16,6 +16,9 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     coordinator: VagConnectCoordinator = entry.runtime_data
+    # v1.12.0 (#63) — Read-only Mode: switches send commands, skip all.
+    if coordinator.is_read_only():
+        return
     entities: list[SwitchEntity] = []
 
     for vin, vehicle in coordinator.vehicles.items():

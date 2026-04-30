@@ -298,6 +298,17 @@ class VehicleData:
     # AdBlue (diesel)
     adblue_range_km: int | None = None
 
+    # v1.12.0 (#23) — 12V starter battery status. Critical for older
+    # vehicles with degrading 12V batteries — symptom is "API stops
+    # responding for hours/days" and many users blame the integration
+    # before realising their 12V is at 10.8V and the car can't keep
+    # the modem awake. Threshold for ``warning_12v_low`` is documented
+    # in the binary_sensor description; volkswagencarnet PR #940 used
+    # 11.5 V (12.6 V is healthy, 11.5 V is "needs attention", 10.5 V
+    # is "battery dead").
+    voltage_12v: float | None = None
+    warning_12v_low: bool | None = None
+
     # v1.11.0 (#91 closure) — Vehicle lights status.
     # ``lights_on`` is the safe aggregate ("any light on?"); created
     # whenever the ``vehicleLights.lightsStatus.value.lights[]`` array

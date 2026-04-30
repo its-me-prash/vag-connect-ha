@@ -33,12 +33,21 @@ async def async_setup_entry(
     coordinator: VagConnectCoordinator = entry.runtime_data
     brand = str(entry.data.get(CONF_BRAND, "")).lower()
     gating_active = brand in _BRANDS_WITH_CAPABILITY_GATING
+    # v1.12.0 (#63) — Read-only Mode: skip vehicle-command buttons
+    # (Flash, Wake) but ALWAYS keep VagRefreshButton — refresh is a
+    # coordinator-level cloud poll, doesn't send any vehicle command,
+    # and is the most useful debug button when read-only is on.
+    read_only = coordinator.is_read_only()
 
     entities: list[VagConnectEntity] = []
     for vin in coordinator.vehicles:
         # Refresh button never gates — it's a coordinator-level operation,
-        # not a vehicle command.
+        # not a vehicle command. Stays even in read-only mode.
         entities.append(VagRefreshButton(coordinator, vin))
+
+        if read_only:
+            # Skip Flash + Wake — both send actual vehicle commands.
+            continue
 
         # Capability gating: only skip if we have an explicit ``False`` from
         # the cache AND the brand uses the OLA capability vocabulary.

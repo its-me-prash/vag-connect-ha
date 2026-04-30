@@ -74,12 +74,14 @@
         "data": {
           "scan_interval": "Uppdateringsintervall",
           "spin": "S-PIN",
-          "enable_reverse_geocoding": "Omvänd geokodning (parkeringsadress)"
+          "enable_reverse_geocoding": "Omvänd geokodning (parkeringsadress)",
+          "read_only_mode": "Skrivskyddat läge"
         },
         "data_description": {
           "scan_interval": "Hur ofta data hämtas (minuter). Minimum: 3.",
           "spin": "S-PIN för dörrlåsning.",
-          "enable_reverse_geocoding": "Skickar parkerings-GPS till OpenStreetMap Nominatim för att hämta gata/stad. Av som standard (integritet)."
+          "enable_reverse_geocoding": "Skickar parkerings-GPS till OpenStreetMap Nominatim för att hämta gata/stad. Av som standard (integritet).",
+          "read_only_mode": "När aktiverat skapas endast statussensorer — inga brytare, knappar, lås, klimat eller reglage som skickar kommandon. Användbart om du vill ha fordonstelemetri utan risk för oavsiktlig aktivering. Ladda om integrationen efter ändring."
         }
       }
     }
@@ -176,6 +178,12 @@
       "battery_temp": {
         "name": "Batteritemperatur"
       },
+      "voltage_12v": {
+        "name": "12V-batteri"
+      },
+      "wake_count_today": {
+        "name": "Väckningar idag"
+      },
       "departure_timer_1_time": {
         "name": "Avgångstimer 1"
       },
@@ -255,6 +263,9 @@
       },
       "warning_brakes": {
         "name": "Bromsvarning"
+      },
+      "warning_12v_low": {
+        "name": "12V-batteri svagt"
       }
     },
     "switch": {
@@ -295,6 +306,9 @@
       },
       "min_soc": {
         "name": "Minimum SoC (PHEV)"
+      },
+      "max_charge_current": {
+        "name": "Max laddström"
       }
     },
     "button": {
@@ -391,6 +405,9 @@
     },
     "feature_not_supported": {
       "message": "Funktionen {feature} stöds inte av ditt fordon eller den nuvarande API-klienten. Åtgärden skickades inte."
+    },
+    "wake_budget_exhausted": {
+      "message": "Dagligt väckningsbudget förbrukad ({count}/{budget}). För att skydda 12V-batteriet skickas inga fler väckningsförfrågningar förrän midnatt UTC. Se sensor.wake_count_today."
     }
   }
 }

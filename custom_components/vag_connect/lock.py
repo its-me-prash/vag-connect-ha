@@ -18,6 +18,10 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     coordinator: VagConnectCoordinator = entry.runtime_data
+    # v1.12.0 (#63) — Read-only Mode: lock entity sends commands, skip
+    # entity creation entirely when the user enabled the option.
+    if coordinator.is_read_only():
+        return
     entities: list[LockEntity] = []
 
     for vin in coordinator.vehicles:

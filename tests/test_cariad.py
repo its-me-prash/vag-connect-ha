@@ -3629,10 +3629,15 @@ class TestFinalCoverageLines:
             mock_ir.async_create_issue.assert_called()
 
     def test_number_async_setup_calls_add_entities(self):
-        """number.async_setup_entry adds entities for each vehicle."""
+        """number.async_setup_entry adds entities for each vehicle.
+
+        v1.12.0 (#63) — explicit ``is_read_only=False`` mock so the new
+        Read-only Mode gate doesn't skip entity creation under tests.
+        """
         from custom_components.vag_connect.number import async_setup_entry
 
         coord = MagicMock()
+        coord.is_read_only = MagicMock(return_value=False)
         coord.vehicles = {"VIN1": {"has_battery": True, "battery_soc": 80}}
         entry = MagicMock()
         entry.runtime_data = coord
@@ -4063,6 +4068,10 @@ class TestButtonCapabilityGating:
     def _coord(self, caps=None):
         from unittest.mock import MagicMock
         coord = MagicMock()
+        # v1.12.0 (#63) — explicit ``is_read_only=False`` mock so the
+        # button platform's new Read-only Mode gate doesn't skip Flash +
+        # Wake button creation under tests.
+        coord.is_read_only = MagicMock(return_value=False)
         coord.vehicles = {"VIN1": {"vin": "VIN1", "model": "Born"}}
         coord.vehicle_capabilities = {"VIN1": caps} if caps else {}
 

@@ -25,6 +25,7 @@ from .const import (
     CONF_BRAND,
     CONF_ENABLE_REVERSE_GEOCODING,
     CONF_PASSWORD,
+    CONF_READ_ONLY,
     CONF_SCAN_INTERVAL,
     CONF_SPIN,
     CONF_USERNAME,
@@ -69,6 +70,14 @@ _FAILURE_TOLERANCE = 3
 # from `last_updated_at` that the data is stale. 6 hours covers normal
 # weekend backend outages without serving truly outdated data.
 _STALE_CACHE_WINDOW = timedelta(hours=6)
+
+# v1.12.0 (#55) — Smart-Wake budget. The vehicle limits remote wake-ups
+# per day (typically 3-5 depending on backend) to protect the 12V
+# battery. After the limit, the car silently ignores wake requests until
+# midnight (UTC). Soft-cap at 3 to leave headroom for emergencies + match
+# what tillsteinbach CC-* maintainers documented as safe for their
+# backends. Reset is per-VIN at UTC midnight.
+_WAKE_BUDGET_PER_DAY = 3
 
 
 @dataclass
@@ -1101,6 +1110,26 @@ class VagConnectCoordinator(DataUpdateCoordinator):
             departure_time=departure_time,
         )
 
+    def is_read_only(self) -> bool:
+        """v1.12.0 (#63) — return True if user enabled Read-only Mode.
+
+        When True, command-bound entity platforms (lock, switch, button,
+        climate, number) skip entity creation entirely. Sensor +
+        binary_sensor + device_tracker platforms create normal status
+        entities. Service calls that would send commands raise
+        ServiceValidationError before reaching the API.
+
+        Lookup order: options (Options Flow) > data (initial config) >
+        False default. Pattern matches the existing reverse-geocoding
+        opt-in (v1.8.0).
+        """
+        options = getattr(self.entry, "options", None) or {}
+        data = getattr(self.entry, "data", None) or {}
+        return (
+            (isinstance(options, dict) and options.get(CONF_READ_ONLY) is True)
+            or (isinstance(data, dict) and data.get(CONF_READ_ONLY) is True)
+        )
+
     def _optimistic_set(self, vin: str, fields: dict[str, Any]) -> dict[str, Any]:
         """v1.11.1 (3B-Part-3 — myskoda #832 pattern) — push expected
         post-command values into ``self.vehicles[vin]`` immediately so
@@ -1229,17 +1258,14 @@ class VagConnectCoordinator(DataUpdateCoordinator):
         await self._cariad_cmd(vin, "command_set_min_soc", min_soc=min_soc)
 
     async def async_set_max_charge_current(self, vin: str, ampere: int) -> None:
-        """Set max charge current — not supported by current API client.
+        """Set max AC charge current in Amperes.
 
-        Raises ServiceValidationError so HA shows a clear error to the user
-        instead of silently swallowing the action (#60). The entity itself
-        is hidden in number.py until a real API command exists.
+        v1.12.0 (#91 follow-up) — actual API call now wired (was raise
+        ServiceValidationError pre-1.12.0 because the CARIAD command
+        didn't exist). Goes through ``_cariad_cmd`` so v1.10.1 parse-
+        guard + v1.9.1 FeatureState auto-recording apply.
         """
-        raise ServiceValidationError(
-            translation_domain=DOMAIN,
-            translation_key="feature_not_supported",
-            translation_placeholders={"feature": "max_charge_current"},
-        )
+        await self._cariad_cmd(vin, "command_set_max_charge_current", ampere=ampere)
 
     async def async_start_window_heating(self, vin: str) -> None:
         # v1.11.1 (3B-Part-3) — optimistic UI for window heating switch.
@@ -1256,5 +1282,62 @@ class VagConnectCoordinator(DataUpdateCoordinator):
         )
 
     async def async_wake_vehicle(self, vin: str) -> None:
+        # v1.12.0 (#55) — wake_count_today counter + soft cap.
+        #
+        # The vehicle limits remote wake-ups per day (typically 3-5,
+        # depending on backend) to protect the 12V battery. Once
+        # exceeded the car silently ignores wake requests until midnight.
+        # Pre-1.12.0 we polled blindly; now:
+        #
+        # 1. Track per-VIN wake count today (UTC midnight reset)
+        # 2. Soft-cap at ``_WAKE_BUDGET_PER_DAY`` (default 3) — raise
+        #    ServiceValidationError before hitting the API to spare a
+        #    pointless wake attempt that would just fail
+        # 3. Sensor ``wake_count_today`` surfaces the count for users +
+        #    automations to budget
+        #
+        # Hard cap is conservative — users who want 5 can override via
+        # service call directly (this method only protects automations
+        # from runaway loops). The "max 3/day" mirrors what tillsteinbach
+        # CC-* maintainers documented for the underlying backend limits.
+        from datetime import datetime, timezone  # noqa: PLC0415
+
+        today = datetime.now(tz=timezone.utc).date()
+        if not hasattr(self, "_wake_counts"):
+            self._wake_counts: dict[str, tuple[Any, int]] = {}
+        last_date, count = self._wake_counts.get(vin, (today, 0))
+        if last_date != today:
+            count = 0
+            last_date = today
+        if count >= _WAKE_BUDGET_PER_DAY:
+            _LOGGER.warning(
+                "VAG Connect: wake budget exhausted for %s (%d/%d today). "
+                "Refusing further wake calls until midnight UTC to protect "
+                "the 12V battery. See sensor.wake_count_today.",
+                mask_vin(vin), count, _WAKE_BUDGET_PER_DAY,
+            )
+            raise ServiceValidationError(
+                translation_domain=DOMAIN,
+                translation_key="wake_budget_exhausted",
+                translation_placeholders={
+                    "count": str(count),
+                    "budget": str(_WAKE_BUDGET_PER_DAY),
+                },
+            )
+        # Increment optimistically — if the API call fails we DON'T
+        # decrement (the wake-attempt itself counted from the backend's
+        # perspective, e.g. it still got logged + may still have woken
+        # the modem partially).
+        count += 1
+        self._wake_counts[vin] = (today, count)
+        # Push count into vehicle data so the sensor sees it on next read.
+        with self._vehicles_lock:
+            current = self.vehicles.get(vin)
+            if isinstance(current, dict):
+                current["wake_count_today"] = count
+        try:
+            self.async_set_updated_data(dict(self.vehicles))
+        except Exception:  # noqa: BLE001
+            pass
         await self._cariad_cmd(vin, "command_wake")
 

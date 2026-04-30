@@ -74,12 +74,14 @@
         "data": {
           "scan_interval": "Update-interval",
           "spin": "S-PIN",
-          "enable_reverse_geocoding": "Reverse geocoding (parkeeradres)"
+          "enable_reverse_geocoding": "Reverse geocoding (parkeeradres)",
+          "read_only_mode": "Alleen-lezen modus"
         },
         "data_description": {
           "scan_interval": "Hoe vaak gegevens worden opgehaald (minuten). Minimum: 3.",
           "spin": "S-PIN voor deurvergrendeling.",
-          "enable_reverse_geocoding": "Verzendt parkeer-GPS naar OpenStreetMap Nominatim om straat/stad te vinden. Standaard uit (privacy)."
+          "enable_reverse_geocoding": "Verzendt parkeer-GPS naar OpenStreetMap Nominatim om straat/stad te vinden. Standaard uit (privacy).",
+          "read_only_mode": "Indien ingeschakeld worden alleen statussensoren aangemaakt — geen schakelaars, knoppen, sloten, klimaat of schuifregelaars die commando's verzenden. Handig als je voertuigtelemetrie wilt zonder risico op onbedoelde bediening. Herlaad de integratie na inschakelen."
         }
       }
     }
@@ -176,6 +178,12 @@
       "battery_temp": {
         "name": "Accu temperatuur"
       },
+      "voltage_12v": {
+        "name": "12V-accu"
+      },
+      "wake_count_today": {
+        "name": "Wake-ups vandaag"
+      },
       "departure_timer_1_time": {
         "name": "Vertrektimer 1"
       },
@@ -255,6 +263,9 @@
       },
       "warning_brakes": {
         "name": "Remwaarschuwing"
+      },
+      "warning_12v_low": {
+        "name": "12V-accu zwak"
       }
     },
     "switch": {
@@ -295,6 +306,9 @@
       },
       "min_soc": {
         "name": "Minimum SoC (PHEV)"
+      },
+      "max_charge_current": {
+        "name": "Max. laadstroom"
       }
     },
     "button": {
@@ -391,6 +405,9 @@
     },
     "feature_not_supported": {
       "message": "De functie {feature} wordt niet ondersteund door uw voertuig of de huidige API-client. De actie is niet verzonden."
+    },
+    "wake_budget_exhausted": {
+      "message": "Dagelijkse wake-up budget op ({count}/{budget}). Om de 12V-accu te beschermen worden er geen verdere wake-ups verzonden tot middernacht UTC. Zie sensor.wake_count_today."
     }
   }
 }

@@ -74,12 +74,14 @@
         "data": {
           "scan_interval": "Interwał aktualizacji",
           "spin": "S-PIN",
-          "enable_reverse_geocoding": "Geokodowanie odwrotne (adres parkowania)"
+          "enable_reverse_geocoding": "Geokodowanie odwrotne (adres parkowania)",
+          "read_only_mode": "Tryb tylko do odczytu"
         },
         "data_description": {
           "scan_interval": "Jak często pobierane są dane (minuty). Minimum: 3.",
           "spin": "S-PIN do blokowania drzwi.",
-          "enable_reverse_geocoding": "Wysyła GPS parkowania do OpenStreetMap Nominatim, aby uzyskać ulicę/miasto. Domyślnie wyłączone (prywatność)."
+          "enable_reverse_geocoding": "Wysyła GPS parkowania do OpenStreetMap Nominatim, aby uzyskać ulicę/miasto. Domyślnie wyłączone (prywatność).",
+          "read_only_mode": "Po włączeniu tworzone są tylko czujniki statusu — bez przełączników, przycisków, blokad, klimatu czy suwaków wysyłających polecenia. Przydatne gdy chcesz telemetrię pojazdu bez ryzyka przypadkowego uruchomienia. Przeładuj integrację po włączeniu."
         }
       }
     }
@@ -176,6 +178,12 @@
       "battery_temp": {
         "name": "Temperatura baterii"
       },
+      "voltage_12v": {
+        "name": "Akumulator 12V"
+      },
+      "wake_count_today": {
+        "name": "Wybudzenia dziś"
+      },
       "departure_timer_1_time": {
         "name": "Timer odjazdu 1"
       },
@@ -255,6 +263,9 @@
       },
       "warning_brakes": {
         "name": "Ostrzeżenie hamulców"
+      },
+      "warning_12v_low": {
+        "name": "Słaba bateria 12V"
       }
     },
     "switch": {
@@ -295,6 +306,9 @@
       },
       "min_soc": {
         "name": "Minimalny poziom (PHEV)"
+      },
+      "max_charge_current": {
+        "name": "Maks. prąd ładowania"
       }
     },
     "button": {
@@ -391,6 +405,9 @@
     },
     "feature_not_supported": {
       "message": "Funkcja {feature} nie jest obsługiwana przez Twój pojazd lub obecnego klienta API. Akcja nie została wysłana."
+    },
+    "wake_budget_exhausted": {
+      "message": "Wyczerpany dzienny budżet wybudzeń ({count}/{budget}). Aby chronić akumulator 12V, dalsze wybudzenia nie są wysyłane do północy UTC. Zobacz sensor.wake_count_today."
     }
   }
 }

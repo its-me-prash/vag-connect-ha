@@ -329,6 +329,26 @@ EXPECTED_KEYS: dict[str, dict[str, set[str]]] = {
             # the older departureTimers — see ROADMAP "PPE Climate Body").
             "automation",
             "departureProfiles",
+            # v1.12.0 (#103 Audi + #104 VW EU, 2026-04-30) — intermediate
+            # ``.{xxxStatus}`` / ``.warningLights`` / ``.chargeMode.error``
+            # wrappers below the top-level meta blocks. The detector
+            # correctly descended past the registered parents and saw
+            # these wrappers as unknown — registering silences the Scout
+            # for them. We don't need to drill deeper because v1.9.1
+            # already registered the leaf paths under each (e.g.
+            # ``vehicleHealthInspection.maintenanceStatus.value...``).
+            "userCapabilities.capabilitiesStatus",
+            "fuelStatus.rangeStatus",
+            "vehicleHealthInspection.maintenanceStatus",
+            "vehicleHealthWarnings.warningLights",
+            "automation.climatisationTimer",
+            "automation.chargingProfiles",
+            "departureProfiles.departureProfilesStatus",
+            # ``charging.chargeMode.error`` — same Bad-Gateway-style
+            # error wrapper as ``fuelStatus.rangeStatus.error`` from #96.
+            # Older firmwares wrap fields in error objects when the
+            # backend can't compute them. Defensive registration.
+            "charging.chargeMode.error",
         },
         "parkingposition": {
             "data", "data.lon", "data.lat", "data.carCapturedTimestamp",

@@ -74,12 +74,14 @@
         "data": {
           "scan_interval": "Intervalle de mise à jour",
           "spin": "S-PIN",
-          "enable_reverse_geocoding": "Géocodage inverse (adresse de stationnement)"
+          "enable_reverse_geocoding": "Géocodage inverse (adresse de stationnement)",
+          "read_only_mode": "Mode lecture seule"
         },
         "data_description": {
           "scan_interval": "Fréquence de mise à jour (minutes). Minimum: 3.",
           "spin": "S-PIN pour le verrouillage des portes.",
-          "enable_reverse_geocoding": "Envoie le GPS de stationnement à OpenStreetMap Nominatim pour obtenir rue/ville. Désactivé par défaut (confidentialité)."
+          "enable_reverse_geocoding": "Envoie le GPS de stationnement à OpenStreetMap Nominatim pour obtenir rue/ville. Désactivé par défaut (confidentialité).",
+          "read_only_mode": "Lorsqu'activé, seuls les capteurs d'état sont créés — pas d'interrupteurs, boutons, verrous, climat ou curseurs qui envoient des commandes. Utile si vous voulez la télémétrie véhicule sans risque d'actionnement accidentel. Rechargez l'intégration après activation."
         }
       }
     }
@@ -176,6 +178,12 @@
       "battery_temp": {
         "name": "Température batterie"
       },
+      "voltage_12v": {
+        "name": "Batterie 12V"
+      },
+      "wake_count_today": {
+        "name": "Réveils aujourd'hui"
+      },
       "departure_timer_1_time": {
         "name": "Minuterie de départ 1"
       },
@@ -255,6 +263,9 @@
       },
       "warning_brakes": {
         "name": "Avertissement freins"
+      },
+      "warning_12v_low": {
+        "name": "Batterie 12V faible"
       }
     },
     "switch": {
@@ -295,6 +306,9 @@
       },
       "min_soc": {
         "name": "SoC minimum (PHEV)"
+      },
+      "max_charge_current": {
+        "name": "Courant de charge max."
       }
     },
     "button": {
@@ -391,6 +405,9 @@
     },
     "feature_not_supported": {
       "message": "La fonctionnalité {feature} n'est pas prise en charge par votre véhicule ou le client API actuel. L'action n'a pas été envoyée."
+    },
+    "wake_budget_exhausted": {
+      "message": "Budget quotidien de réveils épuisé ({count}/{budget}). Pour protéger la batterie 12V, aucune autre demande de réveil n'est envoyée avant minuit UTC. Voir sensor.wake_count_today."
     }
   }
 }
