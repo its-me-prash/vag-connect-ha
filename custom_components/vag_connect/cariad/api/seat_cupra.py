@@ -287,6 +287,22 @@ class SeatCupraClient(CariadBaseClient):
                 if d.is_driving:
                     d.vehicle_state = "DRIVING"
 
+            # v1.10.2 (#53 Gerhard's Born Live-Dump 2026-04-30) — newer
+            # OLA firmware ships flat top-level overall fields ALONGSIDE
+            # the structured `doors`/`windows`/etc. tree. Use them as a
+            # backstop when the structured tree didn't yield a value:
+            #   status.locked        : true/false (overall door-locked)
+            #   status.lights        : "off" / "on" (vehicle lights state)
+            #   status.hood.locked   : "false"/"true" string
+            top_locked = v(status, "locked")
+            if isinstance(top_locked, bool) and not d.doors_locked:
+                d.doors_locked = top_locked
+            top_hood_locked = v(status, "hood", "locked")
+            if isinstance(top_hood_locked, str) and d.hood_open is None:
+                # hood.locked is the inverse of hood.open — only set if
+                # we don't already have an explicit hood.open value.
+                d.hood_open = top_hood_locked.lower() == "false"
+
             # ── Legacy CARIAD-BFF-style flat fallback ────────────────────
             # If the new structured paths produced nothing (older firmware,
             # corrupted response, or a future OLA API change) fall back to
@@ -354,12 +370,31 @@ class SeatCupraClient(CariadBaseClient):
         if isinstance(charge_status, dict):
             bat = v(charge_status, "battery") or charge_status
             if d.battery_soc is None:
+                # v1.10.2 (#53 — Gerhard's Born Live-Dump 2026-04-30):
+                # newer OLA firmware ships ``battery.currentSocPercentage``
+                # (camelCase, no underscores). Ranks first because Born
+                # users on 2026+ firmware would otherwise see no SoC at
+                # all — Rainer's #109 dump (used as v1.8.9 reference)
+                # was already on a firmware that's been superseded.
                 d.battery_soc = (
-                    v(charge_status, "currentPct")  # Rainer #109 shape A — verified
+                    v(bat, "currentSocPercentage")        # Born 2026 firmware (#53)
+                    or v(charge_status, "currentPct")  # Rainer #109 shape A — verified
                     or v(bat, "stateOfChargeInPercent")
                     or v(bat, "currentSOC_pct")
                 )
                 d.has_battery = d.battery_soc is not None
+
+            # v1.10.2 (#53 Gerhard) — ``battery.estimatedRangeInKm`` is the
+            # new short field. Only sets ``range_km`` if not already set
+            # by the dedicated ranges endpoint (which we prefer when
+            # available since it splits electric vs. combustion).
+            if d.range_km is None:
+                est_range = v(bat, "estimatedRangeInKm")
+                est_int = safe_int(est_range)
+                if est_int is not None:
+                    d.range_km = est_int
+                    if d.electric_range_km is None:
+                        d.electric_range_km = est_int
 
             chg = v(charge_status, "charging") or charge_status
             d.charging_state = (
@@ -368,7 +403,11 @@ class SeatCupraClient(CariadBaseClient):
                 or v(chg, "chargingState")  # Legacy — inferred pre-v1.8.9
             )
             # Charging-state values are camelCase or PascalCase depending on
-            # firmware; treat case-insensitively.
+            # firmware; treat case-insensitively. v1.10.2 (#53 Gerhard):
+            # newer Born firmware ships purely lowercase camelCase like
+            # ``"notReadyForCharging"``, ``"readyForCharging"``,
+            # ``"charging"`` — the case-insensitive comparison already
+            # covers it but we explicitly document the lowercase pattern.
             d.is_charging = (
                 isinstance(d.charging_state, str)
                 and d.charging_state.lower() == "charging"
@@ -398,10 +437,33 @@ class SeatCupraClient(CariadBaseClient):
             )
 
             plug = v(charge_status, "plug") or {}
-            plug_state = v(plug, "connectionState") or v(plug, "plugConnectionState")
-            d.plug_connected = plug_state == "CONNECTED"
-            d.plug_state = plug_state
-            d.connector_locked = v(plug, "lockState") == "LOCKED" or v(plug, "externalPower") == "READY"
+            # v1.10.2 (#53 Gerhard's Born Live-Dump) — newer OLA firmware
+            # uses short field names ``plug.connection`` and ``plug.lock``
+            # plus lowercase enum values ("connected"/"disconnected",
+            # "locked"/"unlocked"). The previous parser only knew
+            # ``plug.connectionState=="CONNECTED"`` shape — Born owners
+            # on 2026 firmware saw plug_connected=False even with cable
+            # plugged in. Read all three field-name variants and compare
+            # case-insensitively against both casings.
+            plug_state_raw = (
+                v(plug, "connection")          # Born 2026 firmware (#53)
+                or v(plug, "connectionState")     # Rainer #109 shape
+                or v(plug, "plugConnectionState")  # Legacy CARIAD
+            )
+            d.plug_state = plug_state_raw
+            d.plug_connected = (
+                isinstance(plug_state_raw, str)
+                and plug_state_raw.lower() == "connected"
+            )
+            plug_lock_raw = (
+                v(plug, "lock")                # Born 2026 firmware (#53)
+                or v(plug, "lockState")           # Rainer #109 shape
+                or v(plug, "plugLockState")        # Legacy CARIAD
+            )
+            d.connector_locked = (
+                isinstance(plug_lock_raw, str)
+                and plug_lock_raw.lower() == "locked"
+            ) or v(plug, "externalPower") == "READY"
 
         # ── Charging info (settings) ─────────────────────────────────────────
         # OLA `/v2/vehicles/{vin}/charging/settings` field variance.

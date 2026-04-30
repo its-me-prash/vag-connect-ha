@@ -137,6 +137,13 @@ EXPECTED_KEYS: dict[str, dict[str, set[str]]] = {
             "windows", "windows.*", "windows.sunroof",
             "trunk", "trunk.open", "trunk.locked",
             "hood", "hood.open",
+            # v1.10.2 (#53 Gerhard's Born Live-Dump 2026-04-30) — newer
+            # OLA firmware ships flat top-level overall fields alongside
+            # the structured tree.
+            "hood.locked",
+            "locked",        # overall door-locked bool
+            "lights",        # vehicle lights state ("off"/"on")
+            "updatedAt",     # alternate to carCapturedTimestamp
             "sunroof", "sunRoof",
             "engine",
             "access", "access.doorClosedLeftFront", "access.doorClosedRightFront",
@@ -157,10 +164,18 @@ EXPECTED_KEYS: dict[str, dict[str, set[str]]] = {
             "measurements.batteryStatus.value.currentSOC_pct",
             "access", "access.accessStatus", "access.accessStatus.value",
             "access.accessStatus.value.doorLockStatus",
+            # v1.10.2 (#53 Gerhard's Born Live-Dump) — top-level meta blocks.
+            # We don't drill into them yet but registering silences the Scout.
+            "engines",       # vehicle engine info block
+            "services",      # subscribed services info block
             "carCapturedTimestamp",
         },
         "charging": {
             "battery", "battery.stateOfChargeInPercent", "battery.currentSOC_pct",
+            # v1.10.2 (#53 Gerhard's Born Live-Dump) — Born 2026 firmware
+            # uses camelCase field names.
+            "battery.currentSocPercentage",
+            "battery.estimatedRangeInKm",
             "currentPct",
             "charging", "state", "status", "chargingState",
             "chargePowerInKw", "chargePower_kW", "chargedPowerInKw",
@@ -172,11 +187,28 @@ EXPECTED_KEYS: dict[str, dict[str, set[str]]] = {
             "settings", "active", "batteryCardStatus", "progressBarPct",
             "plug", "plug.connectionState", "plug.plugConnectionState",
             "plug.lockState", "plug.externalPower",
+            # v1.10.2 (#53 Gerhard) — short field name variants on Born 2026.
+            "plug.connection",
+            "plug.lock",
+            # v1.10.2 (#53 Gerhard) — nested ``charging.*`` paths (the
+            # backend wraps the flat fields above into a nested object on
+            # newer firmware as well).
+            "charging.state",
+            "charging.remainingTimeInMinutes",
+            "charging.chargedPowerInKw",
+            "charging.type",
+            "charging.mode",
+            "charging.settings",
         },
         "charging-info": {
             "targetSOC_pct", "targetSoc_pct", "targetStateOfChargeInPercent",
             "maxChargeCurrentAC", "maxChargeCurrent",
             "autoUnlockPlugWhenCharged", "autoUnlockPlugWhenChargedAC",
+            # v1.10.2 (#53 Gerhard's Born Live-Dump) — wrapper blocks
+            # for the new charge-care subsystem.
+            "settings",
+            "chargingCareSettings",
+            "chargingCareStatus",
             "carCapturedTimestamp",
         },
         "climatisation": {

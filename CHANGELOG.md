@@ -28,6 +28,56 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ## [Unreleased]
 
+## [1.10.2] - 2026-04-30 🚗 CUPRA Born 2026 Firmware-Shapes (Gerhard's #53 Live-Test)
+
+🐛 **Bug-Fix für CUPRA Born / SEAT Cupra Owner auf neuerer OLA-Firmware:**
+
+Gerhard hat v1.10.0 auf seinem CUPRA Born getestet und der **Vehicle
+Data Scout aus v1.9.0** hat **19 neue Felder** auf den OLA-Endpoints
+gemeldet (#53 Comment 2026-04-30). Beim genauen Hinschauen waren das
+nicht nur "neue Felder" — viele waren **umbenannte Versionen** der
+Felder die wir schon kannten:
+
+| Old (Rainer #109 — v1.8.9 Ref) | New (Born 2026 firmware) | Wirkung pre-1.10.2 |
+|---|---|---|
+| `battery.currentSOC_pct` | `battery.currentSocPercentage` | Akku-Füllstand leer |
+| `plug.connectionState` / `plug.plugConnectionState` | `plug.connection` | Stecker-Verbunden immer False |
+| `plug.lockState` / `plug.plugLockState` | `plug.lock` | Stecker-Verriegelt immer False |
+| `"CONNECTED"` / `"LOCKED"` (UPPERCASE) | `"connected"` / `"locked"` (lowercase) | enums verglichen falsch |
+
+**Folge:** auf Born-Owners die v1.8.9+ benutzen aber neuere Firmware
+haben waren die Charging- + Plug-Entitäten still leer — keine
+Fehlermeldung, einfach `unknown`.
+
+**Fix:** `seat_cupra.py` Parser liest jetzt **alle drei Field-Namen-
+Varianten** als Fallback-Kette (Born 2026 → Rainer #109 → Legacy
+CARIAD), und vergleicht enum-Werte case-insensitive. Backwards-Compat
+für ältere Firmwares bleibt erhalten.
+
+**Plus neue Born-2026-Felder die wir jetzt nutzen:**
+
+- 🔋 `battery.estimatedRangeInKm` → fallback für `range_km` /
+  `electric_range_km` wenn der dedizierte ranges-Endpoint nichts liefert
+- 🔒 `status.locked` (top-level bool) → fallback für `doors_locked`
+  wenn die strukturierte `doors.*.locked` Tree leer ist
+- 🚪 `status.hood.locked` (string `"true"`/`"false"`) → fallback für
+  `hood_open` (invertiert)
+
+**Plus alle 19 Felder im EXPECTED_KEYS-Katalog registriert** — Gerhard's
+Repair-Notification löst sich beim nächsten Poll von alleine.
+
+🛰️ **Erste echte API-Drift-Detection im Live-Betrieb seit v1.9.0!**
+Das ganze v1.9.0 Vehicle-Data-Scout System hat genau diesen Use-Case
+abgefangen: ein User auf neuerer Firmware hat einen 1-Klick-Bug-Report
+geöffnet, wir haben innerhalb von Stunden den Parser gefixed.
+
+🧪 **Tests:** 16 neue Tests in `tests/test_v1102_gerhard_born_firmware.py`
+(camelCase-Pfade, lowercase-Enums, Backwards-Compat zu Rainer-Shape,
+status-top-level-Fallback, alle 19 Scout-Felder registriert).
+
+> 💡 Vollständige Field-Name-Mapping-Tabelle + Methodik-Notes in
+> [`docs/CHANGELOG_TECHNICAL.md`](docs/CHANGELOG_TECHNICAL.md).
+
 ## [1.10.1] - 2026-04-30 🛡️ Defensive Coding Phase 2 (Issue #58)
 
 🐛 **Robustheit gegen unerwartete API-Werte:**
