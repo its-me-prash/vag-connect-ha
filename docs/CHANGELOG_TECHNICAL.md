@@ -12,6 +12,129 @@ weiterhin direkt in `CHANGELOG.md` zu finden.
 
 ---
 
+## [1.10.2] - 2026-04-30
+
+### CUPRA Born 2026 Firmware-Shapes (Gerhard #53 Live-Test)
+
+**Auslöser:** Gerhard testete v1.10.0 auf seinem CUPRA Born (NUC-Test-Setup, 2026-04-30) und meldete via Vehicle Data Scout (v1.9.0 Pipeline) **19 neue Felder**. Beim Audit zeigt sich: viele sind **umbenannte** Versionen unserer bekannten Felder. Born ist auf neuerer OLA-Firmware als Rainer (#109 — unsere v1.8.9-Referenz).
+
+**Erste Live-Validation der vollen v1.9.0 → Maintainer-Reaktion → Hotfix Pipeline.** User → Repair-Notification → 1-Klick-Issue → Fix in <12 Stunden.
+
+#### Field-Name-Mapping (Born 2026 ↔ Rainer #109 ↔ Legacy CARIAD)
+
+| Bedeutung | Born 2026 firmware | Rainer #109 (v1.8.9) | Legacy CARIAD (pre-v1.8.9) |
+|---|---|---|---|
+| Battery SoC | `battery.currentSocPercentage` (camelCase) | `currentPct` ODER `battery.stateOfChargeInPercent` | `battery.currentSOC_pct` |
+| Estimated range (km) | `battery.estimatedRangeInKm` (NEU) | — | — |
+| Plug connection | `plug.connection` (kurz) | `plug.connectionState` | `plug.plugConnectionState` |
+| Plug lock | `plug.lock` (kurz) | `plug.lockState` | `plug.plugLockState` |
+| Plug enum CONNECTED | `"connected"` (lowercase) | `"CONNECTED"` | `"CONNECTED"` |
+| Plug enum LOCKED | `"locked"` (lowercase) | `"LOCKED"` | `"LOCKED"` |
+| Charging state enum | `"notReadyForCharging"` (camelCase) | `"NOT_READY_FOR_CHARGING"` | dito |
+
+#### Parser-Änderungen (`cariad/api/seat_cupra.py`)
+
+**Battery SoC** — neue Quelle als erste Priorität:
+
+```python
+d.battery_soc = (
+    v(bat, "currentSocPercentage")        # Born 2026 firmware (#53)
+    or v(charge_status, "currentPct")     # Rainer #109 shape A
+    or v(bat, "stateOfChargeInPercent")
+    or v(bat, "currentSOC_pct")           # Legacy uppercase
+)
+```
+
+**Estimated range** — neuer Fallback für `range_km` und `electric_range_km`:
+
+```python
+if d.range_km is None:
+    est_range = v(bat, "estimatedRangeInKm")
+    est_int = safe_int(est_range)  # v1.10.1 helper
+    if est_int is not None:
+        d.range_km = est_int
+        if d.electric_range_km is None:
+            d.electric_range_km = est_int
+```
+
+Wichtig: nur als Fallback. Der dedizierte `/v1/vehicles/{vin}/ranges` Endpoint wird bevorzugt weil er electric vs. combustion trennt (v1.10.0 PHEV-Logik).
+
+**Plug connection + lock** — kurze Pfade + lowercase enum tolerance:
+
+```python
+plug_state_raw = (
+    v(plug, "connection")              # Born 2026 firmware (#53)
+    or v(plug, "connectionState")        # Rainer #109 shape
+    or v(plug, "plugConnectionState")    # Legacy CARIAD
+)
+d.plug_state = plug_state_raw
+d.plug_connected = (
+    isinstance(plug_state_raw, str)
+    and plug_state_raw.lower() == "connected"
+)
+plug_lock_raw = (
+    v(plug, "lock")                    # Born 2026 firmware (#53)
+    or v(plug, "lockState")              # Rainer #109 shape
+    or v(plug, "plugLockState")          # Legacy CARIAD
+)
+d.connector_locked = (
+    isinstance(plug_lock_raw, str)
+    and plug_lock_raw.lower() == "locked"
+) or v(plug, "externalPower") == "READY"
+```
+
+**Status endpoint top-level fallback** — Born 2026 ships flat top-level fields ALONGSIDE the structured tree:
+
+```python
+top_locked = v(status, "locked")
+if isinstance(top_locked, bool) and not d.doors_locked:
+    d.doors_locked = top_locked
+top_hood_locked = v(status, "hood", "locked")
+if isinstance(top_hood_locked, str) and d.hood_open is None:
+    # hood.locked is the inverse of hood.open
+    d.hood_open = top_hood_locked.lower() == "false"
+```
+
+#### EXPECTED_KEYS Erweiterung (`cariad/_unexpected_keys.py`)
+
+Alle 19 Pfade aus Gerhard's Report sind jetzt registriert (SEAT erbt automatisch via `EXPECTED_KEYS["seat"] = EXPECTED_KEYS["cupra"]`):
+
+| Endpoint | Neue registrierte Pfade |
+|---|---|
+| `mycar` | `engines`, `services` |
+| `status` | `locked`, `lights`, `hood.locked`, `updatedAt` |
+| `charging` | `battery.currentSocPercentage`, `battery.estimatedRangeInKm`, `plug.connection`, `plug.lock`, `charging.state`, `charging.remainingTimeInMinutes`, `charging.chargedPowerInKw`, `charging.type`, `charging.mode`, `charging.settings` |
+| `charging-info` | `settings`, `chargingCareSettings`, `chargingCareStatus` |
+
+#### Tests
+
+**`tests/test_v1102_gerhard_born_firmware.py`** (neu, 16 Tests):
+
+- `TestBornChargingNewShape` (8): `currentSocPercentage` camelCase, `estimatedRangeInKm` populates range, doesn't overwrite dedicated range, plug short paths + lowercase `connected`/`disconnected`/`locked`/`unlocked`, legacy uppercase still works, legacy battery still works, lowercase camelCase enum (notReadyForCharging), is_charging classification on lowercase
+- `TestBornStatusTopLevelFields` (3): `status.locked` bool sets doors_locked, `status.hood.locked` string "false"/"true" inverted to hood_open
+- `TestScoutFindingsRegistered` (5): all 19 paths registered + SEAT inheritance smoke
+
+#### Methodik-Note: warum nur ~12 Stunden vom Bug-Report zum Fix
+
+Die v1.9.0 Reporter Pipeline funktioniert genau wie geplant:
+
+1. **2026-04-29 19:43:** v1.9.0 published (Vehicle Data Scout + Error Reporter)
+2. **2026-04-30 ~08:06:** Gerhard fährt v1.10.0 das Polling — Scout sieht 19 neue Felder
+3. **2026-04-30 ~08:16:** Repair-Notification erscheint in seinem HA — er klickt "Mehr erfahren" → öffnet pre-filled GitHub-Issue
+4. **2026-04-30 ~08:30:** Gerhard postet den Scout-Output als Comment auf #53
+5. **2026-04-30 nachmittag:** Maintainer sieht das, baut v1.10.2
+
+**Crowd-sourced Bug-Discovery wie designed.** Ohne v1.9.0 hätten wir nie erfahren dass Gerhard's Born stille leere Felder hat — er hätte einfach gedacht "die Integration funktioniert nicht für mich".
+
+#### Hard Rules eingehalten
+
+- ✅ Strict-Semver: PATCH (Bug-Fix für broken parsing, **keine** neuen Entitäten — die `range_km`/`electric_range_km`-Population ist Wiederherstellung von vorher gewünschtem Verhalten).
+- ✅ Backwards-kompatibel: alle drei Field-Namen-Varianten werden in Reihenfolge probiert. Rainer's #109 Shape funktioniert weiter.
+- ✅ Verifiziert gegen Gerhard's Live-Dump (#53 Comment 2026-04-30).
+- ✅ SEAT inherits CUPRA — kein separates Wiring nötig.
+
+---
+
 ## [1.10.1] - 2026-04-30
 
 ### Defensive Coding Phase 2 (Issue #58)
