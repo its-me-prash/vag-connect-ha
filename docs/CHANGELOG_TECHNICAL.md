@@ -12,6 +12,163 @@ weiterhin direkt in `CHANGELOG.md` zu finden.
 
 ---
 
+## [1.11.1] - 2026-04-30
+
+### Issue #96 (Golf GTE Fuel-Range Fix) + 3B-Part-3 (Optimistic UI)
+
+#### Auslöser
+
+**#96** — User-self-report nach v1.10.0 Test: Golf 7 GTE 2015 zeigt **immer noch keine Sprit-Reichweite** trotz v1.10.0 PHEV-Range-Triple. Deep-Research im Issue-Body identifiziert exakte Root Cause via evcc-io/evcc#19045 (Passat GTE Live-Trace) + CarConnectivity-Logs + Audi Q4 Sample.
+
+**3B-Part-3** — laut ROADMAP geplante UX-Verbesserung (myskoda PR #832 Pattern), kombiniert mit dem #96-Fix als gleichgepoler PATCH.
+
+#### Root Cause #96
+
+`fuelStatus.rangeStatus` returnt auf älteren GTE-Firmwares ein `{"error": ...}` Objekt:
+
+```json
+{
+  "fuelStatus": {
+    "rangeStatus": {
+      "error": {"message": "Bad Gateway", "code": 4007, "retry": true}
+    }
+  }
+}
+```
+
+Pre-1.11.1 Code-Pfad:
+1. `primary_engine = v(raw, "fuelStatus", "rangeStatus", "value", "primaryEngine", "type")` → `None`
+2. `secondary_engine = ...` → `None`
+3. `car_type = v(raw, "measurements", "fuelLevelStatus", "value", "carType")` → `"hybrid"`
+4. `if car_type and "gasoline" in lower:` → False (`"hybrid"` matcht nicht)
+5. `has_combustion` bleibt `False`
+6. v1.10.0 `_DATA_PRESENT_REQUIRED` Phantom-Schutz blockiert `combustion_range_km` Sensor-Erstellung weil `condition="combustion"` filter False ist
+7. Sensor erscheint nicht obwohl Backend-Daten in `measurements.rangeStatus.value.gasolineRange = 200` existieren
+
+#### Fix #96 (4 Tracks im selben Parser-Block)
+
+**`cariad/api/vw_eu.py:_parse_status` Drivetrain-Detection-Block:**
+
+```python
+# Track A: 4 statt 2 Engine-Type-Quellen
+ms_primary = v(raw, "measurements", "fuelLevelStatus", "value", "primaryEngineType")
+ms_secondary = v(raw, "measurements", "fuelLevelStatus", "value", "secondaryEngineType")
+car_type = (
+    v(raw, "fuelStatus", "rangeStatus", "value", "carType")
+    or v(raw, "measurements", "fuelLevelStatus", "value", "carType")
+)
+for engine_type_raw in (primary_engine, secondary_engine, ms_primary, ms_secondary):
+    ...
+# Track A: explicit hybrid/phev string handling
+if lower in {"hybrid", "phev", "plug-in hybrid", "pluginhybrid", "plug_in_hybrid"}:
+    d.has_battery = True
+    d.has_combustion = True
+```
+
+**Track C — total range fallback:**
+
+```python
+total_range = (
+    v(raw, "fuelStatus", "rangeStatus", "value", "totalRange_km")
+    or v(raw, "measurements", "rangeStatus", "value", "totalRange_km")  # NEW
+)
+```
+
+**Track D — fuel level engine-block fallback:**
+
+```python
+d.fuel_level = v(raw, "measurements", "fuelLevelStatus", "value", "currentFuelLevel_pct")
+if d.fuel_level is None:
+    for engine_path in (primary, secondary):
+        engine = v(raw, *engine_path)
+        if not isinstance(engine, dict):
+            continue
+        if (engine.get("type") or "").lower() not in combustion_types:
+            continue
+        fuel_pct = safe_int(engine.get("currentFuelLevel_pct"))
+        if fuel_pct is not None:
+            d.fuel_level = fuel_pct
+            break
+```
+
+**Track B — fuelStatus.error tolerance:** implizit gewonnen weil `v(raw, ...)` bei fehlenden Pfaden `None` returnt und der Code defensiv weiter durch die `or`-Chains der Fallbacks geht. Kein expliziter try/except nötig.
+
+#### 3B-Part-3 — Optimistic UI
+
+**`coordinator.py` — drei neue Helper:**
+
+```python
+def _optimistic_set(self, vin, fields) -> dict:
+    """Push expected post-command values into self.vehicles[vin]
+    immediately + notify HA. Returns previous-values snapshot."""
+
+def _optimistic_revert(self, vin, previous):
+    """Restore the snapshot after a failed command."""
+
+async def _cariad_cmd_optimistic(self, vin, method, optimistic, **kwargs):
+    """Like _cariad_cmd but sets optimistic state first, reverts on failure."""
+```
+
+**8 Actuator-Methoden umgestellt** auf `_cariad_cmd_optimistic`:
+
+| Method | Optimistic Set |
+|---|---|
+| `async_lock` | `doors_locked = True` |
+| `async_unlock` | `doors_locked = False` |
+| `async_start_climatisation` | `climatisation_state="VENTILATION", climatisation_active=True` |
+| `async_stop_climatisation` | `climatisation_state="OFF", climatisation_active=False` |
+| `async_start_charging` | `charging_state="CHARGING", is_charging=True` |
+| `async_stop_charging` | `charging_state="NOT_CHARGING", is_charging=False` |
+| `async_start_window_heating` | `window_heating_front=True, window_heating_back=True` |
+| `async_stop_window_heating` | `window_heating_front=False, window_heating_back=False` |
+
+`async_flash_lights` + `async_wake_vehicle` + `async_set_target_soc` etc. **bleiben** ohne Optimistic — die haben keinen sinnvollen "after"-State (Flash ist transient, Wake hat keinen UI-State, SoC-Set ist eh ein Number-Slider).
+
+**Failure-Pfad:**
+
+```python
+previous = self._optimistic_set(vin, optimistic)
+try:
+    await self._cariad_cmd(vin, method, **kwargs)  # may raise APIError
+except Exception:
+    self._optimistic_revert(vin, previous)
+    raise  # HA shows ServiceValidationError, user sees toggle "spring back"
+```
+
+Wichtig: das v1.10.1 Coordinator-Parse-Guard + v1.9.1 FeatureState-Auto-Recording laufen weiter. Optimistic-UI ist additive UX-Layer, kein Replace.
+
+#### Tests
+
+**`tests/test_v1111_96_optimistic.py`** (neu, 18 Tests):
+
+- `TestGolfGTEFuelRange` (6): full engine blocks regression, Passat error+measurements, carType=hybrid alone, engine-block fuel_level fallback, pure gasoline carType, pure EV unchanged
+- `TestOptimisticLock` (3): lock flips immediately, unlock flips back, failure reverts
+- `TestOptimisticClimate` (2): start sets active, stop sets off
+- `TestOptimisticCharging` (2): start flips charging, stop reverts on failure
+- `TestOptimisticWindowHeating` (1): both front+back flip
+- `TestOptimisticHelpers` (4): _optimistic_set returns snapshot, _optimistic_revert restores, unknown VIN safely returns empty, async_set_updated_data invoked
+
+#### Methodik-Note: Issue #96 als Vorbild für Maintainer-self-research
+
+Issue #96 wurde vom Maintainer selbst geöffnet nach v1.10.0 Test, aber **mit komplett ausgearbeitetem Root-Cause-Audit + 4 konkreten Code-Fix-Vorschlägen + 4 externen Public-Source-Refs (evcc, CarConnectivity, Audi Q4 sample, WeConnect MQTT gist)**. Der Issue-Body war praktisch ein PR-Review im Vorhinein. Ergebnis: Implementation in <2 Stunden ohne weitere Recherche.
+
+Lesson: Self-Research-Issues vor dem Bug-Fix erspart Spekulation und macht den Fix verifiziert (Hard Rule #8).
+
+#### Hard Rules eingehalten
+
+- ✅ Strict-Semver: PATCH (Bug-Fix für broken parsing + UX improvement, **keine** neuen Entitäten).
+- ✅ Backwards-Compat: Vehicles deren `fuelStatus.rangeStatus.value` funktioniert sehen identisches Verhalten.
+- ✅ Verifiziert gegen 4 externe Public-Source-Refs (evcc Passat trace, CarConnectivity log, Audi Q4 sample, WeConnect MQTT autodiscovery).
+- ✅ Phantom-Entity-Protection bleibt unangetastet — Track A fixt nur die `has_combustion`-Detection, nicht die Phantom-Logik selbst.
+
+#### Was bleibt nach v1.11.1 noch offen
+
+- **#74 (Passat 2025 B9 Klima/Standort)** — wartet auf Marco's Debug-Log
+- **#48, #42, #51 alte Bugs** — sollten durch v1.8.4 + v1.9.1 + v1.10.x bereits gefixt sein, brauchen Verification
+- **v1.12.0 MINOR Sprint** — Per-Light Binary-Sensors + writeable max_charge_current Number + userCapabilities Phase 3 + Diagnostics-Export + Smart-Wake + 12V protection
+
+---
+
 ## [1.11.0] - 2026-04-30
 
 ### Issue #91 Closure: Light-Status, Service-Days, Max-Charge-Current als echte Entitäten

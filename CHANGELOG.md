@@ -28,6 +28,40 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ## [Unreleased]
 
+## [1.11.1] - 2026-04-30 🐛💨 Golf 7 GTE Fuel-Range Fix (#96) + Optimistic UI (3B-Part-3)
+
+🐛 **Bug-Fix #96 — Golf 7 GTE / Passat GTE Fuel-Range erscheint endlich:**
+
+Pre-1.11.1 Bug: VW Golf 7 GTE 2015 + Passat GTE B7/B8 Owner haben nach v1.10.0-Update **immer noch keine Sprit-Reichweite** gesehen. Root Cause: `fuelStatus.rangeStatus` returnt auf älteren GTE-Firmwares ein `{"error": ...}` Objekt statt `{"value": ...}` (verifiziert via evcc-io/evcc#19045 Passat GTE Live-Trace) → unsere Drivetrain-Detection blieb auf `has_combustion=False` → die `_DATA_PRESENT_REQUIRED` Phantom-Schutz-Logik aus v1.10.0 hat dann den Sensor nicht erstellt obwohl die Daten in `measurements` vorhanden waren.
+
+**Fix (4 Tracks):**
+
+- 🔧 **Drivetrain-Detection** liest jetzt aus 4 Quellen (statt 2): zusätzlich `measurements.fuelLevelStatus.value.{primaryEngineType,secondaryEngineType}` — populated AUCH wenn fuelStatus error returnt.
+- 🔧 **`carType="hybrid"` flag** explizit erkannt → setzt `has_battery=True` UND `has_combustion=True`. Pre-1.11.1 nur Substring-Match auf "electric"/"gasoline" — verfehlt das nackte "hybrid".
+- 🔧 **Total range fallback** aus `measurements.rangeStatus.value.totalRange_km` (war nur fuelStatus-Pfad).
+- 🔧 **Fuel level fallback** aus engine block `currentFuelLevel_pct` (war nur measurements-Pfad).
+
+Backwards-kompat: Vehicles deren `fuelStatus.rangeStatus.value` funktioniert (Golf GTE auf neuer Firmware, modern PHEVs) sehen identisches Verhalten wie v1.10.0.
+
+💨 **3B-Part-3 — Optimistic UI für Lock/Climate/Charging/Window-Heating:**
+
+Pattern aus `skodaconnect/myskoda` PR #832: Wenn User auf Lock/Climate/Charging-Switch klickt, flippt die HA-Karte **sofort** auf den Erwartungs-Wert — der API-Roundtrip (10–30 s) findet im Hintergrund statt. Bei Failure: revert + ServiceValidationError.
+
+Was ist jetzt optimistic:
+- 🔒 `async_lock` → `doors_locked = True` sofort
+- 🔓 `async_unlock` → `doors_locked = False` sofort
+- 🔥 `async_start_climatisation` → `climatisation_active = True` + `state = "VENTILATION"` sofort
+- ❄️ `async_stop_climatisation` → `climatisation_active = False` + `state = "OFF"` sofort
+- ⚡ `async_start_charging` → `is_charging = True` + `charging_state = "CHARGING"` sofort
+- ⚡ `async_stop_charging` → `is_charging = False` + `charging_state = "NOT_CHARGING"` sofort
+- 🪟 `async_start/stop_window_heating` → beide Felder sofort
+
+Failure-Pfad: Snapshot der vorherigen Werte wird vor dem Optimistic-Set gespeichert; bei Exception wird zurückgesetzt + HA notified. User sieht den Lock-Toggle "zurück springen" als Hinweis dass das Command fehlschlug.
+
+🧪 **Tests:** 18 neue in `tests/test_v1111_96_optimistic.py` decken alle 4 #96-Tracks (volle GTE Shape + Passat error shape + carType=hybrid + engine-block fallback + pure ICE + pure EV phantom-protection) plus alle Optimistic-Transitions + Revert-on-Failure.
+
+> 💡 Vollständige Field-Mapping + evcc/CarConnectivity/Audi-Q4 Quellen-Analyse in [`docs/CHANGELOG_TECHNICAL.md`](docs/CHANGELOG_TECHNICAL.md).
+
 ## [1.11.0] - 2026-04-30 🔆🔧 Issue #91 Closure: Light-Status, Service-Days, Max-Charge-Current
 
 ✨ **Fünf neue Entitäten — schließt Issue #91 vollständig** (Audi S6 + VW Golf 7 GTE Vehicle Data Scout findings):

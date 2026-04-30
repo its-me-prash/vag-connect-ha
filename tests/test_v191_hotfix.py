@@ -72,7 +72,13 @@ class TestAudiLockSpin:
 
     def test_coordinator_lock_passes_spin_for_audi(self):
         """Coordinator's ``async_lock`` must forward the configured S-PIN
-        through to the brand client when brand is audi/volkswagen."""
+        through to the brand client when brand is audi/volkswagen.
+
+        v1.11.1 update: ``async_lock`` now goes through the optimistic-UI
+        path (``_cariad_cmd_optimistic``), so the test stub also needs
+        ``_vehicles_lock`` and ``async_set_updated_data``.
+        """
+        import threading
         from custom_components.vag_connect.coordinator import VagConnectCoordinator
 
         coord = VagConnectCoordinator.__new__(VagConnectCoordinator)
@@ -85,12 +91,16 @@ class TestAudiLockSpin:
         # Stub feature-state side-effects so ``_cariad_cmd`` doesn't blow up.
         coord.record_command_success = MagicMock()
         coord.record_command_failure = MagicMock()
-        coord.vehicles = {}
+        coord.vehicles = {"VINA": {"doors_locked": False}}
+        # v1.11.1 — required by the optimistic-UI helper.
+        coord._vehicles_lock = threading.Lock()
+        coord.async_set_updated_data = MagicMock()
 
         asyncio.get_event_loop().run_until_complete(coord.async_lock("VINA"))
         coord._cariad_client.command_lock.assert_awaited_once_with("VINA", spin="1234")
 
     def test_coordinator_lock_no_spin_for_audi_falls_back_no_kwarg(self):
+        import threading
         from custom_components.vag_connect.coordinator import VagConnectCoordinator
 
         coord = VagConnectCoordinator.__new__(VagConnectCoordinator)
@@ -102,7 +112,10 @@ class TestAudiLockSpin:
         coord.async_request_refresh = AsyncMock()
         coord.record_command_success = MagicMock()
         coord.record_command_failure = MagicMock()
-        coord.vehicles = {}
+        coord.vehicles = {"VINA": {"doors_locked": False}}
+        # v1.11.1 — required by the optimistic-UI helper.
+        coord._vehicles_lock = threading.Lock()
+        coord.async_set_updated_data = MagicMock()
 
         asyncio.get_event_loop().run_until_complete(coord.async_lock("VINA"))
         # Pre-1.9.1 behaviour: no spin kwarg when not configured.

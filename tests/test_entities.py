@@ -1088,6 +1088,10 @@ class TestRunCommand:
         coord.data = None
         coord._was_available = True
         coord.async_request_refresh = AsyncMock()
+        # v1.11.1 (3B-Part-3) — optimistic UI helper calls
+        # async_set_updated_data after mutating self.vehicles. Stub so
+        # the actuator dispatch tests (test_async_lock_*, etc.) still pass.
+        coord.async_set_updated_data = MagicMock()
         v = vehicle_mock or MagicMock()
         v.doors.commands.contains_command.return_value = True
         v.charging.commands.contains_command.return_value = True
@@ -1095,7 +1099,20 @@ class TestRunCommand:
         v.lights.commands.contains_command.return_value = True
         v.window_heatings.commands.contains_command.return_value = True
         v.commands.contains_command.return_value = True
-        coord.vehicles = {"VIN1": {"_vehicle": v}}
+        # v1.11.1 — vehicle data dict needs the optimistic-UI fields so
+        # ``_optimistic_set`` can record their previous values cleanly.
+        coord.vehicles = {
+            "VIN1": {
+                "_vehicle": v,
+                "doors_locked": False,
+                "climatisation_state": "OFF",
+                "climatisation_active": False,
+                "charging_state": "NOT_CHARGING",
+                "is_charging": False,
+                "window_heating_front": False,
+                "window_heating_back": False,
+            }
+        }
         return coord, v
 
     def test_async_lock_dispatches_to_run_command(self):
