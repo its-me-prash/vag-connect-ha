@@ -7,7 +7,7 @@ from datetime import datetime, timedelta, timezone
 import logging
 from typing import Any
 
-from .._util import compute_connection_state
+from .._util import compute_connection_state, safe_float, safe_int
 from ..exceptions import APIError
 from ..models import BRAND_VW_EU, VehicleData
 from .base import CariadBaseClient
@@ -465,11 +465,10 @@ class VWEUClient(CariadBaseClient):
         meta = getattr(self, "_vehicle_metadata", {}).get(vin, {})
         if meta.get("model"):
             d.model = meta["model"]
-        if meta.get("model_year"):
-            try:
-                d.model_year = int(meta["model_year"])
-            except (ValueError, TypeError):
-                pass
+        # v1.10.1 (#58) — safe_int. The model_year metadata sometimes
+        # arrives as a 4-digit string and sometimes as int depending on
+        # how the auth flow normalised the user profile JSON.
+        d.model_year = safe_int(meta.get("model_year"), default=d.model_year)
 
         # ── Charging ──────────────────────────────────────────────────────────
         d.charging_state = v(raw, "charging", "chargingStatus", "value", "chargingState")
@@ -477,9 +476,13 @@ class VWEUClient(CariadBaseClient):
         d.charging_power_kw = v(raw, "charging", "chargingStatus", "value", "chargePower_kW")
         d.charging_rate_kmh = v(raw, "charging", "chargingStatus", "value", "chargeRate_kmph")
 
-        remaining_min: Any = v(raw, "charging", "chargingStatus", "value", "remainingChargingTimeToComplete_min")
+        # v1.10.1 (#58) — safe_int. New CARIAD firmware shipped this as
+        # a stringified decimal at least once — see myskoda #503.
+        remaining_min = safe_int(
+            v(raw, "charging", "chargingStatus", "value", "remainingChargingTimeToComplete_min")
+        )
         if remaining_min is not None:
-            d.charge_complete_eta = datetime.now(tz=timezone.utc) + timedelta(minutes=int(remaining_min))
+            d.charge_complete_eta = datetime.now(tz=timezone.utc) + timedelta(minutes=remaining_min)
 
         d.battery_soc = v(raw, "charging", "batteryStatus", "value", "currentSOC_pct")
         # v1.10.0 (#94) — ``range_km`` headline assignment moved to the
@@ -495,9 +498,14 @@ class VWEUClient(CariadBaseClient):
         d.target_soc = v(raw, "charging", "chargingSettings", "value", "targetSOC_pct")
         d.charge_mode = v(raw, "charging", "chargingStatus", "value", "chargeMode")
         d.min_soc = v(raw, "charging", "chargingSettings", "value", "minChargeLimit_pct")
-        max_ac = v(raw, "charging", "chargingSettings", "value", "maxChargeCurrentAC_A")
+        # v1.10.1 (#58) — safe_float for max charge current too. The
+        # ``_A`` field is a clean integer in #90's Live-Dump (16) but the
+        # legacy enum form was a string ("MAXIMUM"); this normalises.
+        max_ac = safe_float(
+            v(raw, "charging", "chargingSettings", "value", "maxChargeCurrentAC_A")
+        )
         if max_ac is not None:
-            d.max_charge_current = float(max_ac)
+            d.max_charge_current = max_ac
         d.auto_unlock_charge = (
             v(raw, "charging", "chargingSettings", "value", "autoUnlockPlugWhenChargedAC") == "ON"
         )

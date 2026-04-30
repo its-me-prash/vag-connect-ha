@@ -13,7 +13,7 @@ from typing import Any
 
 from aiohttp import ClientSession
 
-from .._util import compute_connection_state
+from .._util import compute_connection_state, safe_float, safe_int
 from ..models import BRAND_SKODA, VehicleData
 from .base import CariadBaseClient
 
@@ -161,9 +161,13 @@ class SkodaClient(CariadBaseClient):
                 except ValueError:
                     fully_at = None  # Fall through to remaining-minutes calc below
             if not d.charge_complete_eta:
-                remaining = v(c, "remainingTimeToFullyChargedInMinutes")
+                # v1.10.1 (#58) — safe_int instead of bare int(). New
+                # firmwares occasionally ship the field as a stringified
+                # decimal ("12.5") which crashed pre-1.10.1 with
+                # ValueError and took the entire vehicle's poll down.
+                remaining = safe_int(v(c, "remainingTimeToFullyChargedInMinutes"))
                 if remaining:
-                    d.charge_complete_eta = datetime.now(tz=timezone.utc) + timedelta(minutes=int(remaining))
+                    d.charge_complete_eta = datetime.now(tz=timezone.utc) + timedelta(minutes=remaining)
             d.has_battery = d.battery_soc is not None
 
             settings = charging.get("settings", {})
@@ -174,9 +178,11 @@ class SkodaClient(CariadBaseClient):
         if isinstance(ac, dict):
             d.climatisation_state = v(ac, "state")
             d.climatisation_active = d.climatisation_state not in (None, "OFF", "INVALID")
-            temp_val = v(ac, "targetTemperature", "temperatureValue")
-            if temp_val is not None:
-                d.target_temperature = float(temp_val)
+            # v1.10.1 (#58) — safe_float. Skoda firmwares have shipped
+            # ``"21,5"`` (locale-comma) on EU accounts at least once.
+            d.target_temperature = safe_float(
+                v(ac, "targetTemperature", "temperatureValue")
+            )
 
             wh = v(ac, "windowHeatingState") or {}
             d.window_heating_front = v(wh, "front") == "ON"

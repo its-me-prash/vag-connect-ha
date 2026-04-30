@@ -12,6 +12,112 @@ weiterhin direkt in `CHANGELOG.md` zu finden.
 
 ---
 
+## [1.10.1] - 2026-04-30
+
+### Defensive Coding Phase 2 (Issue #58)
+
+**Pattern-Quelle:** myskoda issues #503 (`CHARGING_INTERRUPTED` neu in Firmware), #207 (`NOT_ACTIVATED` neu), PR #565 (`NO_UPDATE_AVAILABLE` neu) — VAG ships new enum values without warning, Integrations die nicht tolerieren brechen über Nacht. Plus Live-Beobachtungen aus eigenen Logs: `int("12.5")` ValueErrors auf Skoda-Charging-Endpoint, `float("MAXIMUM")` ValueErrors auf VW-Settings-Endpoint.
+
+**Strategie:** statt jedes `int()`/`float()`/`enum-Vergleich` einzeln in try/except zu wrappen — drei zentrale Helfer mit klarem Vertrag.
+
+#### Neue Helfer (`cariad/_util.py`)
+
+```python
+def safe_int(value, default=None) -> int | None:
+    """NEVER raises. Accepts int, bool, float, "12", "12.5", "  42  ".
+    Returns default for None, "", "abc", dict, list."""
+
+def safe_float(value, default=None) -> float | None:
+    """NEVER raises. Same coverage."""
+
+def safe_enum(value, known_values, *, log_name="enum",
+              default=None, case_insensitive=True) -> str | None:
+    """Return value if known, else log + return default.
+    Case-insensitive by default — original casing preserved on match."""
+```
+
+Vertrag: alle drei sind **pure** (keine Side-Effects außer dem Warning-Log in `safe_enum`), idempotent, und werfen nie Exceptions aller Art (TypeError, ValueError, OverflowError).
+
+#### Anwendung
+
+**`cariad/api/skoda.py`:**
+
+| Pre-1.10.1 | Post-1.10.1 |
+|---|---|
+| `int(remaining)` (`remainingTimeToFullyChargedInMinutes`) | `safe_int(remaining)` |
+| `float(temp_val)` (`targetTemperature.temperatureValue`) | `safe_float(...)` |
+
+**`cariad/api/vw_eu.py`:**
+
+| Pre-1.10.1 | Post-1.10.1 |
+|---|---|
+| `int(meta["model_year"])` mit try/except | `safe_int(meta.get("model_year"))` |
+| `int(remaining_min)` (`remainingChargingTimeToComplete_min`) | `safe_int(...)` |
+| `float(max_ac)` (`maxChargeCurrentAC_A`) | `safe_float(...)` |
+
+**`cariad/api/seat_cupra.py`:**
+
+| Pre-1.10.1 | Post-1.10.1 |
+|---|---|
+| `int(remaining)` (legacy + new field paths) | `safe_int(remaining)` |
+
+**`coordinator.py:_poll_loop`** — neuer try/except um `to_dict() + _enrich()`:
+
+Pre-1.10.1: ein einziges Parser-Problem (z.B. `_enrich` ruft `_reverse_geocode` mit unerwarteten lat/lon-Werten) hat den ganzen Vehicle-Poll zerschossen → Vehicle wurde als komplett gefailt markiert, alle Sensoren auf "unavailable", obwohl der eigentliche `get_status` erfolgreich war.
+
+Post-1.10.1: dedizierter try/except wrapper:
+
+```python
+try:
+    data = result.to_dict()
+    data["_client"] = self._cariad_client
+    data["_poll_failed"] = False
+    enriched = await self._enrich(data)
+except Exception as parse_err:  # noqa: BLE001
+    _LOGGER.warning(
+        "VAG Connect: post-parse failure for %s — keeping previous data: %s",
+        mask_vin(vin), parse_err,
+    )
+    old = self.vehicles.get(vin, {})
+    old["_poll_failed"] = True
+    fresh[vin] = old
+    self.vehicle_success[vin] = False
+    self.vehicle_failure_count[vin] = self.vehicle_failure_count.get(vin, 0) + 1
+    record_error(self.error_buffer, exception=parse_err, ...)
+    continue
+```
+
+Folgen:
+- Vehicle bleibt mit den **vorherigen** Daten sichtbar (graceful degradation, kein "unavailable" wegen einem einzelnen kaputten Feld).
+- Failure landet automatisch im Error Reporter Ring-Buffer (v1.9.0 Pipeline) → User kann mit 1 Klick das GitHub-Issue öffnen.
+- `_poll_failed=True` markiert den Datensatz für Diagnostics-Export.
+
+#### Tests
+
+**`tests/test_v1101_defensive.py`** (neu, 16 Tests):
+
+- `TestSafeInt` (5): pass-through int, truncate float, parse numeric/decimal string, garbage → default, bool subclass
+- `TestSafeFloat` (4): pass-through, decimal string, garbage, bool
+- `TestSafeEnum` (7): known value, unknown logs+default, explicit default, case-insensitive (preserves original), strict case-sensitive opt-in, none/empty, non-string coerced
+- `TestParserHardening` (3): Skoda decimal-string remaining minutes (myskoda #503), VW EU max_charge_current as enum string ("MAXIMUM"), model_year int/string interop
+- `TestCoordinatorParseGuard` (1): Error Reporter receives parse-fail exceptions correctly
+
+#### Architektur-Notes
+
+- **Warum nicht `safe_str`?** Strings brauchen keine Konvertierung — wenn der Wert schon ein String ist, hat sich nichts geändert. `safe_enum` deckt die einzige String-spezifische Defensive-Anwendung ab (Vergleich gegen erlaubte Werte).
+- **Warum `safe_enum` mit Warning-Log statt silent default?** Wir wollen aktiv erfahren wenn VAG einen neuen Enum ausrollt — sonst übersehen wir Drift. Die Warning ist actionable (enthält Field-Name + Wert) und der Vehicle Data Scout aus v1.9.0 sieht den Pfad eh als "unbekannt".
+- **Warum nicht alle `int()`/`float()` ersetzen?** Viele sind in Code-Pfaden wo der Wert garantiert ein bekannter Typ ist (z.B. unmittelbar nach `if isinstance(x, int): ...`). Die Helfer sind nur für API-Surface-Konvertierungen sinnvoll.
+- **Generic `except Exception` Audit:** ein paar Stellen in den Brand-Clients haben noch bare `except Exception: # noqa: BLE001` — diese sind alle **bewusste** "best effort"-Bookkeeping-Calls (Image-Fetch, Token-Exchange, Error-Reporter). Die wurden nicht angerührt; siehe Phase-2-Issue Comments für die Begründung.
+
+#### Hard Rules eingehalten
+
+- ✅ Strict-Semver: PATCH (Bugfix-Charakter, keine neuen Entitäten, keine neuen API-Endpoints).
+- ✅ Backwards-kompatibel: Helfer geben gleiche Werte zurück wenn der Input bereits korrekt typisiert war.
+- ✅ Tests vor Implementation an den heißen Stellen verifiziert (`safe_int("12.5") == 12`, `safe_float("MAXIMUM") is None`).
+- ✅ Coordinator-Wrapper feedbackt in v1.9.0 Reporter Pipeline → konsistente UX bei jeder Art von Fehler.
+
+---
+
 ## [1.10.0] - 2026-04-29
 
 ### PHEV Range Triple + Audi Diesel Range — Issue #94 + Scout-driven Entities aus #91

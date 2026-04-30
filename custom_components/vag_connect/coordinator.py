@@ -338,10 +338,44 @@ class VagConnectCoordinator(DataUpdateCoordinator):
                         except Exception:  # noqa: BLE001
                             pass
                     elif isinstance(result, VehicleData):
-                        data = result.to_dict()
-                        data["_client"] = self._cariad_client
-                        data["_poll_failed"] = False
-                        fresh[vin] = await self._enrich(data)
+                        # v1.10.1 (#58 Phase 2) — wrap to_dict + _enrich
+                        # in their own try/except. A single VehicleData
+                        # field with an unexpected type used to crash
+                        # the whole vehicle's poll mid-update; now the
+                        # vehicle stays available with its previous data
+                        # and the failure goes to the Error Reporter.
+                        try:
+                            data = result.to_dict()
+                            data["_client"] = self._cariad_client
+                            data["_poll_failed"] = False
+                            enriched = await self._enrich(data)
+                        except Exception as parse_err:  # noqa: BLE001
+                            _LOGGER.warning(
+                                "VAG Connect: post-parse failure for %s — "
+                                "keeping previous data: %s",
+                                mask_vin(vin), parse_err,
+                            )
+                            old = self.vehicles.get(vin, {})
+                            old["_poll_failed"] = True
+                            fresh[vin] = old
+                            self.vehicle_success[vin] = False
+                            self.vehicle_failure_count[vin] = (
+                                self.vehicle_failure_count.get(vin, 0) + 1
+                            )
+                            try:
+                                record_error(
+                                    self.error_buffer,
+                                    exception=parse_err,
+                                    brand=self.entry.data.get(CONF_BRAND, ""),
+                                    vin=vin,
+                                    model_year=self.vehicles.get(vin, {}).get("model_year"),
+                                    firmware=self.vehicles.get(vin, {}).get("firmware_version"),
+                                    endpoint="parse",
+                                )
+                            except Exception:  # noqa: BLE001
+                                pass
+                            continue
+                        fresh[vin] = enriched
                         any_success = True
                         self.vehicle_success[vin] = True
                         self.vehicle_failure_count[vin] = 0
