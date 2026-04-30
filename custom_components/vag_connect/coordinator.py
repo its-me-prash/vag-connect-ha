@@ -1061,6 +1061,16 @@ class VagConnectCoordinator(DataUpdateCoordinator):
     async def async_flash_lights(self, vin: str) -> None:
         # SEAT/CUPRA require the user position in the honk-and-flash payload
         # (HTTP 400 otherwise). Other brands accept and ignore it.
+        #
+        # ⚠️ [Inference] We pass the **vehicle's** last-known position
+        # (cached from the most recent status poll) into the OLA
+        # ``userPosition`` field. This is verified to work on the OLA
+        # endpoint and matches the pycupra/myskoda implementations.
+        # It is NOT verified that the official My SEAT / My CUPRA mobile
+        # apps populate this field the same way (they may use phone GPS
+        # instead). See ``cariad/api/seat_cupra.py:command_flash`` for
+        # the full caveat. Pragmatic fix that passes server validation
+        # — semantic correctness against the official apps is unverified.
         vehicle = self.vehicles.get(vin, {})
         await self._cariad_cmd(
             vin,

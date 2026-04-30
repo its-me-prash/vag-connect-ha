@@ -211,6 +211,88 @@ custom_components/vag_connect/
 15. **Do not endpoint-guess for PPC/PPE** — wait for upstream (audi_connect_ha, acfischer42/CC-audi, tillsteinbach SeatCupra #49) before any blind requests against E³ 1.2 backends. Risks Audi account suspension.
 16. **CI explicit-check before merge** — `gh pr checks <num>` must show 0 non-SUCCESS conclusions. Don't trust `--watch` exit codes alone (lesson from v1.8.9 ship-with-failing-test).
 17. **Doc-only PRs without code change** — no manifest bump, but CHANGELOG.md change still triggers `changelog_check.yml` (since v1.8.12 workflow extension).
+18. **User-data privacy by default** — see "User-Data Handling" section below. Even when a tester pastes their VIN/GPS/tokens publicly in an issue, do NOT pull them into the repo, fixtures, or maintainer comments unredacted. Anonymise first, ask for explicit fixture consent, document the source.
+19. **`[Inference]` markers for unverified semantic claims** — when we choose a pragmatic implementation that passes server validation but isn't verified against official-app traffic, label it `[Inference]` in code comments + docstrings. The OLA `userPosition` field for SEAT/CUPRA honk-and-flash is the canonical example (vehicle position works, but whether the official My SEAT/My CUPRA app uses phone GPS is not verified).
+
+---
+
+## User-Data Handling (added after #53 third-party privacy review)
+
+When a community tester (Facebook group, GitHub issue, forum) shares debug data, follow this hierarchy:
+
+### What is OK to use
+
+- ✅ **Diagnose im Issue-Thread** — read VIN, logs, screenshots to identify root cause, payload, endpoint, capability, entity behaviour
+- ✅ **Code-Entscheidungen ableiten** — "CUPRA Born needs OLA payload + lowercase enum" is fine to deduce
+- ✅ **Anonymisierte Fixtures** — only after redaction (see below) AND ideally with explicit user consent
+
+### What is NOT OK
+
+- ❌ Vollständige VIN in Repo / Fixtures / Docs / Commits / Comments
+- ❌ Access-Tokens, Refresh-Tokens, JWTs, S-PIN
+- ❌ User-ID / Account-ID
+- ❌ E-Mail-Adresse
+- ❌ Exakte GPS-Koordinaten (>1 Dezimalstelle)
+- ❌ Heimat- / Parkadresse
+- ❌ Kennzeichen
+- ❌ Screenshots mit persönlichen Daten ungescrubbed
+- ❌ Vollständige Rohlogs ohne Redaction
+
+### Fixture redaction template
+
+When converting a tester's payload into a regression fixture:
+
+```json
+{
+  "brand": "cupra",
+  "model": "born",
+  "model_year": 2023,
+  "region": "DE",
+  "subscription": "active",
+  "vin": "REDACTED_VIN_LAST6_e.g.012345",
+  "userId": "REDACTED_UUID",
+  "tokens": "REDACTED",
+  "location": {
+    "latitude": 48.0,
+    "longitude": 11.0,
+    "redacted": true,
+    "note": "rounded to 1 decimal (~11 km bucket)"
+  },
+  "capabilities": {
+    "honk_and_flash": "missing-capability",
+    "wake": "missing-capability"
+  }
+}
+```
+
+Save under `tests/fixtures/{brand}/{model}_{year}_{situation}_redacted.json`.
+
+### Asking for fixture consent
+
+Use this template when proposing to convert a tester's data into a fixture:
+
+```markdown
+Danke {Name} — deine Logs/Screenshots helfen uns sehr.
+
+Dürfen wir daraus eine vollständig anonymisierte Testfixture für {Brand} {Modell} erstellen?
+Wir entfernen vorher: VIN, Tokens, Account-IDs, E-Mail, exakte GPS, sonstige persönliche Daten.
+
+Die Fixture würde nur dazu dienen, künftige {Brand}-{Modell}-Regressionen automatisch zu testen — keine Weiterverwendung in Marketing oder anderen Kontexten.
+```
+
+### Maintainer self-check before commenting on a user issue
+
+Before posting a diagnostic comment on a user-reported issue, verify:
+
+1. **Diagnose-Hypothese vs. Fakten:** habe ich tatsächlich Beweise für meine Vermutung, oder ist das eine pauschale Annahme? (Beispiel-Fail: pre-1.11.1 wurde `subscription_expired` als generische 403-Erklärung gepostet, obwohl Gerhard's Vertrag aktiv war — siehe #53.)
+2. **Verifiziert vs. spekulativ:** wenn ich eine Verhaltensbeschreibung mache ("die offizielle App macht es so"), habe ich App-Traffic captured? Sonst → `[Inference]` markieren oder weglassen.
+3. **Daten-Hygiene:** zitiere ich VIN / Token / GPS aus dem Issue-Body? Falls ja → maskieren oder weglassen, auch wenn der User es selbst geschrieben hat.
+
+### Why these rules
+
+- HACS / HA Community: Vertrauen kommt von Privacy-by-default. Tester teilen mehr, wenn sie sehen dass mit ihren Daten sauber umgegangen wird.
+- GitHub Issues sind public + permanent. Was du heute zitierst, ist auch in 5 Jahren noch indexiert.
+- Hard Rule #8 (no speculation) gilt auch für User-Communication, nicht nur Code.
 
 ---
 
