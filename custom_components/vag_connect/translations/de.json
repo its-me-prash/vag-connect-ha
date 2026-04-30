@@ -139,11 +139,23 @@
       "service_due_at": {
         "name": "Inspektionsdatum"
       },
+      "service_due_in_days": {
+        "name": "Inspektion in"
+      },
       "oil_service_km": {
         "name": "Nächster Ölwechsel"
       },
       "oil_service_at": {
         "name": "Ölwechseldatum"
+      },
+      "oil_service_due_in_days": {
+        "name": "Ölwechsel in"
+      },
+      "lights_count": {
+        "name": "Aktive Lichter"
+      },
+      "max_charge_current_a": {
+        "name": "Max. Ladestrom"
       },
       "vehicle_state": {
         "name": "Auto-Status"
@@ -221,6 +233,9 @@
       },
       "window_heating_back": {
         "name": "Heckscheibenheizung aktiv"
+      },
+      "lights_on": {
+        "name": "Lichter an"
       },
       "warning_active": {
         "name": "Warnung aktiv"

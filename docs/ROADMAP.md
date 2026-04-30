@@ -5,9 +5,8 @@
 > mirrors it for archive/historical purposes and links the active GitHub
 > issues for each session.
 
-**Last updated:** 2026-04-30 — post v1.10.2 (CUPRA Born 2026 firmware
-shapes, first live-validation of v1.9.0 Reporter Pipeline, ~12h
-Bug-Report → Hotfix Cycle)
+**Last updated:** 2026-04-30 — post v1.11.0 (Issue #91 Closure: Light
+Status, Service Days, Max Charge Current als echte Entitäten)
 
 ---
 
@@ -46,6 +45,7 @@ Bug-Report → Hotfix Cycle)
 | **v1.10.0** | 🔋⛽ **PHEV-Range-Triple + Audi-Diesel-Range** — Issue #94 + Scout-Entity-Implementierung aus #91: drei neue Sensoren `electric_range_km` / `combustion_range_km` / `total_range_km`. VW EU/Audi Parser klassifiziert nach Engine-Typ (nicht Position) aus `fuelStatus.rangeStatus.value.{primary,secondary}Engine`. Audi S6 C8 2021 Diesel-Fallback aus `measurements.rangeStatus.value.dieselRange`. Skoda mysmob `electricRange.distanceInKm` + `combustionRange.distanceInKm` + `totalRangeInKm`. Phantom-Entity-Schutz via `_DATA_PRESENT_REQUIRED` — keine "unknown"-Sensoren auf reinen EVs/ICEs. 8 Sprachen. (13 neue Tests) | **2026-04-29** |
 | **v1.10.1** | 🛡️ **Defensive Coding Phase 2** — Issue #58: drei neue Helfer (`safe_int` / `safe_float` / `safe_enum`) in `cariad/_util.py`, NIE-raises Vertrag. An die heißesten Parsing-Stellen angewendet (Skoda `remainingTimeToFullyChargedInMinutes` als String "12.5", VW EU `maxChargeCurrentAC_A` als Enum "MAXIMUM", `model_year` int/string interop). Coordinator wrapped `to_dict()+_enrich()` per VIN in eigenes try/except — Parse-Failure landet in v1.9.0 Error Reporter Ring-Buffer statt Vehicle komplett unavailable zu machen. Forward-Kompatibilität: `safe_enum` loggt unbekannte Werte (myskoda #503 `CHARGING_INTERRUPTED` Pattern) statt zu crashen. (16 neue Tests) | **2026-04-30** |
 | **v1.10.2** | 🚗 **CUPRA Born 2026 Firmware-Shapes** — Issue #53 Live-Test (Gerhard, 2026-04-30): Vehicle Data Scout meldete 19 neue Felder. Beim Audit zeigte sich: viele sind **umbenannte** Versionen unserer bekannten Felder (`battery.currentSocPercentage` statt `currentSOC_pct`, `plug.connection`/`plug.lock` kurz statt lang, lowercase enums). `seat_cupra.py` Parser liest jetzt alle drei Field-Namen-Varianten als Fallback-Kette + lowercase enum tolerance. Plus neue Born-2026-Felder genutzt: `battery.estimatedRangeInKm` als range fallback, `status.locked` + `status.hood.locked` als top-level overall fallback. **Erste echte Live-Validation der v1.9.0 Reporter Pipeline (~12h Bug-Report → Hotfix).** (16 neue Tests) | **2026-04-30** |
+| **v1.11.0** | 🔆🔧 **Issue #91 Closure: Light-Status, Service-Days, Max-Charge-Current** — fünf neue Entitäten schließen Issue #91 vollständig: `lights_on` Binary-Sensor (any-light-on Aggregate), `lights_count` Sensor, `service_due_in_days` + `oil_service_due_in_days` als raw int Sensoren (komplementär zu den DATE-Sensoren), `max_charge_current_a` als Ampere-Sensor (read-only). Defensive Light-Parsing handhabt 3 bekannte Element-Shapes + Aggregate-Fallback bei unbekannter Shape. `_DATA_PRESENT_REQUIRED` Pattern jetzt auch in binary_sensor.py. 8 Sprachen. (15 neue Tests) | **2026-04-30** |
 
 **Sprint summary 2026-04-29:** 7 releases, ~50 new tests, branch
 protection activated, CHANGELOG split into human + technical, 4 parallel
@@ -66,7 +66,9 @@ priority.
 | ~~**Capability-Filter Phase 2**~~ | ~~**v1.9.1**~~ ✅ | ✅ Geshipped 2026-04-29. | done |
 | ~~**PHEV-Range-Triple + Audi-Diesel-Range**~~ | ~~**v1.10.0**~~ ✅ | ✅ Geshipped 2026-04-29. Issue #94 + erste echte Scout-Entity-Implementierung aus #91 (Audi `dieselRange`). | done |
 | ~~**Defensive Coding Phase 2**~~ | ~~**v1.10.1**~~ ✅ | ✅ Geshipped 2026-04-30. `safe_int`/`safe_float`/`safe_enum` Helfer + Coordinator Parse-Guard. | done |
-| **`maxChargeCurrentAC_A` als Number-Entity + Scout-driven Sensoren Welle 2** | v1.11.0 | MINOR: Number-Platform für `max_charge_current` (jetzt nur Field), echtes Service-Date-Sensor aus `vehicleHealthInspection` (statt nur `inspectionDue_days` int), Light-Status Binary-Sensors aus `vehicleLights.lightsStatus.value.lights[]`. | #91, #90 |
+| ~~**CUPRA Born 2026 Firmware-Shapes**~~ | ~~**v1.10.2**~~ ✅ | ✅ Geshipped 2026-04-30. Erste Live-Validation der Reporter Pipeline. | done |
+| ~~**Issue #91 Closure**~~ | ~~**v1.11.0**~~ ✅ | ✅ Geshipped 2026-04-30. `lights_on`/`lights_count`/`service_due_in_days`/`oil_service_due_in_days`/`max_charge_current_a`. | done |
+| ~~**Welle 2 Scout-Entitäten**~~ | ~~**v1.11.0**~~ ✅ | ✅ Geshipped 2026-04-30 als #91 Closure. `lights_on/_count`, `*_due_in_days`, `max_charge_current_a` (read-only). Writeable Number + per-Light Entities verschoben auf v1.12.0. | done |
 | **3B-Part-3 — Optimistic Lock/Climate** | v1.10.x | myskoda #832 pattern. PATCH. | — |
 | **Diagnostics + Smart-Wake + 12V protection** | **v1.12.0** ⭐ | MINOR: Anonymized diagnostics export (CC-seatcupra #109, CC-skoda #50, volkswagencarnet #921 als Fixtures), Read-only Mode, persistent wake counter (max 3/day), `wake_count_today` sensor, **NIE auto-wake**. Plus 12V drain detection (volkswagencarnet #940) — extend stale-cache to 24-72h when 12V low. Plus Capability-Filter Phase 3 (`capability.active && capability.user-enabled` pre-Entity-Creation). | #62, #63, #55, #23 |
 | **Process & Governance** | — | Issue forms, brand captains, CODEOWNERS, privacy guide. Doc-only. | #64 |

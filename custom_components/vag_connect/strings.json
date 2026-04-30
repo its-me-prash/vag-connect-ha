@@ -143,11 +143,23 @@
       "service_due_at": {
         "name": "Service Date"
       },
+      "service_due_in_days": {
+        "name": "Service In"
+      },
       "oil_service_km": {
         "name": "Next Oil Change"
       },
       "oil_service_at": {
         "name": "Oil Change Date"
+      },
+      "oil_service_due_in_days": {
+        "name": "Oil Change In"
+      },
+      "lights_count": {
+        "name": "Lights On (Count)"
+      },
+      "max_charge_current_a": {
+        "name": "Max Charge Current"
       },
       "vehicle_state": {
         "name": "Vehicle Status"
@@ -225,6 +237,9 @@
       },
       "window_heating_back": {
         "name": "Rear Window Heating"
+      },
+      "lights_on": {
+        "name": "Lights On"
       },
       "warning_active": {
         "name": "Warning Active"

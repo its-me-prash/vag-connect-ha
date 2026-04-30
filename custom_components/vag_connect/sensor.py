@@ -22,6 +22,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
     PERCENTAGE,
     EntityCategory,
+    UnitOfElectricCurrent,
     UnitOfLength,
     UnitOfPower,
     UnitOfSpeed,
@@ -236,6 +237,20 @@ SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
         icon="mdi:calendar-clock",
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
+    # v1.11.0 (#91 closure) — explicit "days remaining" int sensor
+    # alongside the DATE sensor above. The DATE conversion loses the
+    # exact day count; this one keeps it for users who want "5 Tage"
+    # rather than "May 5". Unit "d" makes HA render "5 d" automatically.
+    VagSensorDescription(
+        key="service_due_in_days",
+        translation_key="service_due_in_days",
+        data_key="service_due_in_days",
+        native_unit_of_measurement="d",
+        state_class=SensorStateClass.MEASUREMENT,
+        icon="mdi:calendar-clock",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        suggested_display_precision=0,
+    ),
     VagSensorDescription(
         key="oil_service_km",
         translation_key="oil_service_km",
@@ -255,6 +270,18 @@ SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
         icon="mdi:oil",
         entity_category=EntityCategory.DIAGNOSTIC,
         condition="combustion",
+    ),
+    # v1.11.0 (#91 closure) — explicit oil-service days int sensor.
+    VagSensorDescription(
+        key="oil_service_due_in_days",
+        translation_key="oil_service_due_in_days",
+        data_key="oil_service_due_in_days",
+        native_unit_of_measurement="d",
+        state_class=SensorStateClass.MEASUREMENT,
+        icon="mdi:oil",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        condition="combustion",
+        suggested_display_precision=0,
     ),
 
     VagSensorDescription(
@@ -347,6 +374,42 @@ SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
         suggested_display_precision=0,
     ),
 
+    # v1.11.0 (#91 closure) — vehicle lights count.
+    # ``lights_count`` is the on-light count from
+    # ``vehicleLights.lightsStatus.value.lights[]``. Created only when
+    # the field is non-None (data-present-gated, like the v1.10.0
+    # range entities) so vehicles whose API doesn't expose lights
+    # don't get a phantom "0" entity.
+    VagSensorDescription(
+        key="lights_count",
+        translation_key="lights_count",
+        data_key="lights_count",
+        state_class=SensorStateClass.MEASUREMENT,
+        icon="mdi:lightbulb-on-outline",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        suggested_display_precision=0,
+    ),
+
+    # v1.11.0 (#91 closure, #90 verified) — max charge current (Ampere)
+    # as a read-only Sensor. The v1.9.1 Vehicle Data Scout findings
+    # showed this as ``charging.chargingSettings.value.maxChargeCurrentAC_A
+    # = 16`` on the Golf 7 GTE — clean integer, suitable for direct
+    # display. The Number platform writeable variant is deferred to
+    # v1.12.0 (Capability-Filter Phase 3 ships the dispatch + capability
+    # check — without those, a writeable Number would 403 on most cars).
+    VagSensorDescription(
+        key="max_charge_current_a",
+        translation_key="max_charge_current_a",
+        data_key="max_charge_current",
+        native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
+        device_class=SensorDeviceClass.CURRENT,
+        state_class=SensorStateClass.MEASUREMENT,
+        icon="mdi:current-ac",
+        condition="electric",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        suggested_display_precision=0,
+    ),
+
     # ── v1.9.0 Vehicle Data Scout + Error Reporter ────────────────────────────
     # Two diagnostic sensors that surface drift / runtime errors detected
     # by the integration so users can 1-click report them via the HA Repair
@@ -388,6 +451,10 @@ _DATA_PRESENT_REQUIRED: frozenset[str] = frozenset({
     "electric_range_km",
     "combustion_range_km",
     "total_range_km",
+    # v1.11.0 (#91) — same phantom-entity-prevention reasoning. Vehicles
+    # whose API doesn't expose ``vehicleLights.lightsStatus.value.lights[]``
+    # shouldn't get a "0" sensor or default-False binary sensor.
+    "lights_count",
 })
 
 

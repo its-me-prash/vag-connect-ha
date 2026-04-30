@@ -143,11 +143,23 @@
       "service_due_at": {
         "name": "Servicedatum"
       },
+      "service_due_in_days": {
+        "name": "Service om"
+      },
       "oil_service_km": {
         "name": "Nästa oljebyte"
       },
       "oil_service_at": {
         "name": "Datum för oljebyte"
+      },
+      "oil_service_due_in_days": {
+        "name": "Oljebyte om"
+      },
+      "lights_count": {
+        "name": "Tända ljus (antal)"
+      },
+      "max_charge_current_a": {
+        "name": "Max laddström"
       },
       "vehicle_state": {
         "name": "Bilstatus"
@@ -225,6 +237,9 @@
       },
       "window_heating_back": {
         "name": "Värmning bakruta"
+      },
+      "lights_on": {
+        "name": "Ljus tända"
       },
       "warning_active": {
         "name": "Fordonsvarning aktiv"

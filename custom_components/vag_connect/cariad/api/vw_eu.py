@@ -698,6 +698,67 @@ class VWEUClient(CariadBaseClient):
         d.service_due_at = v(raw, "vehicleHealthInspection", "maintenanceStatus", "value", "inspectionDue_days")
         d.oil_service_km = v(raw, "vehicleHealthInspection", "maintenanceStatus", "value", "oilServiceDue_km")
         d.oil_service_at = v(raw, "vehicleHealthInspection", "maintenanceStatus", "value", "oilServiceDue_days")
+        # v1.11.0 (#91 closure) — explicit raw int day-counts. Same backend
+        # source as ``service_due_at``/``oil_service_at`` (which are
+        # int-typed but exposed as DATE sensors via in-sensor.py
+        # conversion). The new int sensors complement the date sensors
+        # for users who want "5 days remaining" instead of "May 5, 2026".
+        d.service_due_in_days = safe_int(d.service_due_at)
+        d.oil_service_due_in_days = safe_int(d.oil_service_at)
+
+        # v1.11.0 (#91 closure) — vehicle lights aggregate.
+        # Backend shape (from #90 + #91 Scout reports — ``[2 items]``,
+        # exact element shape varies):
+        #   vehicleLights.lightsStatus.value.lights = [
+        #     {"name": "frontLeft", "status": "off"},   # common shape A
+        #     {"id": "rearRight", "status": "on"},      # common shape B
+        #     ...
+        #   ]
+        # We extract three things:
+        #   1. ``lights_count`` — number of lights reporting "on"
+        #      (always set when the array is present)
+        #   2. ``lights_on`` — bool aggregate (count > 0)
+        #   3. ``lights_individual`` — dict {name -> bool} when shape is
+        #      recognised. Per-light entities (binary sensors per light)
+        #      only register when this dict is populated, so unknown
+        #      firmwares never get phantom entities.
+        lights_arr = v(raw, "vehicleLights", "lightsStatus", "value", "lights")
+        if isinstance(lights_arr, list):
+            on_count = 0
+            individual: dict[str, bool] = {}
+            for light in lights_arr:
+                if not isinstance(light, dict):
+                    continue
+                # Status: try "status" (most common), then "state".
+                # May be a plain string ("on"/"off"), a dict
+                # ({"value": "on"}), or a list of dicts (CARIAD-BFF
+                # pattern — see doors/windows). All three normalise to
+                # a single string we then compare case-insensitively.
+                raw_status = light.get("status") or light.get("state")
+                if isinstance(raw_status, list) and raw_status:
+                    raw_status = raw_status[0]
+                if isinstance(raw_status, dict):
+                    raw_status = raw_status.get("value") or raw_status.get("status")
+                is_on = (
+                    isinstance(raw_status, str)
+                    and raw_status.lower() == "on"
+                )
+                if is_on:
+                    on_count += 1
+                # Try to extract a stable name for the per-light dict.
+                # Skip if no recognised name field — keeps unknown
+                # shapes from polluting the per-light entity list.
+                name = (
+                    light.get("name")
+                    or light.get("id")
+                    or (light.get("location") or {}).get("position")
+                )
+                if isinstance(name, str) and name:
+                    individual[name] = is_on
+            d.lights_count = on_count
+            d.lights_on = on_count > 0
+            if individual:
+                d.lights_individual = individual
 
         # ── Departure timers ──────────────────────────────────────────────────
         timers: list[dict[str, Any]] = v(raw, "departureTimers", "departureTimersStatus", "value", "timers") or []

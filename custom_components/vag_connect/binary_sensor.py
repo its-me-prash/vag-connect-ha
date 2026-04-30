@@ -151,8 +151,30 @@ _NEW_BINARY: tuple[VagBinarySensorDescription, ...] = (
         icon="mdi:car-windshield",
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
+    # v1.11.0 (#91 closure) — vehicle lights aggregate "any light on?".
+    # Created data-present-gated (only when ``lights_on`` is non-None,
+    # which the vw_eu parser only sets when the
+    # ``vehicleLights.lightsStatus.value.lights[]`` array is present).
+    # Per-light entities are deferred to v1.12.0 when we have verified
+    # element shapes from multiple brand firmwares.
+    VagBinarySensorDescription(
+        key="lights_on",
+        translation_key="lights_on",
+        data_key="lights_on",
+        device_class=BinarySensorDeviceClass.LIGHT,
+        icon="mdi:lightbulb-on-outline",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
 )
 BINARY_DESCRIPTIONS = BINARY_DESCRIPTIONS + _NEW_BINARY
+
+# v1.11.0 — same phantom-entity-prevention pattern as sensor.py.
+# Pre-1.11.0 every binary_sensor was unconditionally registered; with
+# this set, listed keys only get an entity when the field is non-None
+# at setup time. Per-key opt-in.
+_DATA_PRESENT_REQUIRED: frozenset[str] = frozenset({
+    "lights_on",
+})
 
 
 async def async_setup_entry(
@@ -167,6 +189,13 @@ async def async_setup_entry(
         has_battery = vehicle.get("has_battery", False)  # EV + PHEV
         for desc in BINARY_DESCRIPTIONS:
             if desc.condition == "electric" and not has_battery:
+                continue
+            # v1.11.0 (#91) — phantom-entity prevention. See sensor.py
+            # for the same pattern + reasoning.
+            if (
+                desc.key in _DATA_PRESENT_REQUIRED
+                and vehicle.get(desc.data_key) is None
+            ):
                 continue
             entities.append(VagConnectBinarySensor(coordinator, vin, desc))
 

@@ -143,11 +143,23 @@
       "service_due_at": {
         "name": "Servicedatum"
       },
+      "service_due_in_days": {
+        "name": "Service over"
+      },
       "oil_service_km": {
         "name": "Volgende olieverversing"
       },
       "oil_service_at": {
         "name": "Datum olieverversing"
+      },
+      "oil_service_due_in_days": {
+        "name": "Olieverversing over"
+      },
+      "lights_count": {
+        "name": "Lichten aan (aantal)"
+      },
+      "max_charge_current_a": {
+        "name": "Max. laadstroom"
       },
       "vehicle_state": {
         "name": "Auto-status"
@@ -225,6 +237,9 @@
       },
       "window_heating_back": {
         "name": "Achterruit verwarming"
+      },
+      "lights_on": {
+        "name": "Lichten aan"
       },
       "warning_active": {
         "name": "Voertuigwaarschuwing actief"
