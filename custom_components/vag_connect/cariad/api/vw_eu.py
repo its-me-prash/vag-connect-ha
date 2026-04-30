@@ -514,35 +514,89 @@ class VWEUClient(CariadBaseClient):
         d.charging_type = charging_type
 
         # ── Drivetrain detection ───────────────────────────────────────────────
+        # v1.11.1 (#96 root-cause fix) — VW Golf 7 GTE 2015 + Passat
+        # B7/B8 GTE return ``fuelStatus.rangeStatus = {"error": ...}``
+        # instead of the ``.value.primaryEngine/.secondaryEngine`` block.
+        # Without these fallback paths, ``has_combustion`` stayed False
+        # even though ``measurements.fuelLevelStatus.value.primaryEngineType
+        # = "gasoline"`` was published — and the data-present gate then
+        # blocked both the ``fuel_level`` and ``combustion_range_km``
+        # entities. Issue #96 acceptance criteria documented this exactly
+        # (evcc-io/evcc#19045 trace shows the same pattern on Passat GTE).
+        #
+        # Fix: collect engine types from FOUR sources (was 2):
+        #   1. fuelStatus.rangeStatus.value.primaryEngine.type
+        #   2. fuelStatus.rangeStatus.value.secondaryEngine.type
+        #   3. measurements.fuelLevelStatus.value.primaryEngineType  ← NEW
+        #   4. measurements.fuelLevelStatus.value.secondaryEngineType  ← NEW
+        # AND treat ``carType="hybrid"`` as both battery+combustion (was
+        # only matching substring "electric"/"gasoline"/"diesel"/"gas",
+        # which missed pure "hybrid" — verified live on Passat GTE).
         primary_engine = v(raw, "fuelStatus", "rangeStatus", "value", "primaryEngine", "type")
         secondary_engine = v(raw, "fuelStatus", "rangeStatus", "value", "secondaryEngine", "type")
-        car_type = v(raw, "measurements", "fuelLevelStatus", "value", "carType")
+        # New: also read measurements engine-type fields. Same backend
+        # value, different path — populated even when fuelStatus errors.
+        ms_primary = v(raw, "measurements", "fuelLevelStatus", "value", "primaryEngineType")
+        ms_secondary = v(raw, "measurements", "fuelLevelStatus", "value", "secondaryEngineType")
+        # carType can live under either fuelStatus or measurements.
+        car_type = (
+            v(raw, "fuelStatus", "rangeStatus", "value", "carType")
+            or v(raw, "measurements", "fuelLevelStatus", "value", "carType")
+        )
 
         electric_types = {"electric", "ev"}
-        combustion_types = {"gasoline", "diesel", "gas", "cng", "lpg"}
+        combustion_types = {"gasoline", "petrol", "diesel", "gas", "cng", "lpg"}
 
-        if primary_engine:
-            d.has_battery = primary_engine.lower() in electric_types
-            d.has_combustion = primary_engine.lower() in combustion_types
-
-        if secondary_engine:
-            if secondary_engine.lower() in electric_types:
+        # Iterate ALL four engine-type fields; whichever the API publishes
+        # is enough to set the drivetrain flag.
+        for engine_type_raw in (primary_engine, secondary_engine, ms_primary, ms_secondary):
+            if not engine_type_raw:
+                continue
+            lower = str(engine_type_raw).lower()
+            if lower in electric_types:
                 d.has_battery = True
-            if secondary_engine.lower() in combustion_types:
+            if lower in combustion_types:
                 d.has_combustion = True
 
         if car_type:
-            lower = car_type.lower()
+            lower = str(car_type).lower()
             if "electric" in lower:
                 d.has_battery = True
-            if any(x in lower for x in ("gasoline", "diesel", "gas")):
+            if any(x in lower for x in ("gasoline", "petrol", "diesel", "gas")):
+                d.has_combustion = True
+            # v1.11.1 (#96) — pure ``hybrid`` / ``phev`` / ``plug-in
+            # hybrid`` carType means BOTH drivetrains. Pre-1.11.1 missed
+            # this and Passat GTE with carType="hybrid" but no engine
+            # detail blocks ended up has_combustion=False.
+            if lower in {"hybrid", "phev", "plug-in hybrid", "pluginhybrid", "plug_in_hybrid"}:
+                d.has_battery = True
                 d.has_combustion = True
 
         d.is_electric = d.has_battery and not d.has_combustion
         d.is_hybrid = d.has_battery and d.has_combustion
 
         # ── Fuel / range ──────────────────────────────────────────────────────
+        # v1.11.1 (#96 Track D) — fuel_level fallback from the engine
+        # block. Older GTE firmware ships ``currentFuelLevel_pct``
+        # INSIDE ``primaryEngine`` (when type=gasoline) — confirmed by
+        # CarConnectivity log in #96. Try the well-known measurements
+        # path first, fall back to whichever engine block is combustion.
         d.fuel_level = v(raw, "measurements", "fuelLevelStatus", "value", "currentFuelLevel_pct")
+        if d.fuel_level is None:
+            for engine_path in (
+                ("fuelStatus", "rangeStatus", "value", "primaryEngine"),
+                ("fuelStatus", "rangeStatus", "value", "secondaryEngine"),
+            ):
+                engine = v(raw, *engine_path)
+                if not isinstance(engine, dict):
+                    continue
+                engine_type = (engine.get("type") or "").lower()
+                if engine_type not in combustion_types:
+                    continue
+                fuel_pct = safe_int(engine.get("currentFuelLevel_pct"))
+                if fuel_pct is not None:
+                    d.fuel_level = fuel_pct
+                    break
 
         # v1.10.0 (#94) — explicit per-energy-source range fields, plus
         # backward-compatible ``range_km``. Logic order matters:
@@ -602,12 +656,18 @@ class VWEUClient(CariadBaseClient):
                     pass
 
         # Total range — from explicit field if present.
-        total_range = v(raw, "fuelStatus", "rangeStatus", "value", "totalRange_km")
+        # v1.11.1 (#96 Track C) — older GTE firmware fails fuelStatus
+        # with a ``Bad Gateway`` error object but still publishes total
+        # range under ``measurements.rangeStatus.value.totalRange_km``
+        # (verified via evcc-io/evcc#19045 Passat GTE trace). Both paths
+        # tried in order — fuelStatus preferred when it works, falls
+        # through to measurements when it doesn't.
+        total_range = (
+            v(raw, "fuelStatus", "rangeStatus", "value", "totalRange_km")
+            or v(raw, "measurements", "rangeStatus", "value", "totalRange_km")
+        )
         if total_range is not None:
-            try:
-                d.total_range_km = int(total_range)
-            except (TypeError, ValueError):
-                pass
+            d.total_range_km = safe_int(total_range)
 
         # Back-compat ``range_km`` headline. Preference order matches
         # users' intuitive expectation — EVs/PHEVs see battery range as

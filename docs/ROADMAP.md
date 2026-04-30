@@ -5,8 +5,9 @@
 > mirrors it for archive/historical purposes and links the active GitHub
 > issues for each session.
 
-**Last updated:** 2026-04-30 — post v1.11.0 (Issue #91 Closure: Light
-Status, Service Days, Max Charge Current als echte Entitäten)
+**Last updated:** 2026-04-30 — post v1.11.1 (Golf 7 GTE Fuel-Range
+Fix #96 + Optimistic UI 3B-Part-3 — externe Public-Source-Verifikation
+via evcc/CarConnectivity/Audi-Q4)
 
 ---
 
@@ -46,6 +47,7 @@ Status, Service Days, Max Charge Current als echte Entitäten)
 | **v1.10.1** | 🛡️ **Defensive Coding Phase 2** — Issue #58: drei neue Helfer (`safe_int` / `safe_float` / `safe_enum`) in `cariad/_util.py`, NIE-raises Vertrag. An die heißesten Parsing-Stellen angewendet (Skoda `remainingTimeToFullyChargedInMinutes` als String "12.5", VW EU `maxChargeCurrentAC_A` als Enum "MAXIMUM", `model_year` int/string interop). Coordinator wrapped `to_dict()+_enrich()` per VIN in eigenes try/except — Parse-Failure landet in v1.9.0 Error Reporter Ring-Buffer statt Vehicle komplett unavailable zu machen. Forward-Kompatibilität: `safe_enum` loggt unbekannte Werte (myskoda #503 `CHARGING_INTERRUPTED` Pattern) statt zu crashen. (16 neue Tests) | **2026-04-30** |
 | **v1.10.2** | 🚗 **CUPRA Born 2026 Firmware-Shapes** — Issue #53 Live-Test (Gerhard, 2026-04-30): Vehicle Data Scout meldete 19 neue Felder. Beim Audit zeigte sich: viele sind **umbenannte** Versionen unserer bekannten Felder (`battery.currentSocPercentage` statt `currentSOC_pct`, `plug.connection`/`plug.lock` kurz statt lang, lowercase enums). `seat_cupra.py` Parser liest jetzt alle drei Field-Namen-Varianten als Fallback-Kette + lowercase enum tolerance. Plus neue Born-2026-Felder genutzt: `battery.estimatedRangeInKm` als range fallback, `status.locked` + `status.hood.locked` als top-level overall fallback. **Erste echte Live-Validation der v1.9.0 Reporter Pipeline (~12h Bug-Report → Hotfix).** (16 neue Tests) | **2026-04-30** |
 | **v1.11.0** | 🔆🔧 **Issue #91 Closure: Light-Status, Service-Days, Max-Charge-Current** — fünf neue Entitäten schließen Issue #91 vollständig: `lights_on` Binary-Sensor (any-light-on Aggregate), `lights_count` Sensor, `service_due_in_days` + `oil_service_due_in_days` als raw int Sensoren (komplementär zu den DATE-Sensoren), `max_charge_current_a` als Ampere-Sensor (read-only). Defensive Light-Parsing handhabt 3 bekannte Element-Shapes + Aggregate-Fallback bei unbekannter Shape. `_DATA_PRESENT_REQUIRED` Pattern jetzt auch in binary_sensor.py. 8 Sprachen. (15 neue Tests) | **2026-04-30** |
+| **v1.11.1** | 🐛💨 **Golf 7 GTE Fuel-Range Fix (#96) + Optimistic UI (3B-Part-3)** — #96: VW Golf 7 GTE 2015 + Passat GTE B7/B8 zeigen endlich `fuel_level`/`combustion_range_km`/`total_range_km`. Root cause: `fuelStatus.rangeStatus = {error}` ließ Drivetrain-Detection False. Fix: 4 zusätzliche Pfade (`measurements.fuelLevelStatus.value.{primaryEngineType,secondaryEngineType}` + `carType="hybrid"` Substring) + `measurements.rangeStatus.value.totalRange_km` Fallback + engine-block `currentFuelLevel_pct` Fallback. Verifiziert via evcc-io/evcc#19045 + Audi Q4 + CarConnectivity Logs. 3B-Part-3: Optimistic UI (myskoda PR #832) — Lock/Climate/Charging/Window-Heating-Switches flippen sofort, revertieren bei Failure. (18 neue Tests) | **2026-04-30** |
 
 **Sprint summary 2026-04-29:** 7 releases, ~50 new tests, branch
 protection activated, CHANGELOG split into human + technical, 4 parallel
@@ -68,8 +70,9 @@ priority.
 | ~~**Defensive Coding Phase 2**~~ | ~~**v1.10.1**~~ ✅ | ✅ Geshipped 2026-04-30. `safe_int`/`safe_float`/`safe_enum` Helfer + Coordinator Parse-Guard. | done |
 | ~~**CUPRA Born 2026 Firmware-Shapes**~~ | ~~**v1.10.2**~~ ✅ | ✅ Geshipped 2026-04-30. Erste Live-Validation der Reporter Pipeline. | done |
 | ~~**Issue #91 Closure**~~ | ~~**v1.11.0**~~ ✅ | ✅ Geshipped 2026-04-30. `lights_on`/`lights_count`/`service_due_in_days`/`oil_service_due_in_days`/`max_charge_current_a`. | done |
+| ~~**Golf GTE Fuel-Range #96 + Optimistic UI**~~ | ~~**v1.11.1**~~ ✅ | ✅ Geshipped 2026-04-30. 4-Track #96 Fix (verifiziert via evcc/CarConnectivity/Audi-Q4) + 3B-Part-3 Optimistic. | done |
 | ~~**Welle 2 Scout-Entitäten**~~ | ~~**v1.11.0**~~ ✅ | ✅ Geshipped 2026-04-30 als #91 Closure. `lights_on/_count`, `*_due_in_days`, `max_charge_current_a` (read-only). Writeable Number + per-Light Entities verschoben auf v1.12.0. | done |
-| **3B-Part-3 — Optimistic Lock/Climate** | v1.10.x | myskoda #832 pattern. PATCH. | — |
+| ~~**3B-Part-3 — Optimistic Lock/Climate**~~ | ~~**v1.11.1**~~ ✅ | ✅ Geshipped 2026-04-30 mit #96 Fix kombiniert. | done |
 | **Diagnostics + Smart-Wake + 12V protection** | **v1.12.0** ⭐ | MINOR: Anonymized diagnostics export (CC-seatcupra #109, CC-skoda #50, volkswagencarnet #921 als Fixtures), Read-only Mode, persistent wake counter (max 3/day), `wake_count_today` sensor, **NIE auto-wake**. Plus 12V drain detection (volkswagencarnet #940) — extend stale-cache to 24-72h when 12V low. Plus Capability-Filter Phase 3 (`capability.active && capability.user-enabled` pre-Entity-Creation). | #62, #63, #55, #23 |
 | **Process & Governance** | — | Issue forms, brand captains, CODEOWNERS, privacy guide. Doc-only. | #64 |
 | **Push CUPRA/SEAT + Push Škoda** | v1.10.x | Firebase FCM via `mqtt.messagehub.de` (CUPRA/SEAT) + mysmob MQTT broker (Škoda-only — myskoda PR #566). PATCH each. | #57, #27 |

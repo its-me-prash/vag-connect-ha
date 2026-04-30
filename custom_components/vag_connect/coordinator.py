@@ -988,10 +988,14 @@ class VagConnectCoordinator(DataUpdateCoordinator):
                 translation_domain=DOMAIN,
                 translation_key="spin_required",
             )
-        if brand in ("audi", "volkswagen") and spin:
-            await self._cariad_cmd(vin, "command_lock", spin=spin)
-        else:
-            await self._cariad_cmd(vin, "command_lock")
+        # v1.11.1 (3B-Part-3) — optimistic UI: assume the lock will succeed
+        # so the HA card flips to "locked" immediately. Reverts on failure.
+        cmd_kwargs = {"spin": spin} if (brand in ("audi", "volkswagen") and spin) else {}
+        await self._cariad_cmd_optimistic(
+            vin, "command_lock",
+            optimistic={"doors_locked": True},
+            **cmd_kwargs,
+        )
 
     async def async_unlock(self, vin: str) -> None:
         # Prefer options (Options Flow) over data (initial config). Use real
@@ -1009,19 +1013,50 @@ class VagConnectCoordinator(DataUpdateCoordinator):
                 translation_domain=DOMAIN,
                 translation_key="spin_required",
             )
-        await self._cariad_cmd(vin, "command_unlock", spin=spin)
+        # v1.11.1 (3B-Part-3) — optimistic UI: assume unlock will succeed.
+        await self._cariad_cmd_optimistic(
+            vin, "command_unlock",
+            optimistic={"doors_locked": False},
+            spin=spin,
+        )
 
     async def async_start_climatisation(self, vin: str) -> None:
-        await self._cariad_cmd(vin, "command_start_climate")
+        # v1.11.1 (3B-Part-3) — optimistic UI: climate flips to active
+        # immediately. Backend value will overwrite on next poll if it
+        # disagrees (which is rare — start succeeds for entitled VINs).
+        await self._cariad_cmd_optimistic(
+            vin, "command_start_climate",
+            optimistic={
+                "climatisation_state": "VENTILATION",
+                "climatisation_active": True,
+            },
+        )
 
     async def async_stop_climatisation(self, vin: str) -> None:
-        await self._cariad_cmd(vin, "command_stop_climate")
+        # v1.11.1 (3B-Part-3) — optimistic UI.
+        await self._cariad_cmd_optimistic(
+            vin, "command_stop_climate",
+            optimistic={
+                "climatisation_state": "OFF",
+                "climatisation_active": False,
+            },
+        )
 
     async def async_start_charging(self, vin: str) -> None:
-        await self._cariad_cmd(vin, "command_start_charging")
+        # v1.11.1 (3B-Part-3) — optimistic UI. Backend usually
+        # transitions through READY_FOR_CHARGING → CHARGING within
+        # 5–15 s; we set the final value optimistically.
+        await self._cariad_cmd_optimistic(
+            vin, "command_start_charging",
+            optimistic={"charging_state": "CHARGING", "is_charging": True},
+        )
 
     async def async_stop_charging(self, vin: str) -> None:
-        await self._cariad_cmd(vin, "command_stop_charging")
+        # v1.11.1 (3B-Part-3) — optimistic UI.
+        await self._cariad_cmd_optimistic(
+            vin, "command_stop_charging",
+            optimistic={"charging_state": "NOT_CHARGING", "is_charging": False},
+        )
 
     async def async_flash_lights(self, vin: str) -> None:
         # SEAT/CUPRA require the user position in the honk-and-flash payload
@@ -1055,6 +1090,79 @@ class VagConnectCoordinator(DataUpdateCoordinator):
             enabled=enabled,
             departure_time=departure_time,
         )
+
+    def _optimistic_set(self, vin: str, fields: dict[str, Any]) -> dict[str, Any]:
+        """v1.11.1 (3B-Part-3 — myskoda #832 pattern) — push expected
+        post-command values into ``self.vehicles[vin]`` immediately so
+        the HA UI reflects the user action without waiting 10–30 s for
+        the API roundtrip. Returns a snapshot of the previous values
+        so the caller can revert on failure.
+
+        Notifies HA listeners (``async_set_updated_data``) right away —
+        the entity ``is_locked`` / ``hvac_mode`` / etc. flips before
+        the actual command reaches the backend. Pattern lifted from
+        ``skodaconnect/myskoda`` PR #832 ("Optimistic state for lock
+        and air-conditioning"), where users complained that the lock
+        switch felt unresponsive without it.
+        """
+        previous: dict[str, Any] = {}
+        with self._vehicles_lock:
+            current = self.vehicles.get(vin)
+            if not isinstance(current, dict):
+                return previous
+            for key, value in fields.items():
+                previous[key] = current.get(key)
+                current[key] = value
+        # Push the optimistic snapshot to HA so entities update now.
+        try:
+            self.async_set_updated_data(dict(self.vehicles))
+        except Exception:  # noqa: BLE001
+            # async_set_updated_data may be a no-op in some test contexts —
+            # the data dict mutation above is what really matters.
+            pass
+        return previous
+
+    def _optimistic_revert(self, vin: str, previous: dict[str, Any]) -> None:
+        """Restore the snapshot returned by ``_optimistic_set`` after a
+        failed command. Same notify-after-mutate pattern."""
+        if not previous:
+            return
+        with self._vehicles_lock:
+            current = self.vehicles.get(vin)
+            if not isinstance(current, dict):
+                return
+            for key, value in previous.items():
+                current[key] = value
+        try:
+            self.async_set_updated_data(dict(self.vehicles))
+        except Exception:  # noqa: BLE001
+            pass
+
+    async def _cariad_cmd_optimistic(
+        self,
+        vin: str,
+        method: str,
+        optimistic: dict[str, Any],
+        **kwargs: Any,
+    ) -> None:
+        """Optimistic-UI variant of ``_cariad_cmd``.
+
+        Sets the expected post-command state immediately, dispatches the
+        actual API command, and reverts the UI state on failure. Used by
+        actuator wrappers (``async_lock``, ``async_start_climatisation``
+        etc.) where the API takes 10–30 s and the UI would otherwise feel
+        unresponsive.
+
+        The downstream ``_cariad_cmd`` already records command outcome
+        into ``FeatureState`` (Phase 2), so this layer adds nothing new
+        beyond UI responsiveness.
+        """
+        previous = self._optimistic_set(vin, optimistic)
+        try:
+            await self._cariad_cmd(vin, method, **kwargs)
+        except Exception:
+            self._optimistic_revert(vin, previous)
+            raise
 
     async def _cariad_cmd(self, vin: str, method: str, **kwargs: Any) -> None:
         """Dispatch a command to the CARIAD client then refresh state.
@@ -1124,10 +1232,18 @@ class VagConnectCoordinator(DataUpdateCoordinator):
         )
 
     async def async_start_window_heating(self, vin: str) -> None:
-        await self._cariad_cmd(vin, "command_start_window_heating")
+        # v1.11.1 (3B-Part-3) — optimistic UI for window heating switch.
+        await self._cariad_cmd_optimistic(
+            vin, "command_start_window_heating",
+            optimistic={"window_heating_front": True, "window_heating_back": True},
+        )
 
     async def async_stop_window_heating(self, vin: str) -> None:
-        await self._cariad_cmd(vin, "command_stop_window_heating")
+        # v1.11.1 (3B-Part-3) — optimistic UI.
+        await self._cariad_cmd_optimistic(
+            vin, "command_stop_window_heating",
+            optimistic={"window_heating_front": False, "window_heating_back": False},
+        )
 
     async def async_wake_vehicle(self, vin: str) -> None:
         await self._cariad_cmd(vin, "command_wake")
