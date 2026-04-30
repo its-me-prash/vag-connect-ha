@@ -143,11 +143,23 @@
       "service_due_at": {
         "name": "Fecha de revisión"
       },
+      "service_due_in_days": {
+        "name": "Revisión en"
+      },
       "oil_service_km": {
         "name": "Próximo cambio de aceite"
       },
       "oil_service_at": {
         "name": "Fecha de cambio de aceite"
+      },
+      "oil_service_due_in_days": {
+        "name": "Cambio de aceite en"
+      },
+      "lights_count": {
+        "name": "Luces encendidas (Núm.)"
+      },
+      "max_charge_current_a": {
+        "name": "Corriente de carga máx."
       },
       "vehicle_state": {
         "name": "Estado del coche"
@@ -225,6 +237,9 @@
       },
       "window_heating_back": {
         "name": "Calef. luneta"
+      },
+      "lights_on": {
+        "name": "Luces encendidas"
       },
       "warning_active": {
         "name": "Advertencia activa"

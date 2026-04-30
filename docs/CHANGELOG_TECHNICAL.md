@@ -12,6 +12,135 @@ weiterhin direkt in `CHANGELOG.md` zu finden.
 
 ---
 
+## [1.11.0] - 2026-04-30
+
+### Issue #91 Closure: Light-Status, Service-Days, Max-Charge-Current als echte Entitäten
+
+**Auslöser:** Issue #91 (Audi S6 C8 2021) + #90 (VW Golf 7 GTE) hatten mehrere Vehicle Data Scout Findings die in v1.10.0 nur teilweise zu Entitäten wurden. v1.11.0 macht #91 vollständig fertig + bringt zusätzlichen Mehrwert.
+
+#### Audit der #91-Punkte
+
+| #91 Field | v1.10.0 Status | v1.11.0 Action |
+|---|---|---|
+| `measurements.rangeStatus.value.dieselRange` | ✅ als `combustion_range_km` umgesetzt | — |
+| `measurements.fuelLevelStatus.value.currentFuelLevel_pct` | ✅ befüllt `fuel_level` Sensor (combustion) | — |
+| `vehicleLights.lightsStatus.value.lights[]` | ❌ noch nicht | ✨ **`lights_on` + `lights_count`** |
+| `vehicleHealthInspection` | ⚠️ als DATE-Sensor (int→date) — exact day-count verloren | ✨ **`service_due_in_days` + `oil_service_due_in_days`** als raw int |
+| `vehicleHealthWarnings` | ✅ befüllt `warning_oil/engine/tyre/brakes` Binary-Sensors | — |
+| `userCapabilities` | ⏳ Phase-3 (v1.12.0) | — |
+| `fuelStatus` | ✅ in PHEV-Range-Logik genutzt | — |
+| `maxChargeCurrentAC_A` | ⚠️ Field befüllt aber kein Sensor | ✨ **`max_charge_current_a`** read-only Sensor |
+
+#### Neue VehicleData-Felder (`cariad/models.py`)
+
+```python
+# Service days (#91)
+service_due_in_days: int | None = None
+oil_service_due_in_days: int | None = None
+
+# Vehicle lights (#91)
+lights_on: bool | None = None              # any light on
+lights_count: int | None = None            # count of lights on
+lights_individual: dict[str, bool] = field(default_factory=dict)
+```
+
+#### Parser-Änderungen
+
+**`cariad/api/vw_eu.py`** — neuer Lights-Block + Service-Days:
+
+```python
+# Service days — same backend ints as service_due_at, exposed raw
+d.service_due_in_days = safe_int(d.service_due_at)
+d.oil_service_due_in_days = safe_int(d.oil_service_at)
+
+# Lights — defensive: try 3 known element shapes
+lights_arr = v(raw, "vehicleLights", "lightsStatus", "value", "lights")
+if isinstance(lights_arr, list):
+    on_count = 0
+    individual: dict[str, bool] = {}
+    for light in lights_arr:
+        # Status: "off"/"on" string OR {value: "on"} OR [{value: "on"}]
+        # Name: "name" OR "id" OR location.position
+        ...
+    d.lights_count = on_count
+    d.lights_on = on_count > 0
+    if individual:
+        d.lights_individual = individual
+```
+
+Per-light dict bleibt leer wenn die Element-Shape unbekannt ist — kein Phantom-Entity-Risiko.
+
+**`cariad/api/skoda.py`** — Service-Days analog (mysmob `inspectionDueInDays` etc.).
+
+#### Neue Sensor / Binary-Sensor Definitionen
+
+**`sensor.py`** — 4 neue VagSensorDescription:
+
+| Key | Unit | Device-Class | Condition | Phantom-Schutz |
+|---|---|---|---|---|
+| `service_due_in_days` | `d` | — | none | nein (existiert immer wenn parser was setzt) |
+| `oil_service_due_in_days` | `d` | — | combustion | nein |
+| `lights_count` | — | — | none | ✅ `_DATA_PRESENT_REQUIRED` |
+| `max_charge_current_a` | `A` | CURRENT | electric | nein (Field oft None auf älteren Firmwares aber Sensor zeigt sauber "unbekannt") |
+
+`max_charge_current_a` liest aus dem bestehenden `max_charge_current` Field (Backwards-Compat) — nur die Präsentation als Ampere-Sensor ist neu.
+
+**`binary_sensor.py`** — 1 neue VagBinarySensorDescription:
+
+| Key | Device-Class | Phantom-Schutz |
+|---|---|---|
+| `lights_on` | LIGHT | ✅ `_DATA_PRESENT_REQUIRED` (neu in binary_sensor.py — gleicher Pattern wie sensor.py) |
+
+#### Translations
+
+8 Sprachen mit konsistenten Begriffen:
+
+| Sprache | service_due_in_days | oil_service_due_in_days | lights_count | lights_on | max_charge_current_a |
+|---|---|---|---|---|---|
+| DE | "Inspektion in" | "Ölwechsel in" | "Aktive Lichter" | "Lichter an" | "Max. Ladestrom" |
+| EN | "Service In" | "Oil Change In" | "Lights On (Count)" | "Lights On" | "Max Charge Current" |
+| FR | "Entretien dans" | "Vidange dans" | "Feux allumés (Nb)" | "Feux allumés" | "Courant de charge max." |
+| ES | "Revisión en" | "Cambio de aceite en" | "Luces encendidas (Núm.)" | "Luces encendidas" | "Corriente de carga máx." |
+| NL | "Service over" | "Olieverversing over" | "Lichten aan (aantal)" | "Lichten aan" | "Max. laadstroom" |
+| PL | "Przegląd za" | "Wymiana oleju za" | "Włączone światła (liczba)" | "Światła włączone" | "Maks. prąd ładowania" |
+| CS | "Servis za" | "Výměna oleje za" | "Rozsvícená světla (počet)" | "Světla rozsvícena" | "Max. nabíjecí proud" |
+| SV | "Service om" | "Oljebyte om" | "Tända ljus (antal)" | "Ljus tända" | "Max laddström" |
+
+#### Tests
+
+**`tests/test_v1110_91_closure.py`** (neu, 15 Tests):
+
+- `TestNewVehicleDataFields` (2): defaults, to_dict
+- `TestVWEUParseLights` (7): no lights, empty array, 3 known shapes (name/id/list-wrapper), unknown shape (aggregate-only fallback), non-dict element skipped
+- `TestServiceDaysFields` (2): VW EU populates from inspection block, missing block leaves None
+- `TestSensorRegistration` (4): 4 sensors registered + lights_on binary, ampere unit + device-class CURRENT, days unit + diagnostic category, lights_count + lights_on in `_DATA_PRESENT_REQUIRED`, oil-service combustion-only
+
+#### Architektur-Notes
+
+- **Warum `lights_individual` als best-effort dict?** Element-Shape variiert zwischen Brand-Firmwares. Ohne verifizierte Live-Daten würde ein Hardcoded-Schema entweder false-positives (Phantom-Entities mit komischen Namen) oder false-negatives (Daten verloren) produzieren. Der Aggregate (`lights_on`/`lights_count`) ist immer korrekt; per-Light-Entitäten kommen in v1.12.0 wenn wir mehrere Live-Dumps haben.
+- **Warum `max_charge_current_a` als Sensor und nicht Number?** Number würde Schreib-Operationen bedeuten — aber `command_set_max_charge_current` ist noch nicht implementiert (nur ServiceValidationError). Ein read-only Number wäre verwirrend; Sensor ist semantisch korrekter. Number kommt wenn der Command ready ist (v1.12.0+ mit Capability-Filter Phase 3).
+- **Warum nicht `service_due_at` int direkt nutzen?** Der DATE-Sensor existiert seit v1.0 und Hunderte von Automatisierungen referenzieren ihn. Backwards-Compat = beide Felder befüllt.
+- **Warum binary_sensor.py kriegt jetzt auch `_DATA_PRESENT_REQUIRED`?** Pre-1.11.0 war das Pattern nur in sensor.py. Mit `lights_on` brauchen wir das gleiche Verhalten in binary_sensor.py — gleiche Frozenset-Logik, separates Set für klare Scope-Trennung.
+
+#### Hard Rules eingehalten
+
+- ✅ Strict-Semver: MINOR (5 neue Entitäten — Binary + 4 Sensors).
+- ✅ Backwards-Compat: alle bestehenden Sensoren unverändert, neue sind additiv.
+- ✅ Verifiziert gegen Issue #91 + #90 Findings (lights array confirmed live, service days confirmed live, max charge current confirmed = 16 A live).
+- ✅ Defensive: Light-Parsing crashed nicht bei unbekannter Shape (3 Shape-Varianten + non-dict-Filter).
+- ✅ Phantom-Entity-Schutz konsistent mit v1.10.0 Pattern.
+
+#### Was bleibt nach v1.11.0 noch offen
+
+- Per-Light Binary-Sensors (verschoben auf v1.12.0)
+- `max_charge_current_a` als writeable Number (verschoben auf v1.12.0)
+- `userCapabilities` Phase 3 Capability-Filter
+- `automation` + `departureProfiles` als eigene Plattform
+
+#91 wird mit v1.11.0 als **vollständig closed** markiert — die offenen Punkte sind eigene Sessions auf neuen Issues.
+
+---
+
 ## [1.10.2] - 2026-04-30
 
 ### CUPRA Born 2026 Firmware-Shapes (Gerhard #53 Live-Test)

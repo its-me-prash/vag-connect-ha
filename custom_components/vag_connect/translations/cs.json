@@ -143,11 +143,23 @@
       "service_due_at": {
         "name": "Datum servisní prohlídky"
       },
+      "service_due_in_days": {
+        "name": "Servis za"
+      },
       "oil_service_km": {
         "name": "Příští výměna oleje"
       },
       "oil_service_at": {
         "name": "Datum výměny oleje"
+      },
+      "oil_service_due_in_days": {
+        "name": "Výměna oleje za"
+      },
+      "lights_count": {
+        "name": "Rozsvícená světla (počet)"
+      },
+      "max_charge_current_a": {
+        "name": "Max. nabíjecí proud"
       },
       "vehicle_state": {
         "name": "Stav vozu"
@@ -225,6 +237,9 @@
       },
       "window_heating_back": {
         "name": "Vyhřívání zadního skla"
+      },
+      "lights_on": {
+        "name": "Světla rozsvícena"
       },
       "warning_active": {
         "name": "Aktivní varování vozidla"

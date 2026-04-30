@@ -28,6 +28,40 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ## [Unreleased]
 
+## [1.11.0] - 2026-04-30 🔆🔧 Issue #91 Closure: Light-Status, Service-Days, Max-Charge-Current
+
+✨ **Fünf neue Entitäten — schließt Issue #91 vollständig** (Audi S6 + VW Golf 7 GTE Vehicle Data Scout findings):
+
+| Entity | Type | Quelle | Vehicle |
+|---|---|---|---|
+| 💡 **`lights_on`** ("Lichter an") | Binary-Sensor | `vehicleLights.lightsStatus.value.lights[]` | alle |
+| 🔢 **`lights_count`** ("Aktive Lichter") | Sensor | gleiche Array | alle |
+| 📅 **`service_due_in_days`** ("Inspektion in") | Sensor (`d`) | `vehicleHealthInspection.maintenanceStatus.value.inspectionDue_days` | alle |
+| 🛢️ **`oil_service_due_in_days`** ("Ölwechsel in") | Sensor (`d`) | `vehicleHealthInspection.maintenanceStatus.value.oilServiceDue_days` | combustion |
+| ⚡ **`max_charge_current_a`** ("Max. Ladestrom") | Sensor (`A`) | `charging.chargingSettings.value.maxChargeCurrentAC_A` | electric |
+
+**Was war das Problem:**
+
+Issue #91 (Audi S6 + Issue #90 VW Golf 7 GTE) hatte mehrere Punkte. v1.10.0 hat den dicksten Fish gefangen (PHEV-Range-Triple + Audi-Diesel-Range), aber ein paar Lücken blieben:
+
+- Lichter-Status war nirgends zugänglich
+- Service-Tage konnte man nur als Datum sehen, nicht als "noch X Tage"
+- Max-Ladestrom war als Field da aber kein Sensor
+
+v1.11.0 macht #91 jetzt komplett fertig.
+
+**Defensive Light-Parsing:** weil die Element-Shape von `vehicleLights.lightsStatus.value.lights[]` zwischen Firmwares variiert (`{name,status}` vs `{id,status}` vs CARIAD-BFF Listen-Wrapper), versucht der Parser drei bekannte Shapes durch und fällt auf "nur Aggregate" zurück wenn keiner matcht. Per-Light-Binary-Sensors kommen erst in v1.12.0 wenn wir verifizierte Element-Shapes von mehreren Brands haben.
+
+**Phantom-Entity-Schutz** wie schon in v1.10.0 — alle 5 neuen Entitäten gehen über `_DATA_PRESENT_REQUIRED` Frozenset. Wer keine Lichter-Daten von der API bekommt, sieht keinen "0"-Sensor.
+
+**Backwards-Compat:** `service_due_at` (DATE) + `oil_service_at` (DATE) bleiben unverändert. Die neuen `_in_days`-Sensoren sind **zusätzliche** Anzeige-Optionen.
+
+🌍 **Übersetzungen** in allen 8 Sprachen.
+
+🧪 **Tests:** 15 neue in `tests/test_v1110_91_closure.py` decken alle 3 Light-Shape-Varianten + Aggregate-Fallback + Service-Days + Sensor-Registrierung.
+
+> 💡 Vollständige technische Details in [`docs/CHANGELOG_TECHNICAL.md`](docs/CHANGELOG_TECHNICAL.md).
+
 ## [1.10.2] - 2026-04-30 🚗 CUPRA Born 2026 Firmware-Shapes (Gerhard's #53 Live-Test)
 
 🐛 **Bug-Fix für CUPRA Born / SEAT Cupra Owner auf neuerer OLA-Firmware:**

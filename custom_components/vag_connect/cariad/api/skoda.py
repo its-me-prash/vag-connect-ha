@@ -263,6 +263,10 @@ class SkodaClient(CariadBaseClient):
             d.service_due_at = v(report, "inspectionDueInDays")
             d.oil_service_km = v(report, "oilServiceDueInKm")
             d.oil_service_at = v(report, "oilServiceDueInDays")
+            # v1.11.0 (#91 closure) — explicit raw int day-counts
+            # alongside the existing DATE-converted sensors.
+            d.service_due_in_days = safe_int(d.service_due_at)
+            d.oil_service_due_in_days = safe_int(d.oil_service_at)
 
         # ── Connection status ────────────────────────────────────────────────
         if isinstance(readiness, dict):

@@ -143,11 +143,23 @@
       "service_due_at": {
         "name": "Date d'entretien"
       },
+      "service_due_in_days": {
+        "name": "Entretien dans"
+      },
       "oil_service_km": {
         "name": "Prochaine vidange"
       },
       "oil_service_at": {
         "name": "Date de vidange"
+      },
+      "oil_service_due_in_days": {
+        "name": "Vidange dans"
+      },
+      "lights_count": {
+        "name": "Feux allumés (Nb)"
+      },
+      "max_charge_current_a": {
+        "name": "Courant de charge max."
       },
       "vehicle_state": {
         "name": "État du véhicule"
@@ -225,6 +237,9 @@
       },
       "window_heating_back": {
         "name": "Chauffage lunette"
+      },
+      "lights_on": {
+        "name": "Feux allumés"
       },
       "warning_active": {
         "name": "Avertissement véhicule actif"

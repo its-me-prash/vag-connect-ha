@@ -274,6 +274,14 @@ class VehicleData:
     service_due_at: Any | None = None
     oil_service_km: int | None = None
     oil_service_at: Any | None = None
+    # v1.11.0 (#91 closure) — explicit "raw int days" sensors complementing
+    # the existing DATE sensors. The DATE conversion (sensor.py) loses the
+    # exact day count; users who want "5 days remaining" instead of
+    # "May 5, 2026" can read these directly. Populated by brand parsers
+    # from the same backend integers. Keep both fields populated so the
+    # DATE-class sensor and the int sensor both work.
+    service_due_in_days: int | None = None
+    oil_service_due_in_days: int | None = None
 
     # Departure timers
     departure_timer_1_enabled: bool = False
@@ -289,6 +297,21 @@ class VehicleData:
 
     # AdBlue (diesel)
     adblue_range_km: int | None = None
+
+    # v1.11.0 (#91 closure) — Vehicle lights status.
+    # ``lights_on`` is the safe aggregate ("any light on?"); created
+    # whenever the ``vehicleLights.lightsStatus.value.lights[]`` array
+    # is present (regardless of element shape).
+    # ``lights_count`` mirrors the on-count for users who want a numeric
+    # value in dashboards.
+    # ``lights_individual`` is best-effort per-light state. We probe
+    # several known shapes (``{name, status}``, ``{id, status}``,
+    # ``{location.position, status}``) but if none match we leave it
+    # empty rather than guess. Per-light binary_sensors are only
+    # registered at setup time when this dict is populated.
+    lights_on: bool | None = None
+    lights_count: int | None = None
+    lights_individual: dict[str, bool] = field(default_factory=dict)
 
     # Hood / trunk / sunroof
     hood_open: bool | None = None
