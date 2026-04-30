@@ -8,8 +8,15 @@ import pytest
 # ── Shared mock factory ────────────────────────────────────────────────────────
 
 def _make_coordinator(vehicles=None):
-    """Build a minimal mock coordinator with one EV by default."""
+    """Build a minimal mock coordinator with one EV by default.
+
+    v1.12.0 (#63) — explicit ``is_read_only`` mock returning False so
+    platform setup gates don't accidentally skip entities under tests
+    (``coord.is_read_only()`` on a bare MagicMock returns a truthy
+    MagicMock by default).
+    """
     coord = MagicMock()
+    coord.is_read_only = MagicMock(return_value=False)
     coord.data = vehicles or {
         "WVGZZZ1KZAW123456": {
             "vin": "WVGZZZ1KZAW123456",
@@ -1182,15 +1189,20 @@ class TestRunCommand:
         asyncio.get_event_loop().run_until_complete(coord.async_wake_vehicle("VIN1"))
         coord._cariad_client.command_wake.assert_awaited()
 
-    def test_async_set_max_charge_current_raises(self):
-        """v1.8.0: max_charge_current raises ServiceValidationError — no real API command."""
+    def test_async_set_max_charge_current_dispatches(self):
+        """v1.12.0 (#91 follow-up): max_charge_current is now wired to a
+        real CARIAD command (was raise ServiceValidationError pre-1.12.0).
+        """
         import asyncio
-        from homeassistant.exceptions import ServiceValidationError
+        from unittest.mock import AsyncMock
         coord, _ = self._make_coord()
-        with pytest.raises(ServiceValidationError):
-            asyncio.get_event_loop().run_until_complete(
-                coord.async_set_max_charge_current("VIN1", 16)
-            )
+        coord._cariad_client.command_set_max_charge_current = AsyncMock()
+        asyncio.get_event_loop().run_until_complete(
+            coord.async_set_max_charge_current("VIN1", 16)
+        )
+        coord._cariad_client.command_set_max_charge_current.assert_awaited_once_with(
+            "VIN1", ampere=16,
+        )
 
     def test_async_update_data_returns_vehicles_when_not_started(self):
         import asyncio
