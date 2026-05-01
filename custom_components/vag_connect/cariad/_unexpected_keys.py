@@ -83,7 +83,13 @@ EXPECTED_KEYS: dict[str, dict[str, set[str]]] = {
             "overall.reliableLockStatus",
             "detail", "detail.sunroof", "detail.trunk", "detail.bonnet",
             "carCapturedTimestamp",
-            "renders", "renders.lightMode.*", "renders.darkMode.*",
+            # v1.12.2 (#107 — tritanium73's Skoda live test 2026-05-01,
+            # FIRST community Scout report from a non-maintainer!).
+            # The wildcards ``renders.lightMode.*`` only match 3-segment
+            # paths; the Scout reported ``renders.lightMode`` (2 segments)
+            # so the parent itself needs explicit registration too.
+            "renders", "renders.lightMode", "renders.lightMode.*",
+            "renders.darkMode", "renders.darkMode.*",
             "compositeRenders", "compositeRenders.*",
             "engine",
         },
@@ -106,6 +112,18 @@ EXPECTED_KEYS: dict[str, dict[str, set[str]]] = {
             "windowHeatingState", "windowHeatingState.front", "windowHeatingState.rear",
             "chargerConnectionState", "chargerLockState",
             "carCapturedTimestamp",
+            # v1.12.2 (#107 — tritanium73's Skoda 2026-05-01 Live-Test).
+            # Newer mysmob air-conditioning response includes additional
+            # status meta: list of in-flight requests, steering-wheel
+            # position (LEFT/RIGHT), windowHeatingState.unspecified
+            # (when state is INVALID), departure timer list, outside
+            # temperature block, and an errors[] array.
+            "runningRequests",
+            "steeringWheelPosition",
+            "windowHeatingState.unspecified",
+            "timers",
+            "outsideTemperature",
+            "errors",
         },
         "parking": {
             "parkingPosition", "parkingPosition.gpsCoordinates",
@@ -118,6 +136,15 @@ EXPECTED_KEYS: dict[str, dict[str, set[str]]] = {
             "totalRangeInKm", "electricRange", "electricRange.distanceInKm",
             "combustionRange", "adBlueRange", "adBlueRange.distanceInKm",
             "carCapturedTimestamp",
+            # v1.12.2 (#107) — Skoda mysmob now also publishes the
+            # high-level ``carType`` ("diesel"/"gasoline"/"electric"/
+            # "hybrid") at the top level + a ``primaryEngineRange``
+            # block (4 keys, similar to fuelStatus.primaryEngine on
+            # CARIAD-BFF). Registering silences the Scout — actually
+            # wiring these as fallback range sources is a v1.13.0+
+            # feature once we have a verified live response.
+            "carType",
+            "primaryEngineRange",
         },
         "maintenance": {
             "maintenanceReport", "maintenanceReport.mileageInKm",
@@ -126,6 +153,12 @@ EXPECTED_KEYS: dict[str, dict[str, set[str]]] = {
             "maintenanceReport.oilServiceDueInKm",
             "maintenanceReport.oilServiceDueInDays",
             "carCapturedTimestamp",
+            # v1.12.2 (#107) — Skoda mysmob v3 maintenance endpoint
+            # includes meta blocks alongside the report itself.
+            "maintenanceReport.capturedAt",
+            "preferredServicePartner",
+            "predictiveMaintenance",
+            "customerService",
         },
         "readiness": {
             "unreachable", "inMotion", "carCapturedTimestamp",

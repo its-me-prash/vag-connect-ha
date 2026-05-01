@@ -28,6 +28,40 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ## [Unreleased]
 
+## [1.12.2] - 2026-05-01 🌟🛰️ Erstes Community-Scout-Report (Skoda #107 von tritanium73)
+
+🌟 **Erste Live-Validation der v1.9.0 Reporter Pipeline durch einen Nicht-Maintainer-User!**
+
+User `tritanium73` hat heute einen Vehicle Data Scout Report für seine Skoda gefiltet (#107). 14 neue Felder über 4 mysmob-Endpoints — die volle 1-Klick Pipeline aus v1.9.0 funktioniert in der Wildbahn:
+
+1. Scout erkennt Drift bei Poll
+2. HA Repair-Notification erscheint bei tritanium73
+3. Klick auf "Mehr erfahren" → pre-filled GitHub Issue
+4. tritanium73 reicht das ein → wir fixen → 1.12.2 Release
+
+Genau dafür wurde v1.9.0 gebaut. **Riesigen Dank an tritanium73 für den ersten Community-Beitrag in dieser Form** 🙏
+
+🛰️ **EXPECTED_KEYS Registrierungen** (`cariad/_unexpected_keys.py`, alle skoda-only — SEAT/CUPRA und VW EU/Audi nicht betroffen):
+
+| Endpoint | Neue Pfade |
+|---|---|
+| `vehicle-status` | `renders.lightMode` + `renders.darkMode` (waren via 3-Segment-Wildcard nicht matched — Bug aus v1.9.1 catalog) |
+| `air-conditioning` | `runningRequests`, `steeringWheelPosition`, `windowHeatingState.unspecified`, `timers`, `outsideTemperature`, `errors` |
+| `driving-range` | `carType`, `primaryEngineRange` |
+| `maintenance` | `maintenanceReport.capturedAt`, `preferredServicePartner`, `predictiveMaintenance`, `customerService` |
+
+`carType` + `primaryEngineRange` sind besonders interessant — wahrscheinlich die mysmob-Variante zu CARIAD-BFFs `fuelStatus.rangeStatus.value.primaryEngine` aus v1.10.0. Wiring als Range-Source kommt in v1.13.0+ wenn wir verifizierte Live-Response-Shape sehen.
+
+🧪 **Tests:** 6 neue in `tests/test_v1122_107_skoda_scout.py` — verifizieren dass alle 14 Pfade jetzt registriert sind, plus Defensive-Test dass SEAT/CUPRA nicht versehentlich von der Skoda-Registrierung beeinflusst werden.
+
+📊 **Bonus-Audit aus Diagnostics-Datei (Audi 2 Vehicles, Prash):**
+
+- 4 unexpected findings sind bereits durch v1.12.1 registriert → silenced beim nächsten Poll ✅
+- 2 Error-Reporter Findings sind transiente 502 Bad Gateway → v1.8.7 retry-mechanism funktioniert wie designed (Backend war kurz down). Kein Code-Change nötig — same Pattern wie #108.
+
+**Closes:** #107.
+**Acknowledges:** #108 (transient 502, no fix needed — system working as designed).
+
 ## [1.12.1] - 2026-04-30 🛰️📚 Scout-Pfade #105/#106 + Gerhard's Born Fixture + FAQ #47
 
 🛰️ **Vehicle Data Scout Welle 4** (#105 VW EU 12 Felder + #106 Audi 8 Felder):
