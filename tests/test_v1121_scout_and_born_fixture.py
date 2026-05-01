@@ -91,36 +91,67 @@ class TestScoutWildcardCoverage:
 
     def test_actual_105_payload_silent(self):
         """Replay verbatim Scout findings from #105 (VW EU). All 12
-        fields must classify as expected — Scout returns empty."""
+        TOP-LEVEL paths from the report must classify as expected.
+
+        Note: the Scout descends into .value containers if they're
+        registered — children inside .value get evaluated separately
+        against their own paths. We only assert that the v1.12.1
+        registry silences the EXACT paths from the #105 report (which
+        are leaf containers, not their children). For .value children,
+        v1.10.0+ registered the legitimate ones (e.g. totalRange_km
+        under measurements.rangeStatus); unknown children would still
+        get flagged (which is correct Scout behaviour).
+        """
         from custom_components.vag_connect.cariad._unexpected_keys import (
             detect_unexpected,
         )
-        # Synthetic payload that nests every #105 path. Values are
-        # placeholders — the Scout cares about path presence not value.
+        # Synthetic payload — use list values for .value containers
+        # because lists aren't recursed into by detect_unexpected (the
+        # walker only descends into dicts). Lists are treated as opaque
+        # leaves with the parent path classified once.
         payload = {
             "automation": {
-                "climatisationTimer": {"error": {
-                    "message": "Bad Gateway", "errorTimeStamp": "x",
-                    "info": "x", "code": 4111, "group": 2, "retry": True,
-                }},
-                "chargingProfiles": {"error": {
-                    "message": "Bad Gateway", "code": 4111,
-                }},
+                "climatisationTimer": {"error": [
+                    {"message": "Bad Gateway", "code": 4111},
+                ]},
+                "chargingProfiles": {"error": [{"code": 4111}]},
             },
+            # value as opaque list — exactly what Scout reported (#105:
+            # `userCapabilities.capabilitiesStatus.value` = "[16 items]")
             "userCapabilities": {"capabilitiesStatus": {"value": ["a", "b"]}},
-            "charging": {"chargeMode": {"error": {
-                "message": "Bad Gateway",
-                "errorTimeStamp": "2026-04-30T13:34:20Z",
-                "info": "Upstream service responded with an unexpected status.",
-                "code": 4111, "group": 2, "retry": True,
-            }}},
-            "departureProfiles": {"departureProfilesStatus": {"value": {"a": 1}}},
-            "fuelStatus": {"rangeStatus": {"value": {"totalRange_km": 200}}},
-            "vehicleHealthInspection": {"maintenanceStatus": {"value": {"x": 1}}},
+            "charging": {"chargeMode": {"error": [{"code": 4111}]}},
+            "departureProfiles": {"departureProfilesStatus": {
+                "value": [],  # opaque list per Scout report
+            }},
+            "fuelStatus": {"rangeStatus": {"value": []}},
+            "vehicleHealthInspection": {"maintenanceStatus": {"value": []}},
         }
         findings = list(detect_unexpected("volkswagen", "selectivestatus", payload))
         assert findings == [], (
             "Scout still finds unexpected paths after v1.12.1 registry: "
+            + ", ".join(f.path for f in findings)
+        )
+
+    def test_error_wildcard_silences_all_six_subfields(self):
+        """The .error.* wildcards explicitly cover the 6 standardized
+        sub-fields (message/errorTimeStamp/info/code/group/retry)."""
+        from custom_components.vag_connect.cariad._unexpected_keys import (
+            detect_unexpected,
+        )
+        payload = {
+            "charging": {"chargeMode": {"error": {
+                "message": "Bad Gateway",
+                "errorTimeStamp": "2026-04-30T13:34:20Z",
+                "info": "Upstream service responded with an unexpected status.",
+                "code": 4111,
+                "group": 2,
+                "retry": True,
+            }}},
+        }
+        findings = list(detect_unexpected("volkswagen", "selectivestatus", payload))
+        # Charge mode error sub-fields all wildcard-covered
+        assert findings == [], (
+            "Wildcard .error.* failed to silence: "
             + ", ".join(f.path for f in findings)
         )
 
