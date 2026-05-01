@@ -404,6 +404,76 @@ EXPECTED_KEYS: dict[str, dict[str, set[str]]] = {
             "automation.climatisationTimer.error.*",
             "automation.chargingProfiles.error.*",
             "fuelStatus.rangeStatus.error.*",  # proactive — already saw fuelStatus.rangeStatus.error in #96
+            # v1.12.3 (#111 — DnnsJp74's Audi Live-Test 2026-05-01,
+            # ZWEITER community Scout report from a non-maintainer).
+            # 23 fields reported. Pattern: .value containers next to
+            # the .error wrappers we already registered in v1.12.0.
+            # Plus .value.* wildcards because timer/profile blocks
+            # contain user-configurable nested objects (per-timer
+            # schedules, charge profiles per location) — children are
+            # inherently variable + we don't read them in the parser.
+            "automation.climatisationTimer.value",
+            "automation.climatisationTimer.value.*",
+            "automation.chargingProfiles.value",
+            "automation.chargingProfiles.value.*",
+            # Top-level batteryChargingCare + climatisationTimers job
+            # names — present in our selectivestatus query since v1.9.x
+            # but never registered in EXPECTED_KEYS catalog.
+            "batteryChargingCare",
+            "batteryChargingCare.*",  # children unknown, future-proof
+            "climatisationTimers",
+            "climatisationTimers.*",
+            # Charging chargeMode .value (mode dict) + chargingCareSettings
+            "charging.chargeMode.value",
+            "charging.chargeMode.value.*",  # mode children variable
+            "charging.chargingCareSettings",
+            "charging.chargingCareSettings.*",
+            # vehicleHealthWarnings.warningLights.value children — the
+            # actual warning lights dict (per-light status). Variable
+            # set per vehicle, parser already iterates them in v1.0+.
+            "vehicleHealthWarnings.warningLights.value.*",
+            # v1.12.3 (#113 Golf GTE + #114 Audi S6 C8 — Prash testing
+            # 2026-05-01 evening): the parent .value containers
+            # (registered in v1.12.1) descend into business+meta
+            # children which were unregistered. Use wildcards instead
+            # of enumerating because every brand/firmware mix yields
+            # different sub-fields. Parser already reads the relevant
+            # ones (inspectionDue_*, oilServiceDue_*, mileage_km,
+            # totalRange_km, carType) — registry is just for Scout silence.
+            "fuelStatus.rangeStatus.value.*",
+            "fuelStatus.rangeStatus.value.primaryEngine.*",
+            "fuelStatus.rangeStatus.value.secondaryEngine.*",
+            "vehicleHealthInspection.maintenanceStatus.value.*",
+            "departureProfiles.departureProfilesStatus.value.*",
+            "userCapabilities.capabilitiesStatus.value.*",
+            # batteryChargingCare + climatisationTimers .value children
+            # (proactive — these top-level wrappers may have own .value
+            # blocks on newer firmwares per #103/#104 pattern).
+            "batteryChargingCare.value.*",
+            "climatisationTimers.value.*",
+            # Older auto-unlock-plug variant without AC suffix (#111 saw "off")
+            "charging.chargingSettings.value.autoUnlockPlugWhenCharged",
+            # 5x climatisationSettings.value.* zone + unit fields
+            "climatisation.climatisationSettings.value.unitInCar",
+            "climatisation.climatisationSettings.value.climatizationAtUnlock",
+            "climatisation.climatisationSettings.value.windowHeatingEnabled",
+            "climatisation.climatisationSettings.value.zoneFrontLeftEnabled",
+            "climatisation.climatisationSettings.value.zoneFrontRightEnabled",
+            # temperatureBatteryStatus Min + Max fields (parser already
+            # reads temperatureHvBatteryMin_K for battery_temp sensor;
+            # Max variant is new from #111)
+            "measurements.temperatureBatteryStatus.value.temperatureHvBatteryMin_K",
+            "measurements.temperatureBatteryStatus.value.temperatureHvBatteryMax_K",
+            # 4x connectionState meta + 2x connectionWarning meta on
+            # readiness.readinessStatus.value (we only had the parents
+            # connectionState/connectionWarning registered — Scout
+            # descended and found the leaves as unknown)
+            "readiness.readinessStatus.value.connectionState.isOnline",
+            "readiness.readinessStatus.value.connectionState.isActive",
+            "readiness.readinessStatus.value.connectionState.batteryPowerLevel",
+            "readiness.readinessStatus.value.connectionState.dailyPowerBudgetAvailable",
+            "readiness.readinessStatus.value.connectionWarning.insufficientBatteryLevelWarning",
+            "readiness.readinessStatus.value.connectionWarning.dailyPowerBudgetWarning",
         },
         "parkingposition": {
             "data", "data.lon", "data.lat", "data.carCapturedTimestamp",

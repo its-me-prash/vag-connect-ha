@@ -28,6 +28,46 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ## [Unreleased]
 
+## [1.12.3] - 2026-05-01 🛰️ Scout-Pfade #111 (DnnsJp74) + #113 (Golf GTE) + #114 (Audi S6)
+
+🌟 **Drei Scout-Reports zusammen ausgeliefert.** #111 von DnnsJp74 (zweiter Community-User), plus #113+#114 von Prash auf seinen eigenen Vehicles (Golf GTE 14 Felder + Audi S6 C8 20 Felder) — alle drei zeigen denselben Pattern: `.value` Container haben Children die wir whack-a-mole jagen würden, wenn nicht Wildcards eingesetzt werden.
+
+🛰️ **EXPECTED_KEYS Registrierungen** (`cariad/_unexpected_keys.py`, alle in `volkswagen.selectivestatus` — Audi inherits):
+
+| Kategorie | Neue Pfade |
+|---|---|
+| automation `.value` neben `.error` | `automation.{climatisationTimer,chargingProfiles}.value` |
+| Top-level meta-jobs (waren in selectivestatus query aber nicht registriert) | `batteryChargingCare` + `climatisationTimers` (beide mit `.*` wildcard) |
+| Charging Erweiterungen | `charging.chargeMode.value`, `charging.chargingCareSettings.*`, `charging.chargingSettings.value.autoUnlockPlugWhenCharged` (legacy variant ohne AC suffix) |
+| Climatisation Zone-Felder | `climatisation.climatisationSettings.value.{unitInCar,climatizationAtUnlock,windowHeatingEnabled,zoneFrontLeftEnabled,zoneFrontRightEnabled}` |
+| Battery Temperature | `measurements.temperatureBatteryStatus.value.temperatureHvBattery{Min,Max}_K` (Min wird vom Parser für battery_temp gelesen seit v1.10.x; Max ist neu) |
+| Readiness ConnectionState (4) + ConnectionWarning (2) | `readiness.readinessStatus.value.connectionState.{isOnline,isActive,batteryPowerLevel,dailyPowerBudgetAvailable}` + `.connectionWarning.{insufficientBatteryLevelWarning,dailyPowerBudgetWarning}` |
+
+🌊 **Wildcard-Strategie für `.value.*` Container:**
+
+Statt jeden neuen Sub-Field einzeln zu registrieren, decken Wildcards die ganze Klasse ab:
+- `fuelStatus.rangeStatus.value.*` (alle Children: carType, totalRange_km, carCapturedTimestamp, etc.)
+- `fuelStatus.rangeStatus.value.primaryEngine.*` + `.secondaryEngine.*`
+- `vehicleHealthInspection.maintenanceStatus.value.*` (inspectionDue_days/km, oilServiceDue_days/km, mileage_km, carCapturedTimestamp)
+- `departureProfiles.departureProfilesStatus.value.*`
+- `userCapabilities.capabilitiesStatus.value.*`
+- `batteryChargingCare.value.*` + `climatisationTimers.value.*` (proaktiv)
+
+Plus alle 23 #111 paths unverändert eingeschlossen.
+
+🧪 **Tests:** 8 neue in `tests/test_v1123_111_audi_scout.py` — verbatim Payloads für alle 3 Issues (#111, #113, #114) müssen Scout-Empty zurückgeben.
+
+📊 **Audit-Befund auch bei den älteren Bugs:**
+
+| Issue | Status |
+|---|---|
+| #42 (migendi CUPRA Formentor) | Verify-Ping gepostet, warte auf User-Antwort |
+| #48 (all-actions-fail) | Verify-Ping gepostet |
+| #51 (G.S. Audi RS e-tron GT) | Verify-Ping gepostet |
+| #53 (Gerhard Born) | Status-Update mit Fixture-Bestätigung + Phase 3 Plan gepostet |
+
+**Closes:** #111, #113, #114.
+
 ## [1.12.2] - 2026-05-01 🌟🛰️ Erstes Community-Scout-Report (Skoda #107 von tritanium73)
 
 🌟 **Erste Live-Validation der v1.9.0 Reporter Pipeline durch einen Nicht-Maintainer-User!**
