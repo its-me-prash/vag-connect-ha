@@ -408,8 +408,14 @@ EXPECTED_KEYS: dict[str, dict[str, set[str]]] = {
             # ZWEITER community Scout report from a non-maintainer).
             # 23 fields reported. Pattern: .value containers next to
             # the .error wrappers we already registered in v1.12.0.
+            # Plus .value.* wildcards because timer/profile blocks
+            # contain user-configurable nested objects (per-timer
+            # schedules, charge profiles per location) — children are
+            # inherently variable + we don't read them in the parser.
             "automation.climatisationTimer.value",
+            "automation.climatisationTimer.value.*",
             "automation.chargingProfiles.value",
+            "automation.chargingProfiles.value.*",
             # Top-level batteryChargingCare + climatisationTimers job
             # names — present in our selectivestatus query since v1.9.x
             # but never registered in EXPECTED_KEYS catalog.
@@ -417,10 +423,15 @@ EXPECTED_KEYS: dict[str, dict[str, set[str]]] = {
             "batteryChargingCare.*",  # children unknown, future-proof
             "climatisationTimers",
             "climatisationTimers.*",
-            # Charging chargeMode value sibling to .error + chargingCareSettings
+            # Charging chargeMode .value (mode dict) + chargingCareSettings
             "charging.chargeMode.value",
+            "charging.chargeMode.value.*",  # mode children variable
             "charging.chargingCareSettings",
             "charging.chargingCareSettings.*",
+            # vehicleHealthWarnings.warningLights.value children — the
+            # actual warning lights dict (per-light status). Variable
+            # set per vehicle, parser already iterates them in v1.0+.
+            "vehicleHealthWarnings.warningLights.value.*",
             # Older auto-unlock-plug variant without AC suffix (#111 saw "off")
             "charging.chargingSettings.value.autoUnlockPlugWhenCharged",
             # 5x climatisationSettings.value.* zone + unit fields
