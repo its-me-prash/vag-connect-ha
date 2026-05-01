@@ -40,6 +40,37 @@ class SkodaClient(CariadBaseClient):
         await self.fetch_images()
         return vins
 
+    async def get_capabilities(self, vin: str) -> dict[str, Any]:
+        """Return mysmob capabilities document for *vin*.
+
+        v1.13.0 (#56 Phase 3 prerequisite) — Skoda mysmob capabilities
+        endpoint. Required so Capability-Filter Phase 3 can hide
+        unsupported entities for Skoda vehicles (without this, the
+        coordinator's ``vehicle_supports_capability`` returns ``None``
+        for every Skoda capability and Phase 3 falls through to the
+        Phase 2 post-failure-unavailable fallback).
+
+        Endpoint: ``GET /api/v1/vehicle-access/{vin}/capabilities``
+        Schema (mysmob — different from CARIAD-BFF):
+            {
+              "capabilities": [
+                {"id": "<cap_id>", "active": true|false,
+                 "editable"?, "user-enabled"?, "status"?,
+                 "license-issue"?, "parameters"?}
+              ]
+            }
+        Verified via Issue #56 body + RESEARCH_NOTES_2026-04-29 §3
+        Skoda capability section.
+
+        Failure raises APIError (caller swallows — capabilities are
+        best-effort metadata, never load-bearing). The default cache
+        TTL (24h via coordinator) keeps this cheap.
+        """
+        data = await self._get(
+            f"{_BASE}/api/v1/vehicle-access/{vin}/capabilities",
+        )
+        return data if isinstance(data, dict) else {}
+
     async def get_status(self, vin: str) -> VehicleData:
         """Fetch full status from Škoda API."""
         v = self._val

@@ -408,6 +408,12 @@
     },
     "wake_budget_exhausted": {
       "message": "Wyczerpany dzienny budżet wybudzeń ({count}/{budget}). Aby chronić akumulator 12V, dalsze wybudzenia nie są wysyłane do północy UTC. Zobacz sensor.wake_count_today."
+    },
+    "wake_cooldown_active": {
+      "message": "Cooldown wybudzania aktywny (pozostało {remaining_s}s). Aby chronić akumulator 12V, wybudzanie ograniczone do jednego co {cooldown_min} minut na pojazd."
+    },
+    "read_only_mode_active": {
+      "message": "Tryb tylko do odczytu jest włączony w opcjach integracji. Wyłącz go w Ustawienia → Urządzenia i usługi → VAG Connect → Skonfiguruj, aby wysyłać polecenia do pojazdu."
     }
   }
 }

@@ -9,14 +9,6 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ## [Unreleased]
 
-### 📚 Documentation refresh / Doc-only refresh (2026-05-01, no version bump)
-
-- 🆕 **GitHub About-Section** auf v1.12.3-Stand aktualisiert (war veraltet auf "68 entities, cloud push") + 2 neue Topics (`vehicle-data-scout`, `phev`)
-- 🔄 **Master DE README + 7 Sprachen** "Aktueller Stand & ehrliche Limits" Sektion komplett refresht von v1.8.12 auf v1.12.3 — alle 12 LIVE-Features (Vehicle Data Scout, 12V, Optimistic UI, PHEV-Range-Triple, Read-only, etc.) + planned v1.13.0–v2.0.0 Sessions documented
-- 🔄 **Roadmap-Sektion in allen 8 READMEs** vereinfacht auf "Single Source of Truth" Pointer + Tabelle der letzten 9 Releases + nächste 5 Sessions
-- 📖 **Bi-lingual Title Convention** etabliert ab v1.12.3: Section-Titles `DE / EN`, Body bleibt deutsch
-- 📜 `docs/CHANGELOG_TECHNICAL.md` v1.12.2 + v1.12.3 entries nachgereicht (waren für die jeweiligen Releases vorhanden, hier dokumentiert)
-
 ## Semver-Regeln für dieses Projekt (pre-1.0.0)
 
 | Was | Version | Beispiel |
@@ -39,6 +31,48 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 > Methodik dahinter.
 
 ## [Unreleased]
+
+## [1.13.0] - 2026-05-02 🛡️ Production Hardening Bundle / Production Hardening (Capability Phase 3 + Read-only Phase 2 + Diagnostics-Polish + Process)
+
+🛡️ **Drei P0-Themen aus dem Roadmap-Backlog in einem MINOR-Release.** Alle drei waren bereits angefangene Arbeit (Phase 1 ausgeliefert) — jetzt Closure mit Phase 2/3, plus die Diagnostics-Hardening die wir für Issue-Reporting brauchen, plus Process-Docs (#64) für Brand Captains.
+
+### ✨ Neu / Added
+
+- 🛡️ **Capability-Filter Phase 3** (#56) — `command.active && user-enabled && !license-issue` PRE-Entity-Creation Gating. Vorher: Entity wurde erstellt und ging nach 1. Failure unavailable (Phase 2). Jetzt: Entity wird gar nicht erst gebaut wenn das Backend `false` meldet. Tri-state: `True/False/None`, konservatives `None = behalte` für Brands ohne Cap-Mapping (Phase 2 fängt Runtime-Failures weiter ab). Neue Single-Source-of-Truth `cariad/_capabilities.py` mit `CAPABILITY_MAP[brand][command_id] → cap_id` und `cap_id_for(brand, command_id)`. Audi/SEAT erben über Table-Alias (`CAPABILITY_MAP["audi"] = CAPABILITY_MAP["volkswagen"]`). Skoda hat eigenes Schema (`active/editable/user-enabled/status/license-issue`) das `vehicle_supports_capability` jetzt mitnimmt.
+- 🔒 **Read-only Mode Phase 2 — Service-Side Enforcement** (#63) — Phase 1 (v1.12.0) hat nur Entity-Creation geblockt; Phase 2 blockt jetzt auch alle Service-Calls. Neue `_coord_writeable(vin)` Helper raised `read_only_mode_active` ServiceValidationError bevor irgend ein Command rausgeht. Schützt vor versehentlichen Automatisierungen die direkt Services aufrufen (Bypass von Entity-Verstecken).
+- 🔁 **`refresh_cloud_cache` Service-Alias** (#63) — Klare Trennung zwischen `refresh_cloud_cache` (kein Wake, nur Cloud-Polling — der häufige Fall) vs. `wake_vehicle` (echter Wake-Up mit 12V-Risiko + 3/Tag Budget aus v1.12.0 + jetzt 5-min Cooldown). Backwards-compat: `refresh_vehicle` bleibt als Alias für `refresh_cloud_cache`. Beschreibung in `services.yaml` clarified — kein Wake, nur Cache.
+- ⏱️ **5-min Wake-Cooldown pro Fahrzeug** (#63) — Per-VIN `_wake_last_at` timestamp. Wake innerhalb des 5-Minuten-Fensters raised `wake_cooldown_active` ServiceValidationError mit `{remaining_s}` + `{cooldown_min}` Placeholders. Greift VOR dem 3/Tag Budget-Check aus v1.12.0 — schützt vor Click-Spam-Loops.
+- 🔐 **Per-VIN Per-Command-Class asyncio.Lock mit Timeout** (#63) — Verhindert Double-Click (zwei `lock_doors` Klicks gleichzeitig) und Konkurrenz zwischen `start_climatisation`+`stop_climatisation`. `_get_command_lock(vin, command_class)` lazy creation; `_dispatch_cmd_locked` extracted helper. `asyncio.timeout(60)` Fallback verhindert Deadlock bei hängenden Commands. Neue `is_command_in_flight(vin, command_class)` API für UI-Feedback.
+- 🔬 **Anonymized Diagnostics-Export** (#62) — Polish des HA `diagnostics`-Mechanismus für Issue-Reporting:
+  - **Token-Redaction expanded** — `access_token`, `refresh_token`, `id_token` (snake_case + camelCase) und `client_secret` jetzt in `_REDACT_KEYS`.
+  - **Email Partial-Mask** — `prash@gmail.com` → `p***@***.com` via Regex-Replacement (statt vollständigem `***`). Erlaubt Identifizierung des Reporters wenn er sich später meldet, ohne PII zu leaken.
+  - **GPS Opt-In Rounding** — wenn `enable_reverse_geocoding=False`, werden Lat/Lon auf 1 Dezimalstelle gerundet (~11km Granularität). User der Reverse-Geocoding aktiv hat akzeptiert bereits volle Genauigkeit.
+- 📝 **GitHub Issue Forms** (#64) — Strukturierte YAML-Forms für die zwei häufigsten Reports aus der v1.9.0 Reporter Pipeline: `scout_report.yml` für Vehicle Data Scout (1-klick pre-fill aus HA) + `error_report.yml` für Error Reporter Dumps. Felder: brand-Picker, vehicle, version, scout_report markdown, privacy_confirm.
+- 🏆 **`BRAND_CAPTAINS.md`** (#64) — Initial Brand Captains Tabelle (aktuell nur Maintainer + "Bewährte Tester" Liste: Gerhard2808 für CUPRA Born, tritanium73 für Skoda, DnnsJp74 für Audi). "Wie werde ich Captain?" Anleitung + Captain-Pflichten + Privacy-Notes.
+
+### 🔄 Geändert / Changed
+
+- 🔧 **`_cariad_cmd` mit Lock-Wrapper** — alle Commands die durch den Lock gehen werden jetzt zentral durch `asyncio.timeout(60) + asyncio.Lock` geschickt. Falls kein Lock-Lookup möglich ist (unbekannte Command-Klasse), wird auf `_dispatch_cmd_locked` direkt fallback-dispatched — keine Regression für unbekannte Commands.
+- 📚 **GitHub About-Section + Master READMEs (8 Sprachen)** auf v1.12.3-Stand refresht (vorher "68 entities, cloud push" — outdated). Alle 12 LIVE-Features dokumentiert. Roadmap-Sektion vereinfacht auf Single-Source-of-Truth Pointer + Tabelle der letzten 9 Releases. Bi-lingual Title Convention etabliert ab v1.12.3.
+
+### 🌐 Übersetzungen / Translations
+
+- 🌐 **8 Sprachen** (de/en/fr/es/nl/pl/cs/sv) — neue Exception-Keys `wake_cooldown_active` + `read_only_mode_active`. de.json hatte `wake_budget_exhausted` zusätzlich gefehlt; nachgereicht.
+
+### 🧪 Tests / Tests
+
+- 🧪 **31 neue Tests** in `tests/test_v1130_production_hardening.py`: TestCapabilityMap (5), TestCommandCapabilitySupported (8), TestCommandLock (4), TestWakeCooldown (3), TestReadOnlyServiceBlocking (2), TestDiagnosticsPolish (7), TestSkodaCapabilities (2).
+
+### 🔬 Pre-Research / Pre-Research
+
+- 📋 `docs/RESEARCH_NOTES_2026-05-02.md` — 423-Zeilen Pre-Implementation-Research für 13 Issues über 3 Bundles. Per-Issue-Verdict (✅ verified / ⚠️ [Inference] / ❌ gap → defer). Vermeidet Mid-Flight-Surprises bei Phase-3 Capability-Mapping. Bundle 2 (Audi-Pack) und Bundle 3 (Cross-Brand-UX) bereits gescoped für nächste Sessions.
+
+### 📦 Schließt Issues / Closes
+
+- Closes #56 (Capability-Filter Phase 3 — gates pre-entity-creation)
+- Closes #62 (Anonymized Diagnostics-Export)
+- Closes #63 (Read-only Mode Phase 2/3 — service-side blocking + cloud_refresh distinction + 5-min cooldown)
+- Closes #64 (Process & Governance Doc-PR — Issue Forms + Brand Captains)
 
 ## [1.12.3] - 2026-05-01 🛰️ Scout-Pfade #111 + #113 + #114 / Scout paths bundled with wildcard strategy
 

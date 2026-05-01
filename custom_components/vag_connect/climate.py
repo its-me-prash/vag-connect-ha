@@ -32,8 +32,12 @@ async def async_setup_entry(
     # v1.12.0 (#63) — Read-only Mode: climate sends commands, skip.
     if coordinator.is_read_only():
         return
+    # v1.13.0 (#56 Phase 3) — capability filter; only False (explicit
+    # backend confirmation) hides; None (unknown) keeps the entity.
     async_add_entities(
-        [VagClimate(coordinator, vin) for vin in coordinator.vehicles]
+        VagClimate(coordinator, vin)
+        for vin in coordinator.vehicles
+        if coordinator.command_capability_supported(vin, "command_start_climate") is not False
     )
 
 

@@ -408,6 +408,12 @@
     },
     "wake_budget_exhausted": {
       "message": "Dagligt väckningsbudget förbrukad ({count}/{budget}). För att skydda 12V-batteriet skickas inga fler väckningsförfrågningar förrän midnatt UTC. Se sensor.wake_count_today."
+    },
+    "wake_cooldown_active": {
+      "message": "Wake-up nedkylning aktiv ({remaining_s}s kvar). För att skydda 12V-batteriet är väckningar begränsade till en var {cooldown_min}:e minut per fordon."
+    },
+    "read_only_mode_active": {
+      "message": "Skrivskyddat läge är aktiverat i integrationsalternativen. Inaktivera det under Inställningar → Enheter och tjänster → VAG Connect → Konfigurera för att skicka fordonskommandon."
     }
   }
 }

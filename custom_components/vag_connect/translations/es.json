@@ -408,6 +408,12 @@
     },
     "wake_budget_exhausted": {
       "message": "Presupuesto diario de despertares agotado ({count}/{budget}). Para proteger la batería 12V, no se envían más solicitudes de despertar hasta medianoche UTC. Ver sensor.wake_count_today."
+    },
+    "wake_cooldown_active": {
+      "message": "Tiempo de espera de Wake-up activo ({remaining_s}s restantes). Para proteger la batería 12V, los Wake-ups se limitan a uno cada {cooldown_min} minutos por vehículo."
+    },
+    "read_only_mode_active": {
+      "message": "El modo solo lectura está activado en las opciones de integración. Desactívalo en Ajustes → Dispositivos y servicios → VAG Connect → Configurar para enviar comandos al vehículo."
     }
   }
 }

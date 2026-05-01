@@ -134,48 +134,65 @@ def _register_services(hass: HomeAssistant) -> None:
             )
         return c
 
+    def _coord_writeable(vin: str) -> VagConnectCoordinator:
+        """v1.13.0 (#63 Phase 2) — like _coord but blocks if read-only.
+
+        Service-call-side enforcement so YAML automations can't bypass
+        the entity-side read-only filter (Phase 1 only blocked entity
+        creation; raw service calls still went through).
+        """
+        c = _coord(vin)
+        if c.is_read_only():
+            raise ServiceValidationError(
+                "Read-only mode is enabled. Disable it in the integration "
+                "options to send vehicle commands.",
+                translation_domain=DOMAIN,
+                translation_key="read_only_mode_active",
+            )
+        return c
+
     async def _handle_lock(call: ServiceCall) -> None:
-        await _coord(call.data["vin"]).async_lock(call.data["vin"])
+        await _coord_writeable(call.data["vin"]).async_lock(call.data["vin"])
 
     async def _handle_unlock(call: ServiceCall) -> None:
-        await _coord(call.data["vin"]).async_unlock(call.data["vin"])
+        await _coord_writeable(call.data["vin"]).async_unlock(call.data["vin"])
 
     async def _handle_start_clim(call: ServiceCall) -> None:
-        await _coord(call.data["vin"]).async_start_climatisation(call.data["vin"])
+        await _coord_writeable(call.data["vin"]).async_start_climatisation(call.data["vin"])
 
     async def _handle_stop_clim(call: ServiceCall) -> None:
-        await _coord(call.data["vin"]).async_stop_climatisation(call.data["vin"])
+        await _coord_writeable(call.data["vin"]).async_stop_climatisation(call.data["vin"])
 
     async def _handle_start_charge(call: ServiceCall) -> None:
-        await _coord(call.data["vin"]).async_start_charging(call.data["vin"])
+        await _coord_writeable(call.data["vin"]).async_start_charging(call.data["vin"])
 
     async def _handle_stop_charge(call: ServiceCall) -> None:
-        await _coord(call.data["vin"]).async_stop_charging(call.data["vin"])
+        await _coord_writeable(call.data["vin"]).async_stop_charging(call.data["vin"])
 
     async def _handle_start_window(call: ServiceCall) -> None:
-        await _coord(call.data["vin"]).async_start_window_heating(call.data["vin"])
+        await _coord_writeable(call.data["vin"]).async_start_window_heating(call.data["vin"])
 
     async def _handle_stop_window(call: ServiceCall) -> None:
-        await _coord(call.data["vin"]).async_stop_window_heating(call.data["vin"])
+        await _coord_writeable(call.data["vin"]).async_stop_window_heating(call.data["vin"])
 
     async def _handle_wake(call: ServiceCall) -> None:
-        await _coord(call.data["vin"]).async_wake_vehicle(call.data["vin"])
+        await _coord_writeable(call.data["vin"]).async_wake_vehicle(call.data["vin"])
 
     async def _handle_flash(call: ServiceCall) -> None:
-        await _coord(call.data["vin"]).async_flash_lights(call.data["vin"])
+        await _coord_writeable(call.data["vin"]).async_flash_lights(call.data["vin"])
 
     async def _handle_set_target_soc(call: ServiceCall) -> None:
-        await _coord(call.data["vin"]).async_set_target_soc(
+        await _coord_writeable(call.data["vin"]).async_set_target_soc(
             call.data["vin"], int(call.data["target"])
         )
 
     async def _handle_set_clim_temp(call: ServiceCall) -> None:
-        await _coord(call.data["vin"]).async_set_climatisation_temperature(
+        await _coord_writeable(call.data["vin"]).async_set_climatisation_temperature(
             call.data["vin"], float(call.data["temperature"])
         )
 
     async def _handle_set_departure_timer(call: ServiceCall) -> None:
-        await _coord(call.data["vin"]).async_set_departure_timer(
+        await _coord_writeable(call.data["vin"]).async_set_departure_timer(
             call.data["vin"],
             int(call.data["timer_id"]),
             bool(call.data["enabled"]),
@@ -183,9 +200,26 @@ def _register_services(hass: HomeAssistant) -> None:
         )
 
     async def _handle_refresh(_call: ServiceCall) -> None:
+        """Pull latest cloud-cached state — does NOT wake the vehicle.
+
+        v1.13.0 (#63 Phase 3) — explicit semantic separation. This
+        service triggers ``async_request_refresh`` which polls the
+        manufacturer backend for the cached vehicle state. The vehicle
+        stays asleep. Use ``wake_vehicle`` instead if you need a fresh
+        live reading from the car (counts against daily wake budget).
+        """
         for entry in hass.config_entries.async_entries(DOMAIN):
             if hasattr(entry, "runtime_data"):
                 await entry.runtime_data.async_request_refresh()
+
+    async def _handle_refresh_cloud_cache(_call: ServiceCall) -> None:
+        """v1.13.0 (#63 Phase 3) — semantic alias for ``refresh_vehicle``.
+
+        Same behaviour: pulls cloud-cached state, does NOT wake the car.
+        New name makes the contract explicit; old name kept for
+        backwards-compat (existing automations don't break).
+        """
+        await _handle_refresh(_call)
 
     for name, handler, schema in [
         ("lock",                           _handle_lock,                SERVICE_VIN_SCHEMA),
@@ -199,6 +233,8 @@ def _register_services(hass: HomeAssistant) -> None:
         ("wake_vehicle",                   _handle_wake,                SERVICE_VIN_SCHEMA),
         ("flash_lights",                   _handle_flash,               SERVICE_VIN_SCHEMA),
         ("refresh_vehicle",                _handle_refresh,             vol.Schema({})),
+        # v1.13.0 (#63 Phase 3) — explicit semantic-clear alias.
+        ("refresh_cloud_cache",            _handle_refresh_cloud_cache, vol.Schema({})),
         ("set_target_soc",                 _handle_set_target_soc,
             vol.Schema({
                 vol.Required("vin"):    str,

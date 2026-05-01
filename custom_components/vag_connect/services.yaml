@@ -1,6 +1,22 @@
 refresh_vehicle:
-  name: Fahrzeugdaten aktualisieren
-  description: Erzwingt eine sofortige Datenaktualisierung vom Server für alle Fahrzeuge dieses Kontos.
+  name: Fahrzeugdaten aktualisieren (Cloud-Cache)
+  description: >-
+    Pollt den Hersteller-Server für die zwischengespeicherten Fahrzeugdaten
+    aller Fahrzeuge dieses Kontos. Weckt das Auto NICHT auf — die Daten
+    sind so aktuell wie der letzte Server-Sync. Verwende stattdessen
+    "Auto wecken" wenn du eine frische Live-Messung vom Auto willst
+    (zählt aufs tägliche Wakeup-Budget).
+  fields: {}
+
+# v1.13.0 (#63 Phase 3) — semantic-clear alias for refresh_vehicle.
+# Same behaviour, but the name makes the cloud-cache-only nature
+# explicit. Old name stays active for backwards-compat.
+refresh_cloud_cache:
+  name: Cloud-Cache aktualisieren (kein Wakeup)
+  description: >-
+    Identisch zu "refresh_vehicle" — pollt nur den Server-Cache, weckt
+    das Auto NICHT auf. Empfohlener neuer Name ab v1.13.0 für klarere
+    Semantik (refresh_vehicle bleibt funktionsfähig).
   fields: {}
 
 lock:

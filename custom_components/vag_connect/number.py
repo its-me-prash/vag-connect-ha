@@ -107,10 +107,24 @@ async def async_setup_entry(
         return
     entities: list[VagConnectNumber] = []
 
+    # v1.13.0 (#56 Phase 3) — per-description command-id mapping for
+    # capability filtering. Number entities all dispatch to a specific
+    # coordinator command; capability-filter pre-creation when backend
+    # explicitly confirms the underlying capability is missing.
+    _CMD_ID = {
+        "target_soc": "command_set_target_soc",
+        "target_temperature": "command_set_climate_temperature",
+        "min_soc": "command_set_min_soc",
+        "max_charge_current": "command_set_max_charge_current",
+    }
+
     for vin, vehicle in coordinator.vehicles.items():
         has_battery = vehicle.get("has_battery", False)  # EV + PHEV
         for desc in NUMBER_DESCRIPTIONS:
             if desc.condition == "electric" and not has_battery:
+                continue
+            cmd_id = _CMD_ID.get(desc.key)
+            if cmd_id and coordinator.command_capability_supported(vin, cmd_id) is False:
                 continue
             entities.append(VagConnectNumber(coordinator, vin, desc))
 

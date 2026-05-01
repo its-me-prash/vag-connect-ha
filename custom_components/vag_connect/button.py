@@ -6,23 +6,20 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import CONF_BRAND
 from .coordinator import VagConnectCoordinator
 from .entity_base import VagConnectEntity
 
-# Capability IDs vary by backend. The OLA documentation (pycupra) uses
-# camelCase strings like below for SEAT/CUPRA. CARIAD BFF (Audi/VW EU)
-# uses a different vocabulary that we have not yet verified against
-# real vehicles, so gating is currently scoped to brands whose IDs we
-# trust — see ``_BRANDS_WITH_CAPABILITY_GATING`` below.
-_CAP_HONK_AND_FLASH = "honkAndFlash"
-_CAP_VEHICLE_WAKEUP = "vehicleWakeUpTrigger"
-
-# Brands whose capability vocabulary we've verified end-to-end. Other
-# brands fetch capabilities (cache populated) but the IDs may not match
-# what we look up below, so we skip gating for them to avoid hiding
-# entities by mistake.
-_BRANDS_WITH_CAPABILITY_GATING = frozenset({"seat", "cupra"})
+# v1.13.0 (#56 Phase 3) — capability filtering moved to coordinator's
+# ``command_capability_supported(vin, command_id)`` helper, which uses
+# the per-brand mapping in ``cariad/_capabilities.py``. This replaces
+# the brand-allowlist + cap-id-string approach below.
+#
+# Phase 2 (v1.9.1) brand-allowlist (now superseded but kept for reference):
+#   Pre-1.13.0 only SEAT/CUPRA were gated because we had verified their
+#   OLA capability vocabulary. v1.13.0 ships verified vocabularies for
+#   VW EU + Audi + Skoda (via the new Skoda capabilities endpoint) so
+#   the allowlist becomes the implicit "any brand with a registered
+#   command-id mapping in CAPABILITY_MAP".
 
 
 async def async_setup_entry(
@@ -31,8 +28,6 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     coordinator: VagConnectCoordinator = entry.runtime_data
-    brand = str(entry.data.get(CONF_BRAND, "")).lower()
-    gating_active = brand in _BRANDS_WITH_CAPABILITY_GATING
     # v1.12.0 (#63) — Read-only Mode: skip vehicle-command buttons
     # (Flash, Wake) but ALWAYS keep VagRefreshButton — refresh is a
     # coordinator-level cloud poll, doesn't send any vehicle command,
@@ -49,22 +44,13 @@ async def async_setup_entry(
             # Skip Flash + Wake — both send actual vehicle commands.
             continue
 
-        # Capability gating: only skip if we have an explicit ``False`` from
-        # the cache AND the brand uses the OLA capability vocabulary.
-        # ``None`` (unknown) keeps the button so other brands behave as before.
-        flash_supported = (
-            coordinator.vehicle_supports_capability(vin, _CAP_HONK_AND_FLASH)
-            if gating_active
-            else None
-        )
-        wake_supported = (
-            coordinator.vehicle_supports_capability(vin, _CAP_VEHICLE_WAKEUP)
-            if gating_active
-            else None
-        )
-        if flash_supported is not False:
+        # v1.13.0 (#56 Phase 3) — uniform capability filtering via the
+        # coordinator helper. Returns ``False`` only when the backend
+        # explicitly reports the capability missing/limited; ``None``
+        # (unknown) keeps the entity so Phase 2 can catch at runtime.
+        if coordinator.command_capability_supported(vin, "command_flash") is not False:
             entities.append(VagFlashButton(coordinator, vin))
-        if wake_supported is not False:
+        if coordinator.command_capability_supported(vin, "command_wake") is not False:
             entities.append(VagWakeButton(coordinator, vin))
     async_add_entities(entities)
 

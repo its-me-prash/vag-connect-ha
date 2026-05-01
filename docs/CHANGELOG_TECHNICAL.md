@@ -14,6 +14,199 @@ weiterhin direkt in `CHANGELOG.md` zu finden.
 
 ---
 
+## [1.13.0] - 2026-05-02
+
+### Production Hardening Bundle / Production Hardening Bundle
+
+MINOR-Release. Drei P0-Themen aus dem Backlog (#56/#63/#62) plus Process-Docs (#64) in einem Release. Kein Breaking-Change — alles additive Hardening + Backwards-Compat-Aliase wo Service-Renames stattfinden.
+
+**Pre-Implementation Research:** `docs/RESEARCH_NOTES_2026-05-02.md` (423 Zeilen) deckt 13 Issues über 3 Bundles ab. Verdict-Tabelle ✅/⚠️/❌ pro Issue. Bundle 2 (v1.14.0 Audi Pack: #24/#29/#28) und Bundle 3 (v1.15.0 Cross-Brand UX: #26/#25/#31 read-only) sind ebenfalls bereits gescoped.
+
+#### #56 Capability-Filter Phase 3 — PRE-Entity-Creation Gating
+
+**Vorher (Phase 1+2, bis v1.12.3):**
+- Phase 1 (v1.8.2): Capabilities werden bei Setup gecached (`coordinator._capabilities[vin]`)
+- Phase 2 (v1.9.1): Wenn ein Command `403 spin_error` / `subscription` / `not_entitled` zurückgibt, wird `FeatureState[vin][command]` geschrieben → `vehicle_supports_capability` nutzt Phase-2-FeatureState bei `available` zu prüfen → Entity geht unavailable. Aber: Entity wurde erstellt, der User sieht "unavailable" und versteht nicht warum.
+
+**Nachher (Phase 3, v1.13.0):** Entity wird gar nicht erst erstellt wenn das Backend sagt "kann das Auto nicht".
+
+**Neue Datei** `custom_components/vag_connect/cariad/_capabilities.py`:
+- `CAPABILITY_MAP: dict[brand, dict[command_id, cap_id]]`
+- Brands: `volkswagen` (CARIAD camelCase wie `parkingLights`, `honkAndFlash`), `audi` erbt via `CAPABILITY_MAP["audi"] = CAPABILITY_MAP["volkswagen"]`, `cupra` (OLA kebab-case), `seat` erbt via Alias, `skoda` (mysmob kebab-case), `volkswagen_na` (empty — keine Cap-API), `porsche` (empty)
+- `cap_id_for(brand, command_id) → str | None` pure lookup, defensiv
+
+**Coordinator-Erweiterungen** (`coordinator.py`):
+- `command_capability_supported(vin, command_id) → bool | None`
+  - Tri-state: `True` (definitiv yes), `False` (definitiv no), `None` (unknown — keep entity)
+  - Konservatives `None`: für Brands ohne Cap-Mapping (Porsche, VW NA) wird die Entity erstellt; Phase 2 fängt Runtime-Failures dann weiter ab
+- `vehicle_supports_capability` mit Skoda-Schema-Toleranz erweitert:
+  - `entry.get("active") is False` → False
+  - `entry.get("user-enabled") is False` → False
+  - `entry.get("license-issue")` truthy → False (Lizenz-Problem)
+
+**Skoda Cap-Endpoint** (`cariad/api/skoda.py` neu hinzugefügt):
+- `get_capabilities(vin)` → `GET /api/v1/vehicle-access/{vin}/capabilities`
+- Response shape: `{capabilities: [{id, active, editable?, user-enabled?, status?, license-issue?, parameters?}]}` — anders als CARIAD-BFF `{id, status}`. Die zusätzlichen Skoda-Felder werden in `vehicle_supports_capability` mitgenommen (siehe oben).
+
+**Platform-Gating** (alle command-sendenden Plattformen):
+- `lock.py`, `climate.py`, `number.py`, `switch.py`, `button.py` checken `coordinator.command_capability_supported(vin, command_id) is not False`
+- `number.py` hat lokales `_CMD_ID` dict mapping `desc.key → command_id`
+- `switch.py` hat lokales `_supported(vin, cmd)` helper
+- `button.py` hat den alten `_BRANDS_WITH_CAPABILITY_GATING` Allowlist gelöscht (uniform helper für alle Brands)
+
+#### #63 Phase 2/3 — Read-only Mode Service-Side + Cloud-Refresh-Distinction + 5-min Cooldown + per-VIN Lock
+
+**Phase 1 Recap (v1.12.0):** Read-only Mode skippt platform setup für lock/switch/button(non-refresh)/climate/number. Refresh-button bleibt (User darf Daten pullen).
+
+**Phase 2 (v1.13.0) — Service-Side Enforcement:**
+- Neue `_coord_writeable(vin)` Helper in `__init__.py`:
+  ```python
+  def _coord_writeable(coord, vin):
+      if coord.read_only_mode:
+          raise ServiceValidationError(
+              translation_domain=DOMAIN,
+              translation_key="read_only_mode_active",
+          )
+  ```
+- Eingebaut in alle Command-Handler: `_handle_lock/_handle_unlock/_handle_start_clim/_handle_stop_clim/_handle_start_charge/_handle_stop_charge/_handle_start_window/_handle_stop_window/_handle_wake/_handle_flash/_handle_set_target_soc/_handle_set_clim_temp/_handle_set_departure_timer`
+- Schützt vor Automatisierungen die direkt Services aufrufen (Bypass von Entity-Verstecken). Vorher konnte ein YAML-`service: vag_connect.command_lock` durch read-only durchschlüpfen.
+
+**Phase 3 (v1.13.0) — Cloud-Refresh vs. Wake-Vehicle Distinction:**
+- Neuer Service-Alias `refresh_cloud_cache` für `refresh_vehicle`. Macht klar: kein Wake, nur Cloud-Polling. `services.yaml` hat dafür eine eigene description-Sektion.
+- Backwards-compat: `refresh_vehicle` bleibt als Service registriert (`async_register("refresh_vehicle", _handle_refresh)` plus `async_register("refresh_cloud_cache", _handle_refresh_cloud_cache)` mit identischem Body).
+
+**Phase 3 (v1.13.0) — 5-min Wake-Cooldown pro VIN:**
+- Konstante `_WAKE_COOLDOWN = timedelta(minutes=5)` in `coordinator.py`
+- Per-VIN `_wake_last_at: dict[str, datetime]` State
+- `async_wake_vehicle(vin)` checkt VOR dem 3/Tag Budget-Check:
+  ```python
+  if (last := self._wake_last_at.get(vin)) is not None:
+      remaining = _WAKE_COOLDOWN - (now - last)
+      if remaining > timedelta(0):
+          raise ServiceValidationError(
+              translation_domain=DOMAIN,
+              translation_key="wake_cooldown_active",
+              translation_placeholders={
+                  "remaining_s": str(int(remaining.total_seconds())),
+                  "cooldown_min": str(int(_WAKE_COOLDOWN.total_seconds() // 60)),
+              },
+          )
+  ```
+- `_wake_last_at[vin] = now` wird nach erfolgreichem Wake gesetzt (gleiche Stelle wo `_wake_count[vin]` inkrementiert wird).
+- Schützt vor Click-Spam-Loops (User klickt 5× in Folge "Wake").
+
+**Phase 3 (v1.13.0) — Per-VIN Per-Command-Class asyncio.Lock mit Timeout:**
+- Konstante `_COMMAND_LOCK_TIMEOUT = 60.0` Sekunden in `coordinator.py`
+- `_COMMAND_CLASS: dict[str, str]` mappt command_method → command_class (lock/climate/charge/window/wake/flash/refresh/set_value)
+- `_get_command_lock(vin, command_class) → asyncio.Lock` lazy creation in `self._command_locks[(vin, command_class)]`
+- `is_command_in_flight(vin, command_class) → bool` checkt `lock.locked()`
+- `_cariad_cmd` wraps in `asyncio.timeout(60) + asyncio.Lock`:
+  ```python
+  command_class = _COMMAND_CLASS.get(method)
+  if command_class is None:
+      return await self._dispatch_cmd_locked(...)  # Fallback for unknown
+  lock = self._get_command_lock(vin, command_class)
+  async with asyncio.timeout(_COMMAND_LOCK_TIMEOUT):
+      async with lock:
+          return await self._dispatch_cmd_locked(...)
+  ```
+- `_dispatch_cmd_locked` ist die extracted Original-Logic.
+- Verhindert: zwei `lock_doors` Klicks gleichzeitig (zweiter wartet bis erster fertig), `start_climatisation` + `stop_climatisation` overlap (sequenziell).
+- Timeout-Fallback: hängt ein Command 60s+ → `asyncio.TimeoutError` → die wartende Command läuft weiter (kein Deadlock).
+
+#### #62 Anonymized Diagnostics-Export Polish
+
+**Token-Redaction expanded** (`diagnostics.py:_REDACT_KEYS`):
+- Neu: `access_token`, `refresh_token`, `id_token`, `accessToken`, `refreshToken`, `idToken`, `client_secret`, `clientSecret`
+- Zentralisiert die Redaction-Liste; vorher waren manche Token-Varianten nicht abgedeckt.
+
+**Email Partial-Mask** (`diagnostics.py`):
+- `_EMAIL_RE = re.compile(r"([A-Za-z0-9._%+-])[A-Za-z0-9._%+-]*@[A-Za-z0-9.-]+(\.[A-Za-z]{2,})")`
+- `_mask_email(value)` → `f"{m.group(1)}***@***{m.group(2)}"` ⇒ `prash@gmail.com` → `p***@***.com`
+- Erlaubt Identifizierung des Reporters wenn er sich später meldet (1. Buchstabe + TLD), ohne PII an die Öffentlichkeit zu geben.
+
+**GPS Opt-In Rounding** (`diagnostics.py:_scrub`):
+- Neuer Parameter `gps_round=False` in `_scrub`
+- Wenn `True`: Lat/Lon Felder werden auf 1 Dezimalstelle gerundet (~11km Granularität)
+- `async_get_config_entry_diagnostics` derived `gps_round` aus `not entry.options.get(CONF_ENABLE_REVERSE_GEOCODING, False)` — wer Reverse-Geocoding aktiv hat, hat volle Genauigkeit bereits akzeptiert
+
+#### #64 Process & Governance
+
+**`.github/ISSUE_TEMPLATE/scout_report.yml`** (NEU):
+- YAML form für Vehicle Data Scout Reports (1-klick pre-fill aus HA Repair-Issue)
+- Fields: brand-Picker (8 Brands), vehicle-Modell+Year, vag_connect_version, scout_report markdown (multi-line), privacy_confirm (checkbox)
+
+**`.github/ISSUE_TEMPLATE/error_report.yml`** (NEU):
+- YAML form für Error Reporter Dumps aus v1.9.0 Reporter Pipeline
+- Fields wie scout_report + error_summary + reporter_dump markdown
+
+**`BRAND_CAPTAINS.md`** (NEU, root):
+- Initial Brand Captains Tabelle (aktuell nur Maintainer)
+- "Bewährte Tester" Tabelle: Gerhard2808 (CUPRA Born), tritanium73 (Skoda), DnnsJp74 (Audi)
+- "Wie werde ich Captain?" Anleitung — Captain darf Issues triagieren für seine Brand, kriegt Code-Review-Priorität
+- Captain duties + Privacy notes (kein VIN/Email/Token/GPS in Issues teilen)
+
+#### Translations
+
+8 Sprachen (de/en/fr/es/nl/pl/cs/sv) — neue Keys in `exceptions:`:
+- `wake_cooldown_active` mit `{remaining_s}` + `{cooldown_min}` placeholders
+- `read_only_mode_active`
+
+Bug-Fix entdeckt während Translation-Update: `de.json` hatte `wake_budget_exhausted` (aus v1.12.0) komplett gefehlt — nachgereicht mit synthesizer DE-Wording konsistent zu en.json:
+> "Tägliches Wake-Up-Budget erschöpft ({count}/{budget}). Zum Schutz der 12V-Batterie werden bis Mitternacht UTC keine weiteren Wake-Up-Anfragen gesendet. Siehe sensor.wake_count_today."
+
+#### Tests
+
+Neue Datei `tests/test_v1130_production_hardening.py` mit 31 Tests:
+- `TestCapabilityMap` (5) — CAPABILITY_MAP Brand-Inheritance + lookup
+- `TestCommandCapabilitySupported` (8) — Tri-state Semantik + Skoda-Extras (active/user-enabled/license-issue)
+- `TestCommandLock` (4) — Lazy creation + per-class isolation + is_command_in_flight
+- `TestWakeCooldown` (3) — Erstes Wake / Cooldown raises / Nach Cooldown durchgeht
+- `TestReadOnlyServiceBlocking` (2) — `_coord_writeable` raises + Phase 1 nicht regrediert
+- `TestDiagnosticsPolish` (7) — Token-Redaction + Email-Mask + GPS-Rounding
+- `TestSkodaCapabilities` (2) — Endpoint URL + Non-dict response handling
+
+#### Doc-Refresh (rolled into v1.13.0)
+
+- GitHub About-Section auf v1.12.3-Stand aktualisiert (war veraltet auf "68 entities, cloud push") + 2 neue Topics (`vehicle-data-scout`, `phev`)
+- Master DE README + 7 Sprachen "Aktueller Stand & ehrliche Limits" Sektion komplett refresht von v1.8.12 auf v1.12.3 — alle 12 LIVE-Features dokumentiert
+- Roadmap-Sektion in allen 8 READMEs vereinfacht auf "Single Source of Truth" Pointer + Tabelle der letzten 9 Releases + nächste 5 Sessions
+- Bi-lingual Title Convention etabliert ab v1.12.3: Section-Titles `DE / EN`, Body bleibt deutsch
+
+#### Files modified
+
+```
+custom_components/vag_connect/
+  __init__.py                  (+ _coord_writeable, refresh_cloud_cache alias)
+  button.py                    (uniform capability gate, removed _BRANDS_WITH_CAPABILITY_GATING)
+  cariad/_capabilities.py      (NEW)
+  cariad/api/skoda.py          (+ get_capabilities)
+  climate.py                   (+ capability gate)
+  coordinator.py               (+ command_capability_supported, _wake_last_at cooldown,
+                                 _command_locks, _COMMAND_CLASS, _dispatch_cmd_locked,
+                                 Skoda capability schema tolerance)
+  diagnostics.py               (token redaction expanded, email partial mask, gps_round)
+  lock.py                      (+ capability gate)
+  manifest.json                (1.12.3 → 1.13.0)
+  number.py                    (+ capability gate, _CMD_ID map)
+  services.yaml                (refresh_vehicle desc, + refresh_cloud_cache)
+  strings.json                 (+ wake_cooldown_active, + read_only_mode_active)
+  switch.py                    (+ capability gate, _supported helper)
+  translations/{de,en,fr,es,cs,nl,pl,sv}.json
+                               (+ exceptions for cooldown + read-only;
+                                 de.json also got missing wake_budget_exhausted)
+
+.github/ISSUE_TEMPLATE/
+  error_report.yml             (NEW)
+  scout_report.yml             (NEW)
+
+BRAND_CAPTAINS.md              (NEW)
+docs/RESEARCH_NOTES_2026-05-02.md (NEW, 423 lines)
+tests/test_v1130_production_hardening.py (NEW, 31 tests)
+```
+
+---
+
 ## [1.12.3] - 2026-05-01
 
 ### Scout-Pfade #111 + #113 + #114 mit Wildcard-Strategie / Scout paths bundled with wildcard strategy

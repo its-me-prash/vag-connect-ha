@@ -21,18 +21,30 @@ async def async_setup_entry(
         return
     entities: list[SwitchEntity] = []
 
+    # v1.13.0 (#56 Phase 3) — local helper to skip entity creation when
+    # the backend explicitly reports the underlying capability missing.
+    # ``False`` only when explicitly confirmed missing; ``None`` (unknown)
+    # keeps the entity (Phase 2 catches at runtime).
+    def _supported(vin: str, command_id: str) -> bool:
+        return coordinator.command_capability_supported(vin, command_id) is not False
+
     for vin, vehicle in coordinator.vehicles.items():
-        entities.append(VagLockSwitch(coordinator, vin))
-        entities.append(VagClimatisationSwitch(coordinator, vin))
-        entities.append(VagWindowHeatingSwitch(coordinator, vin))
+        if _supported(vin, "command_lock"):
+            entities.append(VagLockSwitch(coordinator, vin))
+        if _supported(vin, "command_start_climate"):
+            entities.append(VagClimatisationSwitch(coordinator, vin))
+        if _supported(vin, "command_start_window_heating"):
+            entities.append(VagWindowHeatingSwitch(coordinator, vin))
         # VagSeatHeatingSwitch + VagAutoUnlockSwitch removed in v1.8.0:
         # they relied on internal CarConnectivity object mutation that no
         # longer exists in our own CARIAD client. They will return once a
         # real API command is implemented. See issue #60.
         if vehicle.get("has_battery"):  # EV + PHEV
-            entities.append(VagChargingSwitch(coordinator, vin))
-            for timer_id in (1, 2, 3):
-                entities.append(VagDepartureTimerSwitch(coordinator, vin, timer_id))
+            if _supported(vin, "command_start_charging"):
+                entities.append(VagChargingSwitch(coordinator, vin))
+            if _supported(vin, "command_set_departure_timer"):
+                for timer_id in (1, 2, 3):
+                    entities.append(VagDepartureTimerSwitch(coordinator, vin, timer_id))
 
     async_add_entities(entities)
 
