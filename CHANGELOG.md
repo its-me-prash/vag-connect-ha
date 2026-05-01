@@ -5,6 +5,18 @@ Alle wesentlichen Änderungen werden hier dokumentiert.
 Format: [Keep a Changelog 1.0.0](https://keepachangelog.com/de/1.0.0/)  
 Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
+> 📖 **Bi-lingual title convention (ab v1.12.3 / since v1.12.3):** Section-Titles sind **DE / EN** geteilt durch ` / `. Body-Inhalt bleibt auf Deutsch (Audience ist primär die deutschsprachige VAG-HA-Community + DACH FB-Gruppen). Übersetzungen einzelner Body-Texte gibt es bei Bedarf via [`docs/CHANGELOG_TECHNICAL.md`](docs/CHANGELOG_TECHNICAL.md) — dort wird das gleiche Pattern angewendet.
+
+## [Unreleased]
+
+### 📚 Documentation refresh / Doc-only refresh (2026-05-01, no version bump)
+
+- 🆕 **GitHub About-Section** auf v1.12.3-Stand aktualisiert (war veraltet auf "68 entities, cloud push") + 2 neue Topics (`vehicle-data-scout`, `phev`)
+- 🔄 **Master DE README + 7 Sprachen** "Aktueller Stand & ehrliche Limits" Sektion komplett refresht von v1.8.12 auf v1.12.3 — alle 12 LIVE-Features (Vehicle Data Scout, 12V, Optimistic UI, PHEV-Range-Triple, Read-only, etc.) + planned v1.13.0–v2.0.0 Sessions documented
+- 🔄 **Roadmap-Sektion in allen 8 READMEs** vereinfacht auf "Single Source of Truth" Pointer + Tabelle der letzten 9 Releases + nächste 5 Sessions
+- 📖 **Bi-lingual Title Convention** etabliert ab v1.12.3: Section-Titles `DE / EN`, Body bleibt deutsch
+- 📜 `docs/CHANGELOG_TECHNICAL.md` v1.12.2 + v1.12.3 entries nachgereicht (waren für die jeweiligen Releases vorhanden, hier dokumentiert)
+
 ## Semver-Regeln für dieses Projekt (pre-1.0.0)
 
 | Was | Version | Beispiel |
@@ -28,7 +40,7 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ## [Unreleased]
 
-## [1.12.3] - 2026-05-01 🛰️ Scout-Pfade #111 (DnnsJp74) + #113 (Golf GTE) + #114 (Audi S6)
+## [1.12.3] - 2026-05-01 🛰️ Scout-Pfade #111 + #113 + #114 / Scout paths bundled with wildcard strategy
 
 🌟 **Drei Scout-Reports zusammen ausgeliefert.** #111 von DnnsJp74 (zweiter Community-User), plus #113+#114 von Prash auf seinen eigenen Vehicles (Golf GTE 14 Felder + Audi S6 C8 20 Felder) — alle drei zeigen denselben Pattern: `.value` Container haben Children die wir whack-a-mole jagen würden, wenn nicht Wildcards eingesetzt werden.
 
@@ -68,7 +80,7 @@ Plus alle 23 #111 paths unverändert eingeschlossen.
 
 **Closes:** #111, #113, #114.
 
-## [1.12.2] - 2026-05-01 🌟🛰️ Erstes Community-Scout-Report (Skoda #107 von tritanium73)
+## [1.12.2] - 2026-05-01 🌟🛰️ Erstes Community-Scout-Report (Skoda #107 von tritanium73) / First community Scout report
 
 🌟 **Erste Live-Validation der v1.9.0 Reporter Pipeline durch einen Nicht-Maintainer-User!**
 
@@ -102,7 +114,7 @@ Genau dafür wurde v1.9.0 gebaut. **Riesigen Dank an tritanium73 für den ersten
 **Closes:** #107.
 **Acknowledges:** #108 (transient 502, no fix needed — system working as designed).
 
-## [1.12.1] - 2026-04-30 🛰️📚 Scout-Pfade #105/#106 + Gerhard's Born Fixture + FAQ #47
+## [1.12.1] - 2026-04-30 🛰️📚 Scout-Pfade #105/#106 + Gerhard's Born Fixture + FAQ #47 / Scout paths + Born fixture + Subscription FAQ
 
 🛰️ **Vehicle Data Scout Welle 4** (#105 VW EU 12 Felder + #106 Audi 8 Felder):
 
@@ -144,7 +156,7 @@ Tabelle mit allen v1.9.1 `classify_command_failure` Markern + ihre Bedeutung. Ve
 
 **Closes:** #105, #106, #47.
 
-## [1.12.0] - 2026-04-30 🔋💡⚡🧯🔒 5-in-1 Feature-Sprint
+## [1.12.0] - 2026-04-30 🔋💡⚡🧯🔒 5-in-1 Feature-Sprint / Five features in one MINOR
 
 ✨ **Fünf neue Funktionen — alle in einer kohärenten "More Control + Diagnostics"-Theme:**
 

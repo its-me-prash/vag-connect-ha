@@ -11,7 +11,7 @@
 <p align="center">
   <a href="https://hacs.xyz"><img src="https://img.shields.io/badge/HACS-Custom-orange.svg?style=for-the-badge"></a>
   <a href="https://github.com/its-me-prash/vag-connect-ha/releases"><img src="https://img.shields.io/github/v/release/its-me-prash/vag-connect-ha?style=for-the-badge"></a>
-  <a href="../LICENSE"><img src="https://img.shields.io/badge/License-Apache%202.0-blue.svg?style=for-the-badge"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-Apache%202.0-blue.svg?style=for-the-badge"></a>
   <a href="https://github.com/its-me-prash/vag-connect-ha/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/its-me-prash/vag-connect-ha/ci.yml?branch=main&style=for-the-badge&label=CI" alt="CI"></a>
   <a href="https://github.com/its-me-prash/vag-connect-ha/releases"><img src="https://img.shields.io/github/downloads/its-me-prash/vag-connect-ha/total?style=for-the-badge&label=Downloads" alt="Downloads"></a>
   <a href="../custom_components/vag_connect/quality_scale.yaml"><img src="https://img.shields.io/badge/Quality%20Scale-Platinum%20%F0%9F%8F%86-gold?style=for-the-badge"></a>
@@ -38,60 +38,95 @@ Depuis v0.14.1, l'intégration parle **directement** à l'API CARIAD — client 
 
 > ✅ **Successeur multi-marque activement maintenu** de [`mitch-dc/volkswagen_we_connect_id`](https://github.com/mitch-dc/volkswagen_we_connect_id) (archivé le 2025-10-29) et [`skodaconnect/homeassistant-skodaconnect`](https://github.com/skodaconnect/homeassistant-skodaconnect) (déprécié le 2025-03-14). Une intégration pour Audi, VW, Škoda, SEAT, CUPRA, Porsche et VW US/CA — pas de plugin séparé par marque.
 
-## État actuel et limites honnêtes (v1.8.12)
+## État actuel et limites honnêtes / Current Status & Honest Limits (v1.12.3)
+
+VAG Connect évolue activement. Pour que tu saches ce qui fonctionne et ce qui arrive :
 
 ### ✅ Ce qui FONCTIONNE maintenant (toutes les 7 marques)
 
-- 🟢🟡⚫ **Capteur Multi-Brand Connection-State** — online / standby / offline pour toutes les marques (v1.8.12).
-- 🛡️ **Stabilité défensive** — retry 504, retry erreurs réseau transitoires, cache 6h + tolérance 3 échecs (v1.8.7).
-- 🔓 **Commandes Lock / Climate / Charging** pour Audi 2024+ et VW Passat 2025 — 10 commandes avec fallback CARIAD `/v1/` ↔ `/v2/` (v1.8.5 + v1.8.8).
-- 🚪 **CUPRA / SEAT entités complètes** avec chemins JSON OLA vérifiés + binary sensors par fenêtre (v1.8.9).
-- 🚙 **Škoda** `detail` block + `reliableLockStatus` + `fullyChargedAt` (v1.8.11).
+**🛰️ Rapports de bugs & demandes de fonctionnalités en 1-clic (LIVE depuis v1.9.0)**
 
-### 🔬 Bientôt : Rapports de bugs en 1-clic & demandes de fonctionnalités (v1.9.0)
+Deux capteurs de diagnostic avec une pipeline reporter commune — **première vraie validation live par des utilisateurs de la communauté** en v1.10.2 (Gerhard / CUPRA Born), v1.12.2 (tritanium73 / Skoda) et v1.12.3 (DnnsJp74 / Audi) :
 
-> **Tu nous aides à améliorer l'intégration — sans apprendre un seul mot de GitHub ou Markdown.**
+- 🔬 **Vehicle Data Scout** — détecte automatiquement les champs JSON inconnus dans l'API de ta voiture. Localisé par marque dans 8 langues (DE : API-Beobachter, FR : Observateur d'API, etc.).
+- 🚨 **Error Reporter** — Ring-buffer des 20 dernières erreurs d'intégration avec contexte anonymisé (modèle, firmware, stack trace).
+- 🔘 **Reporter Pipeline :** les deux capteurs créent automatiquement des notifications HA Repair avec un GitHub-Issue pré-rempli en lien 1-clic. Plus un téléchargement de diagnostics avec tout masqué pour le forum/Facebook.
+- 🔒 **Promesse confidentialité :** Rien ne quitte ton HA sans ton clic explicite. VIN masqués, GPS arrondi à 1 décimale, JWT/UUID/emails supprimés. Conforme RGPD.
 
-Deux nouveaux capteurs de diagnostic dans v1.9.0 :
+**🟢🟡⚫ Multi-Brand Connection-State (v1.8.12)**
 
-| Capteur | Ce qu'il fait | Comment il t'aide |
-|---|---|---|
-| 🔬 **Détecteur de nouvelles données** | Détecte automatiquement les nouveaux champs dans l'API de ta voiture que nous ne traitons pas encore | Si ton Audi A4 2017 ou VW Golf 7 GTE renvoie des champs que nous ne connaissons pas → nous les ajoutons à la prochaine version |
-| 🛠️ **Rapporteur d'erreurs** | Collecte les erreurs récentes avec contexte anonymisé (modèle, firmware, stack trace) | Au lieu d'une capture forum sans info → rapport de bug structuré que nous corrigeons immédiatement |
+Capteur `connection_state` (online / standby / offline) pour Audi, VW EU, Škoda, SEAT, CUPRA — première intégration VAG avec statut de connexion centralisé. Helper brand-agnostic `compute_connection_state` avec parcours récursif `carCapturedTimestamp`.
 
-**Workflow en 1-clic** (identique pour les deux capteurs) :
+**🔋 Surveillance batterie 12V + Smart-Wake (v1.12.0)**
 
-```
-1. HA affiche une notification quand quelque chose de nouveau est détecté
-2. Tu cliques "Plus d'info" → modal avec contenu anonymisé + 2 boutons :
+- Capteur `voltage_12v` (V) + binary `warning_12v_low` à <11.5V — empêche les pannes silencieuses de l'API dues à une batterie de démarrage vide
+- Capteur `wake_count_today` + soft-cap à 3 wakes/jour (`_WAKE_BUDGET_PER_DAY`) protège la 12V des wake-loops, lève `wake_budget_exhausted` AVANT l'appel API
 
-   📤 Signaler sur GitHub    ← ouvre un rapport pré-rempli
-   📋 Copier pour forum/FB   ← Markdown dans le presse-papiers
+**💨 UI optimiste pour Lock/Climate/Charging (v1.11.1)**
 
-3. Submit → terminé en 30 secondes
-```
+Les switches basculent immédiatement au clic (pattern myskoda PR #832), aller-retour API en arrière-plan. En cas d'échec : revert + ServiceValidationError. 8 méthodes actuator migrées.
 
-🔒 **Promesse confidentialité :** **Pas d'auto-push.** Rien ne quitte ton installation HA sans ton clic explicite. VIN, GPS, user-IDs sont anonymisés avant affichage. GDPR-compatible.
+**🔋 PHEV-Range-Triple (v1.10.0 + #94 + #96 follow-up en v1.11.1)**
 
-🤝 **Pourquoi on en a besoin :** Nous sommes la seule intégration HA VAG active pour les 7 marques. Avec ta contribution en 1-clic, nous découvrons les différences entre modèles en **jours au lieu de mois**.
+Trois capteurs d'autonomie explicites : `electric_range_km`, `combustion_range_km`, `total_range_km`. Le parser VW EU/Audi classifie par type de motorisation (4 sources au lieu de 2). Fallback diesel Audi depuis `measurements.rangeStatus.value.dieselRange`. Vérifié via evcc-io/evcc#19045 + sample Audi Q4 + logs CarConnectivity.
 
-### ⚠️ Encore en cours
+**🔒 Mode Read-only Phase 1 (v1.12.0)**
 
-Capability filter phase 2 (v1.9.1) · Defensive coding phase 2 (v1.9.2) · Optimistic Lock/Climate (v1.9.3) · Diagnostics + Smart-wake + protection 12V (v1.10.0) · Push updates (v1.10.x) · Trip stats + EU Data Act (v1.11.0 / v2.0.0).
+Toggle d'options "Read-only Mode" → ignore les plateformes lock/switch/button(non-refresh)/climate/number pour les propriétaires soucieux de confidentialité/sécurité. Sensors + binary_sensors + device_tracker restent.
 
-### 🚫 Limites conscientes
+**⚡ Number Max-Charge-Current modifiable (v1.12.0)**
 
-- **Plateforme image :** aucune API CARIAD render officielle. À supprimer ou basculer vers URLs utilisateur en v1.10.0.
-- **PPC/PPE Audi 2025+** (Q5, A5/S5, A6 e-tron, Q6 e-tron, RS e-tron GT Facelift) — graceful degradation au lieu de 404.
-- **Ford / marques non-VAG :** hors périmètre — voir [`marq24/ha-fordpass`](https://github.com/marq24/ha-fordpass).
+Slider 6-32A au lieu d'un capteur read-only seul. Nouveau `command_set_max_charge_current` POST chargingSettings.
+
+**💡 Binary-Sensors par feu (v1.12.0)**
+
+Dynamiquement par type de feu depuis le dict `lights_individual` + agrégats `lights_on` + `lights_count`.
+
+**🛠️ Stabilité défensive (v1.8.7 + v1.10.1)**
+
+- Retry 504, retry erreurs réseau transitoires, cache 6h + tolérance 3 échecs
+- Protection token-refresh-storm (max 3/h) — empêche les bans IP
+- Helpers `safe_int` / `safe_float` / `safe_enum` — tolèrent les bizarreries du backend
+
+**🚪 Firmware-Shapes CUPRA Born 2026 (v1.10.2 — première validation live de Gerhard #53)**
+
+Chaîne de fallback de noms de champs : `battery.currentSocPercentage` (Born 2026) → `currentPct` (Rainer #109) → `currentSOC_pct` (legacy). Tolérance enum lowercase pour `"connected"` / `"locked"`. Compatibilité ascendante préservée.
+
+**🔓 Lock + Wake pour Audi/VW (v1.9.1, #92 Audi S6 C8)**
+
+`command_lock` envoie maintenant le S-PIN pour Audi/VW (CARIAD BFF répondait `403 spin_error`). `command_wake` utilise le fallback v1→v2.
+
+**🛡️ Capability-Filter Phase 2 (v1.9.1, #56)**
+
+Body-sniffing `classify_command_failure` pour les marqueurs `missing-capability` / `subscription_expired` / `not_entitled` / `spin_error`. `_cariad_cmd` écrit chaque résultat dans FeatureState. Les entités liées aux commandes (Lock/Climate/Switch/Buttons) deviennent automatiquement unavailable sur un "non" définitif du backend.
+
+### ⚠️ Encore en cours / What's still in progress (sessions planifiées)
+
+- **v1.13.0 MINOR** — Export de diagnostics anonymisés (#62) + Capability-Filter Phase 3 (`capability.active && user-enabled` PRE-création-d'entité, masque les boutons comme l'app MyCupra) + Read-only Phase 2/3 (Command-Locking + séparation des services cloud_refresh vs wake_vehicle).
+- **v1.14.0 MINOR** — Statistiques de trajets depuis Audi `tripstatistics/v1` (#24, #35).
+- **v1.15.0+ MINOR** — PPC Climate Body conditional shape (#29, #51), Theft/Alarm Binary (#33), UI minuteur Climate (#26).
+- **v1.16.0 MINOR** — SoC cible de charge spécifique au lieu + profils de charge (#25, #31).
+- **v1.17.0 MINOR** — Remote Start ICE (#28, pattern audi_connect_ha #717).
+- **v1.18.0 MINOR** — Push CUPRA/SEAT (Firebase FCM) + Push Skoda (mysmob MQTT) pour des mises à jour en temps réel sans polling (#57, #27).
+- **v2.0.0 MAJOR** — HACS Default + Live-Tests toutes marques + EU Data Act ready (pycupra `EUDAConnection` comme référence, deadline septembre 2026) (#13, #59).
+
+### 🚫 Limites conscientes / Conscious limits
+
+- **Plateforme image :** aucune API CARIAD render-image officielle n'existe. L'entité image basculera vers des URL fournies par l'utilisateur dans une future release.
+- **PPC/PPE Audi 2025+** (Q5, A5/S5, A6 e-tron, Q6 e-tron, RS e-tron GT Facelift) — nouvelle architecture E³ 1.2, pas encore reverse-engineerée publiquement (même pas dans audi_connect_ha ou CarConnectivity). VAG Connect détecte ces véhicules et fait du **graceful degradation** au lieu d'erreurs 404.
+- **Ford / marques non-VAG :** hors périmètre — voir [`marq24/ha-fordpass`](https://github.com/marq24/ha-fordpass) pour Ford.
 
 ### 🔧 Prérequis confidentialité
 
-**"Partager ma position"** doit être activé dans My-VW / My-Audi / MySkoda / MyCupra — sinon backend 403.
+Pour que la position GPS, le statut véhicule et le préchauffage fonctionnent, **"Partager ma position"** doit être activé dans ton app My-VW / My-Audi / MySkoda / MyCupra — sinon le backend répond avec 403.
 
-### 📚 Plus d'infos
+### 📚 Plus d'infos / More info
 
-- 🗺️ [`../docs/ROADMAP.md`](../docs/ROADMAP.md) · 📜 [`../docs/CHANGELOG_TECHNICAL.md`](../docs/CHANGELOG_TECHNICAL.md) · 🤝 [`../docs/SESSION_HANDOFF.md`](../docs/SESSION_HANDOFF.md) · 🔬 [`../docs/RESEARCH_NOTES_2026-04-29.md`](../docs/RESEARCH_NOTES_2026-04-29.md)
+- 🗺️ Roadmap : [`docs/ROADMAP.md`](docs/ROADMAP.md) — priorisation P0/P1/P2/P3 complète de tous les issues ouverts
+- 📜 Tech Changelog : [`docs/CHANGELOG_TECHNICAL.md`](docs/CHANGELOG_TECHNICAL.md) — par release : mappings de champs + décisions d'architecture + refs sources externes
+- 🤝 Session Handoff (pour contributeurs & outils IA) : [`docs/SESSION_HANDOFF.md`](docs/SESSION_HANDOFF.md)
+- 🔒 Règles de confidentialité & gestion des données : section [`CONTRIBUTING.md`](CONTRIBUTING.md) (post-#53 third-party review)
+- 📋 FAQ Subscription / Service Plus / diagnostic `missing-capability` : section FAQ de [`CONTRIBUTING.md`](CONTRIBUTING.md)
 
 ---
 
@@ -185,41 +220,41 @@ Redémarrez Home Assistant.
 
 ---
 
-## Feuille de Route
+## Feuille de Route / Roadmap
 
-### Acquis
+> 📍 **Single Source of Truth :** [`docs/ROADMAP.md`](docs/ROADMAP.md) — priorisation P0/P1/P2/P3 complète avec tous les ~20 issues ouverts catégorisés.
 
-| Version | Contenu | Statut |
+### Dernières releases / Recent releases (2026-04-29 + 2026-04-30 + 2026-05-01)
+
+| Version | Contenu | Date |
 |---|---|---|
-| v1.0–v1.5 | 9 plateformes, 7 marques, corrections & audit des entités | ✅ Fait |
-| v1.6.0 | SEAT/CUPRA 9 endpoints, correction Škoda, Audi PPC, verrouillage, mode nuit | ✅ Fait |
-| v1.7.0 | Réécriture complète Škoda, traductions automobiles dans toutes les langues, fiabilité | ✅ Fait |
+| v1.8.6–v1.8.12 | Foundation-Sprint : stabilité défensive, Capability-Filter Phase 2, Multi-Brand Connection-State, tous les parsers de marque sur des chemins API live vérifiés | 2026-04-29 |
+| v1.9.0 | 🛰️ Vehicle Data Scout + Error Reporter + Reporter Pipeline | 2026-04-29 |
+| v1.9.1 | Hotfix Audi/VW Lock + Wake (#92) + Capability-Filter Phase 2 + chemins Scout #90/#91 | 2026-04-29 |
+| v1.10.0–v1.10.2 | PHEV-Range-Triple (#94), Defensive Coding Phase 2 (#58), firmware CUPRA Born 2026 (#53 Gerhard) | 2026-04-29/30 |
+| v1.11.0–v1.11.1 | Closure Issue #91 (Light/Service/Number), fix Golf GTE Fuel-Range (#96), UI optimiste (3B-Part-3) | 2026-04-30 |
+| v1.12.0 | 🔋💡⚡🧯🔒 Sprint 5-en-1 : 12V (#23) + Per-Light + Number modifiable + Smart-Wake (#55) + Read-only Phase 1 (#63) | 2026-04-30 |
+| v1.12.1 | Chemins Scout #105/#106 + fixture Born de Gerhard (#53 avec consentement) + FAQ #47 | 2026-04-30 |
+| v1.12.2 | 🌟 **Premier Scout-Report communautaire** (Skoda #107 par tritanium73) | 2026-05-01 |
+| **v1.12.3** | Chemins Scout #111+#113+#114 bundlés avec stratégie wildcard (`fuelStatus.rangeStatus.value.*` etc.) | **2026-05-01** |
 
-### Plan de sessions (P0 → P2)
+### Prochaines sessions / Next sessions
 
-| Session | Version | Portée | Issues |
-|---|---|---|---|
-| **1 — Foundation Fix** | v1.8.0 | iot_class, disponibilité par VIN, S-PIN fail-fast, writables fictifs supprimés | **#60** |
-| **1.5 — Confidentialité & Auth** | v1.8.1 | Masquage VIN dans logs/diagnostics, ConfigEntryAuthFailed sur credentials périmés, documentation userPosition | — |
-| **2A — Capabilities Foundation** | v1.8.2 | Taxonomie d'erreurs, modèle 3 états, cache capabilities (TTL 24h) | #68 |
-| **2B — Button gating** | v1.8.3 | Masquer flash/wake sur SEAT/CUPRA selon capabilities | #56 |
-| **2C — Lock debug + userPosition** | v1.8.4 | Analyser `internal-error` lock + vérifier userPosition | #56 |
-| **3 — Command Profile** | v1.8.5 | Routing marque/région/plateforme, fix RS e-tron GT | #61, #51 |
-| **4 — Diagnostics + Fixtures** | v1.8.6 | Diagnostics anonymisés, tests de régression | #62, #58 |
-| **5 — Process & Governance** | — | Issue forms, brand captains, CODEOWNERS, guide vie privée | #64 |
-| **6 — Read-only + Locking** | v1.9.0 | Mode read-only, command locking, cloud vs wake | #63, #55 |
-| **7 — Push CUPRA/SEAT** | v1.9.1 | Firebase FCM via mqtt.messagehub.de | #57 |
-| **8 — Push Škoda** | v1.9.2 | Intégration broker MQTT | #57 |
-| **9 — Feature batch** | v1.10.0 | Statistiques, historique charge, UI minuteurs, alarme, profils charge | #24, #35, #26, #33, #31 |
-| **10 — HACS Default + v2.0.0** | v2.0.0 | Tests live toutes marques, matrice compatibilité, EU Data Act | #13, #59 |
+| Version | Portée | Issues |
+|---|---|---|
+| **v1.13.0** ⭐ MINOR | Export de diagnostics anonymisés + Capability-Filter Phase 3 + Read-only Phase 2/3 | #62, #56 Phase 3, #63 Phase 2/3 |
+| **v1.14.0** MINOR | Statistiques de trajets depuis Audi `tripstatistics/v1` | #24, #35 |
+| **v1.15.0+** MINOR | PPC Climate (#29, #51), Theft/Alarm Binary (#33), UI minuteur Climate (#26) | various |
+| **v1.18.0** MINOR | Push CUPRA/SEAT (Firebase FCM) + Push Skoda (mysmob MQTT) | #57, #27 |
+| **v2.0.0** 🎉 MAJOR | HACS Default + Live-Tests toutes marques + EU Data Act ready (deadline sept. 2026) | #13, #59 |
 
-> Ordre strict P0 → P1 → P2. Sessions 1–4 non-négociables avant tout ajout de fonctionnalité.
+> L'ordre est **strictement P0 → P1 → P2**. Les corrections de bugs ont toujours la priorité sur les fonctionnalités.
 
 ---
 
 ## Licence
 
-Apache License 2.0 — [LICENSE](../LICENSE)
+Apache License 2.0 — [LICENSE](LICENSE)
 
 **VAG Connect™** est une marque non déposée (™, pas ®). Veuillez ne pas utiliser ce nom dans les forks afin d'éviter toute confusion.
 

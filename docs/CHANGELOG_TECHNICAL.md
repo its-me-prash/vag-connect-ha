@@ -1,4 +1,6 @@
-# Technische Changelog-Details (v1.8.6+)
+# Technische Changelog-Details (v1.8.6+) / Technical changelog details
+
+> 📖 **Bi-lingual title convention (ab v1.12.3 / since v1.12.3):** Section-Titles sind **DE / EN** geteilt durch ` / `. Body-Inhalt bleibt auf Deutsch (Audience ist primär die deutschsprachige VAG-HA-Community + DACH FB-Gruppen).
 
 Dieses Dokument enthält die vollständigen technischen Detail-Notes für
 die Releases v1.8.6 und neuer — gedacht für Contributors, Issue-Reporter,
@@ -12,9 +14,83 @@ weiterhin direkt in `CHANGELOG.md` zu finden.
 
 ---
 
+## [1.12.3] - 2026-05-01
+
+### Scout-Pfade #111 + #113 + #114 mit Wildcard-Strategie / Scout paths bundled with wildcard strategy
+
+PATCH-Release nach v1.12.2. Drei Scout-Reports in einem Release gebundlet:
+- #111 von DnnsJp74 (Audi 23 Felder) — zweiter Community-Scout-Report
+- #113 von Prash (Golf GTE 14 Felder)
+- #114 von Prash (Audi S6 C8 20 Felder)
+
+#### Wildcard-Strategie
+
+Statt jeden neuen Sub-Field einzeln zu registrieren, decken Wildcards ganze Klassen ab. Stoppt das Whack-a-Mole-Pattern aus v1.12.0/1/2 wo wir bei jedem neuen Scout-Report einzeln nachregistriert haben.
+
+Neue Wildcards in `EXPECTED_KEYS["volkswagen"]["selectivestatus"]` (Audi inherits via table alias):
+
+```python
+"fuelStatus.rangeStatus.value.*"
+"fuelStatus.rangeStatus.value.primaryEngine.*"
+"fuelStatus.rangeStatus.value.secondaryEngine.*"
+"vehicleHealthInspection.maintenanceStatus.value.*"
+"departureProfiles.departureProfilesStatus.value.*"
+"userCapabilities.capabilitiesStatus.value.*"
+"automation.climatisationTimer.value.*"
+"automation.chargingProfiles.value.*"
+"charging.chargeMode.value.*"
+"charging.chargingCareSettings.*"
+"vehicleHealthWarnings.warningLights.value.*"
+"batteryChargingCare.value.*"  # proaktiv
+"climatisationTimers.value.*"   # proaktiv
+```
+
+Plus alle 23 #111 paths einzeln (5x Climatisation Zone-Felder, 4x Readiness ConnectionState, 2x Battery Min/Max, etc.) zur expliziten Dokumentation.
+
+#### Tests
+
+`tests/test_v1123_111_audi_scout.py` — 8 Tests:
+- 6 für #111 (verbatim payload silent + Audi inheritance + individual field paths)
+- 2 für #113/#114 (verbatim payloads silent)
+
+#### Hard Rules eingehalten
+
+- ✅ Strict-Semver: PATCH (EXPECTED_KEYS-only update)
+- ✅ Wildcard-Strategie future-proof gegen weitere Firmware-Updates
+- ✅ Audi inheritance via table alias
+
+---
+
+## [1.12.2] - 2026-05-01
+
+### Erstes Community-Scout-Report — Skoda #107 (tritanium73) / First community Scout report
+
+🌟 **Erste Live-Validation der v1.9.0 Reporter Pipeline durch einen Nicht-Maintainer-Community-User.**
+
+User `tritanium73` reichte am 2026-05-01 den ersten Vehicle Data Scout Report eines Community-Users ein. Die volle 1-Klick-Pipeline (Scout → Repair-Notification → pre-filled GitHub Issue → Maintainer-Fix) hat in der Wildbahn funktioniert.
+
+#### Skoda mysmob EXPECTED_KEYS Erweiterungen
+
+14 neue Pfade über 4 Endpoints in `EXPECTED_KEYS["skoda"]`:
+
+| Endpoint | Pfade |
+|---|---|
+| `vehicle-status` | `renders.lightMode` + `renders.darkMode` (2-segment fix für v1.9.1 wildcard-only registry) |
+| `air-conditioning` | `runningRequests`, `steeringWheelPosition`, `windowHeatingState.unspecified`, `timers`, `outsideTemperature`, `errors` |
+| `driving-range` | `carType`, `primaryEngineRange` (Skoda mysmob Variante zu CARIAD-BFFs `fuelStatus.primaryEngine`) |
+| `maintenance` | `maintenanceReport.capturedAt`, `preferredServicePartner`, `predictiveMaintenance`, `customerService` |
+
+Alle Skoda-only — SEAT/CUPRA (OLA) und VW EU/Audi (CARIAD-BFF) tables unaffected.
+
+#### Tests
+
+`tests/test_v1122_107_skoda_scout.py` — 6 Tests inkl. Defensive-Test dass SEAT/CUPRA Inheritance NICHT von Skoda-Updates betroffen ist.
+
+---
+
 ## [1.12.1] - 2026-04-30
 
-### Scout-Pfade #105/#106 + Gerhard's Born Fixture (#53 consent) + #47 FAQ
+### Scout-Pfade #105/#106 + Gerhard's Born Fixture (#53 consent) + #47 FAQ / Scout paths + Born fixture + Subscription FAQ
 
 PATCH-Release nach v1.12.0. Drei orthogonale Tracks die alle aus User-Feedback / Live-Tests heute kamen.
 
@@ -118,7 +194,7 @@ Verlinkt zu v1.9.1 Phase 2 (Auto-Recording-Pipeline) + v1.13.0 Phase 3 Plan (cap
 
 ## [1.12.0] - 2026-04-30
 
-### 5-in-1 Feature-Sprint: 12V (#23) + Per-Light Binary (#91 Welle 3) + Writeable Number (#91 follow-up) + Smart-Wake (#55) + Read-only Mode (#63)
+### 5-in-1 Feature-Sprint: 12V (#23) + Per-Light Binary (#91 Welle 3) + Writeable Number (#91 follow-up) + Smart-Wake (#55) + Read-only Mode (#63) / Five features in one MINOR
 
 **Theme:** "More Control + Diagnostics" — kohärenter MINOR-Sprint vor v2.0.0 mit fünf orthogonalen aber thematisch passenden Features.
 
