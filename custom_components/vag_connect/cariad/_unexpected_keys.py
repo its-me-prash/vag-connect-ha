@@ -404,6 +404,46 @@ EXPECTED_KEYS: dict[str, dict[str, set[str]]] = {
             "automation.climatisationTimer.error.*",
             "automation.chargingProfiles.error.*",
             "fuelStatus.rangeStatus.error.*",  # proactive — already saw fuelStatus.rangeStatus.error in #96
+            # v1.12.3 (#111 — DnnsJp74's Audi Live-Test 2026-05-01,
+            # ZWEITER community Scout report from a non-maintainer).
+            # 23 fields reported. Pattern: .value containers next to
+            # the .error wrappers we already registered in v1.12.0.
+            "automation.climatisationTimer.value",
+            "automation.chargingProfiles.value",
+            # Top-level batteryChargingCare + climatisationTimers job
+            # names — present in our selectivestatus query since v1.9.x
+            # but never registered in EXPECTED_KEYS catalog.
+            "batteryChargingCare",
+            "batteryChargingCare.*",  # children unknown, future-proof
+            "climatisationTimers",
+            "climatisationTimers.*",
+            # Charging chargeMode value sibling to .error + chargingCareSettings
+            "charging.chargeMode.value",
+            "charging.chargingCareSettings",
+            "charging.chargingCareSettings.*",
+            # Older auto-unlock-plug variant without AC suffix (#111 saw "off")
+            "charging.chargingSettings.value.autoUnlockPlugWhenCharged",
+            # 5x climatisationSettings.value.* zone + unit fields
+            "climatisation.climatisationSettings.value.unitInCar",
+            "climatisation.climatisationSettings.value.climatizationAtUnlock",
+            "climatisation.climatisationSettings.value.windowHeatingEnabled",
+            "climatisation.climatisationSettings.value.zoneFrontLeftEnabled",
+            "climatisation.climatisationSettings.value.zoneFrontRightEnabled",
+            # temperatureBatteryStatus Min + Max fields (parser already
+            # reads temperatureHvBatteryMin_K for battery_temp sensor;
+            # Max variant is new from #111)
+            "measurements.temperatureBatteryStatus.value.temperatureHvBatteryMin_K",
+            "measurements.temperatureBatteryStatus.value.temperatureHvBatteryMax_K",
+            # 4x connectionState meta + 2x connectionWarning meta on
+            # readiness.readinessStatus.value (we only had the parents
+            # connectionState/connectionWarning registered — Scout
+            # descended and found the leaves as unknown)
+            "readiness.readinessStatus.value.connectionState.isOnline",
+            "readiness.readinessStatus.value.connectionState.isActive",
+            "readiness.readinessStatus.value.connectionState.batteryPowerLevel",
+            "readiness.readinessStatus.value.connectionState.dailyPowerBudgetAvailable",
+            "readiness.readinessStatus.value.connectionWarning.insufficientBatteryLevelWarning",
+            "readiness.readinessStatus.value.connectionWarning.dailyPowerBudgetWarning",
         },
         "parkingposition": {
             "data", "data.lon", "data.lat", "data.carCapturedTimestamp",
