@@ -1,0 +1,131 @@
+{
+  "_meta": {
+    "_doc": "Anonymized CUPRA Born live response — used for regression tests.",
+    "_source": "User report from issue #53 (Gerhard2808), with explicit consent given on 2026-04-30",
+    "_consent_quote": "ja Fixture OK, ich hab nix zu verbergen :-)",
+    "_redaction_rules": [
+      "VIN replaced with ***003577 (last 6 only)",
+      "userId / accountId / tokens replaced with REDACTED placeholders",
+      "exact GPS coordinates replaced with rounded 1-decimal placeholders (~11 km bucket)",
+      "no email / address / license plate"
+    ],
+    "_brand": "cupra",
+    "_model": "born",
+    "_model_year": 2023,
+    "_region": "DE",
+    "_subscription": "active",
+    "_firmware": "Born OLA 2026-firmware (post-v1.10.2 fix)",
+    "_observed_capabilities": {
+      "honk_and_flash": "missing-capability (server-side, NOT subscription)",
+      "wake": "missing-capability",
+      "lock": "supported"
+    },
+    "_observed_entity_count": 72,
+    "_use_only_for": [
+      "automated regression tests of CUPRA Born parser drift",
+      "verifying field-name fallback chains in seat_cupra.py",
+      "Vehicle Data Scout EXPECTED_KEYS coverage tests"
+    ]
+  },
+  "vin_masked": "***003577",
+  "endpoints": {
+    "mycar": {
+      "_doc": "GET /v5/users/{userId}/vehicles/{vin}/mycar — verified shape",
+      "measurements": {
+        "mileage": {"value": 12345},
+        "batteryStatus": {
+          "value": {
+            "currentSocPercentage": 69,
+            "estimatedRangeInKm": 277
+          }
+        }
+      },
+      "engines": {
+        "_redacted_doc": "engine info block — opaque dict in Scout report"
+      },
+      "services": {
+        "_redacted_doc": "subscribed services info block — 3 keys reported"
+      },
+      "carCapturedTimestamp": "2026-04-29T19:06:33.853Z"
+    },
+    "status": {
+      "_doc": "GET /v2/vehicles/{vin}/status — Born 2026 firmware top-level shape",
+      "locked": true,
+      "lights": "off",
+      "hood": {"locked": "false"},
+      "updatedAt": "2026-04-29T19:06:33.853Z",
+      "doors": {
+        "frontLeft":  {"locked": true, "open": false},
+        "frontRight": {"locked": true, "open": false},
+        "rearLeft":   {"locked": true, "open": false},
+        "rearRight":  {"locked": true, "open": false}
+      },
+      "windows": {
+        "frontLeft":  "closed",
+        "frontRight": "closed",
+        "rearLeft":   "closed",
+        "rearRight":  "closed"
+      },
+      "trunk": {"open": false, "locked": true}
+    },
+    "charging": {
+      "_doc": "GET /v1/vehicles/{vin}/charging — Born 2026 firmware short-path shape",
+      "battery": {
+        "currentSocPercentage": 69,
+        "estimatedRangeInKm": 277
+      },
+      "charging": {
+        "state": "notReadyForCharging",
+        "remainingTimeInMinutes": 0,
+        "chargedPowerInKw": 0.0,
+        "type": "invalid",
+        "mode": "manual",
+        "settings": "profile"
+      },
+      "plug": {
+        "connection": "disconnected",
+        "lock": "unlocked"
+      }
+    },
+    "charging-info": {
+      "_doc": "GET /v1/vehicles/{vin}/charging/info — Born 2026 charge-care wrappers",
+      "settings": {"_redacted_doc": "3-key settings block"},
+      "chargingCareSettings": {"_redacted_doc": "1-key wrapper"},
+      "chargingCareStatus": {"_redacted_doc": "1-key wrapper"}
+    },
+    "ranges": {
+      "_doc": "GET /v1/vehicles/{vin}/ranges",
+      "electricRange": 277,
+      "totalRange": 277
+    },
+    "remote-availability": {
+      "_doc": "GET /v1/vehicles/{vin}/remote-availability",
+      "_redacted_doc": "remote-availability response (capabilities are missing-capability for honk-and-flash + wake)"
+    },
+    "honk-and-flash": {
+      "_doc": "POST /v1/vehicles/{vin}/honk-and-flash — Born response example",
+      "_request_body": {
+        "mode": "flash",
+        "userPosition": {"latitude": 48.0, "longitude": 11.0}
+      },
+      "_response_status": 400,
+      "_response_body": {
+        "code": "missing-capability",
+        "message": "Missing capability",
+        "timestamp": "2026-04-30T13:32:24.248153358Z"
+      }
+    }
+  },
+  "_what_works_post_v1102": {
+    "battery_soc": "69 — populated from battery.currentSocPercentage (camelCase fallback chain)",
+    "plug_connected": "false — populated from plug.connection==\"disconnected\" lowercase",
+    "connector_locked": "false — populated from plug.lock==\"unlocked\" lowercase",
+    "doors_locked": "true — populated from top-level status.locked",
+    "hood_open": "false — populated from status.hood.locked==\"false\" inversion",
+    "range_km": "277 — populated from battery.estimatedRangeInKm fallback"
+  },
+  "_what_still_needs_capability_phase_3": {
+    "command_flash": "missing-capability 400 — Phase 2 (v1.9.1) marks button unavailable AFTER first failure; Phase 3 (planned v1.13.0) would skip entity creation entirely so user never sees broken button",
+    "command_wake": "missing-capability — same"
+  }
+}

@@ -5,9 +5,9 @@
 > mirrors it for archive/historical purposes and links the active GitHub
 > issues for each session.
 
-**Last updated:** 2026-04-30 — post v1.12.0 (5-in-1 Feature-Sprint:
-12V #23 + Per-Light Binary #91 + Writeable Number + Smart-Wake #55 +
-Read-only Mode Phase 1 #63)
+**Last updated:** 2026-04-30 — post v1.12.1 (Scout-Pfade #105/#106 +
+Gerhard's Born Fixture mit consent + #47 FAQ). Komplette P0/P1/P2/P3
+Priorisierung in der "Sessioned Roadmap" Sektion unten.
 
 ---
 
@@ -49,6 +49,7 @@ Read-only Mode Phase 1 #63)
 | **v1.11.0** | 🔆🔧 **Issue #91 Closure: Light-Status, Service-Days, Max-Charge-Current** — fünf neue Entitäten schließen Issue #91 vollständig: `lights_on` Binary-Sensor (any-light-on Aggregate), `lights_count` Sensor, `service_due_in_days` + `oil_service_due_in_days` als raw int Sensoren (komplementär zu den DATE-Sensoren), `max_charge_current_a` als Ampere-Sensor (read-only). Defensive Light-Parsing handhabt 3 bekannte Element-Shapes + Aggregate-Fallback bei unbekannter Shape. `_DATA_PRESENT_REQUIRED` Pattern jetzt auch in binary_sensor.py. 8 Sprachen. (15 neue Tests) | **2026-04-30** |
 | **v1.11.1** | 🐛💨 **Golf 7 GTE Fuel-Range Fix (#96) + Optimistic UI (3B-Part-3)** — #96: VW Golf 7 GTE 2015 + Passat GTE B7/B8 zeigen endlich `fuel_level`/`combustion_range_km`/`total_range_km`. Root cause: `fuelStatus.rangeStatus = {error}` ließ Drivetrain-Detection False. Fix: 4 zusätzliche Pfade (`measurements.fuelLevelStatus.value.{primaryEngineType,secondaryEngineType}` + `carType="hybrid"` Substring) + `measurements.rangeStatus.value.totalRange_km` Fallback + engine-block `currentFuelLevel_pct` Fallback. Verifiziert via evcc-io/evcc#19045 + Audi Q4 + CarConnectivity Logs. 3B-Part-3: Optimistic UI (myskoda PR #832) — Lock/Climate/Charging/Window-Heating-Switches flippen sofort, revertieren bei Failure. (18 neue Tests) | **2026-04-30** |
 | **v1.12.0** | 🔋💡⚡🧯🔒 **5-in-1 Feature-Sprint** — Issue #23 (12V Voltage-Sensor + Low-Warnung bei <11.5V via lvBattery job), #91 Welle 3 (Per-Light Binary-Sensors aus `lights_individual` dict), #91 follow-up (writeable Max-Charge-Current Number + neuer `command_set_max_charge_current` Command), #55 (Smart-Wake Counter + Soft-Cap auf 3/Tag + UTC-midnight reset), #63 Phase 1 (Read-only Mode Option — skip lock/switch/button(non-refresh)/climate/number platforms; refresh-button bleibt). 8 Sprachen. (~25 neue Tests) | **2026-04-30** |
+| **v1.12.1** | 🛰️📚 **Scout-Pfade #105/#106 + Gerhard's Born Fixture (#53 consent) + #47 FAQ** — Welle 4 EXPECTED_KEYS Wildcards für `.error.*` + explizite `.value` Container. Erste Live-Validation des Privacy-Workflows aus PR #101: Gerhard hat Consent für Fixture gegeben, komplett redacted nach Hard Rule #18 + 7 Privacy-Audit-Tests. 6 Round-Trip-Tests verifizieren dass v1.10.2 Parser-Pfade aus der Fixture die Werte produzieren die Gerhard live sah. #47 FAQ-Sektion in CONTRIBUTING.md mit Subscription-vs-missing-capability-vs-spin-Diagnose-Tabelle. (19 neue Tests) | **2026-04-30** |
 
 **Sprint summary 2026-04-29:** 7 releases, ~50 new tests, branch
 protection activated, CHANGELOG split into human + technical, 4 parallel
@@ -59,28 +60,69 @@ research agents producing the verified-source archive in
 
 ## Session plan (next sessions, P0 → P1 → P2)
 
-Strict order. The v1.8.6–v1.8.12 sprint already moved most of the
-non-negotiable Foundation work; remaining sessions can now pick by
-priority.
+Strict order — P0 (next release) > P1 (planned MINOR) > P2 (later) > P3 (research / wait-on-user) > MAJOR.
+
+### ✅ Done (v1.9.0 → v1.12.1, alle 2026-04-29/30 ausgeliefert)
+
+| Version | Scope | Date |
+|---|---|---|
+| ~~v1.9.0~~ | Vehicle Data Scout + Error Reporter (Reporter Pipeline) | done |
+| ~~v1.9.1~~ | Audi Lock+Wake Hotfix (#92) + Capability-Filter Phase 2 (#56) + Scout-Pfade #90/#91 registriert | done |
+| ~~v1.10.0~~ | PHEV-Range-Triple + Audi-Diesel-Range (#94 + #91) | done |
+| ~~v1.10.1~~ | Defensive Coding Phase 2 (#58) | done |
+| ~~v1.10.2~~ | CUPRA Born 2026 Firmware-Shapes (#53 — Gerhard) | done |
+| ~~v1.11.0~~ | Issue #91 Closure (Light-Status, Service-Days, Max-Charge-Current) | done |
+| ~~v1.11.1~~ | Golf GTE Fuel-Range #96 + Optimistic UI 3B-Part-3 | done |
+| ~~v1.12.0~~ | 5-in-1 Feature-Sprint: 12V #23 + Per-Light + Writeable Number + Smart-Wake #55 + Read-only #63-Phase-1 + Scout-Pfade #103/#104 | done |
+| ~~v1.12.1~~ | Scout-Pfade #105/#106 + Gerhard's Born Fixture (#53 consent) + #47 FAQ | done |
+
+### 🔴 P0 — Nächste Release (v1.13.0, MINOR)
+
+Coherente "Production Hardening" Theme — alle drei Items sind bereits angefangene Arbeit (Phase 1 ausgeliefert, Phase 2/3 fehlt) oder in mehreren Issues angefragt.
 
 | Session | Version | Scope | Issues |
 |---|---|---|---|
-| ~~**Vehicle Data Scout + Error Reporter**~~ | ~~**v1.9.0**~~ ✅ | ✅ Geshipped 2026-04-29 — siehe Achievement-Tabelle oben. | done |
-| ~~**Capability-Filter Phase 2**~~ | ~~**v1.9.1**~~ ✅ | ✅ Geshipped 2026-04-29. | done |
-| ~~**PHEV-Range-Triple + Audi-Diesel-Range**~~ | ~~**v1.10.0**~~ ✅ | ✅ Geshipped 2026-04-29. Issue #94 + erste echte Scout-Entity-Implementierung aus #91 (Audi `dieselRange`). | done |
-| ~~**Defensive Coding Phase 2**~~ | ~~**v1.10.1**~~ ✅ | ✅ Geshipped 2026-04-30. `safe_int`/`safe_float`/`safe_enum` Helfer + Coordinator Parse-Guard. | done |
-| ~~**CUPRA Born 2026 Firmware-Shapes**~~ | ~~**v1.10.2**~~ ✅ | ✅ Geshipped 2026-04-30. Erste Live-Validation der Reporter Pipeline. | done |
-| ~~**Issue #91 Closure**~~ | ~~**v1.11.0**~~ ✅ | ✅ Geshipped 2026-04-30. `lights_on`/`lights_count`/`service_due_in_days`/`oil_service_due_in_days`/`max_charge_current_a`. | done |
-| ~~**Golf GTE Fuel-Range #96 + Optimistic UI**~~ | ~~**v1.11.1**~~ ✅ | ✅ Geshipped 2026-04-30. 4-Track #96 Fix (verifiziert via evcc/CarConnectivity/Audi-Q4) + 3B-Part-3 Optimistic. | done |
-| ~~**5-in-1 Feature-Sprint**~~ | ~~**v1.12.0**~~ ✅ | ✅ Geshipped 2026-04-30. 12V (#23) + Per-Light (#91) + Writeable Number + Smart-Wake (#55) + Read-only Mode (#63 Phase 1). | done |
-| ~~**Welle 2 Scout-Entitäten**~~ | ~~**v1.11.0**~~ ✅ | ✅ Geshipped 2026-04-30 als #91 Closure. `lights_on/_count`, `*_due_in_days`, `max_charge_current_a` (read-only). Writeable Number + per-Light Entities verschoben auf v1.12.0. | done |
-| ~~**3B-Part-3 — Optimistic Lock/Climate**~~ | ~~**v1.11.1**~~ ✅ | ✅ Geshipped 2026-04-30 mit #96 Fix kombiniert. | done |
-| ~~**Diagnostics + Smart-Wake + 12V protection**~~ | ~~**v1.12.0**~~ ✅ | ✅ Smart-Wake (#55) + 12V (#23) + Read-only-Mode-Phase-1 (#63) ausgeliefert in v1.12.0. Diagnostics-Export (#62) + Capability-Filter Phase 3 + Read-only Phase 2/3 (Command-Locking, cloud-vs-vehicle-refresh) verschoben auf eigene Sessions (siehe nächste Tabelle). | partial-done |
-| **Diagnostics-Export + Capability-Filter Phase 3 + Read-only Phase 2** | **v1.13.0** ⭐ | MINOR: Anonymized diagnostics export (CC-seatcupra #109, CC-skoda #50, volkswagencarnet #921 als Fixtures + Gerhard's Born consent fixture wenn er Ja sagt). Capability-Filter Phase 3 (`capability.active && capability.user-enabled` PRE-Entity-Creation für SEAT/CUPRA, dann Audi/VW). Read-only Phase 2 (per-VIN per-command-class lock + cloud_refresh vs wake_vehicle distinction). | #62, #63 Phase 2/3 |
-| **Process & Governance** | — | Issue forms, brand captains, CODEOWNERS, privacy guide. Doc-only. | #64 |
-| **Push CUPRA/SEAT + Push Škoda** | v1.10.x | Firebase FCM via `mqtt.messagehub.de` (CUPRA/SEAT) + mysmob MQTT broker (Škoda-only — myskoda PR #566). PATCH each. | #57, #27 |
-| **Trip Stats + Image refactor** | **v1.11.0** ⭐ | MINOR: Audi `tripstatistics/v1` (verified `audi_services.py:337`); per-trip data model (numeric aggregate in state, JSON in attrs per audi #113); image platform → user-supplied URL or removal. | #24, #35, #36 |
-| **HACS Default + v2.0.0** | **v2.0.0** 🎉 | MAJOR: Live tests all brands, compatibility matrix, EU Data Act ready (pycupra `EUDAConnection` ready to port). | #13, #59 |
+| **Anonymized Diagnostics-Export + Capability-Filter Phase 3 + Read-only Phase 2/3** | **v1.13.0** ⭐ | MINOR: (1) Anonymized diagnostics export mit CC-seatcupra #109 / CC-skoda #50 / volkswagencarnet #921 als Reference-Fixtures + Gerhard's Born Fixture aus v1.12.1 als Live-Beispiel. (2) Capability-Filter Phase 3 — `capability.active && user-enabled` PRE-Entity-Creation für SEAT/CUPRA (verstecke `command_flash` bei Gerhard's Born statt nach Failure unavailable zu markieren). Dann Audi/VW. (3) Read-only Phase 2 — per-VIN per-command-class lock mit timeout + cloud_refresh vs wake_vehicle service distinction. | #62, #63 Phase 2/3, #56 Phase 3 |
+
+### 🟡 P1 — Process / Doc-only (v1.13.x)
+
+| Session | Version | Scope | Issues |
+|---|---|---|---|
+| **Process & Governance Doc-PR** | v1.13.x doc | `.github/ISSUE_TEMPLATE/{bug,feature,live-test,scout,error}.yaml` GitHub Issue Forms; CODEOWNERS file; Brand-Captains-Liste in CONTRIBUTING.md (community-volunteers pro Brand). PATCH-equivalent (no manifest bump). | #64 |
+| **Old-Bug Verify-Pings** | community | User-Comments auf #42 (CUPRA Formentor) + #48 (all-actions-fail) + #51 (Audi RS e-tron GT 404) — höchstwahrscheinlich gefixt durch v1.8.4 SecToken / v1.8.5 v1/v2 fallback / v1.9.1 Wake-Fix / v1.10.2 Born firmware fixes. Status-Bestätigung gefragt. | #42, #48, #51 |
+
+### 🟠 P2 — Future MINOR Sprints (v1.14.0+)
+
+| Session | Version | Scope | Issues |
+|---|---|---|---|
+| **Trip Stats + Image refactor** | **v1.14.0** ⭐ | MINOR: Audi `tripstatistics/v1` (verified `audi_services.py:337`); per-trip data model (numeric aggregate in state, JSON in attrs per audi #113); image platform → user-supplied URL or removal. | #24, #35, #36 |
+| **Klima-Timer + Departure UI** | v1.15.0 | MINOR: dedizierte Number-Entities pro Departure-Timer + Klima-Schedule UI. PPC Climate Body conditional shape (audi #644 + #677 — `climatisationMode: "comfort"` mandatory, `targetTemperature*` muss omitted für Q6 e-tron / A6 e-tron). | #26, #29 |
+| **Theft / Alarm Binary** | v1.15.x | API-Endpoint research nötig — alarmStatus job in CARIAD selectivestatus? Feature-Discovery dann implementation. | #33 |
+| **Standort-spez. Ladeziel + Ladeprofile** | v1.16.0 | MINOR: location-based charging (zone-aware target_soc) + multiple Ladeprofile pro Standort. | #25, #31 |
+| **Navigation: Ziel ans Auto** | v1.16.x | MINOR: Service `vag_connect.send_destination` + payload research. | #36 |
+| **Remote Start (ICE)** | v1.17.0 | MINOR: ICE Engine Start S-PIN flow (audi_connect_ha #717 — zwei-Schritt PUT `/engine/{VIN}/userpromptproof` + POST `/engine/{VIN}/start`). Capability-gated. | #28 |
+
+### 🔵 P2 — Big Architectural
+
+| Session | Version | Scope | Issues |
+|---|---|---|---|
+| **Push CUPRA/SEAT + Push Škoda** | v1.18.0 | MINOR: Firebase FCM via `mqtt.messagehub.de` (CUPRA/SEAT) + mysmob MQTT broker (Škoda-only — myskoda PR #566). Eliminiert 12V-Wake-Cycle für Real-Time-Updates. Big session, 2-3 Wochen Arbeit. | #57, #27 |
+
+### ⚪ P3 — Wait on User / Community
+
+| Session | Status | Action |
+|---|---|---|
+| **#13 Live-Tests gesucht** | ongoing community | Brand-Captains-Liste (Teil von #64) wird das organisieren |
+| **#53 CUPRA Born Funktionstest** | active mit Gerhard | v1.12.1 hat Fixture committed; nächster Test-Cycle wartet auf Gerhard's nächste Antwort |
+| **#74 VW Passat 2025 B9** | wait | Marco Debug-Log offen — needed für PPC platform routing |
+| **#75 Skoda Kodiaq 2 Mk2** | wait | tester needed |
+| **#76 VW T6 Multivan Legacy MBB** | wait | tester needed |
+
+### 🎯 v2.0.0 (MAJOR — distant)
+
+| Session | Version | Scope | Issues |
+|---|---|---|---|
+| **HACS Default + v2.0.0** | **v2.0.0** 🎉 | MAJOR: HACS Default Repository, Live tests all brands compatibility matrix, EU Data Act ready (pycupra `EUDAConnection` ready to port — September 2026 EU deadline). | #13, #59 |
 
 ### Standalone enhancements (no version pin yet)
 

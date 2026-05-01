@@ -349,6 +349,28 @@ EXPECTED_KEYS: dict[str, dict[str, set[str]]] = {
             # Older firmwares wrap fields in error objects when the
             # backend can't compute them. Defensive registration.
             "charging.chargeMode.error",
+            # v1.12.1 (#105 + #106, 2026-04-30) — Scout descended one
+            # more level past the v1.12.0 wrapper registrations and
+            # found the ``.value`` containers below them. Same
+            # whack-a-mole as #103/#104 → register explicitly.
+            "userCapabilities.capabilitiesStatus.value",
+            "fuelStatus.rangeStatus.value",
+            "vehicleHealthInspection.maintenanceStatus.value",
+            "vehicleHealthWarnings.warningLights.value",
+            "departureProfiles.departureProfilesStatus.value",
+            # v1.12.1 (#105) — newer firmwares wrap automation timers
+            # in the same Bad-Gateway error envelope as charging.chargeMode.
+            "automation.climatisationTimer.error",
+            "automation.chargingProfiles.error",
+            # v1.12.1 (#105) — standardized HTTP-error-wrapper sub-fields.
+            # Six children always co-exist (CARIAD BFF error contract):
+            # message / errorTimeStamp / info / code / group / retry.
+            # Wildcard match keeps the registry compact + future-proofs
+            # against new error sub-fields the backend might add.
+            "charging.chargeMode.error.*",
+            "automation.climatisationTimer.error.*",
+            "automation.chargingProfiles.error.*",
+            "fuelStatus.rangeStatus.error.*",  # proactive — already saw fuelStatus.rangeStatus.error in #96
         },
         "parkingposition": {
             "data", "data.lon", "data.lat", "data.carCapturedTimestamp",

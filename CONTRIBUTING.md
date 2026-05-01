@@ -117,6 +117,52 @@ nicht ob die offizielle My CUPRA-App das gleich oder über phone-GPS macht.
 
 ---
 
+## FAQ — Subscription / Service Plus / paid plans (closes #47)
+
+**Q: Do I need "Security & Service Plus" or another paid subscription for VAG Connect to work?**
+
+In **most countries: No.** VAG Connect uses the same free API as the manufacturer apps (myAudi, WeConnect, MyŠkoda, MyCupra). If you can log in to the app, you can use VAG Connect for vehicle status, GPS, door/window state, climate state.
+
+**Some countries / some vehicles: certain commands are paywalled.** Confirmed examples:
+
+- 🇵🇹 **Portugal** — lock/unlock, climate, charging require Security & Service Plus (Facebook user report)
+- Some 2024+ premium Audi models — wake-up + advanced commands require an active "Audi connect plus" plan
+
+This is a **VW Group server-side restriction** — the API itself rejects commands for accounts without the right plan. We cannot bypass it from integration side.
+
+**Q: How do I tell if my command failure is "no subscription" vs "code bug" vs "vehicle missing capability"?**
+
+Check the error body. Common patterns since v1.9.1 `classify_command_failure`:
+
+| Error body content | Most likely cause | Action |
+|---|---|---|
+| `"missing-capability"` | Server says: *this VIN doesn't have this feature enabled* (region/trim/firmware) | Cannot fix in integration. Capability-Filter Phase 3 (v1.13.0) will hide the entity entirely. |
+| `"subscription_expired"` / `"not_entitled"` | Paid plan expired | Renew plan in manufacturer portal. |
+| `"spin_error"` with `spinState: "DEFINED"` | S-PIN required for this command | Configure S-PIN in integration options. |
+| `"Bad Gateway"` / `"4007"` / `"4111"` | Backend transient error | Retry. v1.10.1 retry logic handles most of these. |
+| `404 Not Found` | Endpoint doesn't exist for vehicle's API profile (PPC/PPE 2024+) | v1.8.5 v1→v2 fallback handles most; rest needs new code. |
+| `403` no body / generic | Could be auth token expired, retry exceeded, or temp rate limit | Restart integration. |
+
+**Q: My MyCupra/myAudi app shows the function works — why does VAG Connect fail?**
+
+Three independent reasons (#53 lesson):
+
+1. **Different API profile** — the app may use a brand-specific newer endpoint that we don't know yet. Vehicle Data Scout (v1.9.0) helps catch this.
+2. **Different payload shape** — same endpoint, but app sends fields we don't (e.g. `userPosition` for SEAT/CUPRA honk-and-flash, fixed in v1.10.2).
+3. **Genuine `missing-capability`** — the app gracefully hides the button when the server says no. Our v1.9.1 Phase 2 marks the entity unavailable AFTER first failure; Phase 3 (v1.13.0) will hide it like the app does.
+
+**Q: Where do I see if my account has an active subscription?**
+
+In the manufacturer's web portal:
+- 🇪🇺 myAudi → Profile → Connect Plus subscription
+- 🇪🇺 WeConnect → My Account → Online services
+- 🇪🇺 MyŠkoda → Account → Connected services
+- 🇪🇺 MyCupra → Account → My services
+
+Also confirmed by user-report on #53 (Gerhard, CUPRA Born) and others: the integration's diagnostic output shows the API response, which usually contains a hint about subscription state.
+
+---
+
 ## Pull requests
 
 ```bash
