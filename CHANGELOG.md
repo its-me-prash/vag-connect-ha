@@ -28,6 +28,48 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ## [Unreleased]
 
+## [1.12.1] - 2026-04-30 🛰️📚 Scout-Pfade #105/#106 + Gerhard's Born Fixture + FAQ #47
+
+🛰️ **Vehicle Data Scout Welle 4** (#105 VW EU 12 Felder + #106 Audi 8 Felder):
+
+Pattern wie #103/#104 (v1.12.0) — Scout descendet eine weitere Ebene tiefer und findet die `.value` Container + die HTTP-Error-Wrapper Sub-Felder als unbekannt.
+
+Neue Registrierungen in `EXPECTED_KEYS["volkswagen"]["selectivestatus"]` (Audi inherits):
+- `userCapabilities.capabilitiesStatus.value` + `fuelStatus.rangeStatus.value` + `vehicleHealthInspection.maintenanceStatus.value` + `vehicleHealthWarnings.warningLights.value` + `departureProfiles.departureProfilesStatus.value`
+- `automation.climatisationTimer.error` + `automation.chargingProfiles.error` (Bad-Gateway-Wrapper-Pattern wie `charging.chargeMode.error` aus v1.12.0)
+- **Wildcards** `charging.chargeMode.error.*` + `automation.{climatisationTimer,chargingProfiles}.error.*` + `fuelStatus.rangeStatus.error.*` (proaktiv) — decken die 6 standardisierten HTTP-Error-Sub-Felder (message/errorTimeStamp/info/code/group/retry) future-proof ab
+
+📚 **Gerhard's CUPRA Born Fixture** (#53 — Gerhard hat "ja Fixture OK, ich hab nix zu verbergen :-)" gesagt!):
+
+- Neue Datei: `tests/fixtures/seat_cupra/cupra_born_2023_active_subscription_redacted.json`
+- **Komplett anonymisiert:** VIN auf `***003577` maskiert, alle UUIDs/Tokens/Emails entfernt, GPS auf `48.0 / 11.0` gerundet (~11 km Bucket)
+- **Zweck:** automatische Regression-Tests für CUPRA Born Parser-Drift (verhindert Born-2026-Firmware-Bug aus v1.10.2 wieder auftritt)
+- **Source dokumentiert:** "User report from issue #53 (Gerhard2808), with explicit consent given on 2026-04-30"
+- 8 Round-Trip-Tests verifizieren dass die v1.10.2 Parser-Pfade aus der redacted Fixture die Werte produzieren die Gerhard auf seinem Born sieht (battery 69%, range 277km, plug disconnected, doors locked)
+- 7 Privacy-Audit-Tests verifizieren dass keine vollen VINs / Tokens / UUIDs / Emails in der Fixture sind
+
+🌍 **Erste Live-Validation des "Privacy & data handling" Workflows aus PR #101** — User-Consent eingeholt, Fixture redacted, Source dokumentiert. Code-of-conduct funktioniert.
+
+📚 **#47 FAQ — Service Plus / Subscription Docs:**
+
+Neue FAQ-Sektion in `CONTRIBUTING.md`:
+- "Brauche ich Security & Service Plus?" → meist nein, in Portugal + manchen 2024+ Audi ja
+- Wie unterscheide ich `missing-capability` vs `subscription_expired` vs `spin_error` vs `404`?
+- Wieso geht's in der App aber nicht in VAG Connect? (3 unabhängige Gründe aus #53 Lessons)
+- Wo sehe ich meinen Subscription-Status?
+
+Tabelle mit allen v1.9.1 `classify_command_failure` Markern + ihre Bedeutung. Verlinkt zu Phase 3 Capability-Filter (v1.13.0).
+
+🧪 **Tests:** 19 neue in `tests/test_v1121_scout_and_born_fixture.py`:
+- 5 Scout-Path-Coverage-Tests (#105/#106 verbatim payload bleibt silent)
+- 7 Born-Fixture Privacy-Audit (no VIN/email/JWT/UUID/GPS-precision leak)
+- 6 Born-Fixture Parser-Round-Trip (Gerhard's beobachtete Werte materialisieren)
+- 1 #47 FAQ-Section-Presence Test
+
+> 💡 Vollständige technische Details + ROADMAP-Refresh mit P0/P1/P2-Priorisierung in [`docs/CHANGELOG_TECHNICAL.md`](docs/CHANGELOG_TECHNICAL.md) + [`docs/ROADMAP.md`](docs/ROADMAP.md).
+
+**Closes:** #105, #106, #47.
+
 ## [1.12.0] - 2026-04-30 🔋💡⚡🧯🔒 5-in-1 Feature-Sprint
 
 ✨ **Fünf neue Funktionen — alle in einer kohärenten "More Control + Diagnostics"-Theme:**

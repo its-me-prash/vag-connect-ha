@@ -12,6 +12,110 @@ weiterhin direkt in `CHANGELOG.md` zu finden.
 
 ---
 
+## [1.12.1] - 2026-04-30
+
+### Scout-Pfade #105/#106 + Gerhard's Born Fixture (#53 consent) + #47 FAQ
+
+PATCH-Release nach v1.12.0. Drei orthogonale Tracks die alle aus User-Feedback / Live-Tests heute kamen.
+
+#### Track A — #105/#106 EXPECTED_KEYS
+
+Pattern wie #103/#104 in v1.12.0: Scout descendet eine Ebene tiefer, findet die nächste unbekannte Schicht.
+
+**Field-Path Mapping:**
+
+| v1.9.1 registriert | v1.12.0 registriert | v1.12.1 registriert (NEU) |
+|---|---|---|
+| `userCapabilities` | `userCapabilities.capabilitiesStatus` | `userCapabilities.capabilitiesStatus.value` |
+| `fuelStatus` | `fuelStatus.rangeStatus` | `fuelStatus.rangeStatus.value` |
+| `vehicleHealthInspection` | `vehicleHealthInspection.maintenanceStatus` | `vehicleHealthInspection.maintenanceStatus.value` |
+| `vehicleHealthWarnings` | `vehicleHealthWarnings.warningLights` | `vehicleHealthWarnings.warningLights.value` |
+| `departureProfiles` | `departureProfiles.departureProfilesStatus` | `departureProfiles.departureProfilesStatus.value` |
+| — | `charging.chargeMode.error` | `charging.chargeMode.error.*` (wildcard) |
+| — | — | `automation.climatisationTimer.error` + `.error.*` |
+| — | — | `automation.chargingProfiles.error` + `.error.*` |
+| — | — | `fuelStatus.rangeStatus.error.*` (proaktiv für #96 Pattern) |
+
+**Wildcard-Strategie:** wo wir HTTP-Error-Wrapper sehen (6 standardisierte Sub-Felder pro CARIAD-Konvention: message/errorTimeStamp/info/code/group/retry), nutze `.error.*` Wildcard statt 6 explizite Pfade. Future-proof gegen neue Error-Sub-Felder.
+
+**Audi inherits via** `EXPECTED_KEYS["audi"] = EXPECTED_KEYS["volkswagen"]` (table alias) — eine Registrierung deckt beide Brands. Same-Single-Source-of-Truth seit v1.9.1.
+
+#### Track B — Gerhard's CUPRA Born Fixture (#53 consent confirmed)
+
+**Erste Live-Validation des Privacy-Workflows aus PR #101.**
+
+Workflow:
+1. v1.10.2 (2026-04-30 Vormittag) — Maintainer fragt Gerhard auf #53 um Erlaubnis für Fixture
+2. Gerhard antwortet: "ja Fixture OK, ich hab nix zu verbergen :-)"
+3. Maintainer redacted nach den Regeln aus `CONTRIBUTING.md` "Privacy & data handling" Sektion (PR #101)
+4. Fixture committed mit `_meta` Block der Source + Consent-Zitat dokumentiert
+
+**Datei:** `tests/fixtures/seat_cupra/cupra_born_2023_active_subscription_redacted.json`
+
+**Redaction-Audit:** 7 Tests (`TestBornFixtureLoads`) verifizieren:
+- Keine vollen 17-char VINs (nur `***003577`)
+- Keine Email-Adressen
+- Keine JWT-Tokens (`eyJ...` Pattern)
+- Keine UUIDs (für userIDs/accountIDs)
+- GPS gerundet auf 1 Dezimalstelle (~11 km Bucket)
+- `_meta._source` startet mit "User report from issue #53"
+- Brand/model/year korrekt
+
+**Round-Trip-Tests:** 6 Tests (`TestBornFixtureParserRoundTrip`) verifizieren dass die v1.10.2 Parser-Pfade aus der Fixture allein die Werte produzieren die Gerhard live auf seinem Born sah:
+- `battery_soc == 69` aus `battery.currentSocPercentage`
+- `range_km == 277` aus `battery.estimatedRangeInKm` Fallback
+- `plug_state == "disconnected"` + `plug_connected == False` aus `plug.connection` lowercase
+- `connector_locked == False` aus `plug.lock == "unlocked"` lowercase
+- `charging_state == "notReadyForCharging"` (case-insensitive comparison gegen "charging" → False)
+- `doors_locked == True` aus top-level `status.locked`
+- `hood_open == True` aus `status.hood.locked == "false"` (string!) Inversion
+
+Wichtig: das ist eine **Regression-Schutz-Schicht.** Wenn jemand in v1.13.0+ den Parser refactort und dabei eine der 6 Field-Name-Varianten breakt, schlägt EIN Test in dieser Datei fehl mit klarer Born-2026-Firmware-Diagnose.
+
+**Plus dokumentiert** im `_meta` Block die `command_flash` `400 missing-capability` Response die Gerhard sah — Future-Reference für Capability-Filter Phase 3 in v1.13.0.
+
+#### Track C — #47 FAQ Service Plus / Subscription
+
+**Auslöser:** Facebook-Community Frage (J.A.) ob Security & Service Plus nötig ist + verwandte Confusion in #53 / #56 Comments (third-party-review hat das in PR #101 als zu pauschal flagged).
+
+**Was eingebaut wurde** (`CONTRIBUTING.md` neue "FAQ" Sektion):
+
+1. **"Brauche ich Service Plus?"** — Klare Antwort: meist nein, in Portugal + manchen 2024+ Audi ja
+2. **Tabelle Free vs. Subscription** für 6 Feature-Klassen
+3. **Country-spezifische Restriktionen** (Portugal documented + Quelle)
+4. **Diagnose-Tabelle** für Failure-Bodies — `missing-capability` vs `subscription_expired` vs `spin_error` vs `Bad Gateway` vs `404` mit Action-Empfehlung pro Pattern
+5. **"App geht aber Integration nicht?"** — 3 unabhängige Gründe (different API profile, different payload shape, genuine missing-capability) referenziert zu #53 lessons
+6. **Wo den Subscription-Status checken** — pro Brand-Portal aufgelistet
+
+Verlinkt zu v1.9.1 Phase 2 (Auto-Recording-Pipeline) + v1.13.0 Phase 3 Plan (capability-filter pre-entity-creation).
+
+#### Tests
+
+**`tests/test_v1121_scout_and_born_fixture.py`** (neu, 19 Tests):
+
+- `TestScoutWildcardCoverage` (5): `.value` Container registriert, `.error.*` wildcard matcht 6 Sub-Felder, automation error wrappers, Audi-Inheritance, verbatim #105 payload silent
+- `TestBornFixtureLoads` (7): file existiert, valid JSON, meta block, no full VIN, no email, no JWT, no UUID, GPS rounded
+- `TestBornFixtureParserRoundTrip` (6): 6 Werte aus Gerhard's Live-Test materialisieren aus der redacted Fixture
+- `TestFAQDocsPresent` (1): FAQ-Sektion bleibt in CONTRIBUTING.md (regression-protection)
+
+#### Was bleibt nach v1.12.1 für v1.13.0
+
+(siehe ROADMAP.md "Sessioned Roadmap" Sektion mit kompletter P0/P1/P2 Priorisierung)
+
+- **#62 Anonymized Diagnostics-Export** (war v1.13.0 ROADMAP) — jetzt mit Gerhard's Fixture als Reference-Implementation
+- **#63 Phase 2/3** Read-only Mode (Command-Locking + cloud-vs-vehicle-refresh services)
+- **#56 Capability-Filter Phase 3** (`capability.active && user-enabled` PRE-Entity-Creation) — Gerhard's `command_flash` 400 missing-capability ist exakt was Phase 3 verstecken würde
+- **#42 / #48 / #51 Verify-Pings** — alte Bugs vermutlich gefixt durch v1.8+/v1.10+, brauchen User-Feedback
+
+#### Hard Rules eingehalten
+
+- ✅ Strict-Semver: PATCH (Doc-Updates + Test-Fixture + EXPECTED_KEYS-Erweiterung — keine neuen Entitäten, keine API-Änderungen, keine Coordinator-Logik-Änderungen)
+- ✅ Privacy-by-default (Hard Rule #18 aus PR #101): Born-Fixture komplett redacted + 7 Audit-Tests + Source mit Consent dokumentiert
+- ✅ User-Consent vor Fixture-Verwendung eingeholt (PR #101 Workflow erfolgreich getestet)
+- ✅ Backwards-compat: keine bestehenden Tests gebrochen, alle Parser-Pfade unverändert
+
+---
+
 ## [1.12.0] - 2026-04-30
 
 ### 5-in-1 Feature-Sprint: 12V (#23) + Per-Light Binary (#91 Welle 3) + Writeable Number (#91 follow-up) + Smart-Wake (#55) + Read-only Mode (#63)

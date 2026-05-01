@@ -25,19 +25,20 @@ Connection-State live, 7 releases shipped today)
 
 ---
 
-## Current state — v1.8.12 (released as Latest 2026-04-29 09:16 UTC)
+## Current state — v1.12.1 (released as Latest 2026-04-30)
 
 ```
 Branch:           main
-Manifest:         version 1.8.12, iot_class cloud_polling
+Manifest:         version 1.12.1, iot_class cloud_polling
 Quality scale:    clean (CI publishes badges dynamically)
 Open PRs:         none
 Branch protection: ON — 5 required checks (Lint, Tests, Hassfest, HACS, CHANGELOG)
-Latest tag:       v1.8.12 → released
-Open issues:      22 (3 user live-tests pending verification, 19 roadmap)
+Latest tag:       v1.12.1 → released
+Open issues:      ~24 (5 community / 1 active live-test / 18 roadmap by P0/P1/P2/P3)
+                  → see ROADMAP.md "Sessioned roadmap" for full prioritization
 ```
 
-### Releases shipped today (2026-04-29)
+### Releases shipped 2026-04-29
 
 | Version | Title | New tests |
 |---|---|---|
@@ -47,9 +48,24 @@ Open issues:      22 (3 user live-tests pending verification, 19 roadmap)
 | v1.8.9 | Session 3C — CUPRA OLA status JSON paths fix | 12 |
 | v1.8.10 | Hotfix legacy doors fallback inversion | — |
 | v1.8.11 | Session 3S — Škoda carCapturedTimestamp connection-state | 10 |
-| **v1.8.12** | **MVP-Move — Multi-Brand connection-state (all 4 CARIAD brands)** | **12** |
+| v1.8.12 | MVP-Move — Multi-Brand connection-state (all 4 CARIAD brands) | 12 |
+| v1.9.0 | Vehicle Data Scout + Error Reporter (Reporter Pipeline) | 18 |
+| v1.9.1 | Audi Lock+Wake Hotfix (#92) + Capability-Filter Phase 2 + Scout-Pfade #90/#91 | 18 |
+| v1.10.0 | PHEV-Range-Triple + Audi-Diesel-Range (#94 + #91) | 13 |
 
-Total: ~50 new tests, 7 releases, all CI-green, all merged + tagged.
+### Releases shipped 2026-04-30
+
+| Version | Title | New tests |
+|---|---|---|
+| v1.10.1 | Defensive Coding Phase 2 (#58) | 16 |
+| v1.10.2 | CUPRA Born 2026 Firmware-Shapes (Gerhard #53 erste Live-Validation) | 16 |
+| v1.11.0 | Issue #91 Closure (Lights/Service-Days/Max-Charge-Current sensor) | 15 |
+| v1.11.1 | Golf GTE Fuel-Range #96 + Optimistic UI (3B-Part-3) | 18 |
+| (Doc PR #101) | Privacy & data handling rules + [Inference] markers (post-#53 review) | — |
+| v1.12.0 | 5-in-1 Sprint: 12V #23 + Per-Light + Writeable Number + Smart-Wake #55 + Read-only #63-Phase-1 | 25 |
+| **v1.12.1** | **Scout-Pfade #105/#106 + Gerhard's Born Fixture (#53 consent) + #47 FAQ** | **19** |
+
+Total über beide Tage: ~210 neue Tests, 17 Code-Releases + 1 Doc-PR, alle CI-green, alle merged + tagged.
 
 ### Process improvements (don't lose these)
 
