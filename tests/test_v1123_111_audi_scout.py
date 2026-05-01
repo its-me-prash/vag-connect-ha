@@ -142,3 +142,71 @@ class TestAudiScout111:
         assert _path_matches("batteryChargingCare.someUnknownChild", keys)
         assert _path_matches("climatisationTimers", keys)
         assert _path_matches("climatisationTimers.someTimer", keys)
+
+    def test_113_golf_gte_payload_silent(self):
+        """v1.12.3 also silences #113 (Prash's Golf GTE 14 fields).
+        Pattern: deeper children of .value containers from v1.12.1."""
+        from custom_components.vag_connect.cariad._unexpected_keys import (
+            detect_unexpected,
+        )
+        payload = {
+            "departureProfiles": {"departureProfilesStatus": {"value": {
+                "carCapturedTimestamp": "2026-04-12T15:18:26Z",
+                "minSOC_pct": 60,
+                "timers": [],
+                "profiles": [],
+            }}},
+            "fuelStatus": {"rangeStatus": {"value": {
+                "carCapturedTimestamp": "2026-05-01T15:25:26Z",
+                "carType": "electric",
+                "primaryEngine": {"type": "electric", "remainingRange_km": 8, "currentSOC_pct": 30},
+                "totalRange_km": 8,
+            }}},
+            "vehicleHealthInspection": {"maintenanceStatus": {"value": {
+                "carCapturedTimestamp": "2026-05-01T13:26:33Z",
+                "inspectionDue_days": 207,
+                "inspectionDue_km": 18300,
+                "mileage_km": 158597,
+                "oilServiceDue_days": 17,
+                "oilServiceDue_km": 1700,
+            }}},
+        }
+        findings = list(detect_unexpected("volkswagen", "selectivestatus", payload))
+        assert findings == [], (
+            "Scout still finds unexpected paths after v1.12.3 wildcards: "
+            + ", ".join(f.path for f in findings)
+        )
+
+    def test_114_audi_s6_payload_silent(self):
+        """v1.12.3 also silences #114 (Prash's Audi S6 C8 Diesel 20 fields).
+        Same wildcard coverage as #113 (Audi inherits VW EU table)."""
+        from custom_components.vag_connect.cariad._unexpected_keys import (
+            detect_unexpected,
+        )
+        payload = {
+            "fuelStatus": {"rangeStatus": {"value": {
+                "carCapturedTimestamp": "2026-04-15T16:33:31Z",
+                "carType": "diesel",
+                "primaryEngine": {
+                    "type": "diesel",
+                    "remainingRange_km": 260,
+                    "currentFuelLevel_pct": 60,
+                    "remainingFuelInLitre": 30,
+                },
+                "totalRange_km": 260,
+            }}},
+            "vehicleHealthInspection": {"maintenanceStatus": {"value": {
+                "carCapturedTimestamp": "2026-04-15T16:33:29Z",
+                "inspectionDue_days": 512,
+                "inspectionDue_km": 12900,
+                "mileage_km": 226085,
+                "oilServiceDue_days": 512,
+                "oilServiceDue_km": 12900,
+            }}},
+        }
+        # Audi inherits volkswagen table — using either brand works
+        findings = list(detect_unexpected("audi", "selectivestatus", payload))
+        assert findings == [], (
+            "Scout still finds unexpected paths after v1.12.3 wildcards: "
+            + ", ".join(f.path for f in findings)
+        )

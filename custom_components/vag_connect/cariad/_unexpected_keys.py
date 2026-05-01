@@ -432,6 +432,25 @@ EXPECTED_KEYS: dict[str, dict[str, set[str]]] = {
             # actual warning lights dict (per-light status). Variable
             # set per vehicle, parser already iterates them in v1.0+.
             "vehicleHealthWarnings.warningLights.value.*",
+            # v1.12.3 (#113 Golf GTE + #114 Audi S6 C8 — Prash testing
+            # 2026-05-01 evening): the parent .value containers
+            # (registered in v1.12.1) descend into business+meta
+            # children which were unregistered. Use wildcards instead
+            # of enumerating because every brand/firmware mix yields
+            # different sub-fields. Parser already reads the relevant
+            # ones (inspectionDue_*, oilServiceDue_*, mileage_km,
+            # totalRange_km, carType) — registry is just for Scout silence.
+            "fuelStatus.rangeStatus.value.*",
+            "fuelStatus.rangeStatus.value.primaryEngine.*",
+            "fuelStatus.rangeStatus.value.secondaryEngine.*",
+            "vehicleHealthInspection.maintenanceStatus.value.*",
+            "departureProfiles.departureProfilesStatus.value.*",
+            "userCapabilities.capabilitiesStatus.value.*",
+            # batteryChargingCare + climatisationTimers .value children
+            # (proactive — these top-level wrappers may have own .value
+            # blocks on newer firmwares per #103/#104 pattern).
+            "batteryChargingCare.value.*",
+            "climatisationTimers.value.*",
             # Older auto-unlock-plug variant without AC suffix (#111 saw "off")
             "charging.chargingSettings.value.autoUnlockPlugWhenCharged",
             # 5x climatisationSettings.value.* zone + unit fields

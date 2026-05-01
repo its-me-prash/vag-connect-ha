@@ -5,11 +5,10 @@
 > mirrors it for archive/historical purposes and links the active GitHub
 > issues for each session.
 
-**Last updated:** 2026-05-01 — post v1.12.3 (zweites Community-Scout-
-Report von DnnsJp74 für Audi #111, innerhalb von Stunden nach
-tritanium73's #107 für Skoda — Pipeline funktioniert konsistent in
-der Wildbahn). Komplette P0/P1/P2/P3 Priorisierung in der
-"Sessioned Roadmap" Sektion unten.
+**Last updated:** 2026-05-01 — post v1.12.3 (3 Scout-Reports gebundlet:
+#111 von DnnsJp74 + #113 Prash Golf GTE + #114 Prash Audi S6 C8.
+Wildcard-Strategie für `.value.*` Container etabliert, kein whack-a-mole
+mehr).
 
 ---
 
@@ -53,7 +52,7 @@ der Wildbahn). Komplette P0/P1/P2/P3 Priorisierung in der
 | **v1.12.0** | 🔋💡⚡🧯🔒 **5-in-1 Feature-Sprint** — Issue #23 (12V Voltage-Sensor + Low-Warnung bei <11.5V via lvBattery job), #91 Welle 3 (Per-Light Binary-Sensors aus `lights_individual` dict), #91 follow-up (writeable Max-Charge-Current Number + neuer `command_set_max_charge_current` Command), #55 (Smart-Wake Counter + Soft-Cap auf 3/Tag + UTC-midnight reset), #63 Phase 1 (Read-only Mode Option — skip lock/switch/button(non-refresh)/climate/number platforms; refresh-button bleibt). 8 Sprachen. (~25 neue Tests) | **2026-04-30** |
 | **v1.12.1** | 🛰️📚 **Scout-Pfade #105/#106 + Gerhard's Born Fixture (#53 consent) + #47 FAQ** — Welle 4 EXPECTED_KEYS Wildcards für `.error.*` + explizite `.value` Container. Erste Live-Validation des Privacy-Workflows aus PR #101: Gerhard hat Consent für Fixture gegeben, komplett redacted nach Hard Rule #18 + 7 Privacy-Audit-Tests. 6 Round-Trip-Tests verifizieren dass v1.10.2 Parser-Pfade aus der Fixture die Werte produzieren die Gerhard live sah. #47 FAQ-Sektion in CONTRIBUTING.md mit Subscription-vs-missing-capability-vs-spin-Diagnose-Tabelle. (19 neue Tests) | **2026-04-30** |
 | **v1.12.2** | 🌟🛰️ **Erstes Community-Scout-Report (Skoda #107 von tritanium73)** — User `tritanium73` reichte am 2026-05-01 den ersten Vehicle Data Scout Report von einem Nicht-Maintainer ein. 14 neue Skoda mysmob Pfade über 4 Endpoints (`renders.{lightMode,darkMode}` 2-segment fix, 6× `air-conditioning`, 2× `driving-range` mit `carType`+`primaryEngineRange`, 4× `maintenance` meta-blocks). Volle v1.9.0 Pipeline funktioniert in der Wildbahn. (6 neue Tests) | **2026-05-01** |
-| **v1.12.3** | 🌟🛰️ **Zweites Community-Scout-Report (Audi #111 von DnnsJp74)** — innerhalb von Stunden nach #107 zweiter Community-Report. 23 neue Audi-Pfade über `volkswagen.selectivestatus` (Audi inherits): automation `.value` neben `.error`, top-level `batteryChargingCare` + `climatisationTimers`, charging chargeMode value + chargingCareSettings, 5× climatisation Zone-Felder, battery temperature Min+Max, 4× readiness connectionState + 2× connectionWarning leaves. (6 neue Tests) | **2026-05-01** |
+| **v1.12.3** | 🛰️ **Scout-Pfade #111 (DnnsJp74) + #113 (Golf GTE) + #114 (Audi S6 C8)** — drei Scout-Reports zusammen. #111: 23 Audi-Pfade von Community-User DnnsJp74 (zweiter community Scout report nach #107). #113+#114: 14+20 Felder von Prash auf eigenen Vehicles (Golf GTE + Audi S6) — alle drei zeigen `.value` Container Children. Wildcards `fuelStatus.rangeStatus.value.*`, `vehicleHealthInspection.maintenanceStatus.value.*`, `departureProfiles.departureProfilesStatus.value.*`, `userCapabilities.capabilitiesStatus.value.*` decken alle Klassen future-proof ab. (8 neue Tests) | **2026-05-01** |
 
 **Sprint summary 2026-04-29:** 7 releases, ~50 new tests, branch
 protection activated, CHANGELOG split into human + technical, 4 parallel
