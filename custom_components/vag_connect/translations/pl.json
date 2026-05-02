@@ -198,6 +198,18 @@
       "last_trip_avg_electric_consumption_kwh_100km": {
         "name": "Ostatnia Trasa — Średnie Zużycie Energii"
       },
+      "software_version": {
+        "name": "Wersja Oprogramowania"
+      },
+      "total_charged_energy_kwh": {
+        "name": "Łączna Naładowana Energia"
+      },
+      "last_charging_session_kwh": {
+        "name": "Ostatnia Sesja — Energia"
+      },
+      "last_charging_session_duration_min": {
+        "name": "Ostatnia Sesja — Czas Trwania"
+      },
       "departure_timer_1_time": {
         "name": "Timer odjazdu 1"
       },
@@ -280,6 +292,9 @@
       },
       "warning_12v_low": {
         "name": "Słaba bateria 12V"
+      },
+      "ota_update_available": {
+        "name": "Dostępna aktualizacja oprogramowania"
       }
     },
     "switch": {

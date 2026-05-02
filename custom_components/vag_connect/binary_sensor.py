@@ -2,6 +2,7 @@
 """Binary sensors for VAG Connect — correct data keys from coordinator."""
 
 from dataclasses import dataclass
+from typing import Any
 
 from homeassistant.components.binary_sensor import (
     BinarySensorDeviceClass,
@@ -171,6 +172,18 @@ _NEW_BINARY: tuple[VagBinarySensorDescription, ...] = (
         icon="mdi:car-battery",
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
+    # v1.15.0 — Skoda OTA update available (mysmob, app v8.10.0+,
+    # endpoint ``/v1/vehicle-information/{vin}/software-version/update-status``).
+    # ``releaseNotesUrl`` exposed via ``extra_state_attributes`` so users
+    # can click through to read what changed.
+    VagBinarySensorDescription(
+        key="ota_update_available",
+        translation_key="ota_update_available",
+        data_key="ota_update_available",
+        device_class=BinarySensorDeviceClass.UPDATE,
+        icon="mdi:cellphone-arrow-down",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
 )
 BINARY_DESCRIPTIONS = BINARY_DESCRIPTIONS + _NEW_BINARY
 
@@ -179,6 +192,10 @@ _DATA_PRESENT_REQUIRED: frozenset[str] = frozenset({
     "lights_on",
     # v1.12.0 (#23) — vehicles without lvBattery job don't get the warning.
     "warning_12v_low",
+    # v1.15.0 — Skoda-only OTA. Cross-brand support deferred (Research
+    # 2026-05-02) — CARIAD-BFF + OLA don't yet expose a software-version
+    # update-status endpoint.
+    "ota_update_available",
 })
 
 
@@ -239,6 +256,25 @@ class VagConnectBinarySensor(VagConnectEntity, BinarySensorEntity):
         if val is None:
             return None
         return bool(val)
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any] | None:
+        """v1.15.0 — surface OTA release-notes URL on the update sensor.
+
+        Pattern from the Trip-Stats `recent_trips` attrs in v1.14.0:
+        list-shaped or freely-formed metadata lives here, not in the
+        state string (which has a 255 char limit and is recorder-noisy).
+        """
+        if self.entity_description.key == "ota_update_available":
+            url = self._vehicle.get("ota_release_notes_url")
+            status = self._vehicle.get("software_update_status")
+            attrs: dict[str, Any] = {}
+            if isinstance(url, str) and url:
+                attrs["release_notes_url"] = url
+            if isinstance(status, str) and status:
+                attrs["raw_status"] = status
+            return attrs or None
+        return None
 
 
 # Per-door binary sensors.

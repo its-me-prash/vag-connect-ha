@@ -198,6 +198,18 @@
       "last_trip_avg_electric_consumption_kwh_100km": {
         "name": "Laatste Rit — Gem. Elektrisch Verbruik"
       },
+      "software_version": {
+        "name": "Software-Versie"
+      },
+      "total_charged_energy_kwh": {
+        "name": "Totaal Geladen Energie"
+      },
+      "last_charging_session_kwh": {
+        "name": "Laatste Sessie — Energie"
+      },
+      "last_charging_session_duration_min": {
+        "name": "Laatste Sessie — Duur"
+      },
       "departure_timer_1_time": {
         "name": "Vertrektimer 1"
       },
@@ -280,6 +292,9 @@
       },
       "warning_12v_low": {
         "name": "12V-accu zwak"
+      },
+      "ota_update_available": {
+        "name": "Software-update beschikbaar"
       }
     },
     "switch": {

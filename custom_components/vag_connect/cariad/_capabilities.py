@@ -144,6 +144,21 @@ CAPABILITY_MAP: Final[dict[str, dict[str, str]]] = {
         "command_stop_window_heating": "air-conditioning",
         "command_set_climate_temperature": "air-conditioning",
         "command_set_departure_timer": "departure-timers",
+        # v1.15.0 — Skoda Modernization. New cap-ids observed in
+        # ``skodaconnect/myskoda`` PRs #533/#540/#541/#543/#557/#560
+        # (merged 2026-03 → 2026-04). These are READ-only / metadata
+        # capabilities — no command bindings yet, just registered so
+        # Phase 3's ``vehicle_supports_capability`` can answer cleanly
+        # for whichever entities we add later (driving-score sensors,
+        # OTA binary-sensor, charging-history sensor, etc.).
+        "command_software_update": "VEHICLE_HEALTH_INSPECTION",  # OTA via vhi
+        "command_charging_history": "CHARGING",                  # umbrella cap
+        "command_charging_profiles": "EXTENDED_CHARGING_SETTINGS",
+        "command_driving_score": "DRIVING_SCORE",
+        "command_readiness": "READINESS",
+        "command_plug_and_charge": "PLUG_AND_CHARGE",
+        "command_route_planning": "EV_ROUTE_PLANNING",
+        "command_battery_charging_care": "BATTERY_CHARGING_CARE",
     },
     # ─────────────────────────────────────────────────────────────────
     # VW NA + Porsche — different backends, capabilities not yet

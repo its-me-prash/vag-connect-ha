@@ -18,6 +18,7 @@ v1.13.0 (#62) — expanded redaction:
 
 from __future__ import annotations
 
+import hashlib
 import re
 from typing import Any
 
@@ -65,10 +66,74 @@ _EMAIL_RE = re.compile(
     r"\b([A-Za-z0-9._%+-])([A-Za-z0-9._%+-]*)@[A-Za-z0-9.-]+\.([A-Za-z]{2,})\b"
 )
 
+# v1.15.0 — query-string GPS scrubbing borrowed from
+# ``skodaconnect/myskoda/anonymize.py``. URLs like
+# ``/v1/maps/positions?latitude=48.13743&longitude=11.57549&radius=...``
+# leak GPS in path-side query-strings that the dict-key based
+# ``_scrub`` couldn't catch (lat/lon are inside a string value, not
+# their own dict keys). Replaces with rounded-1-decimal in opt-in mode
+# or full ``REDACTED`` in privacy-by-default mode.
+_LOCATION_QS_RE = re.compile(
+    r"(latitude=)(-?\d+\.?\d*)(&\s*longitude=)(-?\d+\.?\d*)",
+    re.IGNORECASE,
+)
+
 
 def _mask_email(value: str) -> str:
     """Replace ``user@example.com`` → ``u***@***.com``."""
     return _EMAIL_RE.sub(lambda m: f"{m.group(1)}***@***.{m.group(3)}", value)
+
+
+def _mask_location_qs(value: str, *, gps_round: bool = False) -> str:
+    """v1.15.0 — scrub ``latitude=...&longitude=...`` from URL query strings.
+
+    Borrowed pattern from ``skodaconnect/myskoda/anonymize.py``. Catches
+    GPS leaked in path-side query-strings that the dict-key based
+    ``_scrub`` doesn't see (e.g. error messages logging the failing URL).
+
+    ``gps_round=True`` mode keeps the URL valid with ~11 km granularity
+    so the receiving log is still useful; default mode replaces with
+    ``REDACTED`` markers.
+    """
+    if "latitude=" not in value:
+        return value
+
+    def _replace(m: re.Match[str]) -> str:
+        if gps_round:
+            try:
+                lat = round(float(m.group(2)), 1)
+                lon = round(float(m.group(4)), 1)
+                return f"{m.group(1)}{lat}{m.group(3)}{lon}"
+            except (TypeError, ValueError):
+                pass
+        return f"{m.group(1)}REDACTED{m.group(3)}REDACTED"
+
+    return _LOCATION_QS_RE.sub(_replace, value)
+
+
+# v1.15.0 — stable-hash helper from ``skodaconnect/myskoda/anonymize.py``.
+# Produces a deterministic SHA-256-based pseudonym so a repeat reporter
+# can be cross-referenced ("oh that's the same user as last week's bug")
+# without revealing their real ID. Truncated to 12 hex chars — enough
+# entropy to disambiguate, short enough to read at a glance.
+def _stable_hash(value: str, *, salt: str = "vag-connect-ha") -> str:
+    """Return a 12-hex stable digest of *value*. Empty input → empty string."""
+    if not value:
+        return ""
+    digest = hashlib.sha256(f"{salt}:{value}".encode("utf-8")).hexdigest()
+    return digest[:12]
+
+
+# v1.15.0 — keys that get a stable SHA-256 pseudonym instead of bare
+# ``REDACTED``. Lets a repeat reporter be cross-referenced (e.g. "this
+# is the same Skoda user as the previous bug ticket") without revealing
+# their real ID. Pattern from ``skodaconnect/myskoda/anonymize.py``.
+_HASH_KEYS = frozenset({
+    "user_id",
+    "userId",
+    "account_id",
+    "accountId",
+})
 
 
 def _scrub(value: Any, *, gps_round: bool = False) -> Any:
@@ -85,7 +150,11 @@ def _scrub(value: Any, *, gps_round: bool = False) -> Any:
         for k, v in value.items():
             if k in ("_client", "_vehicle"):
                 continue
-            if k in _REDACT_KEYS:
+            if k in _HASH_KEYS and isinstance(v, str):
+                # v1.15.0 — stable hash so repeat reporters cross-link
+                # without leaking the real ID. Pattern from myskoda.
+                scrubbed[k] = f"sha256:{_stable_hash(v)}" if v else "**REDACTED**"
+            elif k in _REDACT_KEYS:
                 scrubbed[k] = "**REDACTED**"
             elif k == "email" and isinstance(v, str):
                 # Partial mask preserves debug context.
@@ -104,8 +173,12 @@ def _scrub(value: Any, *, gps_round: bool = False) -> Any:
     if isinstance(value, list):
         return [_scrub(v, gps_round=gps_round) for v in value]
     if isinstance(value, str):
-        # Catch emails embedded in free text (log lines, error messages).
-        return _mask_email(value)
+        # v1.13.0 — catch emails embedded in free text (log lines, error
+        # messages). v1.15.0 — also scrub query-string GPS leaks (e.g.
+        # mysmob ``/v1/maps/positions?latitude=...&longitude=...`` URLs
+        # that surface in error traces).
+        masked = _mask_email(value)
+        return _mask_location_qs(masked, gps_round=gps_round)
     return value
 
 

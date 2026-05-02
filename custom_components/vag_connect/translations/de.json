@@ -192,6 +192,18 @@
       "last_trip_avg_electric_consumption_kwh_100km": {
         "name": "Letzte Fahrt — Ø Stromverbrauch"
       },
+      "software_version": {
+        "name": "Software-Version"
+      },
+      "total_charged_energy_kwh": {
+        "name": "Geladene Energie Gesamt"
+      },
+      "last_charging_session_kwh": {
+        "name": "Letzte Ladesitzung — Energie"
+      },
+      "last_charging_session_duration_min": {
+        "name": "Letzte Ladesitzung — Dauer"
+      },
       "departure_timer_1_time": {
         "name": "Abfahrtstimer 1"
       },
@@ -271,6 +283,9 @@
       },
       "warning_brakes": {
         "name": "Bremswarnung"
+      },
+      "ota_update_available": {
+        "name": "Software-Update verfügbar"
       }
     },
     "switch": {
