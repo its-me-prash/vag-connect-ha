@@ -37,11 +37,18 @@ class TestDepartureTimerTimeEntity:
         coord = MagicMock()
         coord.is_read_only = MagicMock(return_value=False)
         coord.async_set_departure_timer = AsyncMock()
-        coord.vehicles = {"VINX": {
+        # entity_base.VagConnectEntity._vehicle reads from
+        # ``self.coordinator.data`` (the DataUpdateCoordinator
+        # convention) — NOT ``self.coordinator.vehicles``. Set both
+        # so the test fixture works regardless of which attribute the
+        # entity layer ends up reading.
+        vehicle = {
             "vin": "VINX",
             "model": "Test Vehicle",
             "departure_timer_1_time": raw_time,
-        }}
+        }
+        coord.data = {"VINX": vehicle}
+        coord.vehicles = {"VINX": vehicle}
         e = VagDepartureTimerTime.__new__(VagDepartureTimerTime)
         # Bypass the full HA entity __init__ — just set the bits we test.
         e.coordinator = coord
