@@ -14,6 +14,143 @@ weiterhin direkt in `CHANGELOG.md` zu finden.
 
 ---
 
+## [1.17.0] - 2026-05-02
+
+### Operational Hardening Bundle / Operational Hardening Bundle
+
+MINOR-Release. Quality-of-life Hardening basierend auf community research deep-dive (3 neue research docs in `docs/research/`). Setzt Foundation für v1.18.0 Push Bundle und v2.0.0 HACS Default Repository.
+
+#### Quota-protective Poll-Defaults
+
+**Old defaults:**
+- `DEFAULT_SCAN_INTERVAL = 5` minutes (288 polls/day)
+- `MIN_SCAN_INTERVAL = 3` minutes (480 polls/day)
+
+**New defaults (v1.17.0):**
+- `DEFAULT_SCAN_INTERVAL = 10` minutes (144 polls/day = 10% of 1500/day quota)
+- `MIN_SCAN_INTERVAL = 5` minutes (288 polls/day = 19%)
+
+**Reasoning** (from `docs/research/upstream-pycupra-notes.md` + community research):
+The MyCupra/MySeat portal limits API calls to ~1,500/day across the official mobile app + integrations. Our old default of 5 min ate 19% of the daily budget BEFORE the official app even logged in. Pycupra's README recommends ≥ 600s default, ≥ 900s with push enabled. The HACS-Checklist (also new in v1.17.0) tracks this as `Operational Safety / Polling interval floor → ✅ done`.
+
+**Migration:** Existing config entries are NOT coerced upward at upgrade — only the default for fresh installs changes. Power users who explicitly set 3min stay at 3min until they reconfigure (and even then can't go below 5min anymore).
+
+`docs/FAQ.md` "What is the daily API request quota?" section explains this for end users.
+
+#### Vehicle-deactivated persistent_notification
+
+**Pattern source:** `WulfgarW/homeassistant-pycupra` v0.2.14.
+
+**File modified:** `coordinator.py::_async_remove_stale_devices`.
+
+When a vehicle disappears from the user's VAG account between polls (sold / ownership transferred / manufacturer-deactivated / subscription expired), the coordinator now creates a `persistent_notification` BEFORE calling `device_reg.async_remove_device()`. The notification:
+
+- Title: "VAG Connect — Fahrzeug entfernt"
+- Body: explains in German what happened, lists possible reasons (sold / ownership / subscription expired / manufacturer-deactivated), reassures that long-term-statistics history is preserved
+- `notification_id` is per-VIN so multi-VIN accounts get one notification per removed vehicle
+- Best-effort wrapped in try/except — notification failure must never block device removal
+
+The log line was upgraded from `_LOGGER.info` to `_LOGGER.warning` since this represents user-impacting state change (entities will vanish on next render).
+
+#### Year-rollover unit tests
+
+**File:** `tests/test_v1170_datetime_boundaries.py`
+
+**Pattern source:** Pycupra issue #33 (estimated-end timestamps showing the prior year).
+
+Pre-emptive coverage for the recurring datetime-arithmetic bug class:
+- `TestDateConversionBoundaries` (5) — sensor.py `device_class=DATE` conversion across year-end + leap day + ISO string parse + invalid input
+- `TestWakeBudgetUtcMidnightReset` (2) — UTC date logic + 2025-12-31 23:30 UTC → 2026-01-01 00:30 UTC date comparison
+- `TestConnectionStateTimestampBoundaries` (2) — `compute_connection_state` with naive vs tz-aware timestamps + year-end timestamp parsing roundtrip
+- `TestDstTransitionParsing` (3) — Europe/Berlin spring-forward + fall-back as UTC offsets (no-ambiguity verification)
+
+Total: 12 new tests. Don't cover every possible boundary, but cover the "if the bug exists, this would catch it" diagonal.
+
+#### docs/FAQ.md (NEW)
+
+End-user documentation, German + English mix. Sections:
+- "What actually wakes the car?" — definitive answer (nothing about polling wakes the car) + table of which actions DO wake + Wake protection summary
+- Privacy settings matrix (3-4 levels per backend → which entities degrade per level + step-by-step to change in app + troubleshooting)
+- Daily API quota explanation with polls/day vs % quota table
+- Reauthentication flow (and why NOT to remove-and-readd)
+- Entity-ID stability policy (bug fix → keep ID, schema-change → new ID + 2-version deprecation)
+- Read-only Mode explanation
+- "My vehicle disappeared after a release" troubleshooting
+- Bug-reporting workflow with diagnostics privacy reassurance
+- Supported brands + regions table
+
+This is the file users will be linked to from the README and from new GitHub issues.
+
+#### docs/HACS-CHECKLIST.md (NEW)
+
+Pre-condition audit for HACS Default Repository inclusion (planned v2.0.0). 7 sections, ~40 line items, each marked ✅ / ⚠️ / ❌ / 🔮:
+
+- Repo structure (5 items, 3✅ 1⚠️ 1❌)
+- Code quality (5 items, 4✅ 1⚠️)
+- Config flow (4 items, 3✅ 1⚠️)
+- Operational safety (12 items, 6✅ 4⚠️ 2❌ + 2🔮 push-related)
+- CI / release (12 items, 9✅ 1❌ 2🔮)
+- User-facing docs (5 items, 3✅ 1⚠️ 1❌)
+- Outstanding for v2.0.0 prep (7 items)
+
+Outstanding items list:
+1. Per-vehicle log prefix
+2. `requests_remaining_today` sensor
+3. HTTP 500 "log once" pattern
+4. PRIVACY.md
+5. Live-Tests across all brands
+6. EU Data Act readiness (Sep 2026 deadline)
+7. CONTRIBUTING.md polish
+
+#### Three new research docs in docs/research/
+
+- **`upstream-pycupra-notes.md`** — community research v1 (architecture + entity surface + error patterns 5.1–5.15 + suggested layout + 8 upstream contribution ideas to WulfgarW)
+- **`vag-ha-integration-research.md`** — community research v2 (project landscape + Skoda + MQTT freshness validation pattern + extended HACS checklist + 8 high-leverage contributions)
+- **`pycupra-deep-dive-2026-05-02.md`** — eigene tiefe analysis (8 high-priority adopt items, medium-priority defensive patterns, skip list, full new OLA endpoint catalog including `PUT /destination` + Webasto endpoints + measurements + warninglights, bucket-flag-style polling pseudo-code, push notification dispatcher template, recommended new config-flow options, open questions for v1.18.0 prep)
+
+Plus **`docs/upstream-contributions/wulfgar-pycupra-issues.md`** — 8 ready-to-post upstream issue drafts (no AI signature) for `WulfgarW/homeassistant-pycupra`:
+
+1. async_step_reauth
+2. requests_remaining_today sensor + repair issue
+3. One-click "Retry login" actionable notification
+4. Push dispatcher hardening (HANDLERS dict + unknown-type log + no-op + regression fixtures)
+5. hassfest + hacs/action CI workflows
+6. Year-rollover + DST unit tests
+7. MQTT freshness validation pattern (myskoda PR #536 alignment)
+8. FAQ.md privacy-setting matrix
+
+#### Community: Bruno-Collection outreach
+
+Discovered `Timwun/Cupra-WeConnect-Bruno-Collection` mid-session — 50+ verified OLA-Endpoint specs in Bruno API-Client format. Posted Issue #1 with heartfelt thank-you (German) + brand-tester invitation. Vollscan-agent extracts the complete catalog into `docs/research/cupra-bruno-endpoints-2026-05-02.md` for v1.17.x / v1.18.0 implementation reference. Notably:
+
+- `PUT /v1/users/vehicles/{vin}/destination` with full body — closes #36 Navigation in v1.17.x
+- `POST /v1/vehicles/{vin}/auxiliary-heating/{start|stop}` — Webasto remote start as new SEAT/CUPRA feature
+- `GET /v1/vehicles/{vin}/charging/battery-care` — completes our v1.15.0 cap-id work
+
+#### Files modified
+
+```
+custom_components/vag_connect/
+  const.py                          (poll defaults raised + reasoning comment)
+  coordinator.py                    (_async_remove_stale_devices: persistent_notification + WARNING upgrade)
+  manifest.json                     (1.16.1 → 1.17.0)
+
+docs/
+  FAQ.md                            (NEW — end-user FAQ)
+  HACS-CHECKLIST.md                 (NEW — v2.0.0 prep audit status)
+  research/
+    upstream-pycupra-notes.md       (NEW — community research v1)
+    vag-ha-integration-research.md  (NEW — community research v2)
+    pycupra-deep-dive-2026-05-02.md (NEW — eigene library + integration analysis)
+  upstream-contributions/
+    wulfgar-pycupra-issues.md       (NEW — 8 ready-to-post issue drafts)
+
+tests/
+  test_v1170_datetime_boundaries.py (NEW — 12 year-rollover/DST/leap tests)
+```
+
+---
+
 ## [1.16.1] - 2026-05-02
 
 ### SEAT/CUPRA Climate Fix + #122 Scout-Paths / SEAT/CUPRA Climate 404 Fix + SEAT scout-paths

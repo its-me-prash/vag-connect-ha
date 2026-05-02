@@ -32,6 +32,63 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ## [Unreleased]
 
+## [1.17.0] - 2026-05-02 🛡️📚 Operational Hardening Bundle / Operational Hardening (Quota-protective polling + FAQ + HACS Checklist + Year-rollover Tests + Deactivated Notification)
+
+🛡️📚 **Quality-of-life MINOR-Release** nach community-research deep-dive: Poll-Defaults quota-protective angepasst, deactivated-vehicle notification, year-rollover unit tests, plus zwei neue High-Value User-Docs (FAQ + HACS-Checklist). Setzt die Foundation für v1.18.0 Push Bundle und v2.0.0 HACS Default Repository.
+
+### 🔄 Geändert / Changed
+
+- 📊 **Poll-Defaults quota-protective angehoben** (community-research-driven):
+  - `DEFAULT_SCAN_INTERVAL`: 5min → **10min** (288 polls/day → 144 polls/day = 19% → 10% des 1500/day Quotas)
+  - `MIN_SCAN_INTERVAL`: 3min → **5min** (verhindert dass Power-User die Quota mid-day exhausten)
+  - **Bestehende Configs werden NICHT umkonfiguriert** — nur Defaults für fresh installs
+  - Begründung dokumentiert in `const.py` mit verweis auf pycupra README + WulfgarW/homeassistant-pycupra release notes
+  - Siehe neue `docs/FAQ.md` "What is the daily API request quota?" für User-Erklärung
+
+### ✨ Neu / Added
+
+- 🚗 **Vehicle-deactivated persistent_notification** (analog `WulfgarW/homeassistant-pycupra` v0.2.14) — wenn ein Fahrzeug aus dem VAG-Konto verschwindet (verkauft / Eigentümerwechsel / Hersteller-Deaktivierung / Subscription abgelaufen), wird eine `persistent_notification` mit verständlicher Begründung erstellt BEVOR das Device removed wird. User wissen warum ihre Entities gerade verschwunden sind. Long-term-statistics History bleibt erhalten.
+
+### 📚 Documentation / Documentation
+
+- 📚 **`docs/FAQ.md`** (NEW) — High-value End-User-Doku:
+  - "What actually wakes the car?" — definitive Antwort: nur explizite commands, KEIN polling
+  - Wake protection summary (3/Tag soft-cap + 5min cooldown)
+  - Privacy-Setting Matrix (Share/Use/Don't share → welche Entities degradieren)
+  - Daily API Quota Erklärung mit polls/day Tabelle
+  - Reauthentication-Flow erklärt + warum NICHT remove-and-readd (statistics history loss)
+  - Entity-ID-Stability Policy (bug fix → keep ID, schema-change → new ID + deprecate)
+  - Read-only Mode + "vehicle disappeared" + Bug-Reporting workflow + Brand-Region-Tabelle
+- 📋 **`docs/HACS-CHECKLIST.md`** (NEW) — Audit-Status pro Item gegen die HACS-Default-Repository Pre-Conditions:
+  - 7 Sektionen (Repo structure, Code quality, Config flow, Operational safety, CI/release, User-facing docs, Outstanding for v2.0.0)
+  - Per-Item Status (✅ done / ⚠️ partial / ❌ missing / 🔮 planned)
+  - Outstanding-Items klar gelistet für v2.0.0 prep (per-vehicle log prefix, requests_remaining_today sensor, HTTP 500 log-once pattern, PRIVACY.md, Live-Tests aller Brands, EU Data Act readiness)
+
+### 🧪 Tests / Tests
+
+- `tests/test_v1170_datetime_boundaries.py` — neue Tests in 4 Klassen für recurring datetime-arithmetic bug class (pycupra issue #33 prevention):
+  - `TestDateConversionBoundaries` (5) — int-days + ISO string parsing across year-end + leap year
+  - `TestWakeBudgetUtcMidnightReset` (2) — UTC date logic + year-rollover comparison
+  - `TestConnectionStateTimestampBoundaries` (2) — naive vs tz-aware comparison + year-end timestamp parsing
+  - `TestDstTransitionParsing` (3) — spring-forward + fall-back UTC offset preservation
+
+### 🔬 Pre-Research / Pre-Research
+
+Drei neue Research-Docs in `docs/research/`:
+- **`upstream-pycupra-notes.md`** — community research v1 (architecture + entity surface + error patterns + HACS layout suggestions)
+- **`vag-ha-integration-research.md`** — community research v2 (Skoda + MQTT + HACS-Checklist + 8 upstream contribution ideas)
+- **`pycupra-deep-dive-2026-05-02.md`** — eigene tiefe pycupra Library + HA-Integration analysis (8 high-priority adopt items + bucket polling pseudo-code + push dispatcher template + new OLA endpoint catalog mit `PUT /destination` als #36 closer + Webasto endpoints)
+
+Plus **`docs/upstream-contributions/wulfgar-pycupra-issues.md`** — 8 ready-to-post upstream issue drafts für `WulfgarW/homeassistant-pycupra` (async_step_reauth, requests_remaining sensor, retry-login action, push dispatcher hardening, hassfest CI, year-rollover tests, MQTT freshness validation, privacy-matrix FAQ).
+
+### 🤝 Community / Community
+
+- 📨 **Outreach an `Timwun/Cupra-WeConnect-Bruno-Collection`** — neuer Bruno-Collection mit 50+ verifizierten OLA-Endpoint-Specs entdeckt. Issue #1 mit Dankeschön + Brand-Tester-Einladung gepostet. Vollscan-Agent extrahiert die komplette Endpoint-Catalog für v1.17.x / v1.18.0 Implementation (insbesondere `PUT /v1/users/vehicles/{vin}/destination` für #36 Navigation-Closure).
+
+### 📦 Geplante Issue-Closures / Planned Issue Closures
+
+Keine direkten Issue-Closures in v1.17.0 (Hardening-Release ohne neue Features). Vorbereitung für #36 Navigation Closure in v1.17.x basierend auf Bruno-Collection.
+
 ## [1.16.1] - 2026-05-02 🐛 SEAT/CUPRA Climate Fix + #122 Scout-Paths / SEAT/CUPRA Climate 404 Fix + SEAT scout-path registration
 
 🐛 **PATCH: Hotfix für SEAT/CUPRA Climate-Endpoint** — Gerhard's v1.16.0 Test (Issue #53) hat aufgedeckt dass unsere ``command_start_climate`` URL ``POST /v2/vehicles/{vin}/climatisation`` mit Body ``{"action":"start"}`` einen 404 produziert (`No static resource`). Korrekter OLA-Endpoint ist ``POST /v2/vehicles/{vin}/climatisation/start`` (Action im Pfad). Plus #122 SEAT Scout-Report von r1150gs.
