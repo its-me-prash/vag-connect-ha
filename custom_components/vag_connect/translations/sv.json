@@ -75,13 +75,15 @@
           "scan_interval": "Uppdateringsintervall",
           "spin": "S-PIN",
           "enable_reverse_geocoding": "Omvänd geokodning (parkeringsadress)",
-          "read_only_mode": "Skrivskyddat läge"
+          "read_only_mode": "Skrivskyddat läge",
+          "force_ppe_climate": "Audi PPE/PPC klimat-body (Q6/A6 e-tron, RS e-tron GT Facelift, A3 2024+ PHEV)"
         },
         "data_description": {
           "scan_interval": "Hur ofta data hämtas (minuter). Minimum: 3.",
           "spin": "S-PIN för dörrlåsning.",
           "enable_reverse_geocoding": "Skickar parkerings-GPS till OpenStreetMap Nominatim för att hämta gata/stad. Av som standard (integritet).",
-          "read_only_mode": "När aktiverat skapas endast statussensorer — inga brytare, knappar, lås, klimat eller reglage som skickar kommandon. Användbart om du vill ha fordonstelemetri utan risk för oavsiktlig aktivering. Ladda om integrationen efter ändring."
+          "read_only_mode": "När aktiverat skapas endast statussensorer — inga brytare, knappar, lås, klimat eller reglage som skickar kommandon. Användbart om du vill ha fordonstelemetri utan risk för oavsiktlig aktivering. Ladda om integrationen efter ändring.",
+          "force_ppe_climate": "Endast Audi. Tvingar det nya PPE/PPC body-formatet (climatisationMode obligatoriskt, targetTemperature utelämnat) vid klimatstart. Aktivera bara om du äger en Q6 e-tron, A6 e-tron, RS e-tron GT Facelift eller A3 2024+ PHEV — annars svarar API:t med 400. Ladda om integrationen efter aktivering."
         }
       }
     }
@@ -183,6 +185,18 @@
       },
       "wake_count_today": {
         "name": "Väckningar idag"
+      },
+      "last_trip_distance_km": {
+        "name": "Senaste Resa — Avstånd"
+      },
+      "last_trip_avg_speed_kmh": {
+        "name": "Senaste Resa — Medel-Hastighet"
+      },
+      "last_trip_avg_fuel_consumption_l_100km": {
+        "name": "Senaste Resa — Medel-Bränsleförbrukning"
+      },
+      "last_trip_avg_electric_consumption_kwh_100km": {
+        "name": "Senaste Resa — Medel-Elförbrukning"
       },
       "departure_timer_1_time": {
         "name": "Avgångstimer 1"

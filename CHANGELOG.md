@@ -32,6 +32,81 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ## [Unreleased]
 
+## [1.14.0] - 2026-05-02 🚗 Audi Feature Pack Bundle / Audi Feature Pack (Trip Stats + Engine Start ICE + PPC Climate Body) + Skoda Scout-Pfade #116
+
+🚗 **Drei Audi-spezifische Features in einem MINOR-Release** + Skoda Scout-Pfade aus #116 (MavericklCS) als Add-On. Bundle 2 aus dem v1.13.0 Pre-Research-Plan (`docs/RESEARCH_NOTES_2026-05-02.md`).
+
+### ✨ Neu / Added
+
+- 🛣️ **#24 Trip Statistics für VW EU + Audi** — neuer CARIAD-BFF Endpoint `GET /vehicle/v1/vehicles/{vin}/tripstatistics?type={shortTerm|longTerm}` (verifiziert in audi_connect_ha + audiconnectpy + ioBroker/vw-connect). Vier neue Sensor-Entitäten pro Audi/VW EU Vehicle:
+  - `last_trip_distance_km` (DISTANCE) — letzte Fahrt-Strecke aus shortTerm `mileage`
+  - `last_trip_avg_speed_kmh` (SPEED) — Ø-Geschwindigkeit
+  - `last_trip_avg_fuel_consumption_l_100km` (combustion-only) — Ø-Verbrauch in l/100km (Backend liefert ×10, Parser teilt)
+  - `last_trip_avg_electric_consumption_kwh_100km` (electric-only) — Ø-Stromverbrauch in kWh/100km
+  - Plus `recent_trips` (letzte 5) als `extra_state_attributes` auf `last_trip_distance_km` (audi #113 "aggregate-in-state" convention — vermeidet 255-char state limit)
+  - 1h-Cache-Cycle in `coordinator.refresh_trip_statistics` — Brand-restriction audi/volkswagen (andere Brands skippen ohne Error), Phase 3 Capability-Gate (`command_trip_stats` → cap-id `tripStatistics`), 1h Cache-TTL via `_trip_stats_fetched_at`
+  - **Subscription-required** (Audi connect Plus / WeConnect Plus) — Phase 3 versteckt die Entities wenn das Abo fehlt
+- 🔥 **#28 Audi ICE Remote Engine Start/Stop** — zwei-Schritt S-PIN-Flow nach audi_connect_ha PR #717:
+  - `service: vag_connect.engine_start` — `PUT /vehicle/v1/engine/{VIN}/userpromptproof` (S-PIN) → extract `userPromptProof` → `POST /vehicle/v1/engine/{VIN}/start` mit `securedActivationData`
+  - `service: vag_connect.engine_stop` — single `POST /vehicle/v1/engine/{VIN}/stop` (kein S-PIN nötig)
+  - **Audi-only** — andere Brands haben keinen `/engine/`-Subtree. Path-Pattern ist `/vehicle/v1/engine/{VIN}/...` (NICHT `/vehicle/v1/vehicles/{VIN}/engine/...`). VIN wird automatisch uppercased.
+  - **S-PIN aus gespeicherter Konfiguration** — landet NIE im Service-Call-Log
+  - **Capability-gated** über `CAPABILITY_MAP["audi"]["command_engine_start"] = "engineRemoteStart"` (⚠️ [Inference] cap-id, noch kein Live-Capabilities-Response gesehen)
+  - Per-VIN `engine` lock-class via `_COMMAND_CLASS` — start/stop serialisieren nicht parallel
+- 🌡️ **#29 PPE/PPC Klima-Body conditional** — Audi Q6/A6 e-tron, RS e-tron GT Facelift, A3 2024+ PHEV brauchen das neue PPE-Body-Format (audi_connect_ha PR #644 + #677):
+  - `climatisationMode: "comfort"` mandatory
+  - `targetTemperature` + `targetTemperatureUnit` MÜSSEN omitted werden
+  - Neue Option `force_ppe_climate` (default False, Audi-only Effekt) in der Options-Flow. User-overridable da Auto-Detection unzuverlässig ist (kein verifiziertes Modell-Mapping public).
+  - `command_start_climate(vin, ppe_mode=True)` schaltet das Body-Format um
+- 🛰️ **#116 Skoda Scout-Pfade** — vierter Community-Scout-Report von **MavericklCS** (2026-05-01). 5 neue Pfade in `EXPECTED_KEYS["skoda"]`:
+  - `driving-range`: 4× `primaryEngineRange.{engineType,currentSoCInPercent,currentFuelLevelInPercent,remainingRangeInKm}`
+  - `maintenance`: `predictiveMaintenance.setting` + `predictiveMaintenance.setting.*` Wildcard
+
+### 🔄 Geändert / Changed
+
+- 🔧 `cariad/_capabilities.py` — Audi-Inheritance-Trick erweitert: `CAPABILITY_MAP["audi"]` ist jetzt eine **Kopie** von VW EU's Map (statt Alias) plus Audi-only Patch-Eintrag für `command_engine_start`. Verhindert Pollution der VW EU Map.
+- 🔧 `coordinator.py` — `_COMMAND_CLASS` registry erweitert um `command_engine_start`/`command_engine_stop` → "engine" class. Trip-Stats refresh als best-effort gather() im Poll-Loop nach `_async_push_update`.
+- 🔧 `sensor.py` — neuer `_TRIP_STATS_BRANDS` frozenset für Brand-Gating der 4 Trip-Stats Sensoren. Neuer `extra_state_attributes` Override in `VagConnectSensor` für `recent_trips` auf `last_trip_distance_km`.
+- 🔧 `vw_eu.py` — `command_start_climate(vin, ppe_mode: bool = False)` mit conditional fallback-payload. Default = legacy body (backwards-compat).
+
+### 🌐 Übersetzungen / Translations
+
+8 Sprachen (de/en/fr/es/nl/pl/cs/sv) — neue keys:
+- `entity.sensor.{last_trip_distance_km, last_trip_avg_speed_kmh, last_trip_avg_fuel_consumption_l_100km, last_trip_avg_electric_consumption_kwh_100km}`
+- `options.step.init.data.force_ppe_climate` + `data_description.force_ppe_climate`
+
+### 🧪 Tests / Tests
+
+- `tests/test_v1140_audi_pack.py` — 19 neue Tests:
+  - `TestParseTripStatistics` (6) — pure parser tests + ×10 division + sort + cap at 5 + garbage handling
+  - `TestGetTripStatisticsURL` (1) — URL + type query param
+  - `TestRefreshTripStatisticsBrandRestriction` (4) — Brand-restriction + capability gate + 1h cache
+  - `TestAudiEngineStart` (5) — two-step flow + uppercase VIN + no-spin raises + missing-proof raises + stop endpoint
+  - `TestPpcClimateBody` (3) — legacy body / PPE body / default-legacy
+  - `TestCapabilityMapEngineStart` (4) — Audi-only inheritance copy + trip_stats brand-presence
+  - `TestScoutPathsSkoda` (2) — primaryEngineRange.* + predictiveMaintenance.setting wildcard
+  - `TestEngineCommandClass` (1) — engine class shared start/stop
+
+### 🔬 Pre-Research / Pre-Research
+
+- Bundle 2 aus `docs/RESEARCH_NOTES_2026-05-02.md` (verfasst 2026-05-02 vor v1.13.0). Alle drei Issues lieferten ✅ verified Recherche-Ergebnisse:
+  - #24 (Trip Stats): CARIAD-BFF Endpoint + per-trip Field-Liste verifiziert
+  - #28 (Engine Start): audi_connect_ha PR #717 source-read komplett — Endpoint + Body + Response-Shape
+  - #29 (PPE Climate): Body-Pattern aus audi #644 + #677 verifiziert; Detection via User-Option (Auto-Heuristik defer)
+
+### 📦 Schließt Issues / Closes
+
+- Closes #24 (Verbrauchsdaten / Trip Stats Audi)
+- Closes #28 (Remote Start ICE Audi 2024+)
+- Closes #29 (PPC Climate für 2025 A3/Q5 / Q6/A6 e-tron)
+- Closes #116 (Skoda Scout-Report von MavericklCS)
+
+### ❌ Deferred / Not in this release
+
+- **#35 Ladehistorie LTS** — `chargedEnergy_kWh` Feld nicht in CARIAD-BFF verifiziert (Research v1.13.0). Wartet auf API-Hinweis aus Live-Tests.
+- **#51 RS e-tron GT Facelift** — graceful degradation only (volle PPE Lock/Charging-Endpoint-Map noch nicht reverse-engineered, Hard Rule #15 verbietet endpoint-guessing).
+- **PPE Auto-Detection** — User opt-in only (keine zuverlässige VIN/Model/Year-Heuristik public verfügbar).
+
 ## [1.13.0] - 2026-05-02 🛡️ Production Hardening Bundle / Production Hardening (Capability Phase 3 + Read-only Phase 2 + Diagnostics-Polish + Process)
 
 🛡️ **Drei P0-Themen aus dem Roadmap-Backlog in einem MINOR-Release.** Alle drei waren bereits angefangene Arbeit (Phase 1 ausgeliefert) — jetzt Closure mit Phase 2/3, plus die Diagnostics-Hardening die wir für Issue-Reporting brauchen, plus Process-Docs (#64) für Brand Captains.

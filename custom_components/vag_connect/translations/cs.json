@@ -75,13 +75,15 @@
           "scan_interval": "Interval aktualizace",
           "spin": "S-PIN",
           "enable_reverse_geocoding": "Reverzní geokódování (adresa parkování)",
-          "read_only_mode": "Režim jen pro čtení"
+          "read_only_mode": "Režim jen pro čtení",
+          "force_ppe_climate": "Audi PPE/PPC klima-tělo (Q6/A6 e-tron, RS e-tron GT Facelift, A3 2024+ PHEV)"
         },
         "data_description": {
           "scan_interval": "Jak často se stahují data (minuty). Minimum: 3.",
           "spin": "S-PIN pro zamykání dveří.",
           "enable_reverse_geocoding": "Odesílá GPS parkování do OpenStreetMap Nominatim pro získání ulice/města. Výchozí: vypnuto (soukromí).",
-          "read_only_mode": "Když je povoleno, vytváří se pouze stavové senzory — žádné spínače, tlačítka, zámky, klima ani posuvníky odesílající příkazy. Užitečné, pokud chcete telemetrii vozidla bez rizika náhodného spuštění. Po přepnutí znovu načtěte integraci."
+          "read_only_mode": "Když je povoleno, vytváří se pouze stavové senzory — žádné spínače, tlačítka, zámky, klima ani posuvníky odesílající příkazy. Užitečné, pokud chcete telemetrii vozidla bez rizika náhodného spuštění. Po přepnutí znovu načtěte integraci.",
+          "force_ppe_climate": "Pouze Audi. Vynucuje nový PPE/PPC formát těla (climatisationMode povinný, targetTemperature vynechaný) při startu klimatizace. Zapnout pouze pokud vlastníš Q6 e-tron, A6 e-tron, RS e-tron GT Facelift nebo A3 2024+ PHEV — jinak API vrátí 400. Po zapnutí znovu načti integraci."
         }
       }
     }
@@ -183,6 +185,18 @@
       },
       "wake_count_today": {
         "name": "Probuzení dnes"
+      },
+      "last_trip_distance_km": {
+        "name": "Poslední Jízda — Vzdálenost"
+      },
+      "last_trip_avg_speed_kmh": {
+        "name": "Poslední Jízda — Prům. Rychlost"
+      },
+      "last_trip_avg_fuel_consumption_l_100km": {
+        "name": "Poslední Jízda — Prům. Spotřeba Paliva"
+      },
+      "last_trip_avg_electric_consumption_kwh_100km": {
+        "name": "Poslední Jízda — Prům. Spotřeba Elektřiny"
       },
       "departure_timer_1_time": {
         "name": "Časovač odjezdu 1"

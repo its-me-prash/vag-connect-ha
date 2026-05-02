@@ -72,10 +72,12 @@
         "data": {
           "scan_interval": "Aktualisierungsintervall (Minuten)",
           "spin": "S-PIN",
-          "enable_reverse_geocoding": "Adress-Auflösung (Parkposition)"
+          "enable_reverse_geocoding": "Adress-Auflösung (Parkposition)",
+          "force_ppe_climate": "Audi PPE/PPC Klima-Body (Q6/A6 e-tron, RS e-tron GT Facelift, A3 2024+ PHEV)"
         },
         "data_description": {
-          "enable_reverse_geocoding": "Sendet GPS der Parkposition an OpenStreetMap Nominatim, um Straße/Stadt zu ermitteln. Standard: aus (Datenschutz)."
+          "enable_reverse_geocoding": "Sendet GPS der Parkposition an OpenStreetMap Nominatim, um Straße/Stadt zu ermitteln. Standard: aus (Datenschutz).",
+          "force_ppe_climate": "Nur für Audi relevant. Erzwingt das neue PPE/PPC Body-Format (climatisationMode mandatory, targetTemperature weggelassen) beim Klima-Start. Nur aktivieren wenn du einen Q6 e-tron, A6 e-tron, RS e-tron GT Facelift oder A3 2024+ PHEV besitzt — sonst antwortet die API mit 400. Integration nach Aktivierung neu laden."
         }
       }
     }
@@ -177,6 +179,18 @@
       },
       "wake_count_today": {
         "name": "Wake-Ups heute"
+      },
+      "last_trip_distance_km": {
+        "name": "Letzte Fahrt — Strecke"
+      },
+      "last_trip_avg_speed_kmh": {
+        "name": "Letzte Fahrt — Ø Geschwindigkeit"
+      },
+      "last_trip_avg_fuel_consumption_l_100km": {
+        "name": "Letzte Fahrt — Ø Kraftstoffverbrauch"
+      },
+      "last_trip_avg_electric_consumption_kwh_100km": {
+        "name": "Letzte Fahrt — Ø Stromverbrauch"
       },
       "departure_timer_1_time": {
         "name": "Abfahrtstimer 1"

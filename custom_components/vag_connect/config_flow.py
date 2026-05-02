@@ -30,6 +30,7 @@ from .const import (
     CONF_BRAND,
     CONF_ENABLE_REVERSE_GEOCODING,
     CONF_FORCE_ACCESS,
+    CONF_FORCE_PPE_CLIMATE,
     CONF_READ_ONLY,
     CONF_SCAN_INTERVAL,
     CONF_SPIN,
@@ -416,6 +417,19 @@ class VagConnectOptionsFlow(config_entries.OptionsFlow):
                     default=current_options.get(
                         CONF_READ_ONLY,
                         current_data.get(CONF_READ_ONLY, False),
+                    ),
+                ): _BOOL_SELECTOR,
+                # v1.14.0 (#29 + #51 Facelift) — PPE/PPC Climate body.
+                # Audi-only effect; harmless toggle on other brands.
+                # Forces ``climatisationMode: comfort`` body shape and
+                # omits ``targetTemperature*`` for Audi Q6/A6 e-tron,
+                # RS e-tron GT Facelift, A3 2024+ PHEV. Auto-detection
+                # is too unreliable to default-on; user opts in.
+                vol.Optional(
+                    CONF_FORCE_PPE_CLIMATE,
+                    default=current_options.get(
+                        CONF_FORCE_PPE_CLIMATE,
+                        current_data.get(CONF_FORCE_PPE_CLIMATE, False),
                     ),
                 ): _BOOL_SELECTOR,
             }),

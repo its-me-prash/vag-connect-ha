@@ -69,11 +69,23 @@ CAPABILITY_MAP: Final[dict[str, dict[str, str]]] = {
         "command_stop_window_heating": "windowHeating",
         "command_set_climate_temperature": "climatisation",
         "command_set_departure_timer": "departureTimers",
+        # v1.14.0 (#24) — Trip Statistics (subscription-required: Audi
+        # connect Plus / WeConnect Plus). ⚠️ [Inference] cap-id matches
+        # CARIAD camelCase pattern; not yet seen in a Scout-confirmed
+        # capabilities response. Phase 3 returns ``None`` → don't filter
+        # if the cap row is absent, so vehicles without a published
+        # capability still get the entities.
+        "command_trip_stats": "tripStatistics",
     },
     # ─────────────────────────────────────────────────────────────────
     # Audi inherits VW EU's CARIAD-BFF capabilities (AudiClient(VWEUClient)).
     # Identical endpoint, identical schema, mostly identical cap-ids.
     # See cariad/api/audi.py for the inheritance.
+    #
+    # v1.14.0 (#28) — Audi-only ICE Remote Engine Start has no
+    # corresponding entry in CAPABILITY_MAP["volkswagen"] — VW EU's
+    # CARIAD-BFF doesn't expose the /engine/ subtree. The Audi-only
+    # cap-id is patched in below the inheritance assignment.
     # ─────────────────────────────────────────────────────────────────
     "audi": {},  # populated at module load below from "volkswagen"
     # ─────────────────────────────────────────────────────────────────
@@ -146,6 +158,17 @@ CAPABILITY_MAP: Final[dict[str, dict[str, str]]] = {
 # Same alias-trick used for EXPECTED_KEYS in cariad/_unexpected_keys.py.
 CAPABILITY_MAP["audi"] = CAPABILITY_MAP["volkswagen"]
 CAPABILITY_MAP["seat"] = CAPABILITY_MAP["cupra"]
+
+# v1.14.0 (#28) — Audi-only ICE Engine Start. Replace the alias with a
+# COPY so we can add Audi-specific entries without polluting VW EU's
+# table (the alias trick above shares the same dict by reference).
+# ⚠️ [Inference] cap-id ``engineRemoteStart`` is the camelCase guess
+# that matches CARIAD vocabulary patterns (``honkAndFlash``,
+# ``vehicleWakeUpTrigger``). NOT confirmed in a live capabilities
+# response yet — when a Scout report surfaces the real id we update.
+CAPABILITY_MAP["audi"] = dict(CAPABILITY_MAP["audi"])
+CAPABILITY_MAP["audi"]["command_engine_start"] = "engineRemoteStart"
+CAPABILITY_MAP["audi"]["command_engine_stop"] = "engineRemoteStart"
 
 
 def cap_id_for(brand: str, command_id: str) -> str | None:

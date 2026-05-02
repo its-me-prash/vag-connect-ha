@@ -75,13 +75,15 @@
           "scan_interval": "Interwał aktualizacji",
           "spin": "S-PIN",
           "enable_reverse_geocoding": "Geokodowanie odwrotne (adres parkowania)",
-          "read_only_mode": "Tryb tylko do odczytu"
+          "read_only_mode": "Tryb tylko do odczytu",
+          "force_ppe_climate": "Audi PPE/PPC klimat-body (Q6/A6 e-tron, RS e-tron GT Facelift, A3 2024+ PHEV)"
         },
         "data_description": {
           "scan_interval": "Jak często pobierane są dane (minuty). Minimum: 3.",
           "spin": "S-PIN do blokowania drzwi.",
           "enable_reverse_geocoding": "Wysyła GPS parkowania do OpenStreetMap Nominatim, aby uzyskać ulicę/miasto. Domyślnie wyłączone (prywatność).",
-          "read_only_mode": "Po włączeniu tworzone są tylko czujniki statusu — bez przełączników, przycisków, blokad, klimatu czy suwaków wysyłających polecenia. Przydatne gdy chcesz telemetrię pojazdu bez ryzyka przypadkowego uruchomienia. Przeładuj integrację po włączeniu."
+          "read_only_mode": "Po włączeniu tworzone są tylko czujniki statusu — bez przełączników, przycisków, blokad, klimatu czy suwaków wysyłających polecenia. Przydatne gdy chcesz telemetrię pojazdu bez ryzyka przypadkowego uruchomienia. Przeładuj integrację po włączeniu.",
+          "force_ppe_climate": "Tylko Audi. Wymusza nowy format PPE/PPC (climatisationMode obowiązkowy, targetTemperature pominięty) przy starcie klimatyzacji. Włącz tylko jeśli masz Q6 e-tron, A6 e-tron, RS e-tron GT Facelift lub A3 2024+ PHEV — w przeciwnym razie API zwraca 400. Po włączeniu przeładuj integrację."
         }
       }
     }
@@ -183,6 +185,18 @@
       },
       "wake_count_today": {
         "name": "Wybudzenia dziś"
+      },
+      "last_trip_distance_km": {
+        "name": "Ostatnia Trasa — Dystans"
+      },
+      "last_trip_avg_speed_kmh": {
+        "name": "Ostatnia Trasa — Średnia Prędkość"
+      },
+      "last_trip_avg_fuel_consumption_l_100km": {
+        "name": "Ostatnia Trasa — Średnie Zużycie Paliwa"
+      },
+      "last_trip_avg_electric_consumption_kwh_100km": {
+        "name": "Ostatnia Trasa — Średnie Zużycie Energii"
       },
       "departure_timer_1_time": {
         "name": "Timer odjazdu 1"

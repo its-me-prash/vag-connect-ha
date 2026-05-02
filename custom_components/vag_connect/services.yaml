@@ -191,3 +191,29 @@ set_departure_timer:
       required: false
       selector:
         text:
+
+# v1.14.0 (#28) — Audi-only ICE Remote Engine Start/Stop.
+engine_start:
+  name: Motor starten (Audi ICE)
+  description: >-
+    Startet den Verbrennungsmotor remote (Audi-only, S-PIN erforderlich).
+    Zwei-Schritt-Flow: PUT /vehicle/v1/engine/{VIN}/userpromptproof + POST /vehicle/v1/engine/{VIN}/start.
+    Nur für Audi-Modelle mit ICE/Hybrid + aktivem Audi connect Plus Abo.
+    Der S-PIN wird aus der gespeicherten Konfiguration genommen — landet NIE im Service-Call-Log.
+  fields:
+    vin:
+      name: VIN
+      required: true
+      selector:
+        text:
+engine_stop:
+  name: Motor stoppen (Audi ICE)
+  description: >-
+    Stoppt den Verbrennungsmotor remote (Audi-only, kein S-PIN nötig).
+    Single POST /vehicle/v1/engine/{VIN}/stop.
+  fields:
+    vin:
+      name: VIN
+      required: true
+      selector:
+        text:

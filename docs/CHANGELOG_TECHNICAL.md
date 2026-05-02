@@ -14,6 +14,181 @@ weiterhin direkt in `CHANGELOG.md` zu finden.
 
 ---
 
+## [1.14.0] - 2026-05-02
+
+### Audi Feature Pack Bundle / Audi Feature Pack Bundle
+
+MINOR-Release. Bundle 2 aus `docs/RESEARCH_NOTES_2026-05-02.md`. Drei Audi-spezifische Features in einem Release plus Skoda Scout-Pfade #116 als Add-On.
+
+#### #24 Trip Statistics für VW EU + Audi
+
+**Endpoint:** `GET https://emea.bff.cariad.digital/vehicle/v1/vehicles/{vin}/tripstatistics?type={shortTerm|longTerm}` (verified in audi_connect_ha + audiconnectpy + ioBroker/vw-connect, see RESEARCH_NOTES_2026-05-02 §Bundle 2 #24).
+
+**Response shape:**
+```json
+{"tripDataList": {"tripData": [
+  {"tripID": ..., "tripType": "shortTermReset",
+   "timestamp": "2026-04-28T17:42:11Z",
+   "mileage": 23, "startMileage": 41205, "overallMileage": 41228,
+   "traveltime": 31, "averageSpeed": 44,
+   "averageFuelConsumption": 68,           // ×10 — divide
+   "averageElectricEngineConsumption": 0}, // ×10 — divide
+  ...
+]}}
+```
+
+**Files:**
+- `cariad/api/vw_eu.py` — new `get_trip_statistics(vin, kind="shortTerm")` method (Audi inherits via `AudiClient(VWEUClient)`)
+- `cariad/models.py` — extended `VehicleData` with 9 new fields:
+  - `last_trip_distance_km`, `last_trip_duration_min`, `last_trip_avg_speed_kmh`
+  - `last_trip_avg_fuel_consumption_l_100km`, `last_trip_avg_electric_consumption_kwh_100km`
+  - `last_trip_timestamp`
+  - `lifetime_distance_km`, `lifetime_avg_fuel_consumption_l_100km`, `lifetime_avg_electric_consumption_kwh_100km`
+  - `recent_trips: list[dict]` (last 5)
+- `coordinator.py`:
+  - New module-level pure function `_parse_trip_statistics(short_resp, long_resp)` — sort by `overallMileage` desc, take `[0]`, divide consumption fields by 10, build `recent_trips` list capped at 5.
+  - New method `refresh_trip_statistics(vin, force=False)` — brand-restricted to `audi`/`volkswagen`, 1h cache via `_trip_stats_fetched_at[vin]`, capability-gated via `command_capability_supported(vin, "command_trip_stats") is False` early-return, parallel `gather()` for shortTerm + longTerm.
+  - Hooked into `_poll_loop` after `_async_push_update` as best-effort gather (never blocks polling).
+- `cariad/_capabilities.py` — added `"command_trip_stats": "tripStatistics"` to `volkswagen` map (audi inherits via copy in line below).
+- `sensor.py`:
+  - 4 new `VagSensorDescription` entries with `state_class=MEASUREMENT`, conditional gating (`combustion`/`electric`)
+  - New `_TRIP_STATS_KEYS` + `_TRIP_STATS_BRANDS` frozenset for setup-time gating (skip 4 sensors entirely on non-CARIAD brands so SEAT/CUPRA/Skoda/Porsche/VW NA don't get phantom "unknown" entities)
+  - New `extra_state_attributes` override on `VagConnectSensor` to surface `recent_trips` on the `last_trip_distance_km` sensor (audi #113 "aggregate-in-state" + 255-char state limit avoidance).
+
+#### #28 Audi ICE Remote Engine Start/Stop
+
+**Source:** arjenvrh/audi_connect_ha PR #717 — confirmed via `gh pr diff 717` (Research Notes §Bundle 2 #28).
+
+**Endpoints:**
+- `PUT /vehicle/v1/engine/{VIN}/userpromptproof` (S-PIN) → `{"userPromptProof": "..."}` at top-level
+- `POST /vehicle/v1/engine/{VIN}/start` with `{"securedActivationData": <token>, "spin": <pin>}`
+- `POST /vehicle/v1/engine/{VIN}/stop` with no body, no S-PIN
+
+Note: path is `/vehicle/v1/engine/{vin}/...` — NOT `/vehicle/v1/vehicles/{vin}/engine/...`. VIN must be uppercased in URL (upstream PR explicitly does `vin.upper()`).
+
+**Files:**
+- `cariad/api/audi.py`:
+  - New constant `_ENGINE_BASE = "https://emea.bff.cariad.digital/vehicle/v1/engine"`
+  - New method `command_engine_start(vin, spin="")` — raises `SpinError` if no PIN, two-step flow with proof extraction
+  - New method `command_engine_stop(vin)` — single POST, no body
+  - Uses `self._request("PUT", ...)` for step 1 (base.py only exposes `_get`/`_post` helpers; PUT goes via `_request`)
+- `cariad/_capabilities.py`:
+  - **Audi inheritance changed from alias to copy** — `CAPABILITY_MAP["audi"] = dict(CAPABILITY_MAP["audi"])` so audi-only patches don't pollute VW EU's table
+  - Added `"command_engine_start": "engineRemoteStart"` + `"command_engine_stop": "engineRemoteStart"` to audi (NOT to volkswagen). ⚠️ [Inference] cap-id, no Live-Capabilities-Response yet.
+- `coordinator.py`:
+  - `_COMMAND_CLASS` registry extended with `command_engine_start`/`command_engine_stop` → `"engine"` class (start/stop serialize via shared lock)
+  - New methods `async_engine_start(vin)` + `async_engine_stop(vin)` wrapping `_cariad_cmd`
+- `__init__.py`:
+  - New service handlers `_handle_engine_start` + `_handle_engine_stop` (both go through `_coord_writeable` for Read-only Mode v1.13.0 protection)
+  - Service registry: `engine_start` + `engine_stop` with `SERVICE_VIN_SCHEMA`
+  - `async_unload_entry` removes the new services on unload
+- `services.yaml` — descriptions for `engine_start`/`engine_stop` documenting two-step flow + S-PIN-from-config
+
+#### #29 PPE/PPC Climate Body conditional
+
+**Body shape difference (verified from audi_connect_ha PR #644 + #677):**
+
+Legacy MQB:
+```json
+{"targetTemperature": 21.0, "targetTemperatureUnit": "celsius",
+ "climatisationWithoutExternalPower": true, "windowHeatingEnabled": true}
+```
+
+PPE/PPC (Q6/A6 e-tron, RS e-tron GT Facelift, A3 2024+ PHEV):
+```json
+{"climatisationMode": "comfort",            // MANDATORY, not null
+ "climatisationWithoutExternalPower": true,
+ "windowHeatingEnabled": true
+ // targetTemperature* OMITTED — body validator rejects PPE otherwise
+}
+```
+
+**Files:**
+- `const.py` — new `CONF_FORCE_PPE_CLIMATE = "force_ppe_climate"`
+- `cariad/api/vw_eu.py` — `command_start_climate(vin, ppe_mode: bool = False)` with conditional fallback-payload. Default `False` = legacy body (backwards-compat for all existing callers).
+- `coordinator.py` — `async_start_climatisation(vin)` reads `CONF_FORCE_PPE_CLIMATE` from options/data (Audi-only), passes `ppe_mode=True` as kwarg when set.
+- `config_flow.py` — extended OptionsFlow with `force_ppe_climate` boolean toggle.
+- `strings.json` + 8 translations — option label + helper text describing PPE eligibility.
+
+**Why user-overridable instead of auto-detected:**
+- audi_connect_ha has `api_level` user-toggle (issues #677, #706 show even that is fragile across vehicles)
+- No public PPE compatibility list — guessing from VIN/model/year would mis-fire
+- Hard Rule #15: "do not endpoint-guess for PPC/PPE — risks Audi account suspension"
+- Body-shape-changes on a known endpoint are safer than endpoint-guessing — server-validated
+
+#### #116 Skoda Scout-Pfade (MavericklCS, fourth community Scout-Report)
+
+`cariad/_unexpected_keys.py` — extensions to `EXPECTED_KEYS["skoda"]`:
+
+```python
+"driving-range": {
+  ...
+  # v1.14.0 (#116, MavericklCS Scout-Report 2026-05-01)
+  "primaryEngineRange.engineType",
+  "primaryEngineRange.currentSoCInPercent",
+  "primaryEngineRange.currentFuelLevelInPercent",
+  "primaryEngineRange.remainingRangeInKm",
+},
+"maintenance": {
+  ...
+  # v1.14.0 (#116, MavericklCS) — predictiveMaintenance.setting (4 keys observed)
+  "predictiveMaintenance.setting",
+  "predictiveMaintenance.setting.*",
+}
+```
+
+`primaryEngineRange.currentSoCInPercent` on a `engineType: "gasoline"` vehicle is unusual — likely the 12V starter battery SoC (paralleling our v1.12.0 #23 `voltage_12v` work). Wait for next Scout-Report with vehicle-model context before wiring as a sensor.
+
+#### Translations
+
+8 Sprachen — neue keys:
+- `entity.sensor.{last_trip_distance_km, last_trip_avg_speed_kmh, last_trip_avg_fuel_consumption_l_100km, last_trip_avg_electric_consumption_kwh_100km}` — sensor display names
+- `options.step.init.data.force_ppe_climate` (label) + `data_description.force_ppe_climate` (helper text)
+
+Service descriptions for `engine_start` + `engine_stop` live in `services.yaml` (German, no per-language file expansion yet).
+
+#### Tests
+
+`tests/test_v1140_audi_pack.py` — 19 new tests, six classes:
+- `TestParseTripStatistics` (6) — pure parser exercises sort, ×10 division, recent_trips cap, garbage tolerance
+- `TestGetTripStatisticsURL` (1) — URL + `type` query param
+- `TestRefreshTripStatisticsBrandRestriction` (4) — non-CARIAD brand skip, audi makes 2 calls, capability-False skips, 1h cache window
+- `TestAudiEngineStart` (5) — two-step flow body shapes, VIN uppercase, no-S-PIN raises, missing-proof raises, stop endpoint
+- `TestPpcClimateBody` (3) — legacy body / PPE body / default-legacy backwards-compat
+- `TestCapabilityMapEngineStart` (4) — Audi has, VW does not, copy-not-alias verification, trip_stats cap
+- `TestScoutPathsSkoda` (2) — `primaryEngineRange.*` + `predictiveMaintenance.setting.*` registered
+- `TestEngineCommandClass` (1) — engine class shared between start/stop
+
+#### Files modified
+
+```
+custom_components/vag_connect/
+  __init__.py                     (+ engine_start/engine_stop services)
+  cariad/_capabilities.py         (audi inheritance copy + engine + trip_stats cap-ids)
+  cariad/_unexpected_keys.py      (+ #116 Skoda scout paths)
+  cariad/api/audi.py              (+ command_engine_start/stop + _ENGINE_BASE constant)
+  cariad/api/vw_eu.py             (+ get_trip_statistics + ppe_mode kwarg on command_start_climate)
+  cariad/models.py                (+ 9 trip-stats fields + recent_trips list)
+  config_flow.py                  (+ CONF_FORCE_PPE_CLIMATE option in OptionsFlow)
+  const.py                        (+ CONF_FORCE_PPE_CLIMATE)
+  coordinator.py                  (+ _parse_trip_statistics module fn + refresh_trip_statistics
+                                   + _COMMAND_CLASS engine entries
+                                   + async_engine_start/_stop helpers
+                                   + ppe_mode wiring in async_start_climatisation
+                                   + trip stats refresh in poll loop)
+  manifest.json                   (1.13.0 → 1.14.0)
+  sensor.py                       (+ 4 trip-stats sensors + _TRIP_STATS_BRANDS
+                                   + extra_state_attributes for recent_trips)
+  services.yaml                   (+ engine_start/engine_stop blocks)
+  strings.json                    (+ 4 sensor names + force_ppe_climate option)
+  translations/{de,en,fr,es,cs,nl,pl,sv}.json
+                                  (+ same as strings.json mirrored)
+
+tests/test_v1140_audi_pack.py     (NEW, 19 tests)
+```
+
+---
+
 ## [1.13.0] - 2026-05-02
 
 ### Production Hardening Bundle / Production Hardening Bundle

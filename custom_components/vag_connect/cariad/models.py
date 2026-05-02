@@ -330,6 +330,29 @@ class VehicleData:
     trunk_locked: bool | None = None
     sunroof_open: bool | None = None
 
+    # v1.14.0 (#24) — Trip Statistics from CARIAD-BFF
+    # ``GET /vehicle/v1/vehicles/{vin}/tripstatistics?type={shortTerm|longTerm}``.
+    # Both endpoints return ``{tripDataList: {tripData: [...]}}``; we sort
+    # by ``overallMileage`` desc and take ``[0]`` as the most recent
+    # trip (the audi #113 "aggregate-in-state" convention — keeps each
+    # field a separate sensor state rather than building a list entity).
+    # Consumption fields come back from the API as integers ×10
+    # (averageFuelConsumption: 68 ⇒ 6.8 l/100 km); the parser divides
+    # by 10 so the value stored here is already the human number.
+    # ``recent_trips`` holds the last 5 short-term trips for the
+    # ``last_trip_distance_km`` sensor's ``extra_state_attributes`` —
+    # avoids state-string-too-long (255 char limit).
+    last_trip_distance_km: float | None = None
+    last_trip_duration_min: int | None = None
+    last_trip_avg_speed_kmh: float | None = None
+    last_trip_avg_fuel_consumption_l_100km: float | None = None
+    last_trip_avg_electric_consumption_kwh_100km: float | None = None
+    last_trip_timestamp: str | None = None
+    lifetime_distance_km: float | None = None
+    lifetime_avg_fuel_consumption_l_100km: float | None = None
+    lifetime_avg_electric_consumption_kwh_100km: float | None = None
+    recent_trips: list[dict[str, Any]] = field(default_factory=list)
+
     def to_dict(self) -> dict[str, Any]:
         """Convert to plain dict for coordinator.vehicles storage."""
         from dataclasses import asdict  # noqa: PLC0415

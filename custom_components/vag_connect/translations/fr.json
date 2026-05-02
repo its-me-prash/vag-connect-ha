@@ -75,13 +75,15 @@
           "scan_interval": "Intervalle de mise à jour",
           "spin": "S-PIN",
           "enable_reverse_geocoding": "Géocodage inverse (adresse de stationnement)",
-          "read_only_mode": "Mode lecture seule"
+          "read_only_mode": "Mode lecture seule",
+          "force_ppe_climate": "Climate Audi PPE/PPC (Q6/A6 e-tron, RS e-tron GT Facelift, A3 2024+ PHEV)"
         },
         "data_description": {
           "scan_interval": "Fréquence de mise à jour (minutes). Minimum: 3.",
           "spin": "S-PIN pour le verrouillage des portes.",
           "enable_reverse_geocoding": "Envoie le GPS de stationnement à OpenStreetMap Nominatim pour obtenir rue/ville. Désactivé par défaut (confidentialité).",
-          "read_only_mode": "Lorsqu'activé, seuls les capteurs d'état sont créés — pas d'interrupteurs, boutons, verrous, climat ou curseurs qui envoient des commandes. Utile si vous voulez la télémétrie véhicule sans risque d'actionnement accidentel. Rechargez l'intégration après activation."
+          "read_only_mode": "Lorsqu'activé, seuls les capteurs d'état sont créés — pas d'interrupteurs, boutons, verrous, climat ou curseurs qui envoient des commandes. Utile si vous voulez la télémétrie véhicule sans risque d'actionnement accidentel. Rechargez l'intégration après activation.",
+          "force_ppe_climate": "Audi uniquement. Force le nouveau format de payload PPE/PPC (climatisationMode obligatoire, targetTemperature omis) au démarrage du climat. À activer uniquement si vous possédez une Q6 e-tron, A6 e-tron, RS e-tron GT Facelift ou A3 2024+ PHEV — sinon l'API renvoie 400. Rechargez l'intégration après activation."
         }
       }
     }
@@ -183,6 +185,18 @@
       },
       "wake_count_today": {
         "name": "Réveils aujourd'hui"
+      },
+      "last_trip_distance_km": {
+        "name": "Dernier Trajet — Distance"
+      },
+      "last_trip_avg_speed_kmh": {
+        "name": "Dernier Trajet — Vitesse Moyenne"
+      },
+      "last_trip_avg_fuel_consumption_l_100km": {
+        "name": "Dernier Trajet — Conso. Carburant Moyenne"
+      },
+      "last_trip_avg_electric_consumption_kwh_100km": {
+        "name": "Dernier Trajet — Conso. Électrique Moyenne"
       },
       "departure_timer_1_time": {
         "name": "Minuterie de départ 1"
