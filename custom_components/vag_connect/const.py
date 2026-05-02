@@ -37,5 +37,14 @@ BRANDS = {
 }
 
 # Polling interval limits
-DEFAULT_SCAN_INTERVAL = 5    # minutes
-MIN_SCAN_INTERVAL     = 3    # minutes
+# v1.17.0 — defaults raised after community research (pycupra
+# README + WulfgarW/homeassistant-pycupra release notes): the
+# MyCupra/MySeat portal has a per-day API call limit of ~1,500 across
+# the official mobile app + integrations. Default 5 min = 288 polls/day
+# already eats ~20% of the daily budget BEFORE the official app even
+# logs in. Pycupra recommends ≥ 600 s (10 min) by default, ≥ 900 s
+# (15 min) when push is enabled. Min raised from 3 min → 5 min.
+# Existing entries with explicit lower values are not coerced upward
+# at upgrade — only the default for fresh installs changes.
+DEFAULT_SCAN_INTERVAL = 10   # minutes (was 5 — see v1.17.0 reasoning)
+MIN_SCAN_INTERVAL     = 5    # minutes (was 3 — quota protection)

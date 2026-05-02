@@ -1399,10 +1399,19 @@ class VagConnectCoordinator(DataUpdateCoordinator):
         Implements the stale-devices Gold quality scale rule.
         Only removes devices that were previously seen (in coordinator.data)
         but are no longer returned by the API.
+
+        v1.17.0 — when a vehicle disappears from the account (sold,
+        ownership transferred, deactivated by manufacturer), raise a
+        persistent_notification BEFORE removing the device so the user
+        knows why their entities just vanished. Pattern adapted from
+        ``WulfgarW/homeassistant-pycupra`` v0.2.14 ("if a previously-
+        configured vehicle is not found or is deactivated at startup,
+        log a warning and raise a HA notification") — applied here on
+        every poll, not just startup, so account changes mid-session
+        also surface.
         """
         if not self.data:
             return  # First run — nothing to clean up
-
 
         device_reg = dr.async_get(self.hass)
         previous_vins = set(self.data.keys()) - {"_meta"}
@@ -1412,10 +1421,37 @@ class VagConnectCoordinator(DataUpdateCoordinator):
                 identifiers={(DOMAIN, stale_vin)}
             )
             if device_entry is not None:
-                _LOGGER.info(
-                    "VAG Connect: vehicle %s removed from account — device deleted",
-                    stale_vin,
+                _LOGGER.warning(
+                    "VAG Connect: vehicle %s removed from account — "
+                    "device + entities will be deleted",
+                    mask_vin(stale_vin),
                 )
+                # v1.17.0 — surface a persistent notification BEFORE
+                # the device gets removed so the user knows why their
+                # entities just vanished. Best-effort: notification
+                # must never block device removal.
+                try:
+                    from homeassistant.components import persistent_notification  # noqa: PLC0415
+                    persistent_notification.async_create(
+                        self.hass,
+                        message=(
+                            f"Das Fahrzeug **{mask_vin(stale_vin)}** ist "
+                            f"nicht mehr in deinem VAG-Konto verfügbar "
+                            f"({self.entry.data.get(CONF_USERNAME, 'unbekannt')}). "
+                            f"Mögliche Ursachen:\n\n"
+                            f"- Verkauft / Eigentümerwechsel\n"
+                            f"- Connect-Subscription ist abgelaufen\n"
+                            f"- Vom Hersteller deaktiviert\n\n"
+                            f"Alle Entities + Geräte für diese VIN werden "
+                            f"jetzt entfernt. Long-term-Statistik-Historie "
+                            f"bleibt erhalten und kann nach erneutem "
+                            f"Hinzufügen weiterverwendet werden."
+                        ),
+                        title="VAG Connect — Fahrzeug entfernt",
+                        notification_id=f"vag_connect_vehicle_removed_{stale_vin}",
+                    )
+                except Exception:  # noqa: BLE001
+                    pass  # Notification is informational only
                 device_reg.async_remove_device(device_entry.id)
 
 
