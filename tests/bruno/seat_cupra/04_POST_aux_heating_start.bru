@@ -1,0 +1,38 @@
+meta {
+  name: POST auxiliary heating start (v1.17.1, with SecToken)
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{base_url}}/v1/vehicles/{{vin}}/auxiliary-heating/start
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+  SecToken: {{sec_token}}
+}
+
+body:json {
+  {}
+}
+
+docs {
+  v1.17.1 (Bruno seq 29 + pycupra) — Webasto auxiliary heating start.
+
+  SecToken header REQUIRED on START — derived from S-PIN via
+  POST /v2/users/{userId}/spin/verify (see SeatCupraClient._get_sec_token).
+  Stop endpoint does NOT require SecToken (see 05_POST_aux_heating_stop.bru).
+
+  Pycupra alternative URL (used as fallback on 404):
+    POST {{base_url}}/api/auxiliary-heating/v1/{{vin}}/start
+
+  Implementation in cariad/api/seat_cupra.py:command_start_aux_heating.
+}

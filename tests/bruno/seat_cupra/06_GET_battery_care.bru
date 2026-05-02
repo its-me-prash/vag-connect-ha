@@ -1,0 +1,32 @@
+meta {
+  name: GET battery-care status (v1.17.1)
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{base_url}}/v1/vehicles/{{vin}}/charging/battery-care
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+headers {
+  Accept: application/json
+}
+
+docs {
+  v1.17.1 (Bruno seq 10) — Battery care current status.
+  Response: {"enabled": true|false}
+
+  Companion endpoint:
+    GET /v1/vehicles/{vin}/charging/battery-care/target
+    → {"targetSocPercentage": int}
+
+  Implementation in cariad/api/seat_cupra.py:get_battery_care +
+  get_battery_care_target. Coordinator helper:
+  refresh_battery_care(vin) — 1h cache, brand-restricted to seat/cupra.
+}

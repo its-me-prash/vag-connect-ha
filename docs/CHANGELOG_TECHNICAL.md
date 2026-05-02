@@ -30,7 +30,7 @@ MINOR-Release. Quality-of-life Hardening basierend auf community research deep-d
 - `DEFAULT_SCAN_INTERVAL = 10` minutes (144 polls/day = 10% of 1500/day quota)
 - `MIN_SCAN_INTERVAL = 5` minutes (288 polls/day = 19%)
 
-**Reasoning** (from `docs/research/upstream-pycupra-notes.md` + community research):
+**Reasoning** (from `docs/research/vag-ha-integration-research.md` + community research):
 The MyCupra/MySeat portal limits API calls to ~1,500/day across the official mobile app + integrations. Our old default of 5 min ate 19% of the daily budget BEFORE the official app even logged in. Pycupra's README recommends ≥ 600s default, ≥ 900s with push enabled. The HACS-Checklist (also new in v1.17.0) tracks this as `Operational Safety / Polling interval floor → ✅ done`.
 
 **Migration:** Existing config entries are NOT coerced upward at upgrade — only the default for fresh installs changes. Power users who explicitly set 3min stay at 3min until they reconfigure (and even then can't go below 5min anymore).
@@ -102,11 +102,11 @@ Outstanding items list:
 6. EU Data Act readiness (Sep 2026 deadline)
 7. CONTRIBUTING.md polish
 
-#### Three new research docs in docs/research/
+#### New research doc in docs/research/
 
-- **`upstream-pycupra-notes.md`** — community research v1 (architecture + entity surface + error patterns 5.1–5.15 + suggested layout + 8 upstream contribution ideas to WulfgarW)
-- **`vag-ha-integration-research.md`** — community research v2 (project landscape + Skoda + MQTT freshness validation pattern + extended HACS checklist + 8 high-leverage contributions)
-- **`pycupra-deep-dive-2026-05-02.md`** — eigene tiefe analysis (8 high-priority adopt items, medium-priority defensive patterns, skip list, full new OLA endpoint catalog including `PUT /destination` + Webasto endpoints + measurements + warninglights, bucket-flag-style polling pseudo-code, push notification dispatcher template, recommended new config-flow options, open questions for v1.18.0 prep)
+- **`vag-ha-integration-research.md`** — community research (project landscape + Skoda + MQTT freshness validation pattern + extended HACS checklist + 8 high-leverage contributions)
+
+> *(Note: zwei zusätzliche pycupra research docs — `upstream-pycupra-notes.md` und `pycupra-deep-dive-2026-05-02.md` — wurden post-v1.17.0 vom Maintainer entfernt. Inhalt teilweise konsolidiert in `vag-ha-integration-research.md` und `cupra-bruno-endpoints-2026-05-02.md`.)*
 
 Plus **`docs/upstream-contributions/wulfgar-pycupra-issues.md`** — 8 ready-to-post upstream issue drafts (no AI signature) for `WulfgarW/homeassistant-pycupra`:
 
@@ -139,9 +139,11 @@ docs/
   FAQ.md                            (NEW — end-user FAQ)
   HACS-CHECKLIST.md                 (NEW — v2.0.0 prep audit status)
   research/
-    upstream-pycupra-notes.md       (NEW — community research v1)
-    vag-ha-integration-research.md  (NEW — community research v2)
-    pycupra-deep-dive-2026-05-02.md (NEW — eigene library + integration analysis)
+    vag-ha-integration-research.md  (NEW — community research)
+    # (Note: upstream-pycupra-notes.md + pycupra-deep-dive-2026-05-02.md
+    #  were added in v1.17.0 and removed by the maintainer post-merge.
+    #  Content largely consolidated in vag-ha-integration-research.md
+    #  and cupra-bruno-endpoints-2026-05-02.md.)
   upstream-contributions/
     wulfgar-pycupra-issues.md       (NEW — 8 ready-to-post issue drafts)
 

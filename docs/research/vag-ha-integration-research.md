@@ -4,8 +4,10 @@
 > PR/issue titles) and from anonymized topic-level observations in the
 > V.A.G. Connected Cars community. No personal data, no verbatim user content.
 > **Imported:** 2026-05-02
-> **Supersedes:** `upstream-pycupra-notes.md` (v1) — keep both for citation
-> traceability; this v2 covers Skoda + MQTT + HACS topics in addition.
+> **Note:** A v1 community research doc (`upstream-pycupra-notes.md`)
+> was added briefly in v1.17.0 and then removed. This v2 doc is the
+> canonical reference for the architecture / entity surface / error
+> patterns content originally captured there.
 
 ## 1. Project landscape
 
@@ -100,7 +102,7 @@ From both upstreams' config flows, the proven set:
 
 ## 4. Entity surface (feature checklist)
 
-(See `upstream-pycupra-notes.md` §3 for the per-domain inventory.
+(Per-domain entity inventory previously lived in `upstream-pycupra-notes.md` §3 — that doc was removed; the canonical inventory is the `entity` schema in `custom_components/vag_connect/strings.json`.
 Additional v2 detail:)
 
 - **Charging:** rate (W/kWh; some models also report rate in km/h —
