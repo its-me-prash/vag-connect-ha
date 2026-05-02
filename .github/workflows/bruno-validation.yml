@@ -1,0 +1,89 @@
+name: Bruno Collection Validation
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'tests/bruno/**'
+      - 'custom_components/vag_connect/cariad/api/**.py'
+      - 'scripts/check_bruno_url_drift.py'
+      - '.github/workflows/bruno-validation.yml'
+  pull_request:
+    paths:
+      - 'tests/bruno/**'
+      - 'custom_components/vag_connect/cariad/api/**.py'
+      - 'scripts/check_bruno_url_drift.py'
+      - '.github/workflows/bruno-validation.yml'
+
+# Concurrency: keep latest run only — older runs cancelled when newer
+# pushes arrive on the same branch/PR.
+concurrency:
+  group: bruno-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate-bruno-collections:
+    name: Validate .bru file syntax
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # @usebruno/cli runs collections from the command line. We use
+      # `bru run --bail` to fail fast on the first .bru parse error
+      # without actually hitting any live API (no --env flag → no real
+      # token → primary use-case here is structural validation).
+      #
+      # ⚠️ NOT a live API test — Bruno only validates structure +
+      # variable substitution + body shape syntax. Live API regression
+      # would need a real token + careful quota budget.
+      - name: Install Bruno CLI
+        run: npm install -g @usebruno/cli@latest
+
+      - name: Validate seat_cupra collection structure
+        if: hashFiles('tests/bruno/seat_cupra/bruno.json') != ''
+        run: |
+          cd tests/bruno/seat_cupra
+          # --env mock binds {{access_token}} etc. to dummy values from
+          # environments/mock.bru so request building works without
+          # real credentials. The actual HTTP request will fail (we WANT
+          # it to fail — going live would burn quota); we only check that
+          # bru's own parsing/templating succeeds.
+          # Use --reporter-html to keep the HTML report as artifact below.
+          bru run --env mock --reporter-html bruno-report.html || true
+          # The exit code from bru run reflects the API response (non-200
+          # since we use mock token) — we don't gate on that. We DO gate
+          # on the parse phase: a syntax error in any .bru would fail
+          # before bru ever attempts the HTTP call. So we re-run with
+          # --bail and grep for parse-specific errors.
+          bru run --env mock --bail 2>&1 | grep -iE "syntax error|parse error|invalid request" && exit 1 || true
+          echo "✅ seat_cupra .bru files parse cleanly"
+
+      - name: Upload Bruno HTML report
+        if: always() && hashFiles('tests/bruno/seat_cupra/bruno-report.html') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: bruno-report-seat-cupra
+          path: tests/bruno/seat_cupra/bruno-report.html
+          retention-days: 14
+
+  url-drift-check:
+    name: Python ↔ Bruno URL drift
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Run drift check (warn-only mode)
+        run: |
+          # Warn-only: surface drift for visibility but don't block PRs.
+          # Switch to `--strict` once we have full .bru coverage of every
+          # endpoint our seat_cupra/skoda/audi/vw_eu clients touch.
+          python scripts/check_bruno_url_drift.py --brand all

@@ -1,0 +1,30 @@
+meta {
+  name: GET charging status
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{base_url}}/v1/vehicles/{{vin}}/charging/status
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+headers {
+  Accept: application/json
+}
+
+docs {
+  Returns charging.state, battery.currentSocPercentage, plug.connection,
+  plug.lock, chargedPowerInKw, etc.
+
+  v1.10.2 (#53 Gerhard's Born Live-Dump) — newer Born firmware ships
+  camelCase field names (battery.currentSocPercentage instead of
+  currentSOC_pct, plug.connection/plug.lock instead of plug_connected/
+  plug_locked). Parser tolerates both via fallback chain in
+  cariad/api/seat_cupra.py:_parse_charging_status.
+}

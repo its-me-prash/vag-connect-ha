@@ -1,0 +1,34 @@
+meta {
+  name: POST climatisation start (v1.16.1 path-suffix variant)
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{base_url}}/v2/vehicles/{{vin}}/climatisation/start
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+body:json {
+  {}
+}
+
+docs {
+  v1.16.1 (#53 Gerhard CUPRA Born) — primary climatisation start URL.
+  Action in path, empty body. Verified against pycupra
+  API_CLIMATER + '/start'. Implementation in
+  cariad/api/seat_cupra.py:_post_climatisation_action.
+
+  Legacy fallback path (used on 404):
+    POST /v2/vehicles/{vin}/climatisation  body {"action": "start"}
+}

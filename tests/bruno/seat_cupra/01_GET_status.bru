@@ -1,0 +1,27 @@
+meta {
+  name: GET vehicle status
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{base_url}}/v2/vehicles/{{vin}}/status
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+headers {
+  Accept: application/json
+  User-Agent: vag-connect-ha-tests/1.17.2
+}
+
+docs {
+  Returns access/doors/windows/lights/locked overall + detail blocks.
+  Used by SeatCupraClient.get_status() in cariad/api/seat_cupra.py.
+  Response shape verified against Gerhard's CUPRA Born fixture
+  (#53, v1.10.2 Born 2026 firmware).
+}

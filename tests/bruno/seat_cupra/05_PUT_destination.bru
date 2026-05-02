@@ -1,0 +1,55 @@
+meta {
+  name: PUT destination (v1.17.1, #36 Navigation closer)
+  type: http
+  seq: 5
+}
+
+put {
+  url: {{base_url}}/v1/users/vehicles/{{vin}}/destination
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+body:json {
+  [
+    {
+      "address": {
+        "city": "Zurich",
+        "country": "CH",
+        "state": "ZH",
+        "street": "Bahnhofstrasse",
+        "houseNumber": "1",
+        "zipCode": "8001"
+      },
+      "poiProvider": "vagOlaIntegration",
+      "geoCoordinate": {
+        "latitude": 47.39,
+        "longitude": 8.21
+      },
+      "destinationName": "Office"
+    }
+  ]
+}
+
+docs {
+  v1.17.1 (#36 Navigation closer, Bruno seq 34) — push a navigation
+  destination to the vehicle's infotainment system.
+
+  URL pattern omits {userId} — Bruno-verified literal pattern.
+  Body is a JSON ARRAY (not a single object). The integration sends
+  one destination per call but the API accepts a list.
+
+  Implementation in cariad/api/seat_cupra.py:command_send_destination.
+  Triggered via service vag_connect.send_destination(vin, latitude,
+  longitude, name, [city, country, state, street, house_number,
+  zip_code]).
+}

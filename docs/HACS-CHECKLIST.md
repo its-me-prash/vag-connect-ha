@@ -1,8 +1,7 @@
 # HACS-Safe Integration Checklist — Audit Status
 
 > **Source:** Compiled from research notes
-> (`docs/research/upstream-pycupra-notes.md` §6 +
-> `docs/research/vag-ha-integration-research.md` §6).
+> (`docs/research/vag-ha-integration-research.md` §6).
 > **Audit date:** 2026-05-02 (post v1.16.1, during v1.17.0 prep).
 > **Purpose:** Pre-condition for HACS Default Repository inclusion
 > (planned for v2.0.0 release).
@@ -28,7 +27,7 @@ Legend: ✅ done · ⚠️ partial · ❌ missing · 🔮 planned
 | Item | Status | Notes |
 |---|---|---|
 | Async only (aiohttp, no blocking I/O on event loop) | ✅ | `cariad/api/base.py::_request` uses aiohttp.ClientSession |
-| All API calls behind a single Coordinator per bucket | ⚠️ | Single coordinator with multiple async helpers (refresh_trip_statistics, refresh_charging_history, refresh_charging_profiles). 3-bucket polling refactor planned (see pycupra-deep-dive) |
+| All API calls behind a single Coordinator per bucket | ⚠️ | Single coordinator with multiple async helpers (refresh_trip_statistics, refresh_charging_history, refresh_charging_profiles). 3-bucket polling refactor planned for v1.19.0+ |
 | Strict typing in CI | ✅ | mypy strict in `Lint & Validate` workflow |
 | Defensive parsing for nested dict access | ✅ | `safe_int`/`safe_float`/`safe_enum` (v1.10.1), `_val()` helper, `safe_path` planned port from pycupra `find_path()` |
 | No URLs in `strings.json` / translations | ✅ | Verified — hassfest CI catches this |
@@ -56,10 +55,10 @@ Legend: ✅ done · ⚠️ partial · ❌ missing · 🔮 planned
 | Per-vehicle log prefix | ❌ | Logs are mixed across VINs — multi-vehicle setups are harder to debug. Planned for v1.17.x or v1.18.0. |
 | On failed user action: persistent_notification | ⚠️ | We have `ServiceValidationError` + Repair Issues (Vehicle Data Scout, Error Reporter). Persistent notification with actionable button (per pycupra v0.2.10) not implemented. |
 | Unknown push-notification type: log + no-op | 🔮 | N/A — push not yet implemented (v1.18.0) |
-| Out-of-order push event drop | 🔮 | N/A — push not yet implemented (v1.18.0). Pattern documented in `docs/research/upstream-pycupra-notes.md` |
+| Out-of-order push event drop | 🔮 | N/A — push not yet implemented (v1.18.0). Pattern: stamp each MQTT event with the API's last-update timestamp + reject older events (myskoda PR #536 reference) |
 | HTTP 500 from upstream: log once, continue with cached data | ⚠️ | We retry with backoff (`_request` has 3-attempt 5xx retry). We don't deduplicate the WARNING log. Planned for v1.17.x. |
 | Vehicle "offline": surface as binary sensor | ✅ | `binary_sensor.{auto}_connection_state` (since v1.8.12) shows online/standby/offline |
-| Daily quota near-zero: HA Repair Issue | ❌ | Need `requests_remaining_today` sensor first (planned per pycupra-deep-dive A5) |
+| Daily quota near-zero: HA Repair Issue | ❌ | Need `requests_remaining_today` sensor first (planned for v1.17.x — surfaces the OLA `X-RateLimit-Remaining` response header as a diagnostic sensor) |
 | Vehicle deactivated startup notification | ✅ | v1.17.0 — `_async_remove_stale_devices` raises persistent_notification before device removal |
 
 ---
@@ -111,7 +110,7 @@ Pre-conditions for v2.0.0 / HACS Default Repository inclusion:
 
 Items in flight (planned for upcoming releases):
 
-- v1.17.x: `safe_path` port, exception-taxonomy extension, `requests_remaining_today` sensor (pycupra-deep-dive items A1, A2, A5)
+- v1.17.x: `safe_path` port, exception-taxonomy extension, `requests_remaining_today` sensor (pycupra-pattern-driven hardening)
 - v1.18.0: Push (CUPRA/SEAT FCM + Skoda mysmob MQTT)
-- v1.19.0+: Bucket-flag-style polling refactor (pycupra-deep-dive item A8)
+- v1.19.0+: Bucket-flag-style polling refactor (TTL-flag pattern: `BUCKET_TTL = {1: 120, 2: 600, 3: 1800}` per data-class, single coordinator with per-key `_due()` check)
 - v2.0.0: HACS Default + EU Data Act

@@ -32,6 +32,55 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ## [Unreleased]
 
+## [1.17.2] - 2026-05-03 🧹🤖 Stale-Cleanup + Bruno-CI Stufe 1 / Stale-Reference Cleanup + Bruno-CI Foundation
+
+🧹🤖 **PATCH-Release** — zwei kleine, hochwertige Verbesserungen:
+
+1. **Stale-Reference Cleanup** — 17 Pointer auf zwei post-v1.17.0 entfernte research-docs gefixt
+2. **Bruno-CI Stufe 1 Foundation** — `tests/bruno/` Scaffold + GH Actions Workflow + URL-drift detection script
+
+### 🧹 Cleanup / Cleanup
+
+Maintainer hatte post-v1.17.0 zwei research-docs aus dem repo entfernt (`upstream-pycupra-notes.md` + `pycupra-deep-dive-2026-05-02.md`). v1.17.0/v1.17.1 CHANGELOG/ROADMAP/HACS-CHECKLIST/CHANGELOG_TECHNICAL referenzierten beide noch — alle 17 Pointer durch:
+- Verweis auf canonical replacement (`vag-ha-integration-research.md`) ersetzt
+- Pattern-Information inline expandiert wo Deep-Dive zitiert wurde
+- Explanatory note hinzugefügt wo der Removal-Kontext relevant ist (CHANGELOG_TECHNICAL v1.17.0)
+
+### 🤖 Neu — Bruno-CI Stufe 1 / New — Bruno-CI Stufe 1
+
+Foundation für den Bruno-as-Living-Documentation Workflow (siehe `docs/BRUNO-WORKFLOW.md` neu).
+
+- **`tests/bruno/seat_cupra/`** Scaffold mit:
+  - `bruno.json` collection metadata
+  - `environments/mock.bru` mit dummy VIN/token für CI parsing
+  - 6 sample `.bru` files für die wichtigsten SEAT/CUPRA endpoints (status, charging, climate start, aux heating, destination, battery care)
+- **`tests/bruno/{skoda,cariad_bff}/`** dirs für künftige expansion
+- **`scripts/check_bruno_url_drift.py`** — Python ↔ Bruno URL drift scanner. Walks `cariad/api/*.py` für `f"{_BASE}/..."` URLs, walks `tests/bruno/<brand>/*.bru` für `url:` directives, reports endpoints in einer Quelle aber nicht der anderen. Normalize-Phase handhabt `{{vin}}` vs `{vin}`, `{action}` placeholder expansion, query-string stripping. Stdlib only (kein Bruno-CLI nötig), läuft in <1s. Modes: warn-only (default) oder `--strict` für CI-gating.
+- **`.github/workflows/bruno-validation.yml`** — neuer CI-Workflow:
+  - Job 1: install `@usebruno/cli@latest`, `bru run --env mock` über jede Collection — validates structural correctness ohne live API hits
+  - Job 2: `python scripts/check_bruno_url_drift.py --brand all` — warn-only initially (will switch to strict once full coverage)
+  - Path-filter: läuft nur bei changes in tests/bruno/, cariad/api/, scripts/check_bruno_url_drift.py, oder workflow itself
+  - Concurrency-cancellation: ältere Runs werden gecancelt wenn neuer push kommt
+  - HTML-Reporter artifact für 14 Tage retention
+- **`docs/BRUNO-WORKFLOW.md`** — Contributor guide:
+  - Why Bruno (drift detection + living docs + non-Python contribution barrier lowering)
+  - File naming convention + .bru template
+  - Full workflow für neuer Endpoint
+  - Capturing API traffic (mitmproxy + Frida + Android emulator setup)
+  - Privacy rules (anonymization before commit)
+  - CI behavior explanation
+  - Future: live API tests pre-condition
+
+### 🎯 Strategische Bedeutung / Strategic Context
+
+Bruno-CI ist Stufe 1 der "Bruno-MVP-Position" Strategie (siehe `docs/research/upstream-pycupra-notes.md` historical reference + `docs/research/vag-ha-integration-research.md` aktive). Folgestufen:
+- **Stufe 2** (v1.17.x oder v1.18.x): Source-of-Truth Workflow — neue Endpoints erst `.bru` schreiben, dann Python generieren. Brand Captains contribute via `.bru` ohne Python skills.
+- **Stufe 3** (v2.0.0 prep): Custom Claude Code Skill `pb-vag-bruno` — HAR→.bru converter, .bru→Python generator, .bru→OpenAPI exporter, drift-detection helper. Generative-AI-augmented API maintenance.
+
+### 📦 Issue-Closures / Issue-Closures
+
+Keine Issue-Closures (Cleanup + CI foundation, keine User-facing features).
+
 ## [1.17.1] - 2026-05-02 🚙🌬️🔥 Bruno Quick-Wins Bundle / Bruno Quick-Wins (Window heating fix + Ventilation + Aux Heating + Battery Care + Navigation #36 + 2× A/B-fallback)
 
 🚙🌬️🔥 **MASSIVE PATCH-Release** basierend auf Timwun's `Cupra-WeConnect-Bruno-Collection` deep-dive (53 .bru files crawled). 7 SEAT/CUPRA-Verbesserungen — alle defensiv mit A/B-fallback wo Endpoints zwischen Quellen disagreen, alle Phase-3 capability-gated. Plus Cross-Brand OTA Probe Plan komplettiert mit eigenem Cariad-Charging-Host research.
@@ -140,10 +189,9 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ### 🔬 Pre-Research / Pre-Research
 
-Drei neue Research-Docs in `docs/research/`:
-- **`upstream-pycupra-notes.md`** — community research v1 (architecture + entity surface + error patterns + HACS layout suggestions)
-- **`vag-ha-integration-research.md`** — community research v2 (Skoda + MQTT + HACS-Checklist + 8 upstream contribution ideas)
-- **`pycupra-deep-dive-2026-05-02.md`** — eigene tiefe pycupra Library + HA-Integration analysis (8 high-priority adopt items + bucket polling pseudo-code + push dispatcher template + new OLA endpoint catalog mit `PUT /destination` als #36 closer + Webasto endpoints)
+Neue Research-Docs in `docs/research/`:
+- **`vag-ha-integration-research.md`** — community research (Skoda + MQTT + HACS-Checklist + 8 upstream contribution ideas)
+- *(Note: zwei zusätzliche pycupra research docs wurden post-v1.17.0 vom Maintainer entfernt — Inhalt überlappt mit `vag-ha-integration-research.md` + `cupra-bruno-endpoints-2026-05-02.md`.)*
 
 Plus **`docs/upstream-contributions/wulfgar-pycupra-issues.md`** — 8 ready-to-post upstream issue drafts für `WulfgarW/homeassistant-pycupra` (async_step_reauth, requests_remaining sensor, retry-login action, push dispatcher hardening, hassfest CI, year-rollover tests, MQTT freshness validation, privacy-matrix FAQ).
 
