@@ -4065,7 +4065,7 @@ class TestVehicleSupportsCapability:
 class TestButtonCapabilityGating:
     """Session 2B: flash/wake skipped when capabilities say no, refresh always created."""
 
-    def _coord(self, caps=None):
+    def _coord(self, caps=None, brand="cupra"):
         from unittest.mock import MagicMock
         coord = MagicMock()
         # v1.12.0 (#63) — explicit ``is_read_only=False`` mock so the
@@ -4074,12 +4074,24 @@ class TestButtonCapabilityGating:
         coord.is_read_only = MagicMock(return_value=False)
         coord.vehicles = {"VIN1": {"vin": "VIN1", "model": "Born"}}
         coord.vehicle_capabilities = {"VIN1": caps} if caps else {}
+        # v1.13.0 (#56 Phase 3) — entry.data["brand"] is what
+        # ``command_capability_supported`` reads to look up CAPABILITY_MAP.
+        coord.entry = MagicMock()
+        coord.entry.data = {"brand": brand}
 
         # Real method needs to be called, not a MagicMock auto-method
         from custom_components.vag_connect.coordinator import VagConnectCoordinator
         coord.vehicle_supports_capability = (
             lambda vin, cap_id, _coord=coord: VagConnectCoordinator.vehicle_supports_capability(
                 _coord, vin, cap_id,
+            )
+        )
+        # v1.13.0 (#56 Phase 3) — wire real ``command_capability_supported``
+        # so button.py's new uniform gate consults the actual CAPABILITY_MAP
+        # + caps cache instead of receiving an auto-MagicMock truthy value.
+        coord.command_capability_supported = (
+            lambda vin, command_id, _coord=coord: VagConnectCoordinator.command_capability_supported(
+                _coord, vin, command_id,
             )
         )
         return coord
@@ -4095,6 +4107,10 @@ class TestButtonCapabilityGating:
         import asyncio
         from unittest.mock import MagicMock
         from custom_components.vag_connect.button import async_setup_entry
+        # v1.13.0 (#56 Phase 3) — ``command_capability_supported`` reads
+        # the brand off the coordinator's own ``entry.data``, not the
+        # ConfigEntry passed into ``async_setup_entry``. Sync them.
+        coord.entry.data = {"brand": brand}
         added: list = []
         asyncio.get_event_loop().run_until_complete(
             async_setup_entry(MagicMock(), self._entry(coord, brand), added.extend)
