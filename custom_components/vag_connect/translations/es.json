@@ -75,13 +75,15 @@
           "scan_interval": "Intervalo de actualización",
           "spin": "S-PIN",
           "enable_reverse_geocoding": "Geocodificación inversa (dirección de aparcamiento)",
-          "read_only_mode": "Modo solo lectura"
+          "read_only_mode": "Modo solo lectura",
+          "force_ppe_climate": "Climatización PPE/PPC Audi (Q6/A6 e-tron, RS e-tron GT Facelift, A3 2024+ PHEV)"
         },
         "data_description": {
           "scan_interval": "Frecuencia de actualización (minutos). Mínimo: 3.",
           "spin": "S-PIN para bloqueo de puertas.",
           "enable_reverse_geocoding": "Envía GPS de aparcamiento a OpenStreetMap Nominatim para resolver calle/ciudad. Desactivado por defecto (privacidad).",
-          "read_only_mode": "Cuando está activado, solo se crean sensores de estado — sin interruptores, botones, cerraduras, clima o deslizadores que envíen comandos. Útil si quieres telemetría del vehículo sin riesgo de actuación accidental. Recarga la integración tras activar."
+          "read_only_mode": "Cuando está activado, solo se crean sensores de estado — sin interruptores, botones, cerraduras, clima o deslizadores que envíen comandos. Útil si quieres telemetría del vehículo sin riesgo de actuación accidental. Recarga la integración tras activar.",
+          "force_ppe_climate": "Solo para Audi. Fuerza el nuevo formato PPE/PPC (climatisationMode obligatorio, targetTemperature omitido) al iniciar la climatización. Activar solo si posees Q6 e-tron, A6 e-tron, RS e-tron GT Facelift o A3 2024+ PHEV — de lo contrario la API responde 400. Recarga la integración tras activar."
         }
       }
     }
@@ -183,6 +185,18 @@
       },
       "wake_count_today": {
         "name": "Despertares hoy"
+      },
+      "last_trip_distance_km": {
+        "name": "Último Viaje — Distancia"
+      },
+      "last_trip_avg_speed_kmh": {
+        "name": "Último Viaje — Velocidad Media"
+      },
+      "last_trip_avg_fuel_consumption_l_100km": {
+        "name": "Último Viaje — Consumo Medio Combustible"
+      },
+      "last_trip_avg_electric_consumption_kwh_100km": {
+        "name": "Último Viaje — Consumo Medio Eléctrico"
       },
       "departure_timer_1_time": {
         "name": "Temporizador de salida 1"

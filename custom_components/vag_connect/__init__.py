@@ -199,6 +199,20 @@ def _register_services(hass: HomeAssistant) -> None:
             call.data.get("departure_time"),
         )
 
+    async def _handle_engine_start(call: ServiceCall) -> None:
+        """v1.14.0 (#28) — Audi ICE Remote Engine Start.
+
+        S-PIN is taken from the saved config entry, NOT from the service
+        call (so it never lands in HA service-call logs). Returns
+        ``ServiceValidationError`` if the brand isn't audi or no S-PIN
+        is configured.
+        """
+        await _coord_writeable(call.data["vin"]).async_engine_start(call.data["vin"])
+
+    async def _handle_engine_stop(call: ServiceCall) -> None:
+        """v1.14.0 (#28) — Audi ICE Remote Engine Stop. No S-PIN required."""
+        await _coord_writeable(call.data["vin"]).async_engine_stop(call.data["vin"])
+
     async def _handle_refresh(_call: ServiceCall) -> None:
         """Pull latest cloud-cached state — does NOT wake the vehicle.
 
@@ -252,6 +266,9 @@ def _register_services(hass: HomeAssistant) -> None:
                 vol.Required("enabled"):        cv.boolean,
                 vol.Optional("departure_time"): cv.string,
             })),
+        # v1.14.0 (#28) — Audi-only ICE Remote Engine Start/Stop.
+        ("engine_start",                   _handle_engine_start,        SERVICE_VIN_SCHEMA),
+        ("engine_stop",                    _handle_engine_stop,         SERVICE_VIN_SCHEMA),
     ]:
         hass.services.async_register(DOMAIN, name, handler, schema)
 
@@ -269,8 +286,9 @@ async def async_unload_entry(hass: HomeAssistant, entry: VagConnectConfigEntry) 
             "lock", "unlock", "start_climatisation", "stop_climatisation",
             "start_charging", "stop_charging", "start_window_heating",
             "stop_window_heating", "wake_vehicle", "flash_lights",
-            "refresh_vehicle", "set_target_soc", "set_climatisation_temperature",
-            "set_departure_timer",
+            "refresh_vehicle", "refresh_cloud_cache", "set_target_soc",
+            "set_climatisation_temperature", "set_departure_timer",
+            "engine_start", "engine_stop",
         ]:
             if hass.services.has_service(DOMAIN, svc):
                 hass.services.async_remove(DOMAIN, svc)

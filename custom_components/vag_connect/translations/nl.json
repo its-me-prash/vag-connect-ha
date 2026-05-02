@@ -75,13 +75,15 @@
           "scan_interval": "Update-interval",
           "spin": "S-PIN",
           "enable_reverse_geocoding": "Reverse geocoding (parkeeradres)",
-          "read_only_mode": "Alleen-lezen modus"
+          "read_only_mode": "Alleen-lezen modus",
+          "force_ppe_climate": "Audi PPE/PPC klimaat-body (Q6/A6 e-tron, RS e-tron GT Facelift, A3 2024+ PHEV)"
         },
         "data_description": {
           "scan_interval": "Hoe vaak gegevens worden opgehaald (minuten). Minimum: 3.",
           "spin": "S-PIN voor deurvergrendeling.",
           "enable_reverse_geocoding": "Verzendt parkeer-GPS naar OpenStreetMap Nominatim om straat/stad te vinden. Standaard uit (privacy).",
-          "read_only_mode": "Indien ingeschakeld worden alleen statussensoren aangemaakt — geen schakelaars, knoppen, sloten, klimaat of schuifregelaars die commando's verzenden. Handig als je voertuigtelemetrie wilt zonder risico op onbedoelde bediening. Herlaad de integratie na inschakelen."
+          "read_only_mode": "Indien ingeschakeld worden alleen statussensoren aangemaakt — geen schakelaars, knoppen, sloten, klimaat of schuifregelaars die commando's verzenden. Handig als je voertuigtelemetrie wilt zonder risico op onbedoelde bediening. Herlaad de integratie na inschakelen.",
+          "force_ppe_climate": "Alleen voor Audi. Forceert het nieuwe PPE/PPC body-formaat (climatisationMode verplicht, targetTemperature weggelaten) bij klimaat-start. Alleen inschakelen als je een Q6 e-tron, A6 e-tron, RS e-tron GT Facelift of A3 2024+ PHEV bezit — anders geeft de API 400 terug. Integratie herladen na inschakelen."
         }
       }
     }
@@ -183,6 +185,18 @@
       },
       "wake_count_today": {
         "name": "Wake-ups vandaag"
+      },
+      "last_trip_distance_km": {
+        "name": "Laatste Rit — Afstand"
+      },
+      "last_trip_avg_speed_kmh": {
+        "name": "Laatste Rit — Gem. Snelheid"
+      },
+      "last_trip_avg_fuel_consumption_l_100km": {
+        "name": "Laatste Rit — Gem. Brandstofverbruik"
+      },
+      "last_trip_avg_electric_consumption_kwh_100km": {
+        "name": "Laatste Rit — Gem. Elektrisch Verbruik"
       },
       "departure_timer_1_time": {
         "name": "Vertrektimer 1"

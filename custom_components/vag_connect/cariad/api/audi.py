@@ -17,9 +17,11 @@ Source: arjenvrh/audi_connect_ha (MIT) — token exchange pattern
 from __future__ import annotations
 
 import logging
+from typing import Any
 
 from aiohttp import ClientSession, ClientTimeout
 
+from ..exceptions import SpinError
 from ..models import BRAND_AUDI
 from .graphql import VehicleImageData, VehicleImageFetcher
 from .vw_eu import VWEUClient
@@ -30,6 +32,12 @@ _AZS_TOKEN_URL  = "https://emea.bff.cariad.digital/login/v1/audi/token"
 _GRAPHQL_URL    = "https://app-api.live-my.audi.com/vgql/v1/graphql"
 _APP_VERSION    = "4.31.0"
 _USER_AGENT     = "Android/4.31.0 (Build 800341641.root project 'myaudi_android'.ext.buildTime) Android/13"
+
+# v1.14.0 (#28) — Audi ICE Remote Engine Start (CARIAD BFF, two-step S-PIN flow).
+# Source: arjenvrh/audi_connect_ha PR #717 (`audi_services.py`). The path is
+# ``/vehicle/v1/engine/{VIN}/...`` — note: NOT under ``/vehicles/{VIN}/engine``.
+# VIN must be uppercased in the URL — confirmed in upstream PR.
+_ENGINE_BASE = "https://emea.bff.cariad.digital/vehicle/v1/engine"
 
 
 class AudiClient(VWEUClient):
@@ -87,6 +95,57 @@ class AudiClient(VWEUClient):
         except Exception as err:  # noqa: BLE001
             _LOGGER.warning("AZS token exchange error: %s", err)
             return None
+
+    # ── v1.14.0 (#28) — ICE Remote Engine Start ─────────────────────────
+    async def command_engine_start(self, vin: str, spin: str = "") -> None:
+        """v1.14.0 (#28) — Audi ICE Remote Engine Start (two-step S-PIN flow).
+
+        Step 1: ``PUT /vehicle/v1/engine/{VIN}/userpromptproof`` with
+        ``{"spin": ...}`` returns a top-level ``userPromptProof`` token.
+        Step 2: ``POST /vehicle/v1/engine/{VIN}/start`` with
+        ``{"securedActivationData": <token>, "spin": ...}``.
+
+        Raises ``SpinError`` if no S-PIN is configured. Wrong S-PIN /
+        missing capability surface as ``APIError`` and are routed to
+        ``classify_command_failure`` by the coordinator wrapper.
+
+        Audi-only — VW EU does not expose this endpoint. Capability gating
+        is recommended (see ``_capabilities.py:command_engine_start``).
+
+        Source: arjenvrh/audi_connect_ha PR #717 (audi_services.py).
+        """
+        pin = spin or self._spin
+        if not pin:
+            raise SpinError("S-PIN required for Audi engine start")
+        vin_u = vin.upper()
+        # Step 1 — proof. Response is read at the top level: {"userPromptProof": "..."}.
+        proof_resp: Any = await self._request(
+            "PUT",
+            f"{_ENGINE_BASE}/{vin_u}/userpromptproof",
+            json={"spin": pin},
+        )
+        secured = (
+            proof_resp.get("userPromptProof") if isinstance(proof_resp, dict) else None
+        )
+        if not isinstance(secured, str) or not secured:
+            raise SpinError(
+                "Audi engine start: missing userPromptProof in response — "
+                "S-PIN may be wrong or vehicle does not support engine start"
+            )
+        # Step 2 — start. Body uses the proof token from step 1.
+        await self._post(
+            f"{_ENGINE_BASE}/{vin_u}/start",
+            json={"securedActivationData": secured, "spin": pin},
+        )
+
+    async def command_engine_stop(self, vin: str) -> None:
+        """v1.14.0 (#28) — Audi ICE Remote Engine Stop.
+
+        Single ``POST /vehicle/v1/engine/{VIN}/stop`` with no body. No S-PIN
+        required (mirrors upstream PR #717).
+        """
+        vin_u = vin.upper()
+        await self._post(f"{_ENGINE_BASE}/{vin_u}/stop")
 
     async def fetch_images(self) -> None:
         """Override: exchange IDK→AZS token, call app-api.live-my.audi.com."""

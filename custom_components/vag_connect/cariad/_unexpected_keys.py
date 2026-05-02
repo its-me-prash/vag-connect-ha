@@ -145,6 +145,17 @@ EXPECTED_KEYS: dict[str, dict[str, set[str]]] = {
             # feature once we have a verified live response.
             "carType",
             "primaryEngineRange",
+            # v1.14.0 (#116, MavericklCS Scout-Report 2026-05-01) — four
+            # ``primaryEngineRange.*`` children on a Skoda gasoline-engine
+            # vehicle. Confirms the structure inferred in v1.12.2 from
+            # tritanium73's #107 report. ``currentSoCInPercent`` on a
+            # gasoline car is unusual — likely the 12V SoC; will be
+            # cross-checked with future Scout-Reports before wiring as a
+            # sensor.
+            "primaryEngineRange.engineType",
+            "primaryEngineRange.currentSoCInPercent",
+            "primaryEngineRange.currentFuelLevelInPercent",
+            "primaryEngineRange.remainingRangeInKm",
         },
         "maintenance": {
             "maintenanceReport", "maintenanceReport.mileageInKm",
@@ -159,6 +170,12 @@ EXPECTED_KEYS: dict[str, dict[str, set[str]]] = {
             "preferredServicePartner",
             "predictiveMaintenance",
             "customerService",
+            # v1.14.0 (#116, MavericklCS) — ``predictiveMaintenance``
+            # has a ``setting`` sub-block (4 keys observed). Wildcard
+            # registration covers all current + future setting children
+            # without per-field whack-a-mole.
+            "predictiveMaintenance.setting",
+            "predictiveMaintenance.setting.*",
         },
         "readiness": {
             "unreachable", "inMotion", "carCapturedTimestamp",

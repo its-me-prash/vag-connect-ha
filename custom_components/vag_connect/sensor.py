@@ -447,6 +447,56 @@ SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
     # by the integration so users can 1-click report them via the HA Repair
     # dashboard. data_key="" — value comes from coordinator helpers, not
     # the vehicle dict — see ``ReporterSensor.native_value``.
+    # ── v1.14.0 (#24) — Trip Statistics (Audi + VW EU) ────────────────
+    # Subscription-required (Audi connect Plus / WeConnect Plus).
+    # Phase 3 capability gate (#56) hides these entities for accounts
+    # without the subscription. Data populated by 1h cache cycle in
+    # ``coordinator.refresh_trip_statistics`` from the CARIAD-BFF
+    # ``GET /vehicle/v1/vehicles/{vin}/tripstatistics`` endpoint.
+    # ``recent_trips`` (list of last 5) lives in
+    # ``last_trip_distance_km.extra_state_attributes`` to avoid the
+    # 255-char state limit for list-shaped data.
+    VagSensorDescription(
+        key="last_trip_distance_km",
+        translation_key="last_trip_distance_km",
+        data_key="last_trip_distance_km",
+        native_unit_of_measurement=UnitOfLength.KILOMETERS,
+        device_class=SensorDeviceClass.DISTANCE,
+        state_class=SensorStateClass.MEASUREMENT,
+        icon="mdi:road-variant",
+        suggested_display_precision=1,
+    ),
+    VagSensorDescription(
+        key="last_trip_avg_speed_kmh",
+        translation_key="last_trip_avg_speed_kmh",
+        data_key="last_trip_avg_speed_kmh",
+        native_unit_of_measurement=UnitOfSpeed.KILOMETERS_PER_HOUR,
+        device_class=SensorDeviceClass.SPEED,
+        state_class=SensorStateClass.MEASUREMENT,
+        icon="mdi:speedometer",
+        suggested_display_precision=0,
+    ),
+    VagSensorDescription(
+        key="last_trip_avg_fuel_consumption_l_100km",
+        translation_key="last_trip_avg_fuel_consumption_l_100km",
+        data_key="last_trip_avg_fuel_consumption_l_100km",
+        native_unit_of_measurement="L/100 km",
+        state_class=SensorStateClass.MEASUREMENT,
+        icon="mdi:gas-station",
+        suggested_display_precision=1,
+        condition="combustion",
+    ),
+    VagSensorDescription(
+        key="last_trip_avg_electric_consumption_kwh_100km",
+        translation_key="last_trip_avg_electric_consumption_kwh_100km",
+        data_key="last_trip_avg_electric_consumption_kwh_100km",
+        native_unit_of_measurement="kWh/100 km",
+        state_class=SensorStateClass.MEASUREMENT,
+        icon="mdi:lightning-bolt",
+        suggested_display_precision=1,
+        condition="electric",
+    ),
+
     VagSensorDescription(
         key="api_observer_findings",
         translation_key="api_observer_findings",
@@ -492,6 +542,19 @@ _DATA_PRESENT_REQUIRED: frozenset[str] = frozenset({
     "voltage_12v",
 })
 
+# v1.14.0 (#24) — Trip Statistics is brand-restricted at the API level
+# (CARIAD-BFF only — Audi + VW EU). Other brands' clients don't expose
+# ``get_trip_statistics``. Gate at setup so SEAT/CUPRA/Skoda/Porsche/VW NA
+# users don't get four "unknown" sensors per VIN. Capability gating
+# (Phase 3, #56) further hides them when the subscription is absent.
+_TRIP_STATS_KEYS: frozenset[str] = frozenset({
+    "last_trip_distance_km",
+    "last_trip_avg_speed_kmh",
+    "last_trip_avg_fuel_consumption_l_100km",
+    "last_trip_avg_electric_consumption_kwh_100km",
+})
+_TRIP_STATS_BRANDS: frozenset[str] = frozenset({"audi", "volkswagen"})
+
 
 async def async_setup_entry(
     hass: HomeAssistant,
@@ -500,6 +563,9 @@ async def async_setup_entry(
 ) -> None:
     """Sensor-Entities einrichten."""
     coordinator: VagConnectCoordinator = entry.runtime_data
+    # v1.14.0 (#24) — read brand once for trip-stats brand-restriction.
+    brand = str(entry.data.get("brand", "")).lower()
+    trip_stats_supported = brand in _TRIP_STATS_BRANDS
     entities: list[VagConnectSensor] = []
 
     for vin, vehicle in coordinator.vehicles.items():
@@ -523,6 +589,19 @@ async def async_setup_entry(
                 and vehicle.get(desc.data_key) is None
             ):
                 continue
+            # v1.14.0 (#24) — Trip Stats brand-gate. Skip the four
+            # tripstatistics sensors entirely for non-CARIAD brands so
+            # SEAT/CUPRA/Skoda/Porsche/VW NA users don't see "unknown"
+            # entities forever. Phase 3 capability filter additionally
+            # hides them when the audi/vw subscription is missing.
+            if desc.key in _TRIP_STATS_KEYS:
+                if not trip_stats_supported:
+                    continue
+                if (
+                    coordinator.command_capability_supported(vin, "command_trip_stats")
+                    is False
+                ):
+                    continue
             if desc.key in _REPORTER_KEYS:
                 # v1.9.0 — reporter sensors read from coordinator helpers
                 # rather than per-vehicle data fields.
@@ -554,6 +633,22 @@ class VagConnectSensor(VagConnectEntity, SensorEntity):
         self.entity_description = description
         if description.suggested_display_precision is not None:
             self._attr_suggested_display_precision = description.suggested_display_precision
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any] | None:
+        """v1.14.0 (#24) — Surface ``recent_trips`` (last 5 short-term
+        trips) on the ``last_trip_distance_km`` sensor.
+
+        Pattern from audi #113 — list-shaped data goes into attributes
+        because HA caps state strings at 255 chars and per-trip metadata
+        easily exceeds that. Other sensors return ``None`` so we don't
+        accidentally inflate recorder rows.
+        """
+        if self.entity_description.key == "last_trip_distance_km":
+            recent = self._vehicle.get("recent_trips")
+            if isinstance(recent, list) and recent:
+                return {"recent_trips": recent[: 5]}
+        return None
 
     @property
     def native_value(self) -> Any:

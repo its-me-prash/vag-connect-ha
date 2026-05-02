@@ -17,6 +17,13 @@ CONF_ENABLE_REVERSE_GEOCODING = "enable_reverse_geocoding"
 # want vehicle telemetry but no risk of accidental actuation or
 # subscription-counting commands.
 CONF_READ_ONLY                = "read_only_mode"
+# v1.14.0 (#29 + #51 Facelift) — PPE/PPC Climate body conditional.
+# Audi-only option (default False). When True, ``command_start_climate``
+# uses the PPE body shape — ``climatisationMode: "comfort"`` mandatory,
+# ``targetTemperature*`` MUST BE OMITTED (audi_connect_ha PR #644 + #677).
+# Auto-detection from VIN/model/year is unreliable (no public PPE list);
+# user-overridable until we have a proper detection mechanism.
+CONF_FORCE_PPE_CLIMATE        = "force_ppe_climate"
 
 # Supported brands — must match CariadClientFactory.create() keys
 BRANDS = {

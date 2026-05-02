@@ -24,6 +24,7 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from .const import (
     CONF_BRAND,
     CONF_ENABLE_REVERSE_GEOCODING,
+    CONF_FORCE_PPE_CLIMATE,
     CONF_PASSWORD,
     CONF_READ_ONLY,
     CONF_SCAN_INTERVAL,
@@ -89,6 +90,112 @@ _WAKE_COOLDOWN = timedelta(minutes=5)
 # (typical CARIAD command roundtrip is 10-30s; 60s is a safe upper bound
 # even for slow weekend backend windows).
 _COMMAND_LOCK_TIMEOUT = 60.0
+
+
+def _parse_trip_statistics(
+    short_resp: Any, long_resp: Any
+) -> dict[str, Any]:
+    """v1.14.0 (#24) — Pure parser for CARIAD-BFF tripstatistics responses.
+
+    Returns a dict of ``last_trip_*`` + ``lifetime_*`` + ``recent_trips``
+    fields ready to merge into ``coordinator.vehicles[vin]``. Empty dict
+    on no usable data (preserves stale cache).
+
+    Both endpoints share the same ``{tripDataList: {tripData: [...]}}``
+    shape — sorted by ``overallMileage`` desc, ``[0]`` is the most
+    recent. Consumption fields come back as integers ×10 (sources:
+    audi_connect_ha audi_services.py + audiconnectpy + ioBroker/vw-connect)
+    so we divide by 10 to get human numbers (l/100km, kWh/100km).
+
+    Pure function — safe to test in isolation, no I/O, no logging.
+    """
+    out: dict[str, Any] = {}
+
+    def _extract_trips(resp: Any) -> list[dict[str, Any]]:
+        if not isinstance(resp, dict):
+            return []
+        wrapper = resp.get("tripDataList")
+        if not isinstance(wrapper, dict):
+            return []
+        trips = wrapper.get("tripData")
+        if not isinstance(trips, list):
+            return []
+        # defensive: drop non-dict entries
+        good = [t for t in trips if isinstance(t, dict)]
+        # sort by overallMileage descending — newest at [0]
+        good.sort(
+            key=lambda t: t.get("overallMileage", 0)
+            if isinstance(t.get("overallMileage"), (int, float))
+            else 0,
+            reverse=True,
+        )
+        return good
+
+    def _div10(val: Any) -> float | None:
+        if isinstance(val, (int, float)) and val > 0:
+            return round(val / 10.0, 1)
+        return None
+
+    short_trips = _extract_trips(short_resp)
+    long_trips = _extract_trips(long_resp)
+    out["_shortterm_count"] = len(short_trips)
+    out["_longterm_count"] = len(long_trips)
+
+    # Last trip — from shortTerm (per-ignition cycle)
+    if short_trips:
+        last = short_trips[0]
+        out["last_trip_distance_km"] = (
+            float(last["mileage"]) if isinstance(last.get("mileage"), (int, float)) else None
+        )
+        out["last_trip_duration_min"] = (
+            int(last["traveltime"]) if isinstance(last.get("traveltime"), (int, float)) else None
+        )
+        out["last_trip_avg_speed_kmh"] = (
+            float(last["averageSpeed"])
+            if isinstance(last.get("averageSpeed"), (int, float))
+            else None
+        )
+        out["last_trip_avg_fuel_consumption_l_100km"] = _div10(
+            last.get("averageFuelConsumption")
+        )
+        out["last_trip_avg_electric_consumption_kwh_100km"] = _div10(
+            last.get("averageElectricEngineConsumption")
+        )
+        ts = last.get("timestamp")
+        out["last_trip_timestamp"] = ts if isinstance(ts, str) else None
+
+        # Keep only the 5 most-recent in extra_state_attributes (255-char
+        # state limit avoidance, plus recorder bloat protection).
+        out["recent_trips"] = [
+            {
+                "timestamp": t.get("timestamp"),
+                "distance_km": t.get("mileage"),
+                "duration_min": t.get("traveltime"),
+                "avg_speed_kmh": t.get("averageSpeed"),
+                "avg_fuel_l_100km": _div10(t.get("averageFuelConsumption")),
+                "avg_electric_kwh_100km": _div10(
+                    t.get("averageElectricEngineConsumption")
+                ),
+            }
+            for t in short_trips[:5]
+        ]
+
+    # Lifetime — from longTerm (since-last-reset aggregate, take [0])
+    if long_trips:
+        agg = long_trips[0]
+        out["lifetime_distance_km"] = (
+            float(agg["overallMileage"])
+            if isinstance(agg.get("overallMileage"), (int, float))
+            else None
+        )
+        out["lifetime_avg_fuel_consumption_l_100km"] = _div10(
+            agg.get("averageFuelConsumption")
+        )
+        out["lifetime_avg_electric_consumption_kwh_100km"] = _div10(
+            agg.get("averageElectricEngineConsumption")
+        )
+
+    return out
 
 
 @dataclass
@@ -419,6 +526,20 @@ class VagConnectCoordinator(DataUpdateCoordinator):
                 # call: ``ensure_*_issue`` deletes when empty and updates
                 # in-place when the IDs already exist.
                 self._refresh_reporter_issues()
+                # v1.14.0 (#24) — Trip Stats refresh, best-effort + cached
+                # 1h. Brand-restricted to audi/volkswagen inside helper.
+                # Runs after vehicle update so newest VINs are present
+                # in self.vehicles when the parser merges back.
+                try:
+                    await asyncio.gather(
+                        *[
+                            self.refresh_trip_statistics(vin)
+                            for vin in self.vehicles
+                        ],
+                        return_exceptions=True,
+                    )
+                except Exception:  # noqa: BLE001
+                    pass  # never let trip-stats break the poll
                 await self._async_push_update(fresh, success=any_success)
             except Exception as err:  # noqa: BLE001
                 # Auth failure that survived the client's refresh-then-relogin
@@ -828,6 +949,87 @@ class VagConnectCoordinator(DataUpdateCoordinator):
             len(data),
         )
 
+    # ── v1.14.0 (#24) — Trip Statistics 1h cache + parser ────────────────
+    _TRIP_STATS_REFRESH_INTERVAL = timedelta(hours=1)
+    _TRIP_STATS_BRANDS = ("audi", "volkswagen")  # CARIAD-BFF only
+    _RECENT_TRIPS_LIMIT = 5  # how many trips to keep in extra_state_attributes
+
+    async def refresh_trip_statistics(
+        self, vin: str, force: bool = False
+    ) -> None:
+        """v1.14.0 (#24) — Best-effort fetch + parse of CARIAD-BFF trip
+        statistics. Failure is logged at debug and never blocks polling.
+
+        Brand-restricted to ``audi`` and ``volkswagen`` (the only brands
+        whose backends we've verified to expose ``GET /vehicle/v1/vehicles/
+        {vin}/tripstatistics``). Other brands return silently.
+
+        Cache: ``self._trip_stats_fetched_at[vin]`` — refresh only if
+        more than 1h has passed since last successful fetch (or
+        ``force=True``). Trip data changes rarely (per-ignition-cycle for
+        shortTerm, even rarer for longTerm) so polling at the standard
+        coordinator interval would waste API calls + subscription quota.
+
+        Capability gate: if Phase 3 (#56) reports
+        ``command_trip_stats: False`` for this VIN we skip — saves a
+        guaranteed 403 against subscription-less accounts.
+        """
+        brand = ""
+        try:
+            brand = str(self.entry.data.get(CONF_BRAND, "")).lower()
+        except Exception:  # noqa: BLE001
+            return
+        if brand not in self._TRIP_STATS_BRANDS:
+            return
+        if not hasattr(self, "_trip_stats_fetched_at"):
+            self._trip_stats_fetched_at: dict[str, datetime] = {}
+        if not force:
+            last = self._trip_stats_fetched_at.get(vin)
+            if last is not None:
+                if datetime.now(tz=timezone.utc) - last < self._TRIP_STATS_REFRESH_INTERVAL:
+                    return
+        # Phase 3 (#56) capability gate — saves a guaranteed 403.
+        if self.command_capability_supported(vin, "command_trip_stats") is False:
+            return
+        client = self._cariad_client
+        if client is None or not hasattr(client, "get_trip_statistics"):
+            return
+        # Fetch shortTerm (per-ignition trips, "Seit Start") and longTerm
+        # (since-last-reset aggregates, "Seit Tanken / Gesamt") in parallel.
+        try:
+            results = await asyncio.gather(
+                client.get_trip_statistics(vin, "shortTerm"),
+                client.get_trip_statistics(vin, "longTerm"),
+                return_exceptions=True,
+            )
+        except Exception as err:  # noqa: BLE001
+            _LOGGER.debug(
+                "Trip stats fetch failed for %s: %s", mask_vin(vin), err
+            )
+            return
+        # ``return_exceptions=True`` — drop exceptions to None so the parser
+        # treats them as empty responses (keeps stale cache).
+        short_resp: Any = (
+            results[0] if not isinstance(results[0], BaseException) else None
+        )
+        long_resp: Any = (
+            results[1] if not isinstance(results[1], BaseException) else None
+        )
+        parsed = _parse_trip_statistics(short_resp, long_resp)
+        if not parsed:
+            return  # empty response — keep stale cache
+        with self._vehicles_lock:
+            v = self.vehicles.get(vin)
+            if isinstance(v, dict):
+                v.update(parsed)
+        self._trip_stats_fetched_at[vin] = datetime.now(tz=timezone.utc)
+        _LOGGER.debug(
+            "Trip stats updated for %s: %d short / %d long term",
+            mask_vin(vin),
+            parsed.get("_shortterm_count", 0),
+            parsed.get("_longterm_count", 0),
+        )
+
     async def _async_push_update(self, data: dict, success: bool = True) -> None:
         """Push vehicle data to HA.
 
@@ -1102,12 +1304,31 @@ class VagConnectCoordinator(DataUpdateCoordinator):
         # v1.11.1 (3B-Part-3) — optimistic UI: climate flips to active
         # immediately. Backend value will overwrite on next poll if it
         # disagrees (which is rare — start succeeds for entitled VINs).
+        # v1.14.0 (#29) — PPE/PPC body shape conditional. User option
+        # ``force_ppe_climate`` forces the new body shape (no
+        # targetTemperature*, climatisationMode mandatory) for Audi
+        # vehicles on PPC platforms (Q6 e-tron, A6 e-tron, RS e-tron GT
+        # Facelift, A3 2024+ PHEV). VW EU and other brands ignore the
+        # option — only Audi's CARIAD backend differentiates.
+        cmd_kwargs: dict[str, Any] = {}
+        brand = str(self.entry.data.get(CONF_BRAND, "")).lower()
+        if brand in ("audi", "volkswagen"):
+            options = getattr(self.entry, "options", None) or {}
+            data = getattr(self.entry, "data", None) or {}
+            ppe_mode = False
+            if isinstance(options, dict):
+                ppe_mode = bool(options.get(CONF_FORCE_PPE_CLIMATE, False))
+            if not ppe_mode and isinstance(data, dict):
+                ppe_mode = bool(data.get(CONF_FORCE_PPE_CLIMATE, False))
+            if ppe_mode:
+                cmd_kwargs["ppe_mode"] = True
         await self._cariad_cmd_optimistic(
             vin, "command_start_climate",
             optimistic={
                 "climatisation_state": "VENTILATION",
                 "climatisation_active": True,
             },
+            **cmd_kwargs,
         )
 
     async def async_stop_climatisation(self, vin: str) -> None:
@@ -1178,6 +1399,25 @@ class VagConnectCoordinator(DataUpdateCoordinator):
             enabled=enabled,
             departure_time=departure_time,
         )
+
+    async def async_engine_start(self, vin: str) -> None:
+        """v1.14.0 (#28) — Audi ICE Remote Engine Start.
+
+        Audi-only — the underlying client method is implemented on
+        ``AudiClient`` (CARIAD-BFF ``/vehicle/v1/engine/{VIN}/...``).
+        Other brands' clients don't expose ``command_engine_start`` so
+        the dispatch will raise ``AttributeError``, which Phase 2's
+        ``record_command_failure`` then classifies as
+        ``MISSING_CAPABILITY``.
+
+        Capability gating (Phase 3, v1.13.0) is recommended on the
+        platform side — see ``cariad/_capabilities.py``.
+        """
+        await self._cariad_cmd(vin, "command_engine_start")
+
+    async def async_engine_stop(self, vin: str) -> None:
+        """v1.14.0 (#28) — Audi ICE Remote Engine Stop. No S-PIN required."""
+        await self._cariad_cmd(vin, "command_engine_stop")
 
     def _get_command_lock(self, vin: str, command_class: str) -> asyncio.Lock:
         """v1.13.0 (#63 Phase 2) — per-VIN per-command-class asyncio.Lock.
@@ -1326,6 +1566,11 @@ class VagConnectCoordinator(DataUpdateCoordinator):
         "command_flash": "flash",
         "command_wake": "wake",
         "command_set_departure_timer": "departure_timer",
+        # v1.14.0 (#28) — Audi ICE Remote Engine Start/Stop. Both share
+        # the "engine" class so a stop request waits for an in-flight
+        # start (and vice versa) instead of overlapping.
+        "command_engine_start": "engine",
+        "command_engine_stop": "engine",
     }
 
     async def _cariad_cmd(self, vin: str, method: str, **kwargs: Any) -> None:

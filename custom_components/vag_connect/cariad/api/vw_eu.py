@@ -125,6 +125,43 @@ class VWEUClient(CariadBaseClient):
         data = await self._get(f"{_BASE}/vehicle/v1/vehicles/{vin}/capabilities")
         return data if isinstance(data, dict) else {}
 
+    async def get_trip_statistics(
+        self, vin: str, kind: str = "shortTerm"
+    ) -> dict[str, Any]:
+        """v1.14.0 (#24) — Trip Stats from CARIAD-BFF.
+
+        ``kind`` is ``"shortTerm"`` (per-ignition-cycle trips, "Seit Start")
+        or ``"longTerm"`` (since-last-reset aggregates, "Seit Tanken /
+        Gesamt"). Both return a list under ``tripDataList.tripData[]`` —
+        callers sort by ``overallMileage`` descending and take ``[0]`` as
+        the most recent trip (the audi #113 "aggregate-in-state"
+        convention).
+
+        Per-trip fields (verified across audi_connect_ha, audiconnectpy,
+        davidgiga1993/AudiAPI, ioBroker/vw-connect):
+        - ``timestamp`` (ISO 8601 UTC) — trip end time
+        - ``mileage`` (km) — distance of this trip
+        - ``startMileage`` / ``overallMileage`` (km) — odometer at start/end
+        - ``traveltime`` (minutes)
+        - ``averageSpeed`` (km/h)
+        - ``averageFuelConsumption`` (l/100 km × 10 — divide by 10)
+        - ``averageElectricEngineConsumption`` (kWh/100 km × 10)
+        - ``averageAuxConsumerConsumption`` (kWh/100 km × 10, often missing)
+
+        Returns the raw response dict so the coordinator can parse + cache.
+        Returns an empty dict if the response is not a JSON object (defensive
+        against backend edge-cases — best-effort, never raises into the
+        polling loop).
+
+        Subscription-required (Audi connect Plus / WeConnect Plus) — if
+        the user lacks the entitlement the backend returns 403; the
+        capability-filter Phase 3 (#56, v1.13.0) gates this from the
+        platform side via ``cap_id_for(brand, "command_trip_stats")``.
+        """
+        url = f"{_BASE}/vehicle/v1/vehicles/{vin}/tripstatistics"
+        data = await self._get(url, params={"type": kind})
+        return data if isinstance(data, dict) else {}
+
     async def get_status(self, vin: str) -> VehicleData:
         """Fetch full vehicle status via selectivestatus."""
         url = f"{_BASE}/vehicle/v1/vehicles/{vin}/selectivestatus"
@@ -218,25 +255,48 @@ class VWEUClient(CariadBaseClient):
             fallback_payload=fallback_payload,
         )
 
-    async def command_start_climate(self, vin: str) -> None:
+    async def command_start_climate(
+        self, vin: str, ppe_mode: bool = False
+    ) -> None:
         """Start pre-conditioning — combined endpoint with separate fallback,
         each on v1/v2.
 
         Default target temperature 21°C and window heating enabled match
         the previous separate-endpoint payload — kept so behaviour does
         not regress when the combined endpoint isn't available.
+
+        v1.14.0 (#29, audi #644 + #677) — when ``ppe_mode=True`` the
+        fallback body uses the PPE/PPC shape:
+        - ``climatisationMode: "comfort"`` (mandatory, NOT null)
+        - ``targetTemperature`` + ``targetTemperatureUnit`` OMITTED
+        Required for Q6 e-tron, A6 e-tron, RS e-tron GT Facelift, A3 2024+
+        PHEV — all of which return ``400 Bad Request`` for the legacy
+        body shape. Coordinator gates this via ``CONF_FORCE_PPE_CLIMATE``
+        option (Audi-only, user-overridable since auto-detection is
+        unreliable). ⚠️ [Inference] — body shape verified from upstream
+        PRs but Audi never published a definitive PPE compatibility list.
         """
+        if ppe_mode:
+            fallback_payload = {
+                "climatisationMode": "comfort",
+                "climatisationWithoutExternalPower": True,
+                "windowHeatingEnabled": True,
+                # NOTE: targetTemperature* OMITTED for PPE — body validator
+                # rejects it on Q6/A6 e-tron / PPC vehicles.
+            }
+        else:
+            fallback_payload = {
+                "targetTemperature": 21.0,
+                "targetTemperatureUnit": "celsius",
+                "climatisationWithoutExternalPower": True,
+                "windowHeatingEnabled": True,
+            }
         await self._post_command_with_fallback_paths(
             vin,
             primary_suffix="climatisation/start-stop",
             primary_payload={"action": "start"},
             fallback_suffix="climatisation/start",
-            fallback_payload={
-                "targetTemperature": 21.0,
-                "targetTemperatureUnit": "celsius",
-                "climatisationWithoutExternalPower": True,
-                "windowHeatingEnabled": True,
-            },
+            fallback_payload=fallback_payload,
         )
 
     async def command_stop_climate(self, vin: str) -> None:
