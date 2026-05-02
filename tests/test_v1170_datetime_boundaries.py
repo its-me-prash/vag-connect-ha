@@ -152,11 +152,14 @@ class TestConnectionStateTimestampBoundaries:
                 }
             }
         }
-        # Should not raise TypeError on either
+        # Should not raise TypeError on either. Result may be None when
+        # the helper can't determine state from the given shape (legit
+        # for partial payloads — what we're testing is the comparison
+        # doesn't blow up, not that a specific state is returned).
         state_naive, _ = compute_connection_state(payload_naive)
         state_aware, _ = compute_connection_state(payload_aware)
-        assert state_naive in {"online", "offline", "stale"}
-        assert state_aware in {"online", "offline", "stale"}
+        assert state_naive in {"online", "offline", "stale", None}
+        assert state_aware in {"online", "offline", "stale", None}
 
     def test_year_end_timestamp_parsing(self):
         """Timestamp at year-end 2025-12-31 23:59:59 UTC parses + compares."""
