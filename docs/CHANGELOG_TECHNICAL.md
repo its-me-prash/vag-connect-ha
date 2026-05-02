@@ -14,6 +14,107 @@ weiterhin direkt in `CHANGELOG.md` zu finden.
 
 ---
 
+## [1.16.1] - 2026-05-02
+
+### SEAT/CUPRA Climate Fix + #122 Scout-Paths / SEAT/CUPRA Climate 404 Fix + SEAT scout-paths
+
+PATCH-Release. Hotfix nach Gerhard's v1.16.0 Test (#53) — climatisation 404 + #122 SEAT Scout-Report Add-On.
+
+#### #53 SEAT/CUPRA Climate 404 Fix
+
+**Symptom (Gerhard's log on CUPRA Born VIN ***003577):**
+```
+404 for https://ola.prod.code.seat.cloud.vwgroup.com/v2/vehicles/.../climatisation:
+{"timestamp":"...","path":"/v2/vehicles/.../climatisation","status":404,
+ "error":"Not Found","message":"No static resource v2/vehicles/.../climati..."}
+```
+
+**Root cause:** OLA backend rejects `POST /v2/vehicles/{vin}/climatisation` — the URL pattern doesn't have a Spring controller mapped. The action ("start"/"stop") must be in the URL path, not the body. Verified against `WulfgarW/pycupra/connection.py` — uses `API_CLIMATER + '/start'` template producing `/v2/vehicles/{vin}/climatisation/start`.
+
+**Fix** (`cariad/api/seat_cupra.py`):
+
+```python
+async def command_start_climate(self, vin: str) -> None:
+    await self._post_climatisation_action(vin, "start")
+
+async def command_stop_climate(self, vin: str) -> None:
+    await self._post_climatisation_action(vin, "stop")
+
+async def _post_climatisation_action(self, vin: str, action: str) -> None:
+    primary = f"{_BASE}/v2/vehicles/{vin}/climatisation/{action}"
+    try:
+        await self._post(primary, json={})
+        return
+    except APIError as err:
+        if err.status != 404:
+            raise
+        # Fall back to legacy bare endpoint
+    await self._post(
+        f"{_BASE}/v2/vehicles/{vin}/climatisation",
+        json={"action": action},
+    )
+```
+
+**Defensive design** — same pattern as our CARIAD-BFF v1/v2 fallback:
+- 404 on primary → try legacy URL with body action (in case any user actually was working with the legacy URL on different firmware)
+- Non-404 errors propagate (Phase 2's `classify_command_failure` → `record_command_failure` records spin/subscription/etc properly)
+- Empty body `{}` on the primary path-suffix variant — pycupra confirms no body is needed when action is in the URL
+
+#### #53 Phase 3 Phantom-Button — Investigation, NOT yet fixed
+
+**Symptom:** Gerhard's CUPRA Born still shows the flash button in v1.16.0 even though Capability-Filter Phase 3 (#56, shipped v1.13.0) should hide it. Pre-Phase-3 behavior was 72→71 entities after click (Phase 2 unavailable transition); now it stays at 75 entities (button stays "inactive" but persists).
+
+**Hypotheses:**
+1. OLA Capabilities-API responds with `honk-and-flash` `active=true` despite the actual command endpoint returning `400 missing-capability` — backend has stale capability metadata for his Born
+2. `get_capabilities` silently fails for his account → cache empty → `command_capability_supported` returns `None` → button kept (conservative None default)
+3. Cap-ID mismatch — our `cap_id_for("cupra", "command_flash")` returns `"honk-and-flash"`, real OLA might use a different ID for his Born
+
+**Next step:** Diagnostics download requested from Gerhard. Need to inspect `vehicle_capabilities[VIN]` cache content to determine which hypothesis is correct. Fix in v1.16.2 once data arrives.
+
+#### #122 SEAT Scout-Paths
+
+**Source:** r1150gs Vehicle Data Scout report 2026-05-02 — 1 new field on `mycar` endpoint:
+
+```
+engines.primary  (3 keys, sample: {"3 keys"})
+```
+
+**Fix** (`cariad/_unexpected_keys.py` `EXPECTED_KEYS["cupra"]["mycar"]`):
+```python
+"engines",       # already registered (top-level) v1.10.2
+"engines.primary",     # NEW — explicit
+"engines.primary.*",   # NEW — wildcard
+```
+
+SEAT inherits via the table alias `EXPECTED_KEYS["seat"] = EXPECTED_KEYS["cupra"]` at the bottom of the file.
+
+#### Tests
+
+`tests/test_v1161_seat_cupra_climate_fix.py` — 2 test classes, 6 tests:
+
+- `TestClimateEndpointFix` (4):
+  - `test_start_uses_path_suffix_first` — verifies primary URL is `/climatisation/start` with empty body
+  - `test_stop_uses_path_suffix_first` — same for stop
+  - `test_falls_back_to_legacy_on_404` — 404 → second call with legacy URL + body action
+  - `test_non_404_error_propagates_no_fallback` — 403 raises immediately, no fallback (Phase 2 stays in charge of error classification)
+- `TestScoutPathsSeat` (2):
+  - `test_engines_primary_registered` — both `engines.primary` + wildcard in cupra mycar set
+  - `test_seat_inherits_via_alias` — paths resolve through SEAT's alias-to-cupra
+
+#### Files modified
+
+```
+custom_components/vag_connect/
+  cariad/_unexpected_keys.py      (+ engines.primary + engines.primary.* in cupra mycar)
+  cariad/api/seat_cupra.py        (+ _post_climatisation_action helper +
+                                   command_start_climate/stop_climate refactored)
+  manifest.json                   (1.16.0 → 1.16.1)
+
+tests/test_v1161_seat_cupra_climate_fix.py (NEW, 6 tests)
+```
+
+---
+
 ## [1.16.0] - 2026-05-02
 
 ### Cross-Brand UX + Skoda Charging Profiles / Cross-Brand UX + Skoda Charging Profiles

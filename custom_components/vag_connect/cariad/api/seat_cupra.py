@@ -615,10 +615,55 @@ class SeatCupraClient(CariadBaseClient):
         )
 
     async def command_start_climate(self, vin: str) -> None:
-        await self._post(f"{_BASE}/v2/vehicles/{vin}/climatisation", json={"action": "start"})
+        """v1.16.1 (#53 Gerhard CUPRA Born) — Fix 404 climatisation.
+
+        OLA returns ``404 No static resource v2/vehicles/{vin}/climati``
+        when posting ``{"action": "start"}`` to the bare endpoint. The
+        action lives in the URL path, not the body — verified against
+        ``WulfgarW/pycupra/connection.py`` (``API_CLIMATER + '/start'``).
+
+        Defensive: try the verified ``/start`` path first; on 404 fall
+        back to the legacy bare endpoint with body action so any account
+        that the legacy URL DID work for is not broken.
+        """
+        await self._post_climatisation_action(vin, "start")
 
     async def command_stop_climate(self, vin: str) -> None:
-        await self._post(f"{_BASE}/v2/vehicles/{vin}/climatisation", json={"action": "stop"})
+        """v1.16.1 (#53) — same fix as start."""
+        await self._post_climatisation_action(vin, "stop")
+
+    async def _post_climatisation_action(self, vin: str, action: str) -> None:
+        """v1.16.1 (#53) — climatisation start/stop with v1/v2 fallback.
+
+        Primary path follows pycupra (verified working in production):
+        ``POST /v2/vehicles/{vin}/climatisation/{start|stop}`` with empty
+        body. Fallback to legacy ``POST /v2/vehicles/{vin}/climatisation``
+        with ``{"action": ...}`` body if the primary returns 404 (in case
+        any user's account / firmware was actually using the legacy
+        pattern — same defensive approach as our CARIAD-BFF v1/v2
+        fallback in ``vw_eu.py``).
+        """
+        from ..exceptions import APIError  # noqa: PLC0415
+
+        primary = f"{_BASE}/v2/vehicles/{vin}/climatisation/{action}"
+        try:
+            await self._post(primary, json={})
+            return
+        except APIError as err:
+            if err.status != 404:
+                raise
+            _LOGGER.debug(
+                "OLA climatisation %s 404 on /climatisation/%s — "
+                "falling back to legacy /climatisation+body for %s",
+                action,
+                action,
+                vin[-6:],
+            )
+        # Fallback to the historical pattern with action in body.
+        await self._post(
+            f"{_BASE}/v2/vehicles/{vin}/climatisation",
+            json={"action": action},
+        )
 
     async def command_start_charging(self, vin: str) -> None:
         await self._post(f"{_BASE}/v1/vehicles/{vin}/charging/actions", json={"action": "start"})

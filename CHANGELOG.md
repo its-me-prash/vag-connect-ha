@@ -32,6 +32,41 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ## [Unreleased]
 
+## [1.16.1] - 2026-05-02 🐛 SEAT/CUPRA Climate Fix + #122 Scout-Paths / SEAT/CUPRA Climate 404 Fix + SEAT scout-path registration
+
+🐛 **PATCH: Hotfix für SEAT/CUPRA Climate-Endpoint** — Gerhard's v1.16.0 Test (Issue #53) hat aufgedeckt dass unsere ``command_start_climate`` URL ``POST /v2/vehicles/{vin}/climatisation`` mit Body ``{"action":"start"}`` einen 404 produziert (`No static resource`). Korrekter OLA-Endpoint ist ``POST /v2/vehicles/{vin}/climatisation/start`` (Action im Pfad). Plus #122 SEAT Scout-Report von r1150gs.
+
+### 🐛 Bug-Fixes / Bug-Fixes
+
+- 🌡️ **SEAT/CUPRA Climate 404 (#53)** — neuer ``_post_climatisation_action`` Helper mit Defensive-Fallback:
+  - **Primary** (verifiziert gegen `WulfgarW/pycupra/connection.py` `API_CLIMATER + '/start'`): ``POST /v2/vehicles/{vin}/climatisation/start`` body ``{}``
+  - **Fallback** (legacy unsere alte URL): bei 404 → ``POST /v2/vehicles/{vin}/climatisation`` body ``{"action":"start"}``
+  - Nicht-404 Fehler (403/500/etc) propagieren ohne Fallback — Phase 2 records the failure normal
+  - Identisches Pattern für `command_stop_climate`
+
+### 🛰️ Scout-Paths / Scout-Paths
+
+- 🛰️ **#122 SEAT scout-report (r1150gs, 2026-05-02)** — `engines.primary` + `engines.primary.*` Wildcard in `EXPECTED_KEYS["cupra"]["mycar"]` registriert (SEAT erbt via Table-Alias). Vorher war `engines` als Top-Level-Block registriert — neue Sub-Block `primary` (3 keys) brauchte explizite Registration. Wildcard deckt zukünftige Sub-Felder ab.
+
+### 🔍 Investigation / Investigation
+
+- 🔍 **#53 Phase 3 Phantom-Button** — Gerhard's Born hat Lichthupe-Button trotz Phase 3 noch sichtbar. Hypothesen: OLA Capabilities-API "lügt" für seinen Born (sagt `honk-and-flash` active=true, aber Endpoint macht 400), oder `get_capabilities` failt silent, oder Cap-ID Mismatch. **Diagnostics-Download von Gerhard angefordert** für `vehicle_capabilities[VIN]` Inspektion. Fix folgt in v1.16.2 sobald Daten da sind.
+
+### 🧪 Tests / Tests
+
+- `tests/test_v1161_seat_cupra_climate_fix.py` — neue Tests in 2 Klassen:
+  - `TestClimateEndpointFix` (4) — start uses path-suffix + stop uses path-suffix + 404 fallback to legacy + non-404 propagates without fallback
+  - `TestScoutPathsSeat` (2) — `engines.primary.*` registriert + SEAT inherit via alias
+
+### 📦 Schließt Issues / Closes
+
+- Closes #122 (SEAT scout-report von r1150gs)
+
+### 🔬 Bleibt offen / Still open
+
+- **#53 Climate** ✅ gefixt in v1.16.1 (testen!)
+- **#53 Phase 3 Phantom-Button** — wartet auf Gerhard's Diagnostics
+
 ## [1.16.0] - 2026-05-02 ⏰📍 Cross-Brand UX + Skoda Charging Profiles / Cross-Brand UX + Skoda Charging Profiles (HA time platform #26 + #25/#31 read-only via charging-profiles + OTA Probe planning)
 
 ⏰📍 **Long-standing UX gap geschlossen**: Departure-Timer kann jetzt direkt in HA editiert werden (#26). Plus #25/#31 Closure über Skoda's neuen `/v1/charging/{vin}/profiles` Endpoint, plus Cross-Brand OTA Probe Plan dokumentiert für Live-Test in v1.17.0.
