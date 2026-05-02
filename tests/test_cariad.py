@@ -4125,13 +4125,21 @@ class TestButtonCapabilityGating:
         assert "VagWakeButton" in names
         assert "VagRefreshButton" in names
 
-    def test_audi_brand_never_gates_buttons(self):
-        """Audi capability vocabulary is unverified — gating must be skipped."""
-        # Worst-case capabilities cache that would block CUPRA buttons
-        added = self._setup(self._coord(caps={"capabilities": []}), brand="audi")
+    def test_audi_inherits_vw_gating(self):
+        """v1.13.0 (#56 Phase 3): Audi inherits VW EU CARIAD-BFF capability
+        vocabulary via ``CAPABILITY_MAP["audi"] = CAPABILITY_MAP["volkswagen"]``.
+        Was unverified pre-1.13.0 (test originally documented that gating was
+        skipped); v1.13.0 ships the inheritance so audi IS gated using the
+        same camelCase cap-ids (``honkAndFlash``, ``vehicleWakeUpTrigger``).
+        """
+        # honkAndFlash listed → flash button stays. vehicleWakeUpTrigger
+        # missing from a populated capabilities list → wake button skipped.
+        added = self._setup(self._coord(caps={"capabilities": [
+            {"id": "honkAndFlash", "status": []},
+        ]}), brand="audi")
         names = [type(e).__name__ for e in added]
         assert "VagFlashButton" in names
-        assert "VagWakeButton" in names
+        assert "VagWakeButton" not in names
         assert "VagRefreshButton" in names
 
     def test_explicit_unsupported_skips_flash_and_wake(self):
@@ -4145,10 +4153,15 @@ class TestButtonCapabilityGating:
         assert "VagRefreshButton" in names
 
     def test_partial_support(self):
-        """Flash supported, wake unavailable → only flash + refresh."""
+        """Flash supported, wake unavailable → only flash + refresh.
+
+        v1.13.0 (#56 Phase 3): cap-ids must match the brand's vocabulary —
+        CUPRA uses OLA kebab-case (``honk-and-flash``, ``vehicle-wakeup``)
+        not CARIAD camelCase. Test caps adjusted to the verified vocabulary.
+        """
         added = self._setup(self._coord(caps={"capabilities": [
-            {"id": "honkAndFlash", "status": []},
-            {"id": "vehicleWakeUpTrigger", "status": [{"reason": "deactivated"}]},
+            {"id": "honk-and-flash", "status": []},
+            {"id": "vehicle-wakeup", "status": [{"reason": "deactivated"}]},
         ]}))
         names = [type(e).__name__ for e in added]
         assert "VagFlashButton" in names
