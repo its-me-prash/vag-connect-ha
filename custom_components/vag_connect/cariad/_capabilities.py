@@ -96,6 +96,16 @@ CAPABILITY_MAP: Final[dict[str, dict[str, str]]] = {
     "cupra": {
         "command_lock": "access",                # ✅ verified
         "command_unlock": "access",
+        # v1.17.1 (Bruno-Collection seq 31/32) — cabin ventilation
+        "command_start_ventilation": "ventilation",
+        "command_stop_ventilation": "ventilation",
+        # v1.17.1 (Bruno seq 29/30 + pycupra) — Webasto aux heating
+        "command_start_aux_heating": "auxiliary-heating",
+        "command_stop_aux_heating": "auxiliary-heating",
+        # v1.17.1 (#36, Bruno seq 34) — nav destination push
+        "command_send_destination": "destination",
+        # v1.17.1 (Bruno seq 10/11) — battery-care read endpoints
+        "command_battery_care_read": "charging",
         "command_flash": "honk-and-flash",       # ✅ verified — seat_cupra.py:87 reference
         # ⚠️ [Inference] — kebab-case pattern from OLA, plus missing-capability
         # responses observed for these on Gerhard's Born (#53 — CUPRA Born

@@ -218,6 +218,50 @@ def _register_services(hass: HomeAssistant) -> None:
         """v1.14.0 (#28) — Audi ICE Remote Engine Stop. No S-PIN required."""
         await _coord_writeable(call.data["vin"]).async_engine_stop(call.data["vin"])
 
+    # ── v1.17.1 (Bruno-Collection) — SEAT/CUPRA new commands ────────
+
+    async def _handle_start_ventilation(call: ServiceCall) -> None:
+        """v1.17.1 — SEAT/CUPRA cabin ventilation start (Bruno seq 31)."""
+        await _coord_writeable(call.data["vin"]).async_start_ventilation(
+            call.data["vin"]
+        )
+
+    async def _handle_stop_ventilation(call: ServiceCall) -> None:
+        """v1.17.1 — Ventilation stop (Bruno seq 32)."""
+        await _coord_writeable(call.data["vin"]).async_stop_ventilation(
+            call.data["vin"]
+        )
+
+    async def _handle_start_aux_heating(call: ServiceCall) -> None:
+        """v1.17.1 — Webasto auxiliary heating start (SecToken required).
+
+        S-PIN taken from saved config entry — never lands in service-call log.
+        """
+        await _coord_writeable(call.data["vin"]).async_start_aux_heating(
+            call.data["vin"]
+        )
+
+    async def _handle_stop_aux_heating(call: ServiceCall) -> None:
+        """v1.17.1 — Webasto stop (no S-PIN per Bruno seq 30)."""
+        await _coord_writeable(call.data["vin"]).async_stop_aux_heating(
+            call.data["vin"]
+        )
+
+    async def _handle_send_destination(call: ServiceCall) -> None:
+        """v1.17.1 (#36) — Send navigation destination to vehicle."""
+        await _coord_writeable(call.data["vin"]).async_send_destination(
+            call.data["vin"],
+            float(call.data["latitude"]),
+            float(call.data["longitude"]),
+            str(call.data["name"]),
+            city=str(call.data.get("city", "")),
+            country=str(call.data.get("country", "")),
+            state=str(call.data.get("state", "")),
+            street=str(call.data.get("street", "")),
+            house_number=str(call.data.get("house_number", "")),
+            zip_code=str(call.data.get("zip_code", "")),
+        )
+
     async def _handle_refresh(_call: ServiceCall) -> None:
         """Pull latest cloud-cached state — does NOT wake the vehicle.
 
@@ -274,6 +318,24 @@ def _register_services(hass: HomeAssistant) -> None:
         # v1.14.0 (#28) — Audi-only ICE Remote Engine Start/Stop.
         ("engine_start",                   _handle_engine_start,        SERVICE_VIN_SCHEMA),
         ("engine_stop",                    _handle_engine_stop,         SERVICE_VIN_SCHEMA),
+        # v1.17.1 (Bruno-Collection) — SEAT/CUPRA new commands.
+        ("start_ventilation",              _handle_start_ventilation,   SERVICE_VIN_SCHEMA),
+        ("stop_ventilation",               _handle_stop_ventilation,    SERVICE_VIN_SCHEMA),
+        ("start_aux_heating",              _handle_start_aux_heating,   SERVICE_VIN_SCHEMA),
+        ("stop_aux_heating",               _handle_stop_aux_heating,    SERVICE_VIN_SCHEMA),
+        ("send_destination",               _handle_send_destination,
+            vol.Schema({
+                vol.Required("vin"):       cv.string,
+                vol.Required("latitude"):  vol.All(vol.Coerce(float), vol.Range(-90, 90)),
+                vol.Required("longitude"): vol.All(vol.Coerce(float), vol.Range(-180, 180)),
+                vol.Required("name"):      cv.string,
+                vol.Optional("city"):         cv.string,
+                vol.Optional("country"):      cv.string,
+                vol.Optional("state"):        cv.string,
+                vol.Optional("street"):       cv.string,
+                vol.Optional("house_number"): cv.string,
+                vol.Optional("zip_code"):     cv.string,
+            })),
     ]:
         hass.services.async_register(DOMAIN, name, handler, schema)
 
@@ -294,6 +356,10 @@ async def async_unload_entry(hass: HomeAssistant, entry: VagConnectConfigEntry) 
             "refresh_vehicle", "refresh_cloud_cache", "set_target_soc",
             "set_climatisation_temperature", "set_departure_timer",
             "engine_start", "engine_stop",
+            # v1.17.1 (Bruno-Collection)
+            "start_ventilation", "stop_ventilation",
+            "start_aux_heating", "stop_aux_heating",
+            "send_destination",
         ]:
             if hass.services.has_service(DOMAIN, svc):
                 hass.services.async_remove(DOMAIN, svc)

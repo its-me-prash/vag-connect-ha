@@ -217,3 +217,118 @@ engine_stop:
       required: true
       selector:
         text:
+
+# v1.17.1 (Bruno-Collection) — SEAT/CUPRA new commands.
+start_ventilation:
+  name: Lüftung starten (SEAT/CUPRA)
+  description: >-
+    Startet die Kabinen-Lüftung ohne Heizung (SEAT/CUPRA only).
+    Endpoint Bruno seq 31 — POST /v1/vehicles/{vin}/ventilation/start.
+    Capability-gated über Phase 3.
+  fields:
+    vin:
+      name: VIN
+      required: true
+      selector:
+        text:
+stop_ventilation:
+  name: Lüftung stoppen (SEAT/CUPRA)
+  description: Stoppt die Kabinen-Lüftung. Bruno seq 32.
+  fields:
+    vin:
+      name: VIN
+      required: true
+      selector:
+        text:
+start_aux_heating:
+  name: Standheizung starten (SEAT/CUPRA Webasto)
+  description: >-
+    Startet die Webasto-Standheizung remote (SEAT/CUPRA only, S-PIN
+    erforderlich). Bruno seq 29 — POST /v1/vehicles/{vin}/auxiliary-heating/start
+    mit SecToken (S-PIN-derived). A/B-Fallback zu pycupra-Pfad
+    /api/auxiliary-heating/v1/{vin}/start. Der S-PIN wird aus der
+    gespeicherten Konfiguration genommen — landet NIE im Service-Call-Log.
+  fields:
+    vin:
+      name: VIN
+      required: true
+      selector:
+        text:
+stop_aux_heating:
+  name: Standheizung stoppen (SEAT/CUPRA Webasto)
+  description: >-
+    Stoppt die Webasto-Standheizung. Bruno seq 30 — POST
+    /v1/vehicles/{vin}/auxiliary-heating/stop (kein SecToken nötig).
+  fields:
+    vin:
+      name: VIN
+      required: true
+      selector:
+        text:
+send_destination:
+  name: Navigationsziel senden (SEAT/CUPRA)
+  description: >-
+    Sendet eine Adresse + GPS-Koordinaten an die Fahrzeug-Navigation
+    (SEAT/CUPRA only). Schließt Issue #36. Bruno seq 34 —
+    PUT /v1/users/vehicles/{vin}/destination. Adress-Felder sind
+    optional; latitude + longitude + name sind Pflicht.
+  fields:
+    vin:
+      name: VIN
+      required: true
+      selector:
+        text:
+    latitude:
+      name: Breitengrad
+      description: Breitengrad in Dezimalgraden (z.B. 47.39).
+      required: true
+      selector:
+        number:
+          min: -90
+          max: 90
+          step: 0.000001
+    longitude:
+      name: Längengrad
+      description: Längengrad in Dezimalgraden (z.B. 8.21).
+      required: true
+      selector:
+        number:
+          min: -180
+          max: 180
+          step: 0.000001
+    name:
+      name: Ziel-Bezeichnung
+      description: Name des Ziels (z.B. "Zuhause", "Büro").
+      required: true
+      selector:
+        text:
+    city:
+      name: Stadt
+      required: false
+      selector:
+        text:
+    country:
+      name: Land (ISO 3166-1 alpha-2)
+      required: false
+      selector:
+        text:
+    state:
+      name: Bundesland
+      required: false
+      selector:
+        text:
+    street:
+      name: Straße
+      required: false
+      selector:
+        text:
+    house_number:
+      name: Hausnummer
+      required: false
+      selector:
+        text:
+    zip_code:
+      name: PLZ
+      required: false
+      selector:
+        text:

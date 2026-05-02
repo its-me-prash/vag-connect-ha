@@ -184,6 +184,17 @@ _NEW_BINARY: tuple[VagBinarySensorDescription, ...] = (
         icon="mdi:cellphone-arrow-down",
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
+    # v1.17.1 (Bruno seq 10) — SEAT/CUPRA Battery Care mode active.
+    # Battery care = OEM mode that limits charging to preserve
+    # battery longevity (typically caps at the target_soc_pct from
+    # /charging/battery-care/target). Read-only via two thin OLA GETs.
+    VagBinarySensorDescription(
+        key="battery_care_enabled",
+        translation_key="battery_care_enabled",
+        data_key="battery_care_enabled",
+        icon="mdi:battery-heart-variant",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
 )
 BINARY_DESCRIPTIONS = BINARY_DESCRIPTIONS + _NEW_BINARY
 
@@ -196,6 +207,9 @@ _DATA_PRESENT_REQUIRED: frozenset[str] = frozenset({
     # 2026-05-02) — CARIAD-BFF + OLA don't yet expose a software-version
     # update-status endpoint.
     "ota_update_available",
+    # v1.17.1 — SEAT/CUPRA-only battery care endpoint. Stays None on
+    # other brands and on accounts where the feature isn't available.
+    "battery_care_enabled",
 })
 
 

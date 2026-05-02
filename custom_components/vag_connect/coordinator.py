@@ -723,6 +723,18 @@ class VagConnectCoordinator(DataUpdateCoordinator):
                     )
                 except Exception:  # noqa: BLE001
                     pass
+                # v1.17.1 (Bruno seq 10/11) — SEAT/CUPRA Battery Care
+                # 1h-cache. Same defensive pattern.
+                try:
+                    await asyncio.gather(
+                        *[
+                            self.refresh_battery_care(vin)
+                            for vin in self.vehicles
+                        ],
+                        return_exceptions=True,
+                    )
+                except Exception:  # noqa: BLE001
+                    pass
                 await self._async_push_update(fresh, success=any_success)
             except Exception as err:  # noqa: BLE001
                 # Auth failure that survived the client's refresh-then-relogin
@@ -1301,6 +1313,75 @@ class VagConnectCoordinator(DataUpdateCoordinator):
             parsed.get("last_charging_session_start", "n/a"),
         )
 
+    # ── v1.17.1 (Bruno-Collection) — SEAT/CUPRA Battery Care 1h cache ─
+    _BATTERY_CARE_REFRESH_INTERVAL = timedelta(hours=1)
+    _BATTERY_CARE_BRANDS = ("cupra", "seat")  # OLA only
+
+    async def refresh_battery_care(
+        self, vin: str, force: bool = False
+    ) -> None:
+        """v1.17.1 (Bruno seq 10/11) — Battery Care status + target SoC.
+
+        SEAT/CUPRA-only. Reads two thin endpoints in parallel and merges
+        into ``vehicle["battery_care_*"]`` fields. Best-effort: failure
+        logged at debug, never blocks polling.
+
+        Cache: 1h via ``_battery_care_fetched_at[vin]`` — battery care
+        toggles change at most a few times per year for typical users.
+        """
+        brand = ""
+        try:
+            brand = str(self.entry.data.get(CONF_BRAND, "")).lower()
+        except Exception:  # noqa: BLE001
+            return
+        if brand not in self._BATTERY_CARE_BRANDS:
+            return
+        if not hasattr(self, "_battery_care_fetched_at"):
+            self._battery_care_fetched_at: dict[str, datetime] = {}
+        if not force:
+            last = self._battery_care_fetched_at.get(vin)
+            if last is not None:
+                if (
+                    datetime.now(tz=timezone.utc) - last
+                    < self._BATTERY_CARE_REFRESH_INTERVAL
+                ):
+                    return
+        # Capability gate (#56 Phase 3) — saves a guaranteed 403 for
+        # accounts without the charging entitlement.
+        if (
+            self.command_capability_supported(vin, "command_battery_care_read")
+            is False
+        ):
+            return
+        client = self._cariad_client
+        if client is None or not hasattr(client, "get_battery_care"):
+            return
+        try:
+            status, target = await asyncio.gather(
+                client.get_battery_care(vin),
+                client.get_battery_care_target(vin),
+                return_exceptions=True,
+            )
+        except Exception as err:  # noqa: BLE001
+            _LOGGER.debug(
+                "Battery-care fetch failed for %s: %s", mask_vin(vin), err
+            )
+            return
+        update: dict[str, Any] = {}
+        if isinstance(status, dict) and "enabled" in status:
+            update["battery_care_enabled"] = bool(status["enabled"])
+        if isinstance(target, dict):
+            tgt = target.get("targetSocPercentage")
+            if isinstance(tgt, (int, float)):
+                update["battery_care_target_soc_pct"] = int(tgt)
+        if not update:
+            return  # both 404'd or empty — keep stale cache
+        with self._vehicles_lock:
+            v = self.vehicles.get(vin)
+            if isinstance(v, dict):
+                v.update(update)
+        self._battery_care_fetched_at[vin] = datetime.now(tz=timezone.utc)
+
     async def refresh_charging_profiles(
         self, vin: str, force: bool = False
     ) -> None:
@@ -1788,6 +1869,69 @@ class VagConnectCoordinator(DataUpdateCoordinator):
         """v1.14.0 (#28) — Audi ICE Remote Engine Stop. No S-PIN required."""
         await self._cariad_cmd(vin, "command_engine_stop")
 
+    # ── v1.17.1 (Bruno-Collection) — SEAT/CUPRA new commands ───────────
+
+    async def async_start_ventilation(self, vin: str) -> None:
+        """v1.17.1 — SEAT/CUPRA cabin ventilation (without aux-heating)."""
+        await self._cariad_cmd(vin, "command_start_ventilation")
+
+    async def async_stop_ventilation(self, vin: str) -> None:
+        await self._cariad_cmd(vin, "command_stop_ventilation")
+
+    async def async_start_aux_heating(self, vin: str) -> None:
+        """v1.17.1 — SEAT/CUPRA Webasto auxiliary heating start.
+
+        Pre-flight S-PIN check (analog to ``async_unlock``) so HA shows
+        a clean translation key rather than a low-level SpinError trace.
+        """
+        spin = self._spin_from_entry()
+        if not spin:
+            raise ServiceValidationError(
+                translation_domain=DOMAIN,
+                translation_key="spin_required",
+            )
+        await self._cariad_cmd(vin, "command_start_aux_heating", spin=spin)
+
+    async def async_stop_aux_heating(self, vin: str) -> None:
+        """v1.17.1 — Aux heating stop (no S-PIN per Bruno seq 30)."""
+        await self._cariad_cmd(vin, "command_stop_aux_heating")
+
+    async def async_send_destination(
+        self,
+        vin: str,
+        latitude: float,
+        longitude: float,
+        name: str,
+        **address_fields: str,
+    ) -> None:
+        """v1.17.1 (#36) — Send navigation destination to vehicle.
+
+        SEAT/CUPRA only initially (Bruno-confirmed). Other brands raise
+        AttributeError on the client, which Phase 2's
+        ``classify_command_failure`` then records as
+        ``MISSING_CAPABILITY`` and the user gets a clear notification.
+        """
+        await self._cariad_cmd(
+            vin,
+            "command_send_destination",
+            latitude=latitude,
+            longitude=longitude,
+            name=name,
+            **address_fields,
+        )
+
+    def _spin_from_entry(self) -> str:
+        """Return the configured S-PIN preferring Options over Data."""
+        options = getattr(self.entry, "options", None) or {}
+        data = getattr(self.entry, "data", None) or {}
+        if isinstance(options, dict):
+            spin = str(options.get(CONF_SPIN) or "")
+            if spin:
+                return spin
+        if isinstance(data, dict):
+            return str(data.get(CONF_SPIN) or "")
+        return ""
+
     def _get_command_lock(self, vin: str, command_class: str) -> asyncio.Lock:
         """v1.13.0 (#63 Phase 2) — per-VIN per-command-class asyncio.Lock.
 
@@ -1940,6 +2084,20 @@ class VagConnectCoordinator(DataUpdateCoordinator):
         # start (and vice versa) instead of overlapping.
         "command_engine_start": "engine",
         "command_engine_stop": "engine",
+        # v1.17.1 (Bruno-Collection) — cabin ventilation (SEAT/CUPRA).
+        # Separate class from window_heating because the OLA backend
+        # accepts both concurrently.
+        "command_start_ventilation": "ventilation",
+        "command_stop_ventilation": "ventilation",
+        # v1.17.1 (Bruno-Collection + pycupra) — Webasto aux heating.
+        # SEAT/CUPRA only. Separate "aux_heating" class so it doesn't
+        # block normal climatisation commands.
+        "command_start_aux_heating": "aux_heating",
+        "command_stop_aux_heating": "aux_heating",
+        # v1.17.1 (#36) — Navigation send-destination. Own class so it
+        # doesn't serialise with other commands (it's a fire-and-forget
+        # PUT, no need to coordinate with locks/climate/etc.).
+        "command_send_destination": "destination",
     }
 
     async def _cariad_cmd(self, vin: str, method: str, **kwargs: Any) -> None:

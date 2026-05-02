@@ -222,6 +222,9 @@
       "charging_profiles_count": {
         "name": "Antal Profiler"
       },
+      "battery_care_target_soc_pct": {
+        "name": "Batteri-Vård — Mål-SoC"
+      },
       "departure_timer_1_time": {
         "name": "Avgångstimer 1"
       },
@@ -307,6 +310,9 @@
       },
       "ota_update_available": {
         "name": "Programvaruuppdatering tillgänglig"
+      },
+      "battery_care_enabled": {
+        "name": "Batteri-Vård Aktiv"
       }
     },
     "switch": {
@@ -321,6 +327,12 @@
       },
       "window_heating_switch": {
         "name": "Rutavfrostning"
+      },
+      "ventilation_switch": {
+        "name": "Kabin-Ventilation"
+      },
+      "aux_heating_switch": {
+        "name": "Värmare (Webasto)"
       },
       "departure_timer_1_switch": {
         "name": "Avgångstimer 1"

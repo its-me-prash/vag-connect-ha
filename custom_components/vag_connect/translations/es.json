@@ -222,6 +222,9 @@
       "charging_profiles_count": {
         "name": "Número de Perfiles"
       },
+      "battery_care_target_soc_pct": {
+        "name": "Cuidado Batería — SoC Objetivo"
+      },
       "departure_timer_1_time": {
         "name": "Temporizador de salida 1"
       },
@@ -307,6 +310,9 @@
       },
       "ota_update_available": {
         "name": "Actualización de software disponible"
+      },
+      "battery_care_enabled": {
+        "name": "Cuidado de Batería Activo"
       }
     },
     "switch": {
@@ -321,6 +327,12 @@
       },
       "window_heating_switch": {
         "name": "Desempañador"
+      },
+      "ventilation_switch": {
+        "name": "Ventilación Cabina"
+      },
+      "aux_heating_switch": {
+        "name": "Calefacción Auxiliar (Webasto)"
       },
       "departure_timer_1_switch": {
         "name": "Temporizador de salida 1"

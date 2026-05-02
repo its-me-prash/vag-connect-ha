@@ -330,6 +330,15 @@ class VehicleData:
     trunk_locked: bool | None = None
     sunroof_open: bool | None = None
 
+    # v1.17.1 (Bruno seq 10/11) — SEAT/CUPRA Battery Care.
+    # Two read-only fields populated from the new OLA endpoints:
+    # - GET /v1/vehicles/{vin}/charging/battery-care → {enabled: bool}
+    # - GET /v1/vehicles/{vin}/charging/battery-care/target → {targetSocPercentage: int}
+    # Skoda also has battery-care under different paths (covered in
+    # v1.15.0 cap-id work); this is the SEAT/CUPRA-specific surface.
+    battery_care_enabled: bool | None = None
+    battery_care_target_soc_pct: int | None = None
+
     # v1.16.0 (#25, #31) — Skoda Charging Profiles (mysmob endpoint
     # ``/v1/charging/{vin}/profiles``). Read-only sensors expose:
     # - which profile is active at the car's CURRENT GPS position

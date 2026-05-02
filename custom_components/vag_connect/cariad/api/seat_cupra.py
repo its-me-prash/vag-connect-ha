@@ -89,9 +89,41 @@ class SeatCupraClient(CariadBaseClient):
         Caller is responsible for caching (handled by the coordinator with a
         24h TTL). Failure raises ``APIError`` — caller should swallow it
         because capabilities are best-effort metadata, never load-bearing.
+
+        v1.17.1 — A/B fallback after Bruno-Collection research:
+        - Bruno (seq 4): GET /v1/user/{userId}/vehicle/{vin}/capabilities (singular)
+        - Our pre-v1.17.1: GET /v1/vehicles/{vin}/capabilities (plural)
+
+        Both observed in upstream sources. Try our pre-v1.17.1 plural
+        path first (status quo, no migration risk), fall back to
+        Bruno's singular path on 404. If our path was actually the
+        wrong one all along, this preserves capability fetching for
+        accounts that need the singular variant.
         """
-        data = await self._get(f"{_BASE}/v1/vehicles/{vin}/capabilities")
-        return data if isinstance(data, dict) else {}
+        try:
+            data = await self._get(f"{_BASE}/v1/vehicles/{vin}/capabilities")
+            return data if isinstance(data, dict) else {}
+        except APIError as err:
+            if err.status != 404:
+                raise
+            _LOGGER.debug(
+                "OLA capabilities 404 on /v1/vehicles/{vin}/capabilities — "
+                "trying Bruno-singular path /v1/user/{userId}/vehicle/{vin}/capabilities"
+            )
+        # Fallback to Bruno-Collection singular path (requires user_id).
+        if not self._user_id:
+            await self._fetch_user_id()
+        if not self._user_id:
+            return {}  # Can't build the singular URL without user_id
+        try:
+            data = await self._get(
+                f"{_BASE}/v1/user/{self._user_id}/vehicle/{vin}/capabilities"
+            )
+            return data if isinstance(data, dict) else {}
+        except APIError as err:
+            if err.status == 404:
+                return {}  # Both paths 404 — give up, return empty
+            raise
 
     async def _fetch_renders(self, vins: list[str]) -> None:
         """Fetch vehicle render images from OLA renders endpoint."""
@@ -635,41 +667,94 @@ class SeatCupraClient(CariadBaseClient):
     async def _post_climatisation_action(self, vin: str, action: str) -> None:
         """v1.16.1 (#53) — climatisation start/stop with v1/v2 fallback.
 
-        Primary path follows pycupra (verified working in production):
-        ``POST /v2/vehicles/{vin}/climatisation/{start|stop}`` with empty
-        body. Fallback to legacy ``POST /v2/vehicles/{vin}/climatisation``
-        with ``{"action": ...}`` body if the primary returns 404 (in case
-        any user's account / firmware was actually using the legacy
-        pattern — same defensive approach as our CARIAD-BFF v1/v2
-        fallback in ``vw_eu.py``).
+        Now uses generic ``_post_with_ab_fallback`` (v1.17.1).
+        """
+        await self._post_with_ab_fallback(
+            primary_url=f"{_BASE}/v2/vehicles/{vin}/climatisation/{action}",
+            primary_json={},
+            fallback_url=f"{_BASE}/v2/vehicles/{vin}/climatisation",
+            fallback_json={"action": action},
+            label=f"climatisation {action}",
+            vin=vin,
+        )
+
+    async def _post_with_ab_fallback(
+        self,
+        *,
+        primary_url: str,
+        primary_json: dict[str, Any] | None,
+        fallback_url: str,
+        fallback_json: dict[str, Any] | None,
+        label: str,
+        vin: str,
+        primary_headers: dict[str, str] | None = None,
+        fallback_headers: dict[str, str] | None = None,
+    ) -> None:
+        """v1.17.1 — generic A/B fallback POST.
+
+        Try ``primary_url`` first. On 404 (only), fall back to
+        ``fallback_url``. Non-404 errors propagate so Phase 2's
+        ``classify_command_failure`` records subscription/spin/etc.
+        properly.
+
+        Pattern proven in v1.16.1 climatisation fix; extracted in
+        v1.17.1 for reuse across the Bruno-Collection-discovered
+        endpoints (window heating, ventilation, aux-heating,
+        charging-requests/start, capabilities path, etc.) where
+        Bruno + pycupra disagree on the exact path or where Cariad
+        is in the middle of migrating away from ``/v1`` prefixes.
         """
         from ..exceptions import APIError  # noqa: PLC0415
 
-        primary = f"{_BASE}/v2/vehicles/{vin}/climatisation/{action}"
         try:
-            await self._post(primary, json={})
+            await self._post(
+                primary_url,
+                json=primary_json,
+                headers=primary_headers or None,
+            )
             return
         except APIError as err:
             if err.status != 404:
                 raise
             _LOGGER.debug(
-                "OLA climatisation %s 404 on /climatisation/%s — "
-                "falling back to legacy /climatisation+body for %s",
-                action,
-                action,
-                vin[-6:],
+                "OLA %s: 404 on primary %s — falling back to legacy %s "
+                "(vin ***%s)",
+                label, primary_url, fallback_url, vin[-6:],
             )
-        # Fallback to the historical pattern with action in body.
         await self._post(
-            f"{_BASE}/v2/vehicles/{vin}/climatisation",
-            json={"action": action},
+            fallback_url,
+            json=fallback_json,
+            headers=fallback_headers or None,
         )
 
     async def command_start_charging(self, vin: str) -> None:
-        await self._post(f"{_BASE}/v1/vehicles/{vin}/charging/actions", json={"action": "start"})
+        """v1.17.1 — A/B fallback after Bruno-Collection research.
+
+        Bruno (seq 47): POST /vehicles/{vin}/charging/requests/start (no /v1, no body)
+        Pre-v1.17.1: POST /v1/vehicles/{vin}/charging/actions body {"action":"start"}
+
+        Bruno suggests Cariad migrated some endpoints away from /v1.
+        Try Bruno path first; fall back to legacy /v1/.../actions on 404.
+        """
+        await self._post_with_ab_fallback(
+            primary_url=f"{_BASE}/vehicles/{vin}/charging/requests/start",
+            primary_json=None,
+            fallback_url=f"{_BASE}/v1/vehicles/{vin}/charging/actions",
+            fallback_json={"action": "start"},
+            label="charging start",
+            vin=vin,
+        )
 
     async def command_stop_charging(self, vin: str) -> None:
-        await self._post(f"{_BASE}/v1/vehicles/{vin}/charging/actions", json={"action": "stop"})
+        """v1.17.1 — A/B fallback. See command_start_charging doc."""
+        await self._post_with_ab_fallback(
+            primary_url=f"{_BASE}/vehicles/{vin}/charging/requests/stop",
+            primary_json=None,
+            fallback_url=f"{_BASE}/v1/vehicles/{vin}/charging/actions",
+            fallback_json={"action": "stop"},
+            label="charging stop",
+            vin=vin,
+        )
 
     async def command_flash(
         self,
@@ -739,7 +824,187 @@ class SeatCupraClient(CariadBaseClient):
         )
 
     async def command_start_window_heating(self, vin: str) -> None:
-        await self._post(f"{_BASE}/v2/vehicles/{vin}/climatisation", json={"action": "startWindowHeating"})
+        """v1.17.1 — A/B fallback after Bruno-Collection research.
+
+        Bruno (Timwun/Cupra-WeConnect-Bruno-Collection seq 50):
+            POST /vehicles/{vin}/windowheating/requests/start (no /v1)
+        Legacy (our pre-v1.17.1 path):
+            POST /v2/vehicles/{vin}/climatisation
+                 body={"action":"startWindowHeating"}
+
+        We don't know which Cariad-firmware-cohort uses which — try the
+        Bruno-verified path first, fall back to legacy on 404.
+        """
+        await self._post_with_ab_fallback(
+            primary_url=f"{_BASE}/vehicles/{vin}/windowheating/requests/start",
+            primary_json=None,
+            fallback_url=f"{_BASE}/v2/vehicles/{vin}/climatisation",
+            fallback_json={"action": "startWindowHeating"},
+            label="window heating start",
+            vin=vin,
+        )
 
     async def command_stop_window_heating(self, vin: str) -> None:
-        await self._post(f"{_BASE}/v2/vehicles/{vin}/climatisation", json={"action": "stopWindowHeating"})
+        """v1.17.1 — A/B fallback. See command_start_window_heating doc."""
+        await self._post_with_ab_fallback(
+            primary_url=f"{_BASE}/vehicles/{vin}/windowheating/requests/stop",
+            primary_json=None,
+            fallback_url=f"{_BASE}/v2/vehicles/{vin}/climatisation",
+            fallback_json={"action": "stopWindowHeating"},
+            label="window heating stop",
+            vin=vin,
+        )
+
+    # ── v1.17.1 — Bruno-Collection new commands ────────────────────────
+
+    async def command_start_ventilation(self, vin: str) -> None:
+        """v1.17.1 (Bruno seq 31) — Cabin ventilation (without heating).
+
+        Endpoint: ``POST /v1/vehicles/{vin}/ventilation/start`` — no body.
+        New OLA feature; NEVER existed in our integration before. No
+        legacy fallback path possible. On 404 the per-VIN capability
+        gate (Phase 3) catches it next reload.
+        """
+        await self._post(
+            f"{_BASE}/v1/vehicles/{vin}/ventilation/start", json={}
+        )
+
+    async def command_stop_ventilation(self, vin: str) -> None:
+        """v1.17.1 (Bruno seq 32) — Stop ventilation."""
+        await self._post(
+            f"{_BASE}/v1/vehicles/{vin}/ventilation/stop", json={}
+        )
+
+    async def command_start_aux_heating(self, vin: str, spin: str = "") -> None:
+        """v1.17.1 (Bruno seq 29 + pycupra) — Webasto auxiliary heating.
+
+        SEAT/CUPRA PHEV/ICE Standheizung remote-start. Requires SecToken
+        derived from S-PIN — same flow as ``command_lock`` /
+        ``command_unlock`` (verified against pycupra).
+
+        URL conflict between sources:
+        - Bruno (seq 29):
+            POST /v1/vehicles/{vin}/auxiliary-heating/start  + SecToken
+        - Pycupra (`API_AUXILIARYHEATING`):
+            POST /api/auxiliary-heating/v1/{vin}/start  + SecToken
+
+        We try Bruno's path first (Bruno specs are typically newer), fall
+        back to pycupra's on 404. Both verified to require SecToken on
+        START (stop does not — see ``command_stop_aux_heating``).
+        """
+        if not (spin or self._spin):
+            raise SpinError(
+                "S-PIN required for SEAT/CUPRA auxiliary heating start"
+            )
+        sec_token = await self._get_sec_token(spin or self._spin)
+        await self._post_with_ab_fallback(
+            primary_url=f"{_BASE}/v1/vehicles/{vin}/auxiliary-heating/start",
+            primary_json={},
+            fallback_url=(
+                f"{_BASE}/api/auxiliary-heating/v1/{vin}/start"
+            ),
+            fallback_json={},
+            label="aux-heating start",
+            vin=vin,
+            primary_headers={"SecToken": sec_token},
+            fallback_headers={"SecToken": sec_token},
+        )
+
+    async def command_stop_aux_heating(self, vin: str) -> None:
+        """v1.17.1 — Webasto stop. No SecToken (Bruno seq 30 confirmed)."""
+        await self._post_with_ab_fallback(
+            primary_url=f"{_BASE}/v1/vehicles/{vin}/auxiliary-heating/stop",
+            primary_json={},
+            fallback_url=(
+                f"{_BASE}/api/auxiliary-heating/v1/{vin}/stop"
+            ),
+            fallback_json={},
+            label="aux-heating stop",
+            vin=vin,
+        )
+
+    async def get_battery_care(self, vin: str) -> dict[str, Any]:
+        """v1.17.1 (Bruno seq 10) — Battery-care current status.
+
+        ``GET /v1/vehicles/{vin}/charging/battery-care``
+        Response: ``{"enabled": bool}``
+
+        Best-effort: 404 → ``{}`` so coordinator's ``_DATA_PRESENT_REQUIRED``
+        gate skips the entity rather than showing "unknown".
+        """
+        from ..exceptions import APIError  # noqa: PLC0415
+        try:
+            data = await self._get(
+                f"{_BASE}/v1/vehicles/{vin}/charging/battery-care"
+            )
+            return data if isinstance(data, dict) else {}
+        except APIError as err:
+            if err.status == 404:
+                return {}
+            raise
+
+    async def get_battery_care_target(self, vin: str) -> dict[str, Any]:
+        """v1.17.1 (Bruno seq 11) — Battery-care target SoC.
+
+        ``GET /v1/vehicles/{vin}/charging/battery-care/target``
+        Response: ``{"targetSocPercentage": int}``
+        """
+        from ..exceptions import APIError  # noqa: PLC0415
+        try:
+            data = await self._get(
+                f"{_BASE}/v1/vehicles/{vin}/charging/battery-care/target"
+            )
+            return data if isinstance(data, dict) else {}
+        except APIError as err:
+            if err.status == 404:
+                return {}
+            raise
+
+    async def command_send_destination(
+        self,
+        vin: str,
+        latitude: float,
+        longitude: float,
+        name: str,
+        *,
+        city: str = "",
+        country: str = "",
+        state: str = "",
+        street: str = "",
+        house_number: str = "",
+        zip_code: str = "",
+        poi_provider: str = "vagOlaIntegration",
+    ) -> None:
+        """v1.17.1 (#36, Bruno seq 34) — Send destination to vehicle nav.
+
+        Endpoint: ``PUT /v1/users/vehicles/{vin}/destination``
+        Note the URL pattern omits ``{userId}`` — Bruno-verified literal.
+        Body is a JSON ARRAY (not object) of destination dicts.
+
+        We send a single destination per call; the API supports a list
+        but most automations send one address at a time.
+
+        ⚠️ [Inference] — only Bruno cites this URL; pycupra source
+        doesn't have a destination endpoint we could cross-validate
+        against. Ship behind a capability gate (``command_send_destination``
+        cap-id) plus per-call exception handling so a single 404 doesn't
+        wreck other commands.
+        """
+        body = [{
+            "address": {
+                "city": city,
+                "country": country,
+                "state": state,
+                "street": street,
+                "houseNumber": house_number,
+                "zipCode": zip_code,
+            },
+            "poiProvider": poi_provider,
+            "geoCoordinate": {
+                "latitude": latitude,
+                "longitude": longitude,
+            },
+            "destinationName": name,
+        }]
+        url = f"{_BASE}/v1/users/vehicles/{vin}/destination"
+        await self._request("PUT", url, json=body)
