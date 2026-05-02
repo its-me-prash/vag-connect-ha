@@ -222,6 +222,9 @@
       "charging_profiles_count": {
         "name": "Počet Profilů"
       },
+      "battery_care_target_soc_pct": {
+        "name": "Péče o Baterii — Cílový SoC"
+      },
       "departure_timer_1_time": {
         "name": "Časovač odjezdu 1"
       },
@@ -307,6 +310,9 @@
       },
       "ota_update_available": {
         "name": "Dostupná aktualizace softwaru"
+      },
+      "battery_care_enabled": {
+        "name": "Péče o Baterii Aktivní"
       }
     },
     "switch": {
@@ -321,6 +327,12 @@
       },
       "window_heating_switch": {
         "name": "Vyhřívání skel"
+      },
+      "ventilation_switch": {
+        "name": "Ventilace Kabiny"
+      },
+      "aux_heating_switch": {
+        "name": "Nezávislé Topení (Webasto)"
       },
       "departure_timer_1_switch": {
         "name": "Časovač odjezdu 1"

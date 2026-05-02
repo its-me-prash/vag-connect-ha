@@ -35,6 +35,15 @@ async def async_setup_entry(
             entities.append(VagClimatisationSwitch(coordinator, vin))
         if _supported(vin, "command_start_window_heating"):
             entities.append(VagWindowHeatingSwitch(coordinator, vin))
+        # v1.17.1 (Bruno seq 31/32) — SEAT/CUPRA cabin ventilation.
+        if _supported(vin, "command_start_ventilation"):
+            entities.append(VagVentilationSwitch(coordinator, vin))
+        # v1.17.1 (Bruno seq 29/30) — SEAT/CUPRA Webasto aux heating.
+        # SecToken-required on start → Phase-3 cap-gate is the user's
+        # primary protection; missing S-PIN raises ServiceValidationError
+        # at command time (not entity-create time).
+        if _supported(vin, "command_start_aux_heating"):
+            entities.append(VagAuxHeatingSwitch(coordinator, vin))
         # VagSeatHeatingSwitch + VagAutoUnlockSwitch removed in v1.8.0:
         # they relied on internal CarConnectivity object mutation that no
         # longer exists in our own CARIAD client. They will return once a
@@ -167,3 +176,57 @@ class VagDepartureTimerSwitch(VagConnectEntity, SwitchEntity):
         await self.coordinator.async_set_departure_timer(
             self._vin, self._timer_id, enabled=False, departure_time=None
         )
+
+
+class VagVentilationSwitch(VagConnectEntity, SwitchEntity):
+    """v1.17.1 (Bruno seq 31/32) — SEAT/CUPRA cabin ventilation toggle.
+
+    Optimistic-UI free (the OLA backend has no live ventilation_state
+    sensor we could revert from), so we just dispatch and let the next
+    poll surface the actual state.
+    """
+
+    _attr_translation_key = "ventilation_switch"
+    _attr_icon = "mdi:fan"
+    _command_id = "command_start_ventilation"
+
+    def __init__(self, coordinator: VagConnectCoordinator, vin: str) -> None:
+        super().__init__(coordinator, vin, "ventilation_switch")
+
+    @property
+    def is_on(self) -> bool | None:
+        # No reliable ventilation_state field in OLA mycar — return None
+        # so HA shows "unknown" rather than a fake state.
+        return self._vehicle.get("ventilation_active")
+
+    async def async_turn_on(self, **kwargs: object) -> None:
+        await self.coordinator.async_start_ventilation(self._vin)
+
+    async def async_turn_off(self, **kwargs: object) -> None:
+        await self.coordinator.async_stop_ventilation(self._vin)
+
+
+class VagAuxHeatingSwitch(VagConnectEntity, SwitchEntity):
+    """v1.17.1 (Bruno seq 29/30) — SEAT/CUPRA Webasto aux heating toggle.
+
+    Start requires SecToken (S-PIN-derived); stop does not. The
+    coordinator helper raises ServiceValidationError("spin_required")
+    at command time if S-PIN is missing — same UX as VagDoorLock.
+    """
+
+    _attr_translation_key = "aux_heating_switch"
+    _attr_icon = "mdi:fire"
+    _command_id = "command_start_aux_heating"
+
+    def __init__(self, coordinator: VagConnectCoordinator, vin: str) -> None:
+        super().__init__(coordinator, vin, "aux_heating_switch")
+
+    @property
+    def is_on(self) -> bool | None:
+        return self._vehicle.get("aux_heating_active")
+
+    async def async_turn_on(self, **kwargs: object) -> None:
+        await self.coordinator.async_start_aux_heating(self._vin)
+
+    async def async_turn_off(self, **kwargs: object) -> None:
+        await self.coordinator.async_stop_aux_heating(self._vin)

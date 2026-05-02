@@ -531,6 +531,20 @@ SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
         suggested_display_precision=0,
         condition="electric",
     ),
+    # v1.17.1 (Bruno seq 10/11) — SEAT/CUPRA Battery Care read-only.
+    # Two thin OLA endpoints surface battery-care mode + target SoC.
+    # Skoda has equivalent under different paths (covered v1.15.0 cap-id
+    # work). Brand-restricted via _DATA_PRESENT_REQUIRED gating below.
+    VagSensorDescription(
+        key="battery_care_target_soc_pct",
+        translation_key="battery_care_target_soc_pct",
+        data_key="battery_care_target_soc_pct",
+        native_unit_of_measurement=PERCENTAGE,
+        state_class=SensorStateClass.MEASUREMENT,
+        icon="mdi:battery-heart",
+        suggested_display_precision=0,
+        condition="electric",
+    ),
 
     # ── v1.9.0 Vehicle Data Scout + Error Reporter ────────────────────────────
     # Two diagnostic sensors that surface drift / runtime errors detected
@@ -646,6 +660,10 @@ _DATA_PRESENT_REQUIRED: frozenset[str] = frozenset({
     "active_charging_profile_target_soc_pct",
     "next_charging_time",
     "charging_profiles_count",
+    # v1.17.1 (Bruno seq 11) — SEAT/CUPRA battery-care target SoC.
+    # Field stays None for non-OLA brands and for accounts where
+    # battery-care isn't supported / configured.
+    "battery_care_target_soc_pct",
 })
 
 # v1.14.0 (#24) — Trip Statistics is brand-restricted at the API level

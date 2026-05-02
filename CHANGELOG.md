@@ -32,6 +32,72 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ## [Unreleased]
 
+## [1.17.1] - 2026-05-02 🚙🌬️🔥 Bruno Quick-Wins Bundle / Bruno Quick-Wins (Window heating fix + Ventilation + Aux Heating + Battery Care + Navigation #36 + 2× A/B-fallback)
+
+🚙🌬️🔥 **MASSIVE PATCH-Release** basierend auf Timwun's `Cupra-WeConnect-Bruno-Collection` deep-dive (53 .bru files crawled). 7 SEAT/CUPRA-Verbesserungen — alle defensiv mit A/B-fallback wo Endpoints zwischen Quellen disagreen, alle Phase-3 capability-gated. Plus Cross-Brand OTA Probe Plan komplettiert mit eigenem Cariad-Charging-Host research.
+
+### 🐛 Bug-Fixes / Bug-Fixes
+
+- 🌡️ **Window Heating Endpoint A/B-Fix** — derzeit POST `/v2/vehicles/{vin}/climatisation` mit Body `{"action":"startWindowHeating"}` war wahrscheinlich seit immer broken (analog #53 Climate). Bruno-verifizierter Pfad: `/vehicles/{vin}/windowheating/requests/{start|stop}` (no /v1). A/B-fallback zur legacy URL bei 404 — kein Regression-Risiko.
+
+### ✨ Neu / Added
+
+- 🌬️ **SEAT/CUPRA Cabin Ventilation** (Bruno seq 31/32) — neue Service `vag_connect.start_ventilation` + `stop_ventilation` plus `switch.{auto}_ventilation`. Endpoint `POST /v1/vehicles/{vin}/ventilation/{start|stop}`. Capability-gated über Phase 3 (`command_start_ventilation` → `ventilation`).
+- 🔥 **SEAT/CUPRA Webasto Auxiliary Heating** (Bruno seq 29/30 + pycupra) — Standheizung remote start/stop. Neue Services `vag_connect.start_aux_heating` + `stop_aux_heating` plus `switch.{auto}_aux_heating`. Start braucht **SecToken** (S-PIN-derived, gleiches Flow wie unser lock/unlock). Stop ohne S-PIN. **A/B URL-fallback** zwischen Bruno-Pfad `/v1/vehicles/{vin}/auxiliary-heating/start` und Pycupra-Pfad `/api/auxiliary-heating/v1/{vin}/start`.
+- 📍 **#36 Navigation: Ziel ans Auto senden** (Bruno seq 34) — schließt seit Wochen offenes Issue. Neuer Service `vag_connect.send_destination(vin, latitude, longitude, name, [city, country, state, street, house_number, zip_code])`. Endpoint `PUT /v1/users/vehicles/{vin}/destination` mit verbatim Bruno body shape (single-element JSON array). SEAT/CUPRA only initially.
+- 🔋 **SEAT/CUPRA Battery Care Sensors** (Bruno seq 10/11) — zwei thin GET endpoints exponiert als `binary_sensor.{auto}_battery_care_enabled` + `sensor.{auto}_battery_care_target_soc_pct`. Endpoints: `GET /v1/vehicles/{vin}/charging/battery-care` + `/battery-care/target`. 1h-Cache via neuer `coordinator.refresh_battery_care(vin)` mit brand-restriction (`cupra`/`seat`) + capability-gate. Best-effort: 404 → keine Entity (`_DATA_PRESENT_REQUIRED` gating).
+- 🔧 **Generic `_post_with_ab_fallback` Helper** — extrahiert aus v1.16.1 climatisation-fix für Wiederverwendung. Pattern: try primary URL, on 404-only fall back to legacy URL with body action. Non-404 errors propagate normal. Headers per-call configurable. Verwendet von 5 Endpoints in v1.17.1.
+
+### 🛡️ Defensive Hardening / Defensive Hardening
+
+- 🔁 **Capabilities path A/B-fallback** — Bruno (seq 4) zeigt `/v1/user/{userId}/vehicle/{vin}/capabilities` (singular), unser pre-v1.17.1 nutzt `/v1/vehicles/{vin}/capabilities` (plural). Beide observed in upstream sources. Try plural first (status quo, no migration risk), fallback zu singular on 404 — preserves capability fetching für accounts die nur die singular Variante akzeptieren.
+- 🔁 **Charging Actions A/B-fallback** — Bruno (seq 47/46) zeigt newer `/vehicles/{vin}/charging/requests/{start|stop}` (no /v1, no body), legacy `/v1/vehicles/{vin}/charging/actions` mit body action. Cariad migrated some endpoints away von /v1 — try newer first, fallback zu legacy on 404. Behebt potentielle 404s auf neuerer Firmware ohne ältere Accounts zu brechen.
+
+### 🧬 Capability-Map Erweiterungen
+
+7 neue cap-id Einträge in `CAPABILITY_MAP["cupra"]` (SEAT erbt via Alias):
+- `command_start_ventilation` / `command_stop_ventilation` → `ventilation`
+- `command_start_aux_heating` / `command_stop_aux_heating` → `auxiliary-heating`
+- `command_send_destination` → `destination`
+- `command_battery_care_read` → `charging`
+
+5 neue Einträge in `_COMMAND_CLASS` für per-VIN per-class lock isolation.
+
+### 🌐 Übersetzungen / Translations
+
+8 Sprachen — neue keys:
+- `entity.sensor.battery_care_target_soc_pct`
+- `entity.binary_sensor.battery_care_enabled`
+- `entity.switch.{ventilation_switch, aux_heating_switch}`
+
+### 🧪 Tests / Tests
+
+`tests/test_v1171_bruno_quick_wins.py` — neue Tests in 10 Klassen:
+- `TestPostWithAbFallback` (3) — primary success, 404 fallback, non-404 propagates
+- `TestWindowHeatingAB` (2) — Bruno path used first
+- `TestVentilation` (2) — URL pattern + no body
+- `TestAuxHeating` (4) — no-spin raises, SecToken, 404 fallback to pycupra path, stop without SecToken
+- `TestBatteryCare` (3) — 404→empty, dict return, target SoC parsing
+- `TestRefreshBatteryCareBrandRestriction` (2) — audi skips, cupra merges
+- `TestCapabilitiesAB` (2) — plural primary, singular fallback
+- `TestChargingActionsAB` (2) — newer path used first
+- `TestSendDestination` (1) — URL + body shape verbatim Bruno
+- `TestCapabilityMapV1171` (8 parametrized + 1) — all new cap-ids registered
+- `TestCommandClassRegistry` (3) — engine/ventilation/aux_heating/destination classes
+
+### 🔬 Pre-Research / Pre-Research
+
+- `docs/research/cariad-charging-host-2026-05-02.md` (NEW) — research für 2nd Cariad host `prod.emea.mobile.charging.cariad.digital` der für Charging Statistics verwendet wird. Auth-Flow verifiziert (same OLA bearer token), endpoint catalog (`POST /charging_statistics` + `GET /charging_statistics/{sessionId}/power-curve`), cross-brand-status (vag-connect-ha wäre **first** FOSS-Integration die diesen Host nutzt). Implementation-Plan für v1.18.0 als neuer `cariad/api/charging_stats.py` Client.
+
+### 📦 Schließt Issues / Closes
+
+- Closes #36 (Navigation: Ziel/Adresse ans Fahrzeug senden — SEAT/CUPRA initial, Cross-Brand v1.18.0+)
+
+### 🔗 Inspiration / Credits
+
+- **`Timwun/Cupra-WeConnect-Bruno-Collection`** — 50+ verifizierte OLA-Endpoint-Specs in Bruno format. Issue #1 mit Dankeschön + Brand-Tester-Einladung gepostet. Diese Bundle ist direkter Output dieser Collection.
+- **`WulfgarW/pycupra`** — Pycupra-Source für SecToken-Pattern + URL-Backup für Aux Heating fallback path.
+
 ## [1.17.0] - 2026-05-02 🛡️📚 Operational Hardening Bundle / Operational Hardening (Quota-protective polling + FAQ + HACS Checklist + Year-rollover Tests + Deactivated Notification)
 
 🛡️📚 **Quality-of-life MINOR-Release** nach community-research deep-dive: Poll-Defaults quota-protective angepasst, deactivated-vehicle notification, year-rollover unit tests, plus zwei neue High-Value User-Docs (FAQ + HACS-Checklist). Setzt die Foundation für v1.18.0 Push Bundle und v2.0.0 HACS Default Repository.
