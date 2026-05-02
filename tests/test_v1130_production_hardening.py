@@ -40,12 +40,22 @@ class TestCapabilityMap:
         assert cap_id_for("volkswagen", "command_lock") == "access"
 
     def test_audi_inherits_volkswagen(self):
+        """v1.13.0 (#56): audi inherits VW EU CARIAD-BFF cap-ids.
+
+        v1.14.0 (#28) — the inheritance moved from alias (``is``) to a
+        defensive copy so audi-only patches like ``command_engine_start``
+        don't pollute the VW EU table. We still assert the VW cap-ids
+        are present in the audi table by content, plus a representative
+        spot-check via ``cap_id_for``.
+        """
         from custom_components.vag_connect.cariad._capabilities import (
             CAPABILITY_MAP,
             cap_id_for,
         )
 
-        assert CAPABILITY_MAP["audi"] is CAPABILITY_MAP["volkswagen"]
+        # Every VW EU command-id must still resolve in audi (content equivalence)
+        for command_id, cap_id in CAPABILITY_MAP["volkswagen"].items():
+            assert CAPABILITY_MAP["audi"].get(command_id) == cap_id, command_id
         assert cap_id_for("audi", "command_flash") == "honkAndFlash"
 
     def test_seat_inherits_cupra(self):

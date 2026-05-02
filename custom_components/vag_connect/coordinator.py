@@ -997,7 +997,7 @@ class VagConnectCoordinator(DataUpdateCoordinator):
         # Fetch shortTerm (per-ignition trips, "Seit Start") and longTerm
         # (since-last-reset aggregates, "Seit Tanken / Gesamt") in parallel.
         try:
-            short_resp, long_resp = await asyncio.gather(
+            results = await asyncio.gather(
                 client.get_trip_statistics(vin, "shortTerm"),
                 client.get_trip_statistics(vin, "longTerm"),
                 return_exceptions=True,
@@ -1007,6 +1007,14 @@ class VagConnectCoordinator(DataUpdateCoordinator):
                 "Trip stats fetch failed for %s: %s", mask_vin(vin), err
             )
             return
+        # ``return_exceptions=True`` — drop exceptions to None so the parser
+        # treats them as empty responses (keeps stale cache).
+        short_resp: Any = (
+            results[0] if not isinstance(results[0], BaseException) else None
+        )
+        long_resp: Any = (
+            results[1] if not isinstance(results[1], BaseException) else None
+        )
         parsed = _parse_trip_statistics(short_resp, long_resp)
         if not parsed:
             return  # empty response — keep stale cache
