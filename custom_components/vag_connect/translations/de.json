@@ -204,6 +204,18 @@
       "last_charging_session_duration_min": {
         "name": "Letzte Ladesitzung — Dauer"
       },
+      "active_charging_profile_name": {
+        "name": "Aktives Ladeprofil"
+      },
+      "active_charging_profile_target_soc_pct": {
+        "name": "Aktives Profil — Ziel-SoC"
+      },
+      "next_charging_time": {
+        "name": "Nächste Ladezeit"
+      },
+      "charging_profiles_count": {
+        "name": "Anzahl Ladeprofile"
+      },
       "departure_timer_1_time": {
         "name": "Abfahrtstimer 1"
       },
@@ -352,6 +364,17 @@
     "select": {
       "charge_mode_select": {
         "name": "Lademodus"
+      }
+    },
+    "time": {
+      "departure_timer_1_time_set": {
+        "name": "Abfahrtstimer 1 — Zeit"
+      },
+      "departure_timer_2_time_set": {
+        "name": "Abfahrtstimer 2 — Zeit"
+      },
+      "departure_timer_3_time_set": {
+        "name": "Abfahrtstimer 3 — Zeit"
       }
     },
     "image": {

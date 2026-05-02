@@ -491,6 +491,46 @@ SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
         suggested_display_precision=0,
         condition="electric",
     ),
+    # v1.16.0 (#25, #31) — Skoda Charging Profiles read-only sensors.
+    # The killer field: ``active_charging_profile_name`` from the
+    # backend's ``currentVehiclePositionProfile`` (the backend already
+    # decided which profile is active based on the car's current GPS
+    # position — solves #25 location-based target SoC without any
+    # client-side GPS-zone matching).
+    VagSensorDescription(
+        key="active_charging_profile_name",
+        translation_key="active_charging_profile_name",
+        data_key="active_charging_profile_name",
+        icon="mdi:map-marker-radius",
+        condition="electric",
+    ),
+    VagSensorDescription(
+        key="active_charging_profile_target_soc_pct",
+        translation_key="active_charging_profile_target_soc_pct",
+        data_key="active_charging_profile_target_soc_pct",
+        native_unit_of_measurement=PERCENTAGE,
+        state_class=SensorStateClass.MEASUREMENT,
+        icon="mdi:battery-charging-90",
+        suggested_display_precision=0,
+        condition="electric",
+    ),
+    VagSensorDescription(
+        key="next_charging_time",
+        translation_key="next_charging_time",
+        data_key="next_charging_time",
+        icon="mdi:clock-time-eight-outline",
+        condition="electric",
+    ),
+    VagSensorDescription(
+        key="charging_profiles_count",
+        translation_key="charging_profiles_count",
+        data_key="charging_profiles_count",
+        state_class=SensorStateClass.MEASUREMENT,
+        icon="mdi:format-list-numbered",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        suggested_display_precision=0,
+        condition="electric",
+    ),
 
     # ── v1.9.0 Vehicle Data Scout + Error Reporter ────────────────────────────
     # Two diagnostic sensors that surface drift / runtime errors detected
@@ -599,6 +639,13 @@ _DATA_PRESENT_REQUIRED: frozenset[str] = frozenset({
     "total_charged_energy_kwh",
     "last_charging_session_kwh",
     "last_charging_session_duration_min",
+    # v1.16.0 (#25, #31) — Skoda-only charging profiles. Same cross-
+    # brand deferral. Even on Skoda these stay None for accounts
+    # without configured profiles → don't create phantom entities.
+    "active_charging_profile_name",
+    "active_charging_profile_target_soc_pct",
+    "next_charging_time",
+    "charging_profiles_count",
 })
 
 # v1.14.0 (#24) — Trip Statistics is brand-restricted at the API level
@@ -720,6 +767,14 @@ class VagConnectSensor(VagConnectEntity, SensorEntity):
             if isinstance(ct, str) and ct:
                 attrs["last_session_current_type"] = ct
             return attrs or None
+        # v1.16.0 (#25, #31) — Full registered profiles list lives in
+        # attributes on the active-profile sensor so users can see all
+        # configured locations + their per-location target SoCs at a
+        # glance without needing 4× sensors per profile.
+        if self.entity_description.key == "active_charging_profile_name":
+            profiles = self._vehicle.get("charging_profiles")
+            if isinstance(profiles, list) and profiles:
+                return {"profiles": profiles}
         return None
 
     @property

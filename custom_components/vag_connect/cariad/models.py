@@ -330,6 +330,25 @@ class VehicleData:
     trunk_locked: bool | None = None
     sunroof_open: bool | None = None
 
+    # v1.16.0 (#25, #31) — Skoda Charging Profiles (mysmob endpoint
+    # ``/v1/charging/{vin}/profiles``). Read-only sensors expose:
+    # - which profile is active at the car's CURRENT GPS position
+    #   (``active_charging_profile_name`` from
+    #   ``currentVehiclePositionProfile.name``) — solves #25 location-
+    #   based target SoC by surfacing the backend's own decision
+    # - next upcoming charging time
+    # - target SoC for the active profile
+    # - count of registered profiles
+    # ``charging_profiles`` (full list) lives in attributes for the
+    # active-profile sensor — vermeidet 255-char state limit. Write-side
+    # for editing profiles is deferred (myskoda has POST/PUT but those
+    # endpoints need their own bundle).
+    active_charging_profile_name: str | None = None
+    active_charging_profile_target_soc_pct: int | None = None
+    next_charging_time: str | None = None
+    charging_profiles_count: int | None = None
+    charging_profiles: list[dict[str, Any]] = field(default_factory=list)
+
     # v1.15.0 (#35) — Skoda Charging History (mysmob endpoint
     # ``/v1/charging/{vin}/history``). Drives HA Energy Dashboard via
     # ``total_charged_energy_kwh`` with state_class=TOTAL_INCREASING.

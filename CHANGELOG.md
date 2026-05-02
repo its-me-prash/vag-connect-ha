@@ -32,6 +32,69 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ## [Unreleased]
 
+## [1.16.0] - 2026-05-02 ⏰📍 Cross-Brand UX + Skoda Charging Profiles / Cross-Brand UX + Skoda Charging Profiles (HA time platform #26 + #25/#31 read-only via charging-profiles + OTA Probe planning)
+
+⏰📍 **Long-standing UX gap geschlossen**: Departure-Timer kann jetzt direkt in HA editiert werden (#26). Plus #25/#31 Closure über Skoda's neuen `/v1/charging/{vin}/profiles` Endpoint, plus Cross-Brand OTA Probe Plan dokumentiert für Live-Test in v1.17.0.
+
+### ✨ Neu / Added
+
+- ⏰ **#26 HA `time` Plattform für Departure-Timer Editing** (10. Plattform):
+  - Neue Datei `custom_components/vag_connect/time.py` mit `VagDepartureTimerTime`
+  - Drei Entitäten pro EV/PHEV: `time.{auto}_departure_timer_1_time_set` / `_2` / `_3`
+  - User editiert die Abfahrtszeit direkt im HA Dashboard → integration ruft existierende `coordinator.async_set_departure_timer(vin, timer_id, enabled=True, departure_time="HH:MM")` auf
+  - Setzen der Zeit aktiviert den Timer automatisch (UX: User der Zeit setzt will den Timer offenbar aktiv haben)
+  - Defensive Parser für `departure_timer_X_time` Feld: HH:MM, HH:MM:SS, ISO datetime — alle drei werden zu `datetime.time` konvertiert
+  - Read-only Mode + Capability-Phase-3 Gating wie bei den existierenden departure-timer Switches
+- 📍 **#25/#31 Skoda Charging Profiles Read-Only** — neuer mysmob Endpoint `GET /v1/charging/{vin}/profiles` (verifiziert via `myskoda/models/chargingprofiles.py`). Vier neue Sensor-Entitäten (Skoda EV/PHEV only):
+  - `sensor.active_charging_profile_name` — **das Killer-Feld**: Backend-Response `currentVehiclePositionProfile.name` sagt uns welches der User-Profile gerade aktiv ist basierend auf der Vehicle-GPS-Position. Solves #25 (location-based target SoC) ohne client-side GPS-Zone-Matching.
+  - `sensor.active_charging_profile_target_soc_pct` — Target SoC für das aktive Profil (PERCENTAGE)
+  - `sensor.next_charging_time` — nächste geplante Ladezeit
+  - `sensor.charging_profiles_count` (DIAGNOSTIC) — Anzahl registrierter Profile
+  - Plus alle Profile flat als `extra_state_attributes.profiles` auf `active_charging_profile_name` mit per-Profile: id, name, target_soc_pct, max_charging_current, auto_unlock_plug, min_battery_soc_pct, location_lat (rounded 2-decimal), location_lon, preferred_times_count, timers_count
+  - 1h-Cache-Cycle in `coordinator.refresh_charging_profiles` mit brand-restriction + capability-gate (`command_charging_profiles` cap-id `EXTENDED_CHARGING_SETTINGS` aus v1.15.0)
+  - Write-Side für Profile-Editing **deferred** zu v1.17.0 (POST/PUT endpoints brauchen eigene Bundle-Größe)
+- 📋 **Cross-Brand OTA Probe Plan** — `docs/RESEARCH_NOTES_2026-05-02_OTA_PROBE.md` mit konkreten `curl` Probes für CARIAD-BFF (Audi+VW EU) + OLA (SEAT/CUPRA) software-version Endpoints. Live-Tester Asks dokumentiert. Probe ist read-only und sicher (`GET` mit Bearer-Token). Adoption-Plan post-Probe: ~2h Implementation pro Backend wenn 200 OK kommt.
+
+### 🔄 Geändert / Changed
+
+- 🔧 `__init__.py` — `Platform.TIME` zur PLATFORMS-Liste hinzugefügt (10. Plattform). Service-Removal-List auch erweitert (kein neuer Service nötig — time platform reused existing `set_departure_timer`).
+- 🔧 `coordinator.py` — neue `_parse_charging_profiles` pure function + `refresh_charging_profiles` 1h-cache helper + Hook im Poll-Loop neben Trip-Stats + Charging-History refreshes.
+- 🔧 `cariad/api/skoda.py` — neuer `get_charging_profiles(vin)` method.
+- 🔧 `cariad/models.py` — 5 neue Charging-Profiles-Felder zu VehicleData (`active_charging_profile_name`, `active_charging_profile_target_soc_pct`, `next_charging_time`, `charging_profiles_count`, `charging_profiles` list).
+- 🔧 `sensor.py` — 4 neue VagSensorDescription Einträge plus erweiterte `extra_state_attributes` Override für `profiles` auf dem active-profile sensor.
+
+### 🌐 Übersetzungen / Translations
+
+8 Sprachen (de/en/fr/es/nl/pl/cs/sv) — neue keys:
+- `entity.sensor.{active_charging_profile_name, active_charging_profile_target_soc_pct, next_charging_time, charging_profiles_count}`
+- **Neue `entity.time` Sektion** mit `departure_timer_{1,2,3}_time_set`
+
+### 🧪 Tests / Tests
+
+- `tests/test_v1160_cross_brand_skoda_endpoints.py` — neue Tests in 4 Klassen:
+  - `TestDepartureTimerTimeEntity` (7) — native_value HH:MM / HH:MM:SS / ISO datetime / garbage / None field + async_set_value dispatch + auto-enable
+  - `TestParseChargingProfiles` (5) — flat profiles + currentVehiclePositionProfile + missing current → no active fields + garbage tolerance + empty
+  - `TestGetChargingProfilesURL` (1) — URL pattern
+  - `TestRefreshChargingProfilesBrandRestriction` (4) — brand restriction + 1h cache + capability gate
+  - `TestOtaProbeDocsExist` (2) — sanity that the planning docs are committed
+
+### 🔬 Pre-Research / Pre-Research
+
+Skoda Charging Profiles + Widget + Vehicle-Information Schema-Research aus `myskoda/models/{chargingprofiles,widget,vehicle_info,info}.py` (verfasst 2026-05-02, 600 Zeilen Output).
+
+### 📦 Schließt Issues / Closes
+
+- Closes #26 (Klima-Timer / Departure-Timer UI — HA `time` Plattform für editing)
+- Closes #25 (Standort-spez. Ladeziel — read-only via `currentVehiclePositionProfile.targetStateOfChargeInPercent`)
+- Closes #31 (Ladeprofile pro Standort — read-only via `chargingProfiles` list mit per-Profil location)
+
+### ❌ Deferred / Not in this release
+
+- **Skoda Vehicle-Information Bundle** (myskoda PRs #543/#557) — drei Endpoints (vehicle-info, renders, equipment, lightweight widget) brauchen DeviceInfo-rewiring + image-platform Erweiterung + Live-Test → v1.17.0
+- **Charging Profile Write-Side** — POST/PUT endpoints für Profile-Editing brauchen eigene Bundle-Größe → v1.17.0+
+- **Cross-Brand OTA** (Audi/VW/SEAT/CUPRA) — Probe Plan dokumentiert, wartet auf cooperative Tester → v1.17.0 (mit Live-Test)
+- **Push CUPRA/SEAT + Push Skoda MQTT** (myskoda PRs #533/#566) — bereits geplant für v1.18.0, Skoda-Path jetzt unblocked durch v1.15.0 cap-Map + diagnostics work
+
 ## [1.15.0] - 2026-05-02 🛰️🔋 Skoda Modernization Bundle / Skoda Modernization (Charging History #35 + OTA + 8 cap-ids + capability tolerance + anonymize hardening)
 
 🛰️🔋 **Komplette Adoption der myskoda Upstream-Updates seit unserem PR #832 Cutoff** (22 PRs gemerged 2026-03 → 2026-04). Bundle 3 (Cross-Brand UX) wurde realistisch zu v1.16.0 verschoben — die HA `time`/`datetime` Plattform für #26 wäre eigene 10. Plattform-Erweiterung, und #25/#31 brauchen `charging-profiles` Endpoint-Research. v1.15.0 fokussiert auf was JETZT lieferbar ist.

@@ -287,6 +287,75 @@ def _parse_charging_history(resp: Any) -> dict[str, Any]:
     return out
 
 
+def _parse_charging_profiles(resp: Any) -> dict[str, Any]:
+    """v1.16.0 (#25, #31) — Pure parser for Skoda charging-profiles
+    response. Returns dict ready to merge into ``coordinator.vehicles[vin]``.
+
+    The killer field is ``currentVehiclePositionProfile`` — the backend
+    decides which of the user's profiles is active right now based on
+    the vehicle's GPS position. That solves #25 (location-based target
+    SoC) without us needing to do GPS-zone matching client-side.
+
+    Empty dict on no usable data so callers can keep stale cache.
+    Pure function — safe to test in isolation.
+    """
+    out: dict[str, Any] = {}
+    if not isinstance(resp, dict):
+        return out
+    profiles = resp.get("chargingProfiles")
+    if isinstance(profiles, list):
+        # Project each profile to a flat attr-friendly dict (drop nested
+        # objects that don't serialize cleanly into HA state attributes).
+        flat_profiles: list[dict[str, Any]] = []
+        for p in profiles:
+            if not isinstance(p, dict):
+                continue
+            settings = p.get("settings") or {}
+            min_soc = settings.get("minBatteryStateOfCharge") or {}
+            location = p.get("location") or {}
+            flat_profiles.append({
+                "id": p.get("id"),
+                "name": p.get("name"),
+                "target_soc_pct": settings.get("targetStateOfChargeInPercent"),
+                "max_charging_current": settings.get("maxChargingCurrent"),
+                "auto_unlock_plug": settings.get("autoUnlockPlugWhenCharged"),
+                "min_battery_soc_pct": min_soc.get(
+                    "minimumBatteryStateOfChargeInPercent"
+                ),
+                # Round GPS to 2 decimals for attribute storage — full
+                # precision lives in the device_tracker only.
+                "location_lat": (
+                    round(float(location["latitude"]), 2)
+                    if isinstance(location.get("latitude"), (int, float))
+                    else None
+                ),
+                "location_lon": (
+                    round(float(location["longitude"]), 2)
+                    if isinstance(location.get("longitude"), (int, float))
+                    else None
+                ),
+                "preferred_times_count": len(
+                    p.get("preferredChargingTimes") or []
+                ),
+                "timers_count": len(p.get("timers") or []),
+            })
+        out["charging_profiles"] = flat_profiles
+        out["charging_profiles_count"] = len(flat_profiles)
+
+    current = resp.get("currentVehiclePositionProfile")
+    if isinstance(current, dict):
+        name = current.get("name")
+        if isinstance(name, str):
+            out["active_charging_profile_name"] = name
+        target = current.get("targetStateOfChargeInPercent")
+        if isinstance(target, (int, float)):
+            out["active_charging_profile_target_soc_pct"] = int(target)
+        nxt = current.get("nextChargingTime")
+        if isinstance(nxt, str) and nxt:
+            out["next_charging_time"] = nxt
+    return out
+
+
 @dataclass
 class FeatureState:
     """Per-VIN per-command state, populated lazily as commands are tried.
@@ -636,6 +705,18 @@ class VagConnectCoordinator(DataUpdateCoordinator):
                     await asyncio.gather(
                         *[
                             self.refresh_charging_history(vin)
+                            for vin in self.vehicles
+                        ],
+                        return_exceptions=True,
+                    )
+                except Exception:  # noqa: BLE001
+                    pass
+                # v1.16.0 (#25, #31) — Skoda Charging Profiles 1h-cache.
+                # Same brand-restricted best-effort pattern.
+                try:
+                    await asyncio.gather(
+                        *[
+                            self.refresh_charging_profiles(vin)
                             for vin in self.vehicles
                         ],
                         return_exceptions=True,
@@ -1085,6 +1166,10 @@ class VagConnectCoordinator(DataUpdateCoordinator):
     _CHARGING_HISTORY_BRANDS = ("skoda",)  # mysmob only — CARIAD/OLA TBD
     _RECENT_SESSIONS_LIMIT = 5
 
+    # ── v1.16.0 (#25, #31) — Skoda Charging Profiles 1h cache ────────
+    _CHARGING_PROFILES_REFRESH_INTERVAL = timedelta(hours=1)
+    _CHARGING_PROFILES_BRANDS = ("skoda",)  # mysmob only — CARIAD/OLA TBD
+
     async def refresh_trip_statistics(
         self, vin: str, force: bool = False
     ) -> None:
@@ -1214,6 +1299,68 @@ class VagConnectCoordinator(DataUpdateCoordinator):
             mask_vin(vin),
             parsed.get("total_charged_energy_kwh", 0),
             parsed.get("last_charging_session_start", "n/a"),
+        )
+
+    async def refresh_charging_profiles(
+        self, vin: str, force: bool = False
+    ) -> None:
+        """v1.16.0 (#25, #31) — Best-effort fetch + parse of Skoda mysmob
+        charging-profiles. Brand-restricted to ``skoda``; CARIAD-BFF +
+        OLA equivalent endpoints not yet verified (Research 2026-05-02).
+
+        Cache: 1h via ``_charging_profiles_fetched_at[vin]`` — profiles
+        change at most a few times per year for typical users (after
+        installing a new home charger / configuring a workplace charger).
+        """
+        brand = ""
+        try:
+            brand = str(self.entry.data.get(CONF_BRAND, "")).lower()
+        except Exception:  # noqa: BLE001
+            return
+        if brand not in self._CHARGING_PROFILES_BRANDS:
+            return
+        if not hasattr(self, "_charging_profiles_fetched_at"):
+            self._charging_profiles_fetched_at: dict[str, datetime] = {}
+        if not force:
+            last = self._charging_profiles_fetched_at.get(vin)
+            if last is not None:
+                if (
+                    datetime.now(tz=timezone.utc) - last
+                    < self._CHARGING_PROFILES_REFRESH_INTERVAL
+                ):
+                    return
+        # Capability gate (#56 Phase 3) — v1.15.0 cap-id
+        # ``command_charging_profiles`` → ``EXTENDED_CHARGING_SETTINGS``.
+        if (
+            self.command_capability_supported(vin, "command_charging_profiles")
+            is False
+        ):
+            return
+        client = self._cariad_client
+        if client is None or not hasattr(client, "get_charging_profiles"):
+            return
+        try:
+            resp = await client.get_charging_profiles(vin)
+        except Exception as err:  # noqa: BLE001
+            _LOGGER.debug(
+                "Charging-profiles fetch failed for %s: %s",
+                mask_vin(vin),
+                err,
+            )
+            return
+        parsed = _parse_charging_profiles(resp)
+        if not parsed:
+            return  # empty → keep stale cache
+        with self._vehicles_lock:
+            v = self.vehicles.get(vin)
+            if isinstance(v, dict):
+                v.update(parsed)
+        self._charging_profiles_fetched_at[vin] = datetime.now(tz=timezone.utc)
+        _LOGGER.debug(
+            "Charging-profiles updated for %s: %d profiles, active=%s",
+            mask_vin(vin),
+            parsed.get("charging_profiles_count", 0),
+            parsed.get("active_charging_profile_name", "none"),
         )
 
     async def _async_push_update(self, data: dict, success: bool = True) -> None:

@@ -41,6 +41,11 @@ PLATFORMS: list[Platform] = [
     Platform.LOCK,
     Platform.IMAGE,
     Platform.SELECT,
+    # v1.16.0 (#26) — Klima-Timer / Departure-Timer editing UI.
+    # Adds time entities ``time.{auto}_departure_timer_X`` for each of
+    # the three timers per VIN. Reuses existing
+    # ``vag_connect.set_departure_timer`` service in async_set_value.
+    Platform.TIME,
 ]
 
 SERVICE_VIN_SCHEMA = vol.Schema({vol.Required("vin"): cv.string})
