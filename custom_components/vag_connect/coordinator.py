@@ -1357,7 +1357,7 @@ class VagConnectCoordinator(DataUpdateCoordinator):
         if client is None or not hasattr(client, "get_battery_care"):
             return
         try:
-            status, target = await asyncio.gather(
+            results = await asyncio.gather(
                 client.get_battery_care(vin),
                 client.get_battery_care_target(vin),
                 return_exceptions=True,
@@ -1367,6 +1367,15 @@ class VagConnectCoordinator(DataUpdateCoordinator):
                 "Battery-care fetch failed for %s: %s", mask_vin(vin), err
             )
             return
+        # ``return_exceptions=True`` — drop exceptions to None so we
+        # treat them as empty responses (keeps stale cache). Same
+        # pattern as v1.14.0 trip-stats parsing fix.
+        status: Any = (
+            results[0] if not isinstance(results[0], BaseException) else None
+        )
+        target: Any = (
+            results[1] if not isinstance(results[1], BaseException) else None
+        )
         update: dict[str, Any] = {}
         if isinstance(status, dict) and "enabled" in status:
             update["battery_care_enabled"] = bool(status["enabled"])

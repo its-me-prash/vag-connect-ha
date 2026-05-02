@@ -706,12 +706,15 @@ class SeatCupraClient(CariadBaseClient):
         """
         from ..exceptions import APIError  # noqa: PLC0415
 
+        # base.py::_request does ``headers = kwargs.pop("headers", {})``
+        # which returns None (not {}) if ``headers=None`` is explicitly
+        # passed — that breaks downstream `headers["Authorization"] = ...`.
+        # So only forward the headers kwarg when we actually have headers.
+        primary_kwargs: dict[str, Any] = {"json": primary_json}
+        if primary_headers:
+            primary_kwargs["headers"] = primary_headers
         try:
-            await self._post(
-                primary_url,
-                json=primary_json,
-                headers=primary_headers or None,
-            )
+            await self._post(primary_url, **primary_kwargs)
             return
         except APIError as err:
             if err.status != 404:
@@ -721,11 +724,10 @@ class SeatCupraClient(CariadBaseClient):
                 "(vin ***%s)",
                 label, primary_url, fallback_url, vin[-6:],
             )
-        await self._post(
-            fallback_url,
-            json=fallback_json,
-            headers=fallback_headers or None,
-        )
+        fallback_kwargs: dict[str, Any] = {"json": fallback_json}
+        if fallback_headers:
+            fallback_kwargs["headers"] = fallback_headers
+        await self._post(fallback_url, **fallback_kwargs)
 
     async def command_start_charging(self, vin: str) -> None:
         """v1.17.1 — A/B fallback after Bruno-Collection research.

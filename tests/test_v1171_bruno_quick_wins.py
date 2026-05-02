@@ -55,9 +55,9 @@ class TestPostWithAbFallback:
                 label="test", vin="VINX",
             )
         )
-        # Only one POST: the primary
+        # Only one POST: the primary. No headers kwarg when no headers.
         assert client._post.await_count == 1
-        client._post.assert_awaited_with("P", json={"a": 1}, headers=None)
+        client._post.assert_awaited_with("P", json={"a": 1})
 
     def test_404_falls_back_to_legacy(self):
         from custom_components.vag_connect.cariad.exceptions import APIError
@@ -71,10 +71,8 @@ class TestPostWithAbFallback:
             )
         )
         assert client._post.await_count == 2
-        client._post.assert_any_await("P", json=None, headers=None)
-        client._post.assert_any_await(
-            "F", json={"action": "start"}, headers=None
-        )
+        client._post.assert_any_await("P", json=None)
+        client._post.assert_any_await("F", json={"action": "start"})
 
     def test_non_404_propagates(self):
         from custom_components.vag_connect.cariad.exceptions import APIError
@@ -190,10 +188,9 @@ class TestAuxHeating:
             client.command_stop_aux_heating("VINX")
         )
         # No SecToken header on stop (Bruno seq 30 confirmed)
+        # Helper omits headers kwarg entirely when no headers needed.
         kwargs = client._post.await_args.kwargs
-        # The headers kwarg is passed even if None — verify it's not a SecToken
-        if kwargs.get("headers") is not None:
-            assert "SecToken" not in kwargs["headers"]
+        assert "headers" not in kwargs
 
 
 # ─────────────────────────────────────────────────────────────────────────────
