@@ -32,6 +32,78 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ## [Unreleased]
 
+## [1.15.0] - 2026-05-02 🛰️🔋 Skoda Modernization Bundle / Skoda Modernization (Charging History #35 + OTA + 8 cap-ids + capability tolerance + anonymize hardening)
+
+🛰️🔋 **Komplette Adoption der myskoda Upstream-Updates seit unserem PR #832 Cutoff** (22 PRs gemerged 2026-03 → 2026-04). Bundle 3 (Cross-Brand UX) wurde realistisch zu v1.16.0 verschoben — die HA `time`/`datetime` Plattform für #26 wäre eigene 10. Plattform-Erweiterung, und #25/#31 brauchen `charging-profiles` Endpoint-Research. v1.15.0 fokussiert auf was JETZT lieferbar ist.
+
+### ✨ Neu / Added
+
+- 🔋 **#35 Skoda Charging History → HA Energy Dashboard** — neuer mysmob Endpoint `GET /v1/charging/{vin}/history?userTimezone=UTC&limit=50`. Drei neue Sensor-Entitäten (Skoda EV/PHEV only):
+  - `total_charged_energy_kwh` — `state_class=TOTAL_INCREASING` für HA Energy Dashboard. Sum aller `chargedInKWh` Sessions across alle Periods.
+  - `last_charging_session_kwh` — Energie der letzten Sitzung
+  - `last_charging_session_duration_min` — Dauer der letzten Sitzung
+  - Plus `recent_charging_sessions` (last 5) als `extra_state_attributes` auf `total_charged_energy_kwh` (audi #113 "aggregate-in-state" Convention — vermeidet 255-char state limit)
+  - `last_charging_session_current_type` (AC/DC) als attr
+  - 1h-Cache-Cycle in `coordinator.refresh_charging_history` mit brand-restriction + capability gate (`command_charging_history` cap-id `CHARGING`)
+  - Source: myskoda PR mit `ChargingHistory` model in `myskoda/models/charging_history.py` (verifiziert 2026-05-02)
+- 🛰️ **Skoda Software-Version + OTA Status** (myskoda PR #541) — neuer Endpoint `GET /v1/vehicle-information/{vin}/software-version/update-status` (Skoda app v8.10.0+):
+  - `sensor.software_version` (DIAGNOSTIC) — aktuelle Firmware (z.B. `"3.8"`)
+  - `binary_sensor.ota_update_available` (UPDATE device class) — true wenn Backend einen Status anders als `NO_UPDATE_AVAILABLE`/`UPDATE_SUCCESSFUL` liefert (forward-compat: unbekannte enum-Werte = update läuft)
+  - `releaseNotesUrl` als `extra_state_attributes.release_notes_url` auf dem binary_sensor
+  - Cross-brand support **deferred** — CARIAD-BFF + OLA exposen den Endpoint nicht (Research 2026-05-02)
+- 🛡️ **Capability-Map Skoda Erweiterung** — 8 neue cap-ids in `CAPABILITY_MAP["skoda"]` aus myskoda Upstream-Reverse-Engineering: `command_software_update`, `command_charging_history`, `command_charging_profiles`, `command_driving_score`, `command_readiness`, `command_plug_and_charge`, `command_route_planning`, `command_battery_charging_care`. Phase 3 kann jetzt sauber für jede dieser Capabilities entscheiden.
+- 🧬 **Capability-Status Tolerance** (myskoda PR #543 schema) — `vehicle_supports_capability` versteht jetzt:
+  - **Top-level `errors[]` Array** auf der capabilities response — wenn das ganze Dokument fehlgeschlagen ist (MISSING_RENDER, UNAVAILABLE_SERVICE_PLATFORM_CAPABILITIES, UNAVAILABLE_SOFTWARE_VERSION), bail to `None` statt fälschlich jede Entity zu gaten
+  - Neue transient-state Status-Werte: `INSUFFICIENT_BATTERY_LEVEL`, `LOCATION_DATA_DISABLED`, `VEHICLE_DISABLED` — als "right now no" behandelt (gated wie bisher, aber dokumentiert für UX-Hints zukünftig)
+- 🔐 **Diagnostics Anonymize Hardening** (Pattern aus myskoda `anonymize.py`):
+  - **`_mask_location_qs`** — scrubbt `latitude=...&longitude=...` aus URL Query-Strings (z.B. `/maps/positions?latitude=48.13&longitude=11.57` in Error-Traces). Vorher konnte unser dict-key basiertes `_scrub` das nicht catchen weil lat/lon innerhalb eines String-Values steckten. Mode-aware: `gps_round=True` rundet auf 1 Dezimal, sonst REDACTED.
+  - **`_stable_hash` SHA-256** — deterministischer 12-hex Pseudonym für stabile Repeat-Reporter Cross-Referenzen ohne PII zu leaken. `user_id`/`account_id`/`userId`/`accountId` → `sha256:abc123def456` (statt nur `**REDACTED**`).
+
+### 🔄 Geändert / Changed
+
+- 🔧 `cariad/_capabilities.py` — 8 neue Skoda cap-id Einträge plus erweiterte Doku zur Erkennung
+- 🔧 `coordinator.py` — neue `_parse_charging_history` pure function + `refresh_charging_history` 1h-cache helper + Hook im Poll-Loop neben Trip-Stats refresh. `vehicle_supports_capability` extended um `errors[]` block + transient status documentation.
+- 🔧 `cariad/api/skoda.py` — `get_status` gather() um den software-version Endpoint erweitert (best-effort, exception-tolerant). Neuer `get_charging_history(vin, limit=50)` method.
+- 🔧 `cariad/models.py` — 4 OTA-Felder + 6 Charging-History-Felder zu VehicleData hinzugefügt
+- 🔧 `diagnostics.py` — `_LOCATION_QS_RE` regex + `_HASH_KEYS` frozenset + neue helpers; `_scrub` String-Pfad chained jetzt `_mask_email` + `_mask_location_qs`
+
+### 🌐 Übersetzungen / Translations
+
+8 Sprachen (de/en/fr/es/nl/pl/cs/sv) — neue keys:
+- `entity.sensor.{software_version, total_charged_energy_kwh, last_charging_session_kwh, last_charging_session_duration_min}`
+- `entity.binary_sensor.ota_update_available`
+
+### 🧪 Tests / Tests
+
+- `tests/test_v1150_skoda_modernization.py` — neue Tests in 5 Klassen:
+  - `TestParseChargingHistory` (5) — total kWh sum, sort-by-startAt desc, recent_sessions cap, garbage tolerance
+  - `TestGetChargingHistoryURL` (2) — URL + default/custom limit param
+  - `TestRefreshChargingHistoryBrandRestriction` (4) — brand restriction + 1h cache + capability gate
+  - `TestSoftwareVersionParsing` (2) — NO_UPDATE_AVAILABLE → False, unknown enum → True (forward-compat)
+  - `TestLocationQueryStringScrub` (4) — REDACTED + 1-dec round + no-op + negative coords
+  - `TestStableHash` (4) — deterministic + different inputs + empty + salt
+  - `TestUserIdHashingInScrub` (4) — user_id/accountId hashing + repeat-stability + string GPS scrub
+  - `TestSkodaCapabilityMap` (8 parametrized + 1 sanity) — alle neuen cap-ids
+  - `TestCapabilityStatusTolerance` (3 parametrized + 3) — errors[] block + transient states
+
+### 🔬 Pre-Research / Pre-Research
+
+Research-Sweep der **skodaconnect/myskoda** Upstream (22 PRs gemerged seit unserem PR #832 / Issue #976 Cutoff April 2026). Plus Cross-Brand OTA Endpoint-Probe (audi_connect_ha + volkswagencarnet + pycupra) — Resultat: CARIAD-BFF + OLA haben **kein** software-version endpoint heute, daher Skoda-only in v1.15.0.
+
+### 📦 Schließt Issues / Closes
+
+- Closes #35 (Ladehistorie LTS — Skoda über `chargedInKWh` per session, kumuliert in `total_charged_energy_kwh` mit `TOTAL_INCREASING`)
+
+### 🛡️ Open / Re-Aktiviert
+
+- **#75 Skoda Kodiaq Mk2 403** — Comment posted: ursprüngliche Hypothese war falsch (wir hatten den `connectivityGenerations` Query bereits seit langem), echte Ursache braucht 403-Body-Diagnostics. v1.15.0 verbessert Diagnostics-Export um die Übermittlung sicherer zu machen.
+
+### ❌ Deferred / Not in this release
+
+- **#26 Klima-Timer / Departure-Timer datetime UI** — braucht eigene HA `time`/`datetime` Plattform-Erweiterung (10. Plattform). Existing departure_timer switches + sensors bleiben funktional. → v1.16.0
+- **#25 Standort-spezifischer Ladeziel + #31 Ladeprofile pro Standort** — beide brauchen `/v1/charging/{vin}/profiles` Endpoint-Schema-Research für Read-Only-Sensoren. → v1.16.0
+- **Cross-Brand OTA** (Audi/VW/SEAT/CUPRA) — Endpoint nicht in CARIAD-BFF/OLA verifiziert. Live-Test-Probe nötig. → v1.16.0+
+
 ## [1.14.0] - 2026-05-02 🚗 Audi Feature Pack Bundle / Audi Feature Pack (Trip Stats + Engine Start ICE + PPC Climate Body) + Skoda Scout-Pfade #116
 
 🚗 **Drei Audi-spezifische Features in einem MINOR-Release** + Skoda Scout-Pfade aus #116 (MavericklCS) als Add-On. Bundle 2 aus dem v1.13.0 Pre-Research-Plan (`docs/RESEARCH_NOTES_2026-05-02.md`).

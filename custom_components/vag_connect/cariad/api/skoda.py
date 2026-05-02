@@ -40,6 +40,34 @@ class SkodaClient(CariadBaseClient):
         await self.fetch_images()
         return vins
 
+    async def get_charging_history(
+        self, vin: str, limit: int = 50
+    ) -> dict[str, Any]:
+        """v1.15.0 (#35) — Skoda charging history (myskoda PR shipped 2026).
+
+        Endpoint: ``GET /api/v1/charging/{vin}/history?userTimezone=UTC&limit={N}``
+        Response shape (verified via myskoda/models/charging_history.py):
+            {
+              "nextCursor": "<ISO datetime>" | null,
+              "periods": [
+                {"totalChargedInKWh": 12.5, "sessions": [
+                   {"startAt": "...", "chargedInKWh": 12.5,
+                    "durationInMinutes": 45, "currentType": "AC"|"DC"},
+                   ...
+                ]},
+                ...
+              ]
+            }
+
+        Best-effort: 404 / 403 on accounts without the cap → exception
+        in caller's gather. Returns ``{}`` for non-dict responses.
+        """
+        url = f"{_BASE}/api/v1/charging/{vin}/history"
+        data = await self._get(
+            url, params={"userTimezone": "UTC", "limit": limit}
+        )
+        return data if isinstance(data, dict) else {}
+
     async def get_capabilities(self, vin: str) -> dict[str, Any]:
         """Return mysmob capabilities document for *vin*.
 
@@ -84,9 +112,19 @@ class SkodaClient(CariadBaseClient):
             self._get(f"{_BASE}/api/v2/vehicle-status/{vin}/driving-range"),
             self._get(f"{_BASE}/api/v3/vehicle-maintenance/vehicles/{vin}"),
             self._get(f"{_BASE}/api/v2/connection-status/{vin}/readiness"),
+            # v1.15.0 — software-version + update-status (myskoda PR #541,
+            # requires Skoda app v8.10.0+). Best-effort: 404 on older
+            # firmware, 403 on accounts without the cap — both turn into
+            # exceptions in ``return_exceptions=True`` and we skip below.
+            self._get(
+                f"{_BASE}/api/v1/vehicle-information/{vin}/software-version/update-status"
+            ),
             return_exceptions=True,
         )
-        status, charging, ac, parking, driving_range, maintenance, readiness = results
+        (
+            status, charging, ac, parking, driving_range,
+            maintenance, readiness, sw_update,
+        ) = results
 
         # v1.9.0 — Vehicle Data Scout opt-in. Stash raw responses keyed by
         # the same endpoint names used in ``EXPECTED_KEYS["skoda"]`` so the
@@ -101,6 +139,9 @@ class SkodaClient(CariadBaseClient):
             ("driving-range", driving_range),
             ("maintenance", maintenance),
             ("readiness", readiness),
+            # v1.15.0 — register the new endpoint so Vehicle Data Scout
+            # detects new fields once a 2026+ Skoda surfaces them.
+            ("software-version-update-status", sw_update),
         ):
             if isinstance(payload, dict):
                 self.last_raw_responses[name] = payload
@@ -319,6 +360,27 @@ class SkodaClient(CariadBaseClient):
         d.connection_state, d.last_seen_at = compute_connection_state(
             status, charging, ac, parking, driving_range, maintenance, readiness,
         )
+
+        # ── v1.15.0 — Software-version + OTA update status (myskoda PR #541) ─
+        # Endpoint shipped in Skoda app v8.10.0+ — older accounts return
+        # 404 / 403 which surfaces as an exception in our gather(); we
+        # leave the fields ``None`` in that case.
+        if isinstance(sw_update, dict):
+            sw_status = sw_update.get("status")
+            if isinstance(sw_status, str):
+                # Defensive enum tolerance for forward-compat with new
+                # values (myskoda raises UnexpectedSoftwareUpdateStatusError
+                # for unknown). We just pass through raw + derive a bool.
+                d.software_update_status = sw_status
+                d.ota_update_available = sw_status.upper() not in {
+                    "NO_UPDATE_AVAILABLE", "UPDATE_SUCCESSFUL",
+                }
+            curr = sw_update.get("currentSoftwareVersion")
+            if isinstance(curr, str):
+                d.software_version = curr
+            notes = sw_update.get("releaseNotesUrl")
+            if isinstance(notes, str) and notes:
+                d.ota_release_notes_url = notes
 
         return d
 

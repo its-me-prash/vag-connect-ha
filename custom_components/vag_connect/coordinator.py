@@ -198,6 +198,95 @@ def _parse_trip_statistics(
     return out
 
 
+def _parse_charging_history(resp: Any) -> dict[str, Any]:
+    """v1.15.0 (#35) — Pure parser for Skoda mysmob charging-history.
+
+    Response shape (verified myskoda/models/charging_history.py):
+        {nextCursor, periods: [{totalChargedInKWh, sessions: [
+            {startAt, chargedInKWh, durationInMinutes, currentType: AC|DC}
+        ]}]}
+
+    Returns dict ready for ``coordinator.vehicles[vin]``:
+    - ``total_charged_energy_kwh`` — sum of every session's chargedInKWh
+      across all periods (HA Energy Dashboard / TOTAL_INCREASING)
+    - ``last_charging_session_*`` — the most-recent session by ``startAt``
+    - ``recent_charging_sessions`` — last 5 sessions for attributes
+
+    Empty dict on no usable data so callers can keep stale cache. Pure
+    function — safe to test in isolation.
+    """
+    out: dict[str, Any] = {}
+    if not isinstance(resp, dict):
+        return out
+    periods = resp.get("periods")
+    if not isinstance(periods, list):
+        return out
+
+    # Collect all sessions across all periods, plus running cumulative.
+    all_sessions: list[dict[str, Any]] = []
+    total_kwh = 0.0
+    has_any = False
+    for period in periods:
+        if not isinstance(period, dict):
+            continue
+        for s in period.get("sessions", []) or []:
+            if not isinstance(s, dict):
+                continue
+            kwh = s.get("chargedInKWh")
+            if isinstance(kwh, (int, float)):
+                total_kwh += float(kwh)
+                has_any = True
+            all_sessions.append(s)
+
+    if not has_any:
+        return out
+
+    out["total_charged_energy_kwh"] = round(total_kwh, 2)
+
+    # Sort by start timestamp desc (newest first) for "last session" data
+    def _start_key(s: dict[str, Any]) -> str:
+        v = s.get("startAt")
+        return v if isinstance(v, str) else ""
+
+    all_sessions.sort(key=_start_key, reverse=True)
+    if all_sessions:
+        last = all_sessions[0]
+        kwh = last.get("chargedInKWh")
+        if isinstance(kwh, (int, float)):
+            out["last_charging_session_kwh"] = round(float(kwh), 2)
+        dur = last.get("durationInMinutes")
+        if isinstance(dur, (int, float)):
+            out["last_charging_session_duration_min"] = int(dur)
+        ct = last.get("currentType")
+        if isinstance(ct, str):
+            out["last_charging_session_current_type"] = ct
+        st = last.get("startAt")
+        if isinstance(st, str):
+            out["last_charging_session_start"] = st
+
+        out["recent_charging_sessions"] = [
+            {
+                "start": s.get("startAt"),
+                "kwh": (
+                    round(float(s["chargedInKWh"]), 2)
+                    if isinstance(s.get("chargedInKWh"), (int, float))
+                    else None
+                ),
+                "duration_min": (
+                    int(s["durationInMinutes"])
+                    if isinstance(s.get("durationInMinutes"), (int, float))
+                    else None
+                ),
+                "current_type": s.get("currentType")
+                if isinstance(s.get("currentType"), str)
+                else None,
+            }
+            for s in all_sessions[:5]
+        ]
+
+    return out
+
+
 @dataclass
 class FeatureState:
     """Per-VIN per-command state, populated lazily as commands are tried.
@@ -540,6 +629,19 @@ class VagConnectCoordinator(DataUpdateCoordinator):
                     )
                 except Exception:  # noqa: BLE001
                     pass  # never let trip-stats break the poll
+                # v1.15.0 (#35) — Skoda Charging History, same best-effort
+                # 1h-cache pattern. Brand-restriction inside helper means
+                # this is no-op for non-Skoda accounts.
+                try:
+                    await asyncio.gather(
+                        *[
+                            self.refresh_charging_history(vin)
+                            for vin in self.vehicles
+                        ],
+                        return_exceptions=True,
+                    )
+                except Exception:  # noqa: BLE001
+                    pass
                 await self._async_push_update(fresh, success=any_success)
             except Exception as err:  # noqa: BLE001
                 # Auth failure that survived the client's refresh-then-relogin
@@ -848,9 +950,27 @@ class VagConnectCoordinator(DataUpdateCoordinator):
         - ``license-issue``: present + truthy → False (Skoda paid feature)
         Mixed cases (e.g. CARIAD vehicle whose response has ``active``
         too) require ALL truthy signals to return True.
+
+        v1.15.0 — additionally tolerates the new transient-state values
+        documented in ``skodaconnect/myskoda/models/capability.py`` post
+        PR #533: ``INSUFFICIENT_BATTERY_LEVEL``, ``LOCATION_DATA_DISABLED``,
+        ``VEHICLE_DISABLED`` are status entries that mean "currently
+        can't" (not "permanently can't"). They still count as "gated
+        right now" — but logged so a future surface-feature can show
+        the user "your battery is too low to start climate" instead of
+        the entity just disappearing. Also tolerates the new top-level
+        ``errors[]`` block on capabilities responses (introduced in
+        myskoda PR #543) — explicit error means False without crashing.
         """
         caps = getattr(self, "vehicle_capabilities", {}).get(vin)
         if not isinstance(caps, dict):
+            return None
+        # v1.15.0 — top-level ``errors`` array on capabilities response
+        # (myskoda PR #543). When the whole capabilities document failed
+        # to load (MISSING_RENDER / UNAVAILABLE_SERVICE_PLATFORM_CAPABILITIES
+        # / UNAVAILABLE_SOFTWARE_VERSION), bail to ``None`` so we don't
+        # falsely gate every entity.
+        if isinstance(caps.get("errors"), list) and caps["errors"]:
             return None
         items = caps.get("capabilities")
         if not isinstance(items, list):
@@ -870,7 +990,13 @@ class VagConnectCoordinator(DataUpdateCoordinator):
                 return False
             status = entry.get("status")
             # Empty list / missing → fully usable. Anything in status[] is
-            # a limitation (e.g. deactivated, license required, ...).
+            # a limitation. v1.15.0 known status enum values:
+            # ``DEACTIVATED``, ``LICENSE_REQUIRED``, ``UNSUPPORTED``,
+            # ``INSUFFICIENT_BATTERY_LEVEL``, ``LOCATION_DATA_DISABLED``,
+            # ``VEHICLE_DISABLED``, ``NOT_ACTIVATED``. All of them mean
+            # "right now no" — we treat them uniformly as gated. Future
+            # work could distinguish transient (battery, location) vs
+            # permanent (license) for richer UX hints.
             return not bool(status)
         # Cache is populated but capability isn't listed — explicit absence.
         return False
@@ -954,6 +1080,11 @@ class VagConnectCoordinator(DataUpdateCoordinator):
     _TRIP_STATS_BRANDS = ("audi", "volkswagen")  # CARIAD-BFF only
     _RECENT_TRIPS_LIMIT = 5  # how many trips to keep in extra_state_attributes
 
+    # ── v1.15.0 (#35) — Skoda Charging History 1h cache ────────────────
+    _CHARGING_HISTORY_REFRESH_INTERVAL = timedelta(hours=1)
+    _CHARGING_HISTORY_BRANDS = ("skoda",)  # mysmob only — CARIAD/OLA TBD
+    _RECENT_SESSIONS_LIMIT = 5
+
     async def refresh_trip_statistics(
         self, vin: str, force: bool = False
     ) -> None:
@@ -1028,6 +1159,61 @@ class VagConnectCoordinator(DataUpdateCoordinator):
             mask_vin(vin),
             parsed.get("_shortterm_count", 0),
             parsed.get("_longterm_count", 0),
+        )
+
+    async def refresh_charging_history(
+        self, vin: str, force: bool = False
+    ) -> None:
+        """v1.15.0 (#35) — Best-effort fetch + parse of Skoda mysmob
+        charging-history. Brand-restricted to ``skoda``; CARIAD-BFF + OLA
+        equivalent endpoints not yet verified (Research 2026-05-02).
+
+        Cache: 1h via ``_charging_history_fetched_at[vin]`` — sessions
+        change at most once per day for typical users.
+        """
+        brand = ""
+        try:
+            brand = str(self.entry.data.get(CONF_BRAND, "")).lower()
+        except Exception:  # noqa: BLE001
+            return
+        if brand not in self._CHARGING_HISTORY_BRANDS:
+            return
+        if not hasattr(self, "_charging_history_fetched_at"):
+            self._charging_history_fetched_at: dict[str, datetime] = {}
+        if not force:
+            last = self._charging_history_fetched_at.get(vin)
+            if last is not None:
+                if datetime.now(tz=timezone.utc) - last < self._CHARGING_HISTORY_REFRESH_INTERVAL:
+                    return
+        # Capability gate (#56 Phase 3) — saves a guaranteed 403 for
+        # accounts without the charging entitlement.
+        if (
+            self.command_capability_supported(vin, "command_charging_history") is False
+        ):
+            return
+        client = self._cariad_client
+        if client is None or not hasattr(client, "get_charging_history"):
+            return
+        try:
+            resp = await client.get_charging_history(vin)
+        except Exception as err:  # noqa: BLE001
+            _LOGGER.debug(
+                "Charging-history fetch failed for %s: %s", mask_vin(vin), err
+            )
+            return
+        parsed = _parse_charging_history(resp)
+        if not parsed:
+            return  # empty → keep stale cache
+        with self._vehicles_lock:
+            v = self.vehicles.get(vin)
+            if isinstance(v, dict):
+                v.update(parsed)
+        self._charging_history_fetched_at[vin] = datetime.now(tz=timezone.utc)
+        _LOGGER.debug(
+            "Charging-history updated for %s: total %.2f kWh, last session %s",
+            mask_vin(vin),
+            parsed.get("total_charged_energy_kwh", 0),
+            parsed.get("last_charging_session_start", "n/a"),
         )
 
     async def _async_push_update(self, data: dict, success: bool = True) -> None:

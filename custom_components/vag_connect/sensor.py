@@ -441,6 +441,56 @@ SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
         entity_category=EntityCategory.DIAGNOSTIC,
         suggested_display_precision=0,
     ),
+    # v1.15.0 — Skoda software-version (mysmob, app v8.10.0+).
+    # Population depends on Skoda backend; entity is gated via
+    # ``_DATA_PRESENT_REQUIRED`` so non-Skoda vehicles + older Skoda
+    # firmwares don't get a phantom "unknown" entity.
+    VagSensorDescription(
+        key="software_version",
+        translation_key="software_version",
+        data_key="software_version",
+        icon="mdi:chip",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    # v1.15.0 (#35) — Skoda Charging History → HA Energy Dashboard.
+    # ``total_charged_energy_kwh`` with TOTAL_INCREASING is THE long-
+    # term-statistics signal users want for kWh-tracking dashboards.
+    # Last-session sensors complement with at-a-glance recent context.
+    # ``recent_charging_sessions`` (last 5) lives in the
+    # ``total_charged_energy_kwh.extra_state_attributes`` (same audi
+    # #113 pattern we used for Trip Stats in v1.14.0).
+    VagSensorDescription(
+        key="total_charged_energy_kwh",
+        translation_key="total_charged_energy_kwh",
+        data_key="total_charged_energy_kwh",
+        native_unit_of_measurement="kWh",
+        device_class=SensorDeviceClass.ENERGY,
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        icon="mdi:lightning-bolt-circle",
+        suggested_display_precision=2,
+        condition="electric",
+    ),
+    VagSensorDescription(
+        key="last_charging_session_kwh",
+        translation_key="last_charging_session_kwh",
+        data_key="last_charging_session_kwh",
+        native_unit_of_measurement="kWh",
+        device_class=SensorDeviceClass.ENERGY,
+        state_class=SensorStateClass.MEASUREMENT,
+        icon="mdi:battery-charging",
+        suggested_display_precision=2,
+        condition="electric",
+    ),
+    VagSensorDescription(
+        key="last_charging_session_duration_min",
+        translation_key="last_charging_session_duration_min",
+        data_key="last_charging_session_duration_min",
+        native_unit_of_measurement="min",
+        state_class=SensorStateClass.MEASUREMENT,
+        icon="mdi:timer-outline",
+        suggested_display_precision=0,
+        condition="electric",
+    ),
 
     # ── v1.9.0 Vehicle Data Scout + Error Reporter ────────────────────────────
     # Two diagnostic sensors that surface drift / runtime errors detected
@@ -540,6 +590,15 @@ _DATA_PRESENT_REQUIRED: frozenset[str] = frozenset({
     # v1.12.0 (#23) — older vehicles + non-CARIAD backends don't expose
     # ``lvBattery``; don't create a phantom 0 V sensor for them.
     "voltage_12v",
+    # v1.15.0 — Skoda-only software-version (mysmob app v8.10.0+).
+    # Cross-brand support deferred — CARIAD-BFF + OLA don't expose an
+    # equivalent endpoint yet (Research 2026-05-02).
+    "software_version",
+    # v1.15.0 (#35) — Skoda-only charging history. Cross-brand deferred
+    # (CARIAD-BFF/OLA equivalent endpoints unverified).
+    "total_charged_energy_kwh",
+    "last_charging_session_kwh",
+    "last_charging_session_duration_min",
 })
 
 # v1.14.0 (#24) — Trip Statistics is brand-restricted at the API level
@@ -648,6 +707,19 @@ class VagConnectSensor(VagConnectEntity, SensorEntity):
             recent = self._vehicle.get("recent_trips")
             if isinstance(recent, list) and recent:
                 return {"recent_trips": recent[: 5]}
+        # v1.15.0 (#35) — Skoda charging-history recent sessions go on
+        # the cumulative total sensor. Same audi #113 pattern: list-
+        # shaped data lives in attributes to dodge the 255-char state
+        # limit + recorder bloat.
+        if self.entity_description.key == "total_charged_energy_kwh":
+            recent = self._vehicle.get("recent_charging_sessions")
+            ct = self._vehicle.get("last_charging_session_current_type")
+            attrs: dict[str, Any] = {}
+            if isinstance(recent, list) and recent:
+                attrs["recent_sessions"] = recent[:5]
+            if isinstance(ct, str) and ct:
+                attrs["last_session_current_type"] = ct
+            return attrs or None
         return None
 
     @property

@@ -330,6 +330,33 @@ class VehicleData:
     trunk_locked: bool | None = None
     sunroof_open: bool | None = None
 
+    # v1.15.0 (#35) — Skoda Charging History (mysmob endpoint
+    # ``/v1/charging/{vin}/history``). Drives HA Energy Dashboard via
+    # ``total_charged_energy_kwh`` with state_class=TOTAL_INCREASING.
+    # Skoda-only initially — CARIAD-BFF + OLA don't expose an equivalent
+    # endpoint with chargedEnergy_kWh per session (verified 2026-05-02).
+    # ``recent_sessions`` (last 5) lives in attributes to avoid the HA
+    # 255-char state limit.
+    total_charged_energy_kwh: float | None = None
+    last_charging_session_kwh: float | None = None
+    last_charging_session_duration_min: int | None = None
+    last_charging_session_current_type: str | None = None
+    last_charging_session_start: str | None = None
+    recent_charging_sessions: list[dict[str, Any]] = field(default_factory=list)
+
+    # v1.15.0 — Software-version + OTA update status (Skoda mysmob).
+    # Endpoint ``GET /v1/vehicle-information/{vin}/software-version/update-status``
+    # shipped in Skoda app v8.10.0+ (myskoda PR #541). Cross-brand support
+    # deferred — CARIAD-BFF + OLA don't expose an equivalent endpoint yet
+    # (Research 2026-05-02). Fields stay ``None`` for non-Skoda vehicles.
+    # ``software_update_status`` is the raw enum string (NO_UPDATE_AVAILABLE
+    # / UPDATE_SUCCESSFUL / future values) — defensive: we don't gate on
+    # the enum, the bool ``ota_update_available`` is what entities consume.
+    software_version: str | None = None
+    software_update_status: str | None = None
+    ota_update_available: bool | None = None
+    ota_release_notes_url: str | None = None
+
     # v1.14.0 (#24) — Trip Statistics from CARIAD-BFF
     # ``GET /vehicle/v1/vehicles/{vin}/tripstatistics?type={shortTerm|longTerm}``.
     # Both endpoints return ``{tripDataList: {tripData: [...]}}``; we sort
