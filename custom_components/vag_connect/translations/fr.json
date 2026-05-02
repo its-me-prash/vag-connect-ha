@@ -210,6 +210,18 @@
       "last_charging_session_duration_min": {
         "name": "Dernière Session — Durée"
       },
+      "active_charging_profile_name": {
+        "name": "Profil de Charge Actif"
+      },
+      "active_charging_profile_target_soc_pct": {
+        "name": "Profil Actif — SoC Cible"
+      },
+      "next_charging_time": {
+        "name": "Prochaine Charge"
+      },
+      "charging_profiles_count": {
+        "name": "Nombre de Profils"
+      },
       "departure_timer_1_time": {
         "name": "Minuterie de départ 1"
       },
@@ -364,6 +376,17 @@
     "select": {
       "charge_mode_select": {
         "name": "Mode de charge"
+      }
+    },
+    "time": {
+      "departure_timer_1_time_set": {
+        "name": "Minuteur Départ 1 — Heure"
+      },
+      "departure_timer_2_time_set": {
+        "name": "Minuteur Départ 2 — Heure"
+      },
+      "departure_timer_3_time_set": {
+        "name": "Minuteur Départ 3 — Heure"
       }
     },
     "image": {

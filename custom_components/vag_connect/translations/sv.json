@@ -210,6 +210,18 @@
       "last_charging_session_duration_min": {
         "name": "Senaste Sessionen — Längd"
       },
+      "active_charging_profile_name": {
+        "name": "Aktiv Laddningsprofil"
+      },
+      "active_charging_profile_target_soc_pct": {
+        "name": "Aktiv Profil — Mål-SoC"
+      },
+      "next_charging_time": {
+        "name": "Nästa Laddning"
+      },
+      "charging_profiles_count": {
+        "name": "Antal Profiler"
+      },
       "departure_timer_1_time": {
         "name": "Avgångstimer 1"
       },
@@ -364,6 +376,17 @@
     "select": {
       "charge_mode_select": {
         "name": "Laddningsläge"
+      }
+    },
+    "time": {
+      "departure_timer_1_time_set": {
+        "name": "Avgångstimer 1 — Tid"
+      },
+      "departure_timer_2_time_set": {
+        "name": "Avgångstimer 2 — Tid"
+      },
+      "departure_timer_3_time_set": {
+        "name": "Avgångstimer 3 — Tid"
       }
     },
     "image": {

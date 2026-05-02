@@ -40,6 +40,49 @@ class SkodaClient(CariadBaseClient):
         await self.fetch_images()
         return vins
 
+    async def get_charging_profiles(self, vin: str) -> dict[str, Any]:
+        """v1.16.0 (#25, #31) — Skoda charging profiles (read-only).
+
+        Endpoint: ``GET /api/v1/charging/{vin}/profiles``
+        Response shape (verified myskoda/models/chargingprofiles.py):
+            {
+              "chargingProfiles": [
+                {"id": 1, "name": "Home",
+                 "settings": {
+                   "maxChargingCurrent": "MAXIMUM"|"REDUCED",
+                   "minBatteryStateOfCharge": {"minimumBatteryStateOfChargeInPercent": 20},
+                   "targetStateOfChargeInPercent": 80,
+                   "autoUnlockPlugWhenCharged": "PERMANENT"|"ON"|"OFF"
+                 },
+                 "preferredChargingTimes": [{"id": 1, "enabled": true,
+                    "startTime": "22:00", "endTime": "06:00"}],
+                 "timers": [{"id": 1, "enabled": false, "time": "07:30",
+                    "type": "RECURRING"|"ONE_OFF",
+                    "recurringOn": ["MONDAY", ...]}],
+                 "location": {"latitude": 47.39, "longitude": 8.21} | None
+                },
+                ...
+              ],
+              "currentVehiclePositionProfile": {
+                "id": 1, "name": "Home",
+                "targetStateOfChargeInPercent": 80,
+                "nextChargingTime": "22:00" | None
+              } | None,
+              "carCapturedTimestamp": "..." | None
+            }
+
+        ``currentVehiclePositionProfile`` is the killer field for #25
+        (location-based target SoC) — backend tells us which of the user's
+        registered profiles is active right now based on the car's
+        current GPS position.
+
+        Best-effort: 404 / 403 → exception in caller's gather. Returns
+        ``{}`` for non-dict responses.
+        """
+        url = f"{_BASE}/api/v1/charging/{vin}/profiles"
+        data = await self._get(url)
+        return data if isinstance(data, dict) else {}
+
     async def get_charging_history(
         self, vin: str, limit: int = 50
     ) -> dict[str, Any]:
