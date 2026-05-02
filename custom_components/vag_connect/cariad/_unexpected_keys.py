@@ -219,6 +219,12 @@ EXPECTED_KEYS: dict[str, dict[str, set[str]]] = {
             "engines",       # vehicle engine info block
             "services",      # subscribed services info block
             "carCapturedTimestamp",
+            # v1.16.1 (#122 r1150gs SEAT Scout-Report 2026-05-02) —
+            # ``engines`` block has a ``primary`` sub-block (3 keys
+            # observed). Wildcard registration covers all current +
+            # future primary children without per-field whack-a-mole.
+            "engines.primary",
+            "engines.primary.*",
         },
         "charging": {
             "battery", "battery.stateOfChargeInPercent", "battery.currentSOC_pct",
