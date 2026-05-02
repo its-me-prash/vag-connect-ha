@@ -79,6 +79,17 @@ _STALE_CACHE_WINDOW = timedelta(hours=6)
 # backends. Reset is per-VIN at UTC midnight.
 _WAKE_BUDGET_PER_DAY = 3
 
+# v1.13.0 (#63 Phase 3) — anti-double-click cooldown for wake_vehicle.
+# 5 minutes between wake-up triggers per VIN. User clicking the wake
+# button twice in 30s would otherwise blow through the day budget.
+_WAKE_COOLDOWN = timedelta(minutes=5)
+
+# v1.13.0 (#63 Phase 2) — per-VIN per-command-class lock timeout.
+# Holds the lock no longer than this many seconds before falling back
+# (typical CARIAD command roundtrip is 10-30s; 60s is a safe upper bound
+# even for slow weekend backend windows).
+_COMMAND_LOCK_TIMEOUT = 60.0
+
 
 @dataclass
 class FeatureState:
@@ -694,7 +705,8 @@ class VagConnectCoordinator(DataUpdateCoordinator):
         """Return ``True`` / ``False`` / ``None`` for a capability lookup.
 
         - ``True``  — capability is present in the cached document and has
-          no documented limitations (empty ``status`` array on OLA).
+          no documented limitations (empty ``status`` array on OLA, or
+          ``active=True`` AND ``user-enabled != False`` on Skoda mysmob).
         - ``False`` — capability is present but the backend lists explicit
           limitations, OR the cache is populated and the capability is not
           listed at all (callers can treat both as "do not show entity").
@@ -704,6 +716,17 @@ class VagConnectCoordinator(DataUpdateCoordinator):
 
         Conservative on purpose: returns ``None`` for unknown rather than
         guessing. Only an explicit cache hit warrants gating decisions.
+
+        v1.13.0 (#56 Phase 3 prerequisite) — extended schema-tolerance:
+        Skoda mysmob uses ``{active, editable, user-enabled, status,
+        license-issue, parameters}`` instead of CARIAD-BFF's bare
+        ``{id, status}``. This helper now treats:
+        - ``status``: empty list / missing → True (CARIAD pattern)
+        - ``active``: explicit False → False (Skoda pattern)
+        - ``user-enabled``: explicit False → False (Skoda pattern)
+        - ``license-issue``: present + truthy → False (Skoda paid feature)
+        Mixed cases (e.g. CARIAD vehicle whose response has ``active``
+        too) require ALL truthy signals to return True.
         """
         caps = getattr(self, "vehicle_capabilities", {}).get(vin)
         if not isinstance(caps, dict):
@@ -716,12 +739,58 @@ class VagConnectCoordinator(DataUpdateCoordinator):
                 continue
             if entry.get("id") != capability_id:
                 continue
+            # Skoda extra signals — explicit False on active/user-enabled
+            # OR a non-empty license-issue means the capability is gated.
+            if entry.get("active") is False:
+                return False
+            if entry.get("user-enabled") is False:
+                return False
+            if entry.get("license-issue"):
+                return False
             status = entry.get("status")
             # Empty list / missing → fully usable. Anything in status[] is
             # a limitation (e.g. deactivated, license required, ...).
             return not bool(status)
         # Cache is populated but capability isn't listed — explicit absence.
         return False
+
+    def command_capability_supported(
+        self, vin: str, command_id: str
+    ) -> bool | None:
+        """v1.13.0 (#56 Phase 3) — translate command-id → capability-id
+        per brand and return capability support status.
+
+        Used by platform ``async_setup_entry`` functions to filter
+        command-bound entities BEFORE creation:
+
+            if coordinator.command_capability_supported(vin, "command_flash") is False:
+                continue  # don't register this entity
+            entities.append(VagFlashButton(coordinator, vin))
+
+        Tri-state semantics intentional:
+        - ``True``  → backend confirms capability supported
+        - ``False`` → backend confirms capability missing/limited (HIDE)
+        - ``None``  → cache empty / brand without capability map / unknown
+                      → DON'T hide (Phase 2 catches it post-failure)
+
+        Pattern matches the existing ``vehicle_supports_capability`` API
+        but adds the brand → cap-id lookup so platforms don't need to
+        know brand-specific capability vocabulary themselves.
+        """
+        from .cariad._capabilities import cap_id_for  # noqa: PLC0415
+
+        brand = ""
+        try:
+            brand = str(self.entry.data.get(CONF_BRAND, "")).lower()
+        except Exception:  # noqa: BLE001
+            return None
+        if not brand:
+            return None
+        cap_id = cap_id_for(brand, command_id)
+        if cap_id is None:
+            # No mapping registered → don't filter (Phase 2 fallback)
+            return None
+        return self.vehicle_supports_capability(vin, cap_id)
 
     async def refresh_capabilities(self, vin: str, force: bool = False) -> None:
         """Best-effort fetch of the per-VIN capabilities document.
@@ -1110,6 +1179,39 @@ class VagConnectCoordinator(DataUpdateCoordinator):
             departure_time=departure_time,
         )
 
+    def _get_command_lock(self, vin: str, command_class: str) -> asyncio.Lock:
+        """v1.13.0 (#63 Phase 2) — per-VIN per-command-class asyncio.Lock.
+
+        Lazily-created. Stored in ``self._command_locks: dict[(vin, class),
+        Lock]``. Use with ``async with asyncio.timeout(60): async with
+        lock`` so a stuck command doesn't permanently freeze the entity.
+
+        ``command_class`` is the high-level grouping (e.g. ``"lock"``,
+        ``"climate"``, ``"charging"``) — finer than command_id (which
+        distinguishes start/stop) so the user can still do
+        ``start_climate`` while a previous ``stop_climate`` is in flight.
+        """
+        if not hasattr(self, "_command_locks"):
+            self._command_locks: dict[tuple[str, str], asyncio.Lock] = {}
+        key = (vin, command_class)
+        lock = self._command_locks.get(key)
+        if lock is None:
+            lock = asyncio.Lock()
+            self._command_locks[key] = lock
+        return lock
+
+    def is_command_in_flight(self, vin: str, command_class: str) -> bool:
+        """v1.13.0 (#63 Phase 2) — True if a command for this
+        VIN+command-class is currently locked (= API call running).
+
+        Entity layer can use this to render a ``transitioning``/``busy``
+        UI hint without taking the entity unavailable.
+        """
+        if not hasattr(self, "_command_locks"):
+            return False
+        lock = self._command_locks.get((vin, command_class))
+        return bool(lock and lock.locked())
+
     def is_read_only(self) -> bool:
         """v1.12.0 (#63) — return True if user enabled Read-only Mode.
 
@@ -1203,6 +1305,29 @@ class VagConnectCoordinator(DataUpdateCoordinator):
             self._optimistic_revert(vin, previous)
             raise
 
+    # Map command-method-name → command-class for per-VIN-per-class lock.
+    # v1.13.0 (#63 Phase 2). Same class = mutually-exclusive (e.g. you
+    # can't start_climate while stop_climate is mid-flight). Different
+    # class = parallel (you CAN unlock while charging command runs).
+    _COMMAND_CLASS = {
+        "command_lock": "lock",
+        "command_unlock": "lock",
+        "command_start_climate": "climate",
+        "command_stop_climate": "climate",
+        "command_set_climate_temperature": "climate",
+        "command_start_charging": "charging",
+        "command_stop_charging": "charging",
+        "command_set_target_soc": "charging",
+        "command_set_charge_mode": "charging",
+        "command_set_min_soc": "charging",
+        "command_set_max_charge_current": "charging",
+        "command_start_window_heating": "window_heating",
+        "command_stop_window_heating": "window_heating",
+        "command_flash": "flash",
+        "command_wake": "wake",
+        "command_set_departure_timer": "departure_timer",
+    }
+
     async def _cariad_cmd(self, vin: str, method: str, **kwargs: Any) -> None:
         """Dispatch a command to the CARIAD client then refresh state.
 
@@ -1221,10 +1346,41 @@ class VagConnectCoordinator(DataUpdateCoordinator):
           ``FeatureState`` flags accordingly. The exception still
           propagates so HA shows the user a service-call error — auto-
           classification is purely additive bookkeeping.
+
+        v1.13.0 (#63 Phase 2) — wraps every command in a per-VIN
+        per-command-class asyncio.Lock with 60s timeout. Prevents
+        double-click storms from generating overlapping API calls (which
+        the CARIAD backend rate-limits and frequently rejects with 429
+        once they pile up).
         """
         if self._cariad_client is None:
             _LOGGER.error("VAG Connect: no CARIAD client — cannot execute %s", method)
             return
+        # v1.13.0 (#63 Phase 2) — acquire per-VIN per-class lock.
+        # Different classes (lock / climate / charging / etc.) can run
+        # in parallel; same-class commands serialize. asyncio.timeout
+        # (Python 3.11+) prevents deadlock if a hung command never
+        # releases the lock — after 60s we proceed anyway.
+        cmd_class = self._COMMAND_CLASS.get(method, method)
+        lock = self._get_command_lock(vin, cmd_class)
+        try:
+            async with asyncio.timeout(_COMMAND_LOCK_TIMEOUT):
+                async with lock:
+                    await self._dispatch_cmd_locked(vin, method, **kwargs)
+        except TimeoutError:
+            _LOGGER.warning(
+                "VAG Connect: %s(%s) lock timeout (%ss) — proceeding without lock",
+                method, mask_vin(vin), _COMMAND_LOCK_TIMEOUT,
+            )
+            await self._dispatch_cmd_locked(vin, method, **kwargs)
+
+    async def _dispatch_cmd_locked(self, vin: str, method: str, **kwargs: Any) -> None:
+        """Inner dispatch — assumes per-VIN-per-class lock already held.
+
+        Extracted so the lock-with-timeout wrapper in ``_cariad_cmd``
+        stays readable. Same try/except as v1.9.1 + Phase 2 + v1.10.1
+        parse-guard pipeline.
+        """
         try:
             fn = getattr(self._cariad_client, method)
             await fn(vin, **kwargs)
@@ -1302,7 +1458,32 @@ class VagConnectCoordinator(DataUpdateCoordinator):
         # CC-* maintainers documented for the underlying backend limits.
         from datetime import datetime, timezone  # noqa: PLC0415
 
-        today = datetime.now(tz=timezone.utc).date()
+        now = datetime.now(tz=timezone.utc)
+        today = now.date()
+        # v1.13.0 (#63 Phase 3) — 5-minute anti-double-click cooldown
+        # per VIN. Catches "user pressed wake button twice quickly" or
+        # automation-bug repeat triggers BEFORE incrementing the daily
+        # budget. In-memory only (restart resets — that's fine, restart
+        # is intentional).
+        if not hasattr(self, "_wake_last_at"):
+            self._wake_last_at: dict[str, datetime] = {}
+        last_at = self._wake_last_at.get(vin)
+        if last_at is not None and (now - last_at) < _WAKE_COOLDOWN:
+            remaining_s = int((_WAKE_COOLDOWN - (now - last_at)).total_seconds())
+            _LOGGER.warning(
+                "VAG Connect: wake cooldown active for %s (%ds remaining). "
+                "Last wake at %s. Refusing to spare 12V battery.",
+                mask_vin(vin), remaining_s, last_at.isoformat(timespec="seconds"),
+            )
+            raise ServiceValidationError(
+                translation_domain=DOMAIN,
+                translation_key="wake_cooldown_active",
+                translation_placeholders={
+                    "remaining_s": str(remaining_s),
+                    "cooldown_min": str(int(_WAKE_COOLDOWN.total_seconds() // 60)),
+                },
+            )
+
         if not hasattr(self, "_wake_counts"):
             self._wake_counts: dict[str, tuple[Any, int]] = {}
         last_date, count = self._wake_counts.get(vin, (today, 0))
@@ -1330,6 +1511,8 @@ class VagConnectCoordinator(DataUpdateCoordinator):
         # the modem partially).
         count += 1
         self._wake_counts[vin] = (today, count)
+        # v1.13.0 (#63 Phase 3) — record cooldown timestamp.
+        self._wake_last_at[vin] = now
         # Push count into vehicle data so the sensor sees it on next read.
         with self._vehicles_lock:
             current = self.vehicles.get(vin)

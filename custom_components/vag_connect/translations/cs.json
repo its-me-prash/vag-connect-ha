@@ -408,6 +408,12 @@
     },
     "wake_budget_exhausted": {
       "message": "Vyčerpán denní limit probuzení ({count}/{budget}). K ochraně 12V baterie nebudou do půlnoci UTC odesílána žádná další probuzení. Viz sensor.wake_count_today."
+    },
+    "wake_cooldown_active": {
+      "message": "Cooldown probuzení aktivní (zbývá {remaining_s}s). K ochraně 12V baterie jsou probuzení omezena na jedno každých {cooldown_min} minut na vozidlo."
+    },
+    "read_only_mode_active": {
+      "message": "Režim jen pro čtení je povolen v možnostech integrace. Vypněte jej v Nastavení → Zařízení a služby → VAG Connect → Konfigurovat, abyste mohli odesílat příkazy do vozidla."
     }
   }
 }

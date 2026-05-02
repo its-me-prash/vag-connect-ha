@@ -408,6 +408,12 @@
     },
     "wake_budget_exhausted": {
       "message": "Dagelijkse wake-up budget op ({count}/{budget}). Om de 12V-accu te beschermen worden er geen verdere wake-ups verzonden tot middernacht UTC. Zie sensor.wake_count_today."
+    },
+    "wake_cooldown_active": {
+      "message": "Wake-up cooldown actief ({remaining_s}s resterend). Om de 12V-accu te beschermen zijn wake-ups beperkt tot één elke {cooldown_min} minuten per voertuig."
+    },
+    "read_only_mode_active": {
+      "message": "Alleen-lezen modus is ingeschakeld in de integratie-opties. Schakel het uit onder Instellingen → Apparaten en diensten → VAG Connect → Configureren om voertuigcommando's te verzenden."
     }
   }
 }

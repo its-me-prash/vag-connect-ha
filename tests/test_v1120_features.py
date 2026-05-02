@@ -193,6 +193,10 @@ class TestSmartWakeCounter:
         coord = _coord_with_vehicle()
         for _ in range(2):
             asyncio.get_event_loop().run_until_complete(coord.async_wake_vehicle("VINX"))
+            # v1.13.0 (#63) — clear the 5-min cooldown so the loop can
+            # advance the budget counter without hitting wake_cooldown_active.
+            if hasattr(coord, "_wake_last_at"):
+                coord._wake_last_at.clear()
         assert coord.vehicles["VINX"]["wake_count_today"] == 2
 
     def test_wake_budget_exhausted_raises(self):
@@ -205,7 +209,11 @@ class TestSmartWakeCounter:
             asyncio.get_event_loop().run_until_complete(
                 coord.async_wake_vehicle("VINX")
             )
-        # One more should raise
+            # v1.13.0 (#63) — clear the 5-min cooldown between iterations
+            # so the budget-exhaust path is the one being tested.
+            if hasattr(coord, "_wake_last_at"):
+                coord._wake_last_at.clear()
+        # One more should raise (budget exhausted, not cooldown)
         with pytest.raises(ServiceValidationError):
             asyncio.get_event_loop().run_until_complete(
                 coord.async_wake_vehicle("VINX")

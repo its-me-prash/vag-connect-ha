@@ -5,10 +5,12 @@
 > mirrors it for archive/historical purposes and links the active GitHub
 > issues for each session.
 
-**Last updated:** 2026-05-01 — post v1.12.3 (3 Scout-Reports gebundlet:
-#111 von DnnsJp74 + #113 Prash Golf GTE + #114 Prash Audi S6 C8.
-Wildcard-Strategie für `.value.*` Container etabliert, kein whack-a-mole
-mehr).
+**Last updated:** 2026-05-02 — post v1.13.0 (Production Hardening Bundle:
+Capability-Filter Phase 3 #56 + Read-only Phase 2/3 #63 +
+Anonymized Diagnostics-Export #62 + Process & Governance Doc-PR #64).
+Nächste P0: Bundle 2 (v1.14.0 Audi Feature Pack — #24 Trip Stats +
+#29 PPC Climate + #28 ICE Remote Start, alle in `RESEARCH_NOTES_2026-05-02.md`
+vorrecherchiert).
 
 ---
 
@@ -53,6 +55,7 @@ mehr).
 | **v1.12.1** | 🛰️📚 **Scout-Pfade #105/#106 + Gerhard's Born Fixture (#53 consent) + #47 FAQ** — Welle 4 EXPECTED_KEYS Wildcards für `.error.*` + explizite `.value` Container. Erste Live-Validation des Privacy-Workflows aus PR #101: Gerhard hat Consent für Fixture gegeben, komplett redacted nach Hard Rule #18 + 7 Privacy-Audit-Tests. 6 Round-Trip-Tests verifizieren dass v1.10.2 Parser-Pfade aus der Fixture die Werte produzieren die Gerhard live sah. #47 FAQ-Sektion in CONTRIBUTING.md mit Subscription-vs-missing-capability-vs-spin-Diagnose-Tabelle. (19 neue Tests) | **2026-04-30** |
 | **v1.12.2** | 🌟🛰️ **Erstes Community-Scout-Report (Skoda #107 von tritanium73)** — User `tritanium73` reichte am 2026-05-01 den ersten Vehicle Data Scout Report von einem Nicht-Maintainer ein. 14 neue Skoda mysmob Pfade über 4 Endpoints (`renders.{lightMode,darkMode}` 2-segment fix, 6× `air-conditioning`, 2× `driving-range` mit `carType`+`primaryEngineRange`, 4× `maintenance` meta-blocks). Volle v1.9.0 Pipeline funktioniert in der Wildbahn. (6 neue Tests) | **2026-05-01** |
 | **v1.12.3** | 🛰️ **Scout-Pfade #111 (DnnsJp74) + #113 (Golf GTE) + #114 (Audi S6 C8)** — drei Scout-Reports zusammen. #111: 23 Audi-Pfade von Community-User DnnsJp74 (zweiter community Scout report nach #107). #113+#114: 14+20 Felder von Prash auf eigenen Vehicles (Golf GTE + Audi S6) — alle drei zeigen `.value` Container Children. Wildcards `fuelStatus.rangeStatus.value.*`, `vehicleHealthInspection.maintenanceStatus.value.*`, `departureProfiles.departureProfilesStatus.value.*`, `userCapabilities.capabilitiesStatus.value.*` decken alle Klassen future-proof ab. (8 neue Tests) | **2026-05-01** |
+| **v1.13.0** | 🛡️ **Production Hardening Bundle** — drei P0-Themen aus dem Backlog (#56/#63/#62) plus Process-Docs (#64) in einem MINOR. Capability-Filter Phase 3 mit `cariad/_capabilities.py` Single-Source-of-Truth (`CAPABILITY_MAP[brand][command_id]→cap_id`, Audi/SEAT erben via Table-Alias) — gates PRE-Entity-Creation (Phase 1+2 waren post-failure). Read-only Phase 2 service-side: `_coord_writeable(vin)` raised `read_only_mode_active` ServiceValidationError. Read-only Phase 3 cloud_refresh vs wake distinction (`refresh_cloud_cache` neu, `refresh_vehicle` bleibt als Alias) + 5-min wake cooldown pro VIN + per-VIN-per-command-class asyncio.Lock mit timeout. Diagnostics: token-redaction expanded (access/refresh/id_token snake+camel + client_secret), Email partial-mask `u***@***.com`, GPS opt-in 1-decimal rounding wenn reverse-geocoding aus. Process: `.github/ISSUE_TEMPLATE/{scout_report,error_report}.yml` + `BRAND_CAPTAINS.md`. Pre-Research: `docs/RESEARCH_NOTES_2026-05-02.md` (423 Zeilen, 13 Issues über 3 Bundles). (31 neue Tests) | **2026-05-02** |
 
 **Sprint summary 2026-04-29:** 7 releases, ~50 new tests, branch
 protection activated, CHANGELOG split into human + technical, 4 parallel
@@ -78,32 +81,33 @@ Strict order — P0 (next release) > P1 (planned MINOR) > P2 (later) > P3 (resea
 | ~~v1.11.1~~ | Golf GTE Fuel-Range #96 + Optimistic UI 3B-Part-3 | done |
 | ~~v1.12.0~~ | 5-in-1 Feature-Sprint: 12V #23 + Per-Light + Writeable Number + Smart-Wake #55 + Read-only #63-Phase-1 + Scout-Pfade #103/#104 | done |
 | ~~v1.12.1~~ | Scout-Pfade #105/#106 + Gerhard's Born Fixture (#53 consent) + #47 FAQ | done |
+| ~~v1.12.2~~ | Erstes Community-Scout-Report (Skoda #107 von tritanium73) | done |
+| ~~v1.12.3~~ | Scout-Pfade #111/#113/#114 + Wildcard-Strategie für `.value.*` Container | done |
+| ~~v1.13.0~~ | Production Hardening Bundle: Capability-Filter Phase 3 (#56) + Read-only Phase 2/3 (#63) + Anonymized Diagnostics-Export (#62) + Process & Governance Doc-PR (#64) | done |
 
-### 🔴 P0 — Nächste Release (v1.13.0, MINOR)
+### 🔴 P0 — Nächste Release (v1.14.0, MINOR — Audi Feature Pack)
 
-Coherente "Production Hardening" Theme — alle drei Items sind bereits angefangene Arbeit (Phase 1 ausgeliefert, Phase 2/3 fehlt) oder in mehreren Issues angefragt.
-
-| Session | Version | Scope | Issues |
-|---|---|---|---|
-| **Anonymized Diagnostics-Export + Capability-Filter Phase 3 + Read-only Phase 2/3** | **v1.13.0** ⭐ | MINOR: (1) Anonymized diagnostics export mit CC-seatcupra #109 / CC-skoda #50 / volkswagencarnet #921 als Reference-Fixtures + Gerhard's Born Fixture aus v1.12.1 als Live-Beispiel. (2) Capability-Filter Phase 3 — `capability.active && user-enabled` PRE-Entity-Creation für SEAT/CUPRA (verstecke `command_flash` bei Gerhard's Born statt nach Failure unavailable zu markieren). Dann Audi/VW. (3) Read-only Phase 2 — per-VIN per-command-class lock mit timeout + cloud_refresh vs wake_vehicle service distinction. | #62, #63 Phase 2/3, #56 Phase 3 |
-
-### 🟡 P1 — Process / Doc-only (v1.13.x)
+Bundle 2 aus `docs/RESEARCH_NOTES_2026-05-02.md`. Drei Audi-spezifische Features die in mehreren Issues angefragt sind. #35 (Ladehistorie LTS) wurde DEFERRED — verifizierter Backend-Endpoint hat kein `chargedEnergy_kWh` Feld, braucht eigene Research-Session.
 
 | Session | Version | Scope | Issues |
 |---|---|---|---|
-| **Process & Governance Doc-PR** | v1.13.x doc | `.github/ISSUE_TEMPLATE/{bug,feature,live-test,scout,error}.yaml` GitHub Issue Forms; CODEOWNERS file; Brand-Captains-Liste in CONTRIBUTING.md (community-volunteers pro Brand). PATCH-equivalent (no manifest bump). | #64 |
+| **Audi Feature Pack** | **v1.14.0** ⭐ | MINOR: (1) Trip Stats — Audi `tripstatistics/v1` (verified `audi_services.py:337`), per-trip data model (numeric aggregate in state, JSON in attrs per audi #113). (2) PPC Climate Body conditional shape (audi #644 + #677 — `climatisationMode: "comfort"` mandatory, `targetTemperature*` muss omitted für Q6/A6 e-tron). (3) ICE Engine Start S-PIN flow (audi_connect_ha #717 — zwei-Schritt PUT `/engine/{VIN}/userpromptproof` + POST `/engine/{VIN}/start`). Capability-gated. | #24, #29, #28 |
+
+### 🟡 P1 — Cross-Brand UX (v1.15.0)
+
+| Session | Version | Scope | Issues |
+|---|---|---|---|
+| **Cross-Brand UX** | **v1.15.0** | MINOR: dedizierte Number-Entities pro Departure-Timer + Klima-Schedule UI (#26). Read-only Sensoren für Standort-spez. Ladeziel (#25) und Ladeprofile (#31). Write-Side für #25/#31 deferred (braucht eigene Research-Session — multiple-charging-profile API ist brand-spezifisch). | #26, #25 (read-only), #31 (read-only) |
 | **Old-Bug Verify-Pings** | community | User-Comments auf #42 (CUPRA Formentor) + #48 (all-actions-fail) + #51 (Audi RS e-tron GT 404) — höchstwahrscheinlich gefixt durch v1.8.4 SecToken / v1.8.5 v1/v2 fallback / v1.9.1 Wake-Fix / v1.10.2 Born firmware fixes. Status-Bestätigung gefragt. | #42, #48, #51 |
 
-### 🟠 P2 — Future MINOR Sprints (v1.14.0+)
+### 🟠 P2 — Future MINOR Sprints (v1.16.0+)
 
 | Session | Version | Scope | Issues |
 |---|---|---|---|
-| **Trip Stats + Image refactor** | **v1.14.0** ⭐ | MINOR: Audi `tripstatistics/v1` (verified `audi_services.py:337`); per-trip data model (numeric aggregate in state, JSON in attrs per audi #113); image platform → user-supplied URL or removal. | #24, #35, #36 |
-| **Klima-Timer + Departure UI** | v1.15.0 | MINOR: dedizierte Number-Entities pro Departure-Timer + Klima-Schedule UI. PPC Climate Body conditional shape (audi #644 + #677 — `climatisationMode: "comfort"` mandatory, `targetTemperature*` muss omitted für Q6 e-tron / A6 e-tron). | #26, #29 |
-| **Theft / Alarm Binary** | v1.15.x | API-Endpoint research nötig — alarmStatus job in CARIAD selectivestatus? Feature-Discovery dann implementation. | #33 |
-| **Standort-spez. Ladeziel + Ladeprofile** | v1.16.0 | MINOR: location-based charging (zone-aware target_soc) + multiple Ladeprofile pro Standort. | #25, #31 |
+| **Theft / Alarm Binary** | v1.16.0 | API-Endpoint research nötig — alarmStatus job in CARIAD selectivestatus? Feature-Discovery dann implementation. | #33 |
 | **Navigation: Ziel ans Auto** | v1.16.x | MINOR: Service `vag_connect.send_destination` + payload research. | #36 |
-| **Remote Start (ICE)** | v1.17.0 | MINOR: ICE Engine Start S-PIN flow (audi_connect_ha #717 — zwei-Schritt PUT `/engine/{VIN}/userpromptproof` + POST `/engine/{VIN}/start`). Capability-gated. | #28 |
+| **Standort-spez. Ladeziel + Ladeprofile (Write-Side)** | v1.17.0 | MINOR: location-based charging (zone-aware target_soc) + multiple Ladeprofile pro Standort schreibbar. Verlängerung der read-only Implementierung aus v1.15.0. | #25, #31 |
+| **Ladehistorie LTS** | v1.17.x | API-Discovery nötig — `chargedEnergy_kWh` Feld nicht in CARIAD selectivestatus verifiziert (Research v1.13.0). Wartet auf neuen Endpoint-Hinweis aus Live-Tests. | #35 |
 
 ### 🔵 P2 — Big Architectural
 

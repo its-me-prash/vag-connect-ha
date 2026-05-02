@@ -25,6 +25,12 @@ async def async_setup_entry(
     entities: list[LockEntity] = []
 
     for vin in coordinator.vehicles:
+        # v1.13.0 (#56 Phase 3) — capability-filter PRE entity creation.
+        # ``False`` only when backend explicitly reports lock capability
+        # missing/limited; ``None`` (unknown) keeps the entity (Phase 2
+        # catches at runtime via classify_command_failure).
+        if coordinator.command_capability_supported(vin, "command_lock") is False:
+            continue
         entities.append(VagDoorLock(coordinator, vin))
 
     async_add_entities(entities)

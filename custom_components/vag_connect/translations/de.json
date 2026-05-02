@@ -393,6 +393,15 @@
     },
     "feature_not_supported": {
       "message": "Die Funktion {feature} wird vom Fahrzeug oder dem aktuellen API-Client nicht unterstützt. Die Aktion wurde nicht gesendet."
+    },
+    "wake_budget_exhausted": {
+      "message": "Tägliches Wake-Up-Budget erschöpft ({count}/{budget}). Zum Schutz der 12V-Batterie werden bis Mitternacht UTC keine weiteren Wake-Up-Anfragen gesendet. Siehe sensor.wake_count_today."
+    },
+    "wake_cooldown_active": {
+      "message": "Wake-Up-Cooldown aktiv ({remaining_s}s verbleibend). Zum Schutz der 12V-Batterie sind Wake-Ups auf einen alle {cooldown_min} Minuten pro Fahrzeug begrenzt."
+    },
+    "read_only_mode_active": {
+      "message": "Read-only Modus ist in den Integrations-Optionen aktiviert. Deaktiviere ihn unter Einstellungen → Geräte & Dienste → VAG Connect → Konfigurieren um Fahrzeug-Befehle zu senden."
     }
   }
 }
