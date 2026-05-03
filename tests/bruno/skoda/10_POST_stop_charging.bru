@@ -1,0 +1,37 @@
+meta {
+  name: POST stop charging
+  type: http
+  seq: 10
+}
+
+post {
+  url: {{base_url}}/api/v1/charging/{{vin}}/stop
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {}
+}
+
+docs {
+  Stops the active charging session. Empty JSON body. No S-PIN.
+
+  Implementation: SkodaClient.command_stop_charging() in
+  custom_components/vag_connect/cariad/api/skoda.py:450.
+
+  Backs the button.<vin>_stop_charging entity. After 202 the state
+  transitions through CHARGING_INTERRUPTED → READY_FOR_CHARGING (or
+  NOT_READY_FOR_CHARGING if the plug is unplugged in the meantime).
+  Defensive enum tolerance lives in cariad/_util.safe_enum since
+  v1.10.1.
+}

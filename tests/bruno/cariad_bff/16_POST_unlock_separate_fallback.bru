@@ -1,0 +1,32 @@
+meta {
+  name: POST unlock (separate-route fallback for combined seq 05)
+  type: http
+  seq: 16
+}
+
+post {
+  url: {{base_url}}/vehicle/v1/vehicles/{{vin}}/access/unlock
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+body:json {
+  {
+    "spin": "{{spin}}"
+  }
+}
+
+docs {
+  v1.8.8 (Session 3B) — separate-route unlock fallback. Same pattern
+  as seq 15 lock fallback. Combined endpoint /access/lock-unlock with
+  body {"action": "unlock", "spin": ...} is preferred (seq 05).
+}

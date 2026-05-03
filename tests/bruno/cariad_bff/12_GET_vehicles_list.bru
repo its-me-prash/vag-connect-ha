@@ -1,0 +1,27 @@
+meta {
+  name: GET vehicles list (account garage)
+  type: http
+  seq: 12
+}
+
+get {
+  url: {{base_url}}/vehicle/v1/vehicles
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+headers {
+  Accept: application/json
+}
+
+docs {
+  CARIAD-BFF account garage list — returns array of {vin, ...} for
+  the authenticated user. Used by VWEUClient.get_vehicles() to enumerate
+  VINs at setup. Audi inherits this via AudiClient(VWEUClient).
+
+  Implementation: cariad/api/vw_eu.py:get_vehicles().
+}

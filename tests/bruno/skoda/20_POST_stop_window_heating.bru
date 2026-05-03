@@ -1,0 +1,33 @@
+meta {
+  name: POST stop window heating
+  type: http
+  seq: 20
+}
+
+post {
+  url: {{base_url}}/api/v2/air-conditioning/{{vin}}/stop-window-heating
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {}
+}
+
+docs {
+  Stops the front + rear window heating. Empty JSON body.
+
+  Implementation: SkodaClient.command_stop_window_heating() in
+  custom_components/vag_connect/cariad/api/skoda.py:479.
+
+  Backs button.<vin>_stop_window_heating.
+}

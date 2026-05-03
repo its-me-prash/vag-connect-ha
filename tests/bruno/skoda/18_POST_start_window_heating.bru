@@ -1,0 +1,37 @@
+meta {
+  name: POST start window heating
+  type: http
+  seq: 18
+}
+
+post {
+  url: {{base_url}}/api/v2/air-conditioning/{{vin}}/start-window-heating
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {}
+}
+
+docs {
+  Starts the front + rear window heating. Empty JSON body. The car
+  decides whether front-only or both based on ambient temperature
+  and battery / fuel state — we don't pass per-pane parameters.
+
+  Implementation: SkodaClient.command_start_window_heating() in
+  custom_components/vag_connect/cariad/api/skoda.py:476.
+
+  Backs button.<vin>_start_window_heating. State changes appear on
+  the next air-conditioning poll under windowHeatingState.front /
+  .rear ("ON" vs anything else).
+}

@@ -1,0 +1,29 @@
+meta {
+  name: POST engine stop (Audi ICE)
+  type: http
+  seq: 11
+}
+
+post {
+  url: {{base_url}}/vehicle/v1/engine/{{vin}}/stop
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+headers {
+  Accept: application/json
+}
+
+docs {
+  v1.14.0 (#28 Audi ICE Engine Stop) — companion to seq 09/10.
+
+  Single POST, no body, no S-PIN required (mirrors arjenvrh/audi_connect_ha
+  PR #717 — only start needs the userpromptproof token).
+
+  Audi-only. Implementation: AudiClient.command_engine_stop in
+  cariad/api/audi.py.
+}

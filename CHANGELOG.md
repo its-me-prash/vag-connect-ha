@@ -32,6 +32,50 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ## [Unreleased]
 
+## [1.17.4] - 2026-05-03 🎯 Bruno-CI Stufe 2 COMPLETE — Full Strict Coverage / Bruno-CI Stufe 2 Complete (Skoda + CARIAD-BFF strict)
+
+🎯 **Bruno-CI Stufe 2 ist COMPLETE.** Skoda + CARIAD-BFF auf 100% coverage gebracht, alle 3 Brands jetzt strict mode in CI. **80 .bru files total**, 80/80 match (35 seat_cupra + 24 skoda + 21 cariad_bff).
+
+### 🤖 Bruno Coverage Completion / Bruno Coverage Completion
+
+- **Skoda: +17 neue .bru files** (seq 08–24) via gen-agent — covers alle 24 Python URLs:
+  - 3× charging actions (set-charge-limit, start, stop)
+  - 3× vehicle-access (lock, unlock, honk-and-flash)
+  - 1× vehicle-wakeup (mit `?applyRequestLimiter=true` query)
+  - 5× air-conditioning (bare GET, target-temperature, start, stop, start/stop-window-heating)
+  - 1× connection-status/readiness
+  - 1× vehicle-status/driving-range
+  - 1× maps/positions/parking
+  - 1× vehicle-maintenance
+  - **24/24 strict pass**
+- **CARIAD-BFF: +11 neue .bru files** (seq 11–21):
+  - 4× neue concrete endpoints (engine_stop, vehicles list, climatisation/timers POST, windowheating combined)
+  - 7× separate-route fallbacks für `_post_command_with_fallback_paths` (lock, unlock, charging-start, charging-stop, climatisation-start, climatisation-stop, vehicleWakeup) — required by drift-check für coverage of v1 paths
+  - **21/21 strict pass**
+
+### 🛠️ Drift-Check Improvements / Drift-Check Improvements
+
+- **`{path_suffix}` placeholder expansion** in `_ACTION_EXPANSIONS` — covers `_post_command_with_fallback_paths(primary_suffix=..., fallback_suffix=...)` runtime templates. Same mechanism as `{action}` placeholder.
+- **`_is_skipped_template()` helper** — filters out `/vehicle/v2/vehicles/{vin}/{path_suffix}` template captures since `_post_command` auto-falls back from v1→v2 with same body. v2 fallback URLs are implicit, no separate Bruno docs needed.
+- **CI workflow strict mode for ALL 3 brands** — no more `--strict-brands seat_cupra` whitelist; full `--strict` gating. Any new Python endpoint without matching `.bru` fails CI immediately.
+
+### 📊 Coverage Summary / Coverage Summary
+
+| Brand | Python URLs | Bruno files | Match | Status |
+|---|---|---|---|---|
+| seat_cupra | 35 | 35 | 35/35 | ✅ Strict |
+| skoda | 24 | 24 | 24/24 | ✅ Strict |
+| cariad_bff | 21 | 21 | 21/21 | ✅ Strict |
+| **Total** | **80** | **80** | **80/80** | **✅ All strict** |
+
+### 📦 Schließt Issues / Closes
+
+Keine User-Issues — Bruno-Coverage Abschluss.
+
+### 🎯 Strategische Bedeutung / Strategic Context
+
+Bruno-CI Stufe 2 ist die **Foundation für Stufe 3** (Custom Claude Code Skill für HAR→.bru → Python-client generation). Ab v1.18.0+ kann jede neue Endpoint-Addition über die `.bru → Python` Workflow-Direction laufen statt umgekehrt. Das senkt die Contribution-Schwelle für Brand-Captains drastisch und macht uns zur **canonical reference** für die VAG-FOSS-Community.
+
 ## [1.17.3] - 2026-05-03 🤖🛡️📚 Bruno-CI Stufe 2 + Lovelace Cards + 3 Research Docs
 
 🤖 **MASSIVE PATCH-Release** mit 4 parallel ausgelieferten Themen:

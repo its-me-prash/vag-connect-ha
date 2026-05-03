@@ -1,0 +1,36 @@
+meta {
+  name: POST start climatisation
+  type: http
+  seq: 17
+}
+
+post {
+  url: {{base_url}}/api/v2/air-conditioning/{{vin}}/start
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {}
+}
+
+docs {
+  Starts pre-conditioning (heat/cool the cabin). Empty JSON body —
+  Skoda mysmob takes the target temperature from the most recently
+  set value via /settings/target-temperature, not from this call.
+
+  Implementation: SkodaClient.command_start_climate() in
+  custom_components/vag_connect/cariad/api/skoda.py:441.
+
+  Backs the climate entity's HVAC_MODE = HEAT_COOL action and the
+  button.<vin>_start_climate entity. No S-PIN.
+}

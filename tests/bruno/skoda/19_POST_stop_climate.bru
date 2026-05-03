@@ -1,0 +1,34 @@
+meta {
+  name: POST stop climatisation
+  type: http
+  seq: 19
+}
+
+post {
+  url: {{base_url}}/api/v2/air-conditioning/{{vin}}/stop
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {}
+}
+
+docs {
+  Stops pre-conditioning. Empty JSON body.
+
+  Implementation: SkodaClient.command_stop_climate() in
+  custom_components/vag_connect/cariad/api/skoda.py:444.
+
+  Backs the climate entity's HVAC_MODE = OFF action and the
+  button.<vin>_stop_climate entity. No S-PIN.
+}

@@ -1,0 +1,39 @@
+meta {
+  name: POST climatisation start (separate-route fallback for combined seq 06)
+  type: http
+  seq: 19
+}
+
+post {
+  url: {{base_url}}/vehicle/v1/vehicles/{{vin}}/climatisation/start
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+body:json {
+  {
+    "targetTemperature": 21.0,
+    "targetTemperatureUnit": "celsius",
+    "climatisationWithoutExternalPower": true,
+    "windowHeatingEnabled": true
+  }
+}
+
+docs {
+  v1.8.8 (Session 3B) — separate-route climate start fallback. Used
+  when combined /climatisation/start-stop (seq 06) returns 404.
+  Body carries targetTemperature etc. (vs combined which is just
+  {"action": "start"}).
+
+  v1.14.0 (#29) PPE/PPC variant for Q6/A6 e-tron uses
+  {"climatisationMode": "comfort", ...} WITHOUT targetTemperature.
+}

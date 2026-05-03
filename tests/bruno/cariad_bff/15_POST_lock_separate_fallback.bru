@@ -1,0 +1,33 @@
+meta {
+  name: POST lock (separate-route fallback for combined seq 05)
+  type: http
+  seq: 15
+}
+
+post {
+  url: {{base_url}}/vehicle/v1/vehicles/{{vin}}/access/lock
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+body:json {
+  {
+    "spin": "{{spin}}"
+  }
+}
+
+docs {
+  v1.8.8 (Session 3B) — separate-route lock fallback. Used by
+  _post_command_with_fallback_paths when the combined endpoint
+  /access/lock-unlock (seq 05) returns 404. Same body (S-PIN) just
+  different URL.
+}

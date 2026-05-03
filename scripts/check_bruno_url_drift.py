@@ -104,11 +104,27 @@ def _normalise(url: str) -> str:
     return base.rstrip("/")
 
 
-# Python URLs that contain a runtime `{action}` placeholder which expands
-# to one of multiple known values at call time. Expand each into the
-# concrete URLs so Bruno's literal-action specs match.
+# Python URLs that contain a runtime placeholder which expands to one
+# of multiple known values at call time. Expand each into the concrete
+# URLs so Bruno's literal-action specs match.
 _ACTION_EXPANSIONS = {
     "{action}": ["start", "stop"],
+    # CARIAD-BFF _post_command_with_fallback_paths uses {path_suffix}
+    # for combined endpoints like "access/lock-unlock" and the legacy
+    # separate-route fallbacks. List the concrete suffixes our brand
+    # clients call so drift-check matches them as literal Bruno URLs.
+    "{path_suffix}": [
+        "access/lock-unlock",
+        "access/lock",
+        "access/unlock",
+        "climatisation/start-stop",
+        "climatisation/start",
+        "climatisation/stop",
+        "charging/start-stop",
+        "charging/start",
+        "charging/stop",
+        "vehicleWakeup",
+    ],
 }
 
 
@@ -134,10 +150,19 @@ def _expand_action_placeholders(urls: set[str]) -> set[str]:
     return out
 
 
+def _is_skipped_template(url: str) -> bool:
+    """Filter out URL templates that exist only as automatic fallbacks
+    of the primary endpoint (e.g. /vehicle/v2/.../{path_suffix} is the
+    auto-fallback of /vehicle/v1/.../{path_suffix} via _post_command's
+    404-retry — same body, same suffix, just version bump)."""
+    return url.startswith("/vehicle/v2/vehicles/{vin}/{path_suffix}")
+
+
 def _extract_python_urls(py_paths: list[str]) -> set[str]:
     """Return a set of normalised path-after-host URLs from one or
     more Python files. URLs from `_ENGINE_BASE` get the engine prefix
     re-attached so they match Bruno specs under the unified base host.
+    Auto-fallback templates (see _is_skipped_template) are filtered.
     """
     raw: set[str] = set()
     for rel_path in py_paths:
@@ -146,7 +171,11 @@ def _extract_python_urls(py_paths: list[str]) -> set[str]:
             continue
         text = py_path.read_text(encoding="utf-8")
         # Standard {_BASE}/... captures.
-        raw.update(_normalise(m.group(1)) for m in _PY_URL_RE.finditer(text))
+        for m in _PY_URL_RE.finditer(text):
+            url = _normalise(m.group(1))
+            if _is_skipped_template(url):
+                continue
+            raw.add(url)
         # _ENGINE_BASE prefix re-attachment.
         for m in _PY_ENGINE_URL_RE.finditer(text):
             raw.add(_normalise(_ENGINE_BASE_PREFIX + m.group(1)))

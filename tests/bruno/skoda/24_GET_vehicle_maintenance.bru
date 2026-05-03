@@ -1,0 +1,43 @@
+meta {
+  name: GET vehicle maintenance (v3)
+  type: http
+  seq: 24
+}
+
+get {
+  url: {{base_url}}/api/v3/vehicle-maintenance/vehicles/{{vin}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+headers {
+  Accept: application/json
+}
+
+docs {
+  Maintenance / service-interval data — odometer + due-in-km +
+  due-in-days for both inspection and oil service.
+
+  Response shape (verified myskoda/models/maintenance.py):
+    {"maintenanceReport": {
+       "mileageInKm": <int>,
+       "inspectionDueInKm": <int>,
+       "inspectionDueInDays": <int>,
+       "oilServiceDueInKm": <int>,
+       "oilServiceDueInDays": <int>
+     }}
+  Some firmwares omit the ``maintenanceReport`` wrapper — we fall
+  back to reading the fields off the root object.
+
+  Drives: sensor.<vin>_odometer_km, _service_km, _service_due_at,
+  _oil_service_km, _oil_service_at, plus the v1.11.0 (#91) raw
+  day-count sensors (_service_due_in_days, _oil_service_due_in_days).
+
+  Implementation: gathered in SkodaClient.get_status() at
+  custom_components/vag_connect/cariad/api/skoda.py:156; parsed at
+  the maintenance branch around line 374.
+}

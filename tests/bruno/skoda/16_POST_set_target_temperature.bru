@@ -1,0 +1,38 @@
+meta {
+  name: POST set climate target temperature
+  type: http
+  seq: 16
+}
+
+post {
+  url: {{base_url}}/api/v2/air-conditioning/{{vin}}/settings/target-temperature
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "temperatureValue": 21.5,
+    "unitInCar": "CELSIUS"
+  }
+}
+
+docs {
+  Sets the climatisation target temperature. ``unitInCar`` is always
+  CELSIUS for our integration — Fahrenheit conversion (if user has
+  metric-system off in HA) is done inside HA, not against the API.
+
+  Implementation: SkodaClient.command_set_climate_temperature() in
+  custom_components/vag_connect/cariad/api/skoda.py:470.
+
+  Backs the climate entity's set_temperature service. No S-PIN.
+}
