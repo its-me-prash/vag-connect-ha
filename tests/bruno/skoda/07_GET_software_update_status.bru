@@ -1,0 +1,38 @@
+meta {
+  name: GET software-version update status (v1.15.0, OTA sensor)
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{base_url}}/api/v1/vehicle-information/{{vin}}/software-version/update-status
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+headers {
+  Accept: application/json
+}
+
+docs {
+  v1.15.0 (myskoda PR #541, Skoda app v8.10.0+) — software version +
+  OTA update status.
+
+  Response: {status: "NO_UPDATE_AVAILABLE" | "UPDATE_SUCCESSFUL" | ...,
+  currentSoftwareVersion: "3.8", carCapturedTimestamp: "...",
+  releaseNotesUrl: "https://..."}
+
+  Drives sensor.software_version (DIAGNOSTIC) +
+  binary_sensor.ota_update_available (UPDATE device class).
+
+  Forward-compat: unknown enum values default to "update available"
+  so we don't have to ship a release for every new server enum value.
+
+  Implementation: hooked into get_status() gather() in skoda.py.
+  Cross-brand support deferred — CARIAD-BFF + OLA don't yet expose
+  this endpoint (Research 2026-05-02).
+}

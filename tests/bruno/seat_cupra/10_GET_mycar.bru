@@ -1,0 +1,29 @@
+meta {
+  name: GET mycar (main vehicle data)
+  type: http
+  seq: 10
+}
+
+get {
+  url: {{base_url}}/v5/users/{{user_id}}/vehicles/{{vin}}/mycar
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+headers {
+  Accept: application/json
+}
+
+docs {
+  Primary mycar endpoint — returns measurements (mileage, fuelLevelStatus,
+  batteryStatus.currentSOC_pct), access (accessStatus.doorLockStatus), etc.
+
+  v5 path with userId in URL — different from per-vehicle /v1 + /v2 endpoints.
+
+  Implementation: cariad/api/seat_cupra.py:get_status (line ~154,
+  one of nine parallel asyncio.gather requests).
+}

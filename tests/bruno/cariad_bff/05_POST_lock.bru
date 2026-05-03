@@ -1,0 +1,42 @@
+meta {
+  name: POST lock vehicle (with S-PIN)
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{base_url}}/vehicle/v1/vehicles/{{vin}}/access/lock-unlock
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+body:json {
+  {
+    "action": "lock",
+    "spin": "{{spin}}"
+  }
+}
+
+docs {
+  v1.9.1 (#92 Audi S6 C8) — premium Audi/VW models require S-PIN
+  on lock too (CARIAD-BFF returns 403 spin_error otherwise).
+  S-PIN is included in the body when configured.
+
+  v1.8.8 (Session 3B) — combined endpoint with separate-endpoint
+  fallback: on 404 fall back to:
+    POST /vehicle/v1/vehicles/{vin}/access/lock  body {"spin": ...}
+  (legacy 2-route variant). Each is tried on both /vehicle/v1 and
+  /vehicle/v2 paths via _post_command_with_fallback_paths.
+
+  Implementation: VWEUClient.command_lock() in cariad/api/vw_eu.py:169.
+  Audi inherits.
+}

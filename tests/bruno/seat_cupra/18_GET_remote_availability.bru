@@ -1,0 +1,27 @@
+meta {
+  name: GET remote availability (online state)
+  type: http
+  seq: 18
+}
+
+get {
+  url: {{base_url}}/v1/vehicles/{{vin}}/remote-availability
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+headers {
+  Accept: application/json
+}
+
+docs {
+  Returns whether the vehicle can currently be reached for remote commands.
+  Shape: {"isOnline": bool} or {"status": "ONLINE" | "OFFLINE"}.
+
+  Implementation: cariad/api/seat_cupra.py:get_status (line ~162).
+  Mapped to VehicleData.is_online.
+}

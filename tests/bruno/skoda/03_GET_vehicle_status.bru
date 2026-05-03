@@ -1,0 +1,29 @@
+meta {
+  name: GET vehicle status
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{base_url}}/api/v2/vehicle-status/{{vin}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+headers {
+  Accept: application/json
+}
+
+docs {
+  Returns full vehicle status block: access (overall.locked + detail),
+  windows, lights, hood/trunk/sunroof. v1.10.2 (#53 Gerhard's Born Live-
+  Dump) revealed Born 2026 firmware uses camelCase field names + "detail"
+  block alongside "overall". Parser handles both.
+
+  Implementation: SkodaClient.get_status() — first item in get_status
+  gather() at custom_components/vag_connect/cariad/api/skoda.py:80.
+}

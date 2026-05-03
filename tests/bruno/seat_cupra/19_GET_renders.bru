@@ -1,0 +1,28 @@
+meta {
+  name: GET vehicle renders (image URLs)
+  type: http
+  seq: 19
+}
+
+get {
+  url: {{base_url}}/v2/vehicles/{{vin}}/renders
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+headers {
+  Accept: application/json
+}
+
+docs {
+  Returns 3D-render URLs per viewpoint (front, side, rear, top, etc.).
+  Response is either a list or {"renders": [...]} containing entries
+  with viewPoint/type + url fields.
+
+  Implementation: cariad/api/seat_cupra.py:_fetch_renders (line ~128).
+  Used to populate device entity_picture for each VIN.
+}

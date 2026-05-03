@@ -1,0 +1,41 @@
+meta {
+  name: POST engine start (Audi ICE — Step 2)
+  type: http
+  seq: 10
+}
+
+post {
+  url: {{base_url}}/vehicle/v1/engine/{{vin}}/start
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+body:json {
+  {
+    "securedActivationData": "<userPromptProof from step 1>",
+    "spin": "{{spin}}"
+  }
+}
+
+docs {
+  v1.14.0 (#28 Audi ICE Engine Start) — Step 2 of 2-step S-PIN flow.
+
+  Pre-requisite: PUT /engine/{VIN}/userpromptproof (step 1) returned
+  a userPromptProof token. Pass that token here as
+  securedActivationData. The PIN is sent again in this step too.
+
+  Companion stop endpoint:
+    POST {{base_url}}/vehicle/v1/engine/{{vin}}/stop  (no body, no SPIN)
+
+  Audi-only. Implementation: AudiClient.command_engine_start /
+  command_engine_stop in cariad/api/audi.py.
+}

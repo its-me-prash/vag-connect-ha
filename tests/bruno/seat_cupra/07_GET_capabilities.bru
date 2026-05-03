@@ -1,0 +1,31 @@
+meta {
+  name: GET vehicle capabilities (plural primary)
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{base_url}}/v1/vehicles/{{vin}}/capabilities
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+headers {
+  Accept: application/json
+}
+
+docs {
+  v1.17.1 — OLA capabilities document. Response shape roughly:
+    {"capabilities": [{"id": "honk-and-flash", "status": [...]}, ...]}
+
+  Implementation: cariad/api/seat_cupra.py:get_capabilities (line ~83).
+  Caller (coordinator) caches with 24h TTL. Failures swallowed since
+  capabilities are best-effort metadata, never load-bearing.
+
+  A/B fallback path on 404 (Bruno-Collection singular variant):
+    GET /v1/user/{userId}/vehicle/{vin}/capabilities
+}

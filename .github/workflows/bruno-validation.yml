@@ -81,9 +81,14 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Run drift check (warn-only mode)
+      - name: Run drift check (per-brand strict mode)
         run: |
-          # Warn-only: surface drift for visibility but don't block PRs.
-          # Switch to `--strict` once we have full .bru coverage of every
-          # endpoint our seat_cupra/skoda/audi/vw_eu clients touch.
-          python scripts/check_bruno_url_drift.py --brand all
+          # v1.17.3 — per-brand strict graduation.
+          # seat_cupra has full coverage (33 .bru files / 4 intentional
+          # fallback URLs documented in the docs blocks of seq 04, 07,
+          # 32) → strict gating ON: any drift in seat_cupra fails CI.
+          # skoda + cariad_bff still under construction → warn-only
+          # for now, will graduate to strict in v1.17.4.
+          python scripts/check_bruno_url_drift.py \
+            --brand all \
+            --strict-brands seat_cupra

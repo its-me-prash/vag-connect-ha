@@ -1,0 +1,31 @@
+meta {
+  name: GET climatisation status
+  type: http
+  seq: 16
+}
+
+get {
+  url: {{base_url}}/v2/vehicles/{{vin}}/climatisation
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+headers {
+  Accept: application/json
+}
+
+docs {
+  Returns climatisation state, target temperature, window heating state.
+  Verified shape (Rainer #109): status.climatisationState,
+  status.targetTemperatureCelsius, status.outsideTemperature,
+  status.windowHeatingStateFront/Rear.
+
+  Newer firmware uses settings.targetTemperature_K (Kelvin) and
+  settings.targetTemperatureInCelsius — both handled in parser.
+
+  Implementation: cariad/api/seat_cupra.py:get_status (line ~160).
+}

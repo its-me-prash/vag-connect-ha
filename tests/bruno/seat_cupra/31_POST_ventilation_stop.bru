@@ -1,0 +1,31 @@
+meta {
+  name: POST ventilation stop (v1.17.1 Bruno seq 32)
+  type: http
+  seq: 31
+}
+
+post {
+  url: {{base_url}}/v1/vehicles/{{vin}}/ventilation/stop
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+body:json {
+  {}
+}
+
+docs {
+  v1.17.1 (Bruno seq 32) — Stop cabin ventilation. Mirrors seq 30.
+
+  Implementation: cariad/api/seat_cupra.py:command_stop_ventilation
+  (line ~874).
+}

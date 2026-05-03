@@ -1,0 +1,30 @@
+meta {
+  name: GET battery-care target SoC
+  type: http
+  seq: 23
+}
+
+get {
+  url: {{base_url}}/v1/vehicles/{{vin}}/charging/battery-care/target
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+headers {
+  Accept: application/json
+}
+
+docs {
+  v1.17.1 (Bruno seq 11) — Battery-care target SoC.
+  Response: {"targetSocPercentage": int}
+
+  Companion endpoint: GET /v1/vehicles/{vin}/charging/battery-care
+  (see 06_GET_battery_care.bru) returns current enabled state.
+
+  Implementation: cariad/api/seat_cupra.py:get_battery_care_target
+  (line ~948). Best-effort: 404 → {} so coordinator skips entity.
+}

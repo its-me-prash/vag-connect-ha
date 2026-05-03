@@ -1,0 +1,30 @@
+meta {
+  name: POST charging stop (v1.17.1 Bruno path)
+  type: http
+  seq: 29
+}
+
+post {
+  url: {{base_url}}/vehicles/{{vin}}/charging/requests/stop
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+headers {
+  Accept: application/json
+}
+
+docs {
+  v1.17.1 — Charging stop. Mirrors seq 28.
+
+  Implementation: cariad/api/seat_cupra.py:command_stop_charging
+  (line ~750).
+
+  Legacy fallback (used on 404):
+    POST /v1/vehicles/{vin}/charging/actions  body {"action": "stop"}
+    ← see seq 22.
+}

@@ -1,0 +1,31 @@
+meta {
+  name: GET users (current user info — userId fallback)
+  type: http
+  seq: 33
+}
+
+get {
+  url: {{base_url}}/v1/users
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+headers {
+  Accept: application/json
+}
+
+docs {
+  Returns the current user's profile. Used solely as a fallback to
+  recover ``userId`` when neither the auth-redirect chain nor the JWT
+  ``sub`` claim provided one.
+
+  Response shape: {"userId": "...", ...} (or {"sub": "..."}).
+
+  Implementation: cariad/api/seat_cupra.py:_fetch_user_id (line ~67).
+  Failure is swallowed with a warning — userId-dependent endpoints
+  (garage, mycar, spin/verify) won't work until the next auth round.
+}

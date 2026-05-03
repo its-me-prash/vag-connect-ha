@@ -1,0 +1,32 @@
+meta {
+  name: POST vehicle wakeup
+  type: http
+  seq: 21
+}
+
+post {
+  url: {{base_url}}/v1/vehicles/{{vin}}/vehicle-wakeup/request
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+body:json {
+  {}
+}
+
+docs {
+  Wake the vehicle so subsequent status / command calls succeed. Empty
+  JSON body. Useful before commands that require an "awake" car
+  (climatisation, charging start) on vehicles that aggressively sleep.
+
+  Implementation: cariad/api/seat_cupra.py:command_wake (line ~813).
+}

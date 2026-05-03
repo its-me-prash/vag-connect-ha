@@ -1,0 +1,28 @@
+meta {
+  name: GET maintenance (service intervals)
+  type: http
+  seq: 17
+}
+
+get {
+  url: {{base_url}}/v1/vehicles/{{vin}}/maintenance
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+headers {
+  Accept: application/json
+}
+
+docs {
+  Returns service-due fields: inspectionDue_km/days, oilServiceDue_km/days
+  (with legacy variants distanceToInspection / daysToInspection /
+  distanceToOilChange / daysToOilChange).
+
+  Implementation: cariad/api/seat_cupra.py:get_status (line ~161).
+  Mapped to VehicleData.service_km / service_due_at / oil_service_*.
+}

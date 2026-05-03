@@ -1,0 +1,37 @@
+meta {
+  name: POST aux-heating start (pycupra fallback URL)
+  type: http
+  seq: 34
+}
+
+post {
+  url: {{base_url}}/api/auxiliary-heating/v1/{{vin}}/start
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+  SecToken: {{sec_token}}
+}
+
+body:json {
+  {}
+}
+
+docs {
+  v1.17.1 — pycupra-style fallback URL for aux-heating start.
+
+  Used by SeatCupraClient.command_start_aux_heating() as the
+  legacy/fallback path when the Bruno-verified primary path
+  ``/v1/vehicles/{vin}/auxiliary-heating/start`` (seq 04) returns 404.
+
+  Source: WulfgarW/pycupra ``API_AUXILIARYHEATING + '/start'``.
+
+  Same SecToken-on-start requirement as the primary path.
+}

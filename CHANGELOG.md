@@ -32,6 +32,69 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ## [Unreleased]
 
+## [1.17.3] - 2026-05-03 🤖🛡️📚 Bruno-CI Stufe 2 + Lovelace Cards + 3 Research Docs
+
+🤖 **MASSIVE PATCH-Release** mit 4 parallel ausgelieferten Themen:
+
+1. **Bruno-CI Stufe 2** — full coverage seat_cupra (35 .bru files, strict gating ON), 7 skoda + 10 cariad_bff .bru files, multi-file-per-brand drift-check
+2. **Lovelace Cards Recommendations** — 4 cards reviewed + own card project teased
+3. **3 neue Research-Docs** — mitch-dc deprecated migration + browser_mod integration + community VAG-HA landscape
+4. **Tim's Issue #1 Outreach Reply** — humanized German reply showing v1.17.0→v1.17.2 Bruno-Evolution, Cross-Review-Offer, +1 endpoint-PRs angekündigt
+
+### 🤖 Bruno-CI Stufe 2 / Bruno-CI Stufe 2
+
+**SEAT/CUPRA: 100% coverage + strict gating**
+- 27 .bru files via gen-agent (seq 07-33) — covers alle Python-URLs in `cariad/api/seat_cupra.py`
+- Plus 3 fallback `.bru` files (seq 34-36) für documented A/B-fallback URLs
+- **Drift-check: 35/35 match, 0 drift, strict mode AKTIV in CI** — jede neue endpoint-Addition ohne `.bru` lässt CI fail
+
+**Skoda: 7 .bru files** (seq 01-07) für die wichtigsten endpoints (garage mit MOD1-4 query, capabilities, vehicle-status, charging, charging-history, charging-profiles, software-update). 17 noch offene Python-URLs werden in v1.17.4 aufgefüllt.
+
+**CARIAD-BFF (Audi + VW EU): 10 .bru files** (seq 01-10) für selectivestatus, capabilities, parkingposition, tripstatistics, lock, climate-start, charging-start, vehicleLights flash, plus 2 Audi-engine endpoints (PUT userpromptproof + POST start). 6 noch offene werden in v1.17.4 aufgefüllt.
+
+**Drift-check Script Refactor:**
+- Multi-file-per-brand support (cariad_bff = vw_eu.py + audi.py)
+- `_ENGINE_BASE` constant captured for Audi-specific URLs
+- `--strict-brands` flag für per-brand graduation (seat_cupra strict, skoda+cariad_bff warn-only)
+- Placeholder-expansion für `{action}` runtime placeholder dropped originals (no more strict-mode false-positives)
+
+### 🎨 Lovelace Cards Section / Lovelace Cards Section
+
+Neue README-Sektion "Empfohlene Lovelace-Cards" mit Bewertungstabelle für 4 community Cards:
+- **flex-table-card** (custom-cards Org, aktiv) — Multi-Vehicle-Dashboards
+- **vehicle-info-card** (ngocjohn, wenig Updates) — Single-Vehicle-Detail
+- **car-card** (flixlix, aktiv) — Simple EV-Schnellansicht
+- **Ultra-Vehicle-Card** (WJDDesigns, aktiv) — Polished Premium-Look
+
+Plus Teaser für **eigenes Card-Projekt** (`vag-connect-lovelace-card` repo geplant) + Browser-Mod Integration Hinweis (recipe-doc folgt v1.18.0).
+
+### 🔬 3 Neue Research-Docs / 3 New Research-Docs
+
+Alle in `docs/research/`:
+
+- **`migration-from-mitch-dc-2026-05-03.md`** (R1) — `mitch-dc/volkswagen_we_connect_id` archived 2025-10-29 deep-scan. Repo-Status, top 10 open issues (mostly auth/login), last 5 PRs (anothertobi's CarConnectivity migration draft closed unmerged), endpoint comparison (we have 18 endpoints, they had 0 — used `weconnect==0.60.8` library wrapper), entity ID mapping table für Migration-Guide, SEO-keyword harvest für unsere README.
+- **`browser-mod-integration-2026-05-03.md`** (R2) — `thomasloven/hass-browser_mod` analysis. 1727★, MIT, HACS-Default, v2 actively maintained. Service catalog, entity surface, 5 use-case-fit assessments für VAG (popup für 12V-warning, NFC-quick-command-sheet, charging-screensaver, per-browser theme, send_destination confirm-popup). Recommendation: doc-mention only, recipe-cookbook for v1.18.0.
+- **`community-vag-ha-landscape-2026-05-03.md`** (R3) — community.simon42.com + community.home-assistant.io VW-Connect/MyAudi/MyCupra/MySkoda thread crawl. 4 high-signal outreach targets identifiziert, 6 reply-drafts (3 EN + 3 DE), competitor inventory (mitch-dc archived, skodaconnect deprecated, tillsteinbach/CarConnectivity active competitor), shared feature gaps (writable preheat, single climate-toggle, real-time push, EU Data Act), SEO-keyword harvest, differentiator: "no Docker, no MQTT broker, single HACS install all 7 brands".
+
+### 📨 Outreach / Outreach
+
+- **Reply auf Tim's Antwort** auf `Timwun/Cupra-WeConnect-Bruno-Collection#1` — humanized German Antwort zeigt v1.17.0→v1.17.2 Bruno-Evolution-Journey:
+  - 3 Bug-fixes/Features die durch Bruno-Collection gelöst wurden (Climate-404, #36 Navigation, Aux-Heating)
+  - Bruno-CLI in unsere CI integration
+  - Neue eigene Bruno-Collection in `tests/bruno/` (33+10+7 .bru files)
+  - Cross-Review-Offer für PRs zu seinem Repo
+  - Endpoint-PRs angekündigt (4 endpoints aus pycupra die seine Collection noch nicht hat)
+
+### 📦 Schließt Issues / Closes
+
+Keine User-Issues — Bruno-CI + research + outreach.
+
+### 📋 Roadmap-Update / Roadmap-Update
+
+- **v1.17.4** geplant: Skoda + CARIAD-BFF Bruno coverage abschließen, alle 3 Brands strict mode, Bruno-CI Stufe 2 endgültig komplett
+- **v1.18.0** geplant: Push Bundle (FCM für CUPRA/SEAT + MQTT für Skoda) — Foundation aus v1.15.0 cap-Map + v1.17.x Bruno-CI bereit
+- **Eigenes Lovelace-Card Repo** in eigener Session
+
 ## [1.17.2] - 2026-05-03 🧹🤖 Stale-Cleanup + Bruno-CI Stufe 1 / Stale-Reference Cleanup + Bruno-CI Foundation
 
 🧹🤖 **PATCH-Release** — zwei kleine, hochwertige Verbesserungen:

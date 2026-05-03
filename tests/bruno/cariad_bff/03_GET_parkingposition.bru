@@ -1,0 +1,26 @@
+meta {
+  name: GET parkingposition
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{base_url}}/vehicle/v1/vehicles/{{vin}}/parkingposition
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+headers {
+  Accept: application/json
+}
+
+docs {
+  Returns last-known parking GPS coordinates + carCapturedTimestamp.
+  Empty / 204 when vehicle is in motion. Used by VW EU + Audi parsers
+  to populate device_tracker + sensor.parking_address (when reverse-
+  geocoding opt-in is enabled).
+}

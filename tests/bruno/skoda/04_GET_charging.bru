@@ -1,0 +1,26 @@
+meta {
+  name: GET charging status
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{base_url}}/api/v1/charging/{{vin}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+headers {
+  Accept: application/json
+}
+
+docs {
+  Skoda mysmob charging status. Returns battery/charging/plug blocks
+  + chargingState enum (READY_FOR_CHARGING / CHARGING /
+  CONSERVATION_CHARGING / NOT_READY_FOR_CHARGING / CHARGING_INTERRUPTED
+  / etc.). Defensive enum parsing via cariad/_util.safe_enum since v1.10.1.
+}

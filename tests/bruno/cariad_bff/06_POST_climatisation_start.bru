@@ -1,0 +1,43 @@
+meta {
+  name: POST climatisation start
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{base_url}}/vehicle/v1/vehicles/{{vin}}/climatisation/start-stop
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+body:json {
+  {
+    "action": "start"
+  }
+}
+
+docs {
+  v1.8.8 (Session 3B) — combined endpoint primary. On 404 falls back to
+  /vehicle/v1/vehicles/{vin}/climatisation/start with body
+  {"targetTemperature": 21.0, "targetTemperatureUnit": "celsius",
+   "climatisationWithoutExternalPower": true, "windowHeatingEnabled": true}.
+
+  v1.14.0 (#29 PPE/PPC Klima) — Audi Q6/A6 e-tron + RS e-tron GT
+  Facelift + A3 2024+ PHEV require new body shape:
+    {"climatisationMode": "comfort",
+     "climatisationWithoutExternalPower": true,
+     "windowHeatingEnabled": true}
+  (NO targetTemperature). User opts in via CONF_FORCE_PPE_CLIMATE.
+
+  Implementation: VWEUClient.command_start_climate(vin, ppe_mode=False)
+  in cariad/api/vw_eu.py:258. Audi inherits.
+}

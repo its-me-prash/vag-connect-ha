@@ -1,0 +1,32 @@
+meta {
+  name: GET charging profiles (v1.16.0, #25 + #31 closer)
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{base_url}}/api/v1/charging/{{vin}}/profiles
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+headers {
+  Accept: application/json
+}
+
+docs {
+  v1.16.0 (#25 + #31 Standort-spezifischer Ladeziel-SoC + Ladeprofile
+  closer) — Skoda Charging Profiles.
+
+  Killer field: ``currentVehiclePositionProfile`` — Backend wählt
+  Profil basierend auf Vehicle-GPS automatisch (kein client-side
+  GPS-Zone-Matching nötig).
+
+  Verified against myskoda/models/chargingprofiles.py.
+  Implementation: SkodaClient.get_charging_profiles() +
+  coordinator._parse_charging_profiles + refresh_charging_profiles.
+}

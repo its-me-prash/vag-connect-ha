@@ -1,0 +1,9 @@
+{
+  "version": "1",
+  "name": "vag-connect-ha — CARIAD-BFF (Audi + VW EU)",
+  "type": "collection",
+  "ignore": [
+    "node_modules",
+    ".git"
+  ]
+}

@@ -1,0 +1,46 @@
+meta {
+  name: POST climatisation (legacy bare endpoint, multi-purpose)
+  type: http
+  seq: 25
+}
+
+post {
+  url: {{base_url}}/v2/vehicles/{{vin}}/climatisation
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+body:json {
+  {
+    "action": "settings",
+    "targetTemperature_K": 295.15
+  }
+}
+
+docs {
+  Multi-purpose climatisation-action endpoint. Body shapes:
+    {"action": "settings", "targetTemperature_K": <K>}    ← shown
+    {"action": "start"}                                    ← legacy fallback
+    {"action": "stop"}                                     ← legacy fallback
+    {"action": "startWindowHeating"}                       ← legacy fallback
+    {"action": "stopWindowHeating"}                        ← legacy fallback
+
+  Temperature is in Kelvin (e.g. 22 °C = 295.15 K).
+
+  Implementation:
+  - cariad/api/seat_cupra.py:command_set_climate_temperature (line ~822) —
+    primary path for setting climate target temperature.
+  - command_start_climate / command_stop_climate — A/B fallback on 404
+    from /v2/vehicles/{vin}/climatisation/{action} (seq 03 / 24).
+  - command_start_window_heating / command_stop_window_heating — A/B
+    fallback (seq 29 / 30).
+}

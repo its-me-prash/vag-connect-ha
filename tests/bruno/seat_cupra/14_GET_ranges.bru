@@ -1,0 +1,28 @@
+meta {
+  name: GET ranges (electric/combustion/adblue)
+  type: http
+  seq: 14
+}
+
+get {
+  url: {{base_url}}/v1/vehicles/{{vin}}/ranges
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+headers {
+  Accept: application/json
+}
+
+docs {
+  Returns range estimates split by powertrain:
+    {"electricRange": <km>, "gasolineRange": <km>, "dieselRange": <km>,
+     "totalRange": <km>, "adBlueRange": <km>}
+
+  Implementation: cariad/api/seat_cupra.py:get_status (line ~156).
+  Used to populate VehicleData.range_km / has_combustion / adblue_range_km.
+}
