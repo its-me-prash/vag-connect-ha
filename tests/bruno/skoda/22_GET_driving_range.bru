@@ -1,0 +1,39 @@
+meta {
+  name: GET driving range (per-engine split)
+  type: http
+  seq: 22
+}
+
+get {
+  url: {{base_url}}/api/v2/vehicle-status/{{vin}}/driving-range
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+headers {
+  Accept: application/json
+}
+
+docs {
+  Per-engine range split — the same shape as CARIAD-BFF but under
+  Skoda's mysmob URL. Response keys consumed:
+    electricRange.distanceInKm
+    combustionRange.distanceInKm  (older firmwares: flat scalar
+                                   ``combustionRange``)
+    totalRangeInKm
+    adBlueRange.distanceInKm
+
+  Drives sensor.<vin>_electric_range_km, _combustion_range_km,
+  _total_range_km, _adblue_range_km, plus the headline
+  range_km (priority: electric for EV/PHEV → total → combustion).
+
+  Implementation: gathered in SkodaClient.get_status() at
+  custom_components/vag_connect/cariad/api/skoda.py:155; parsed in
+  the driving_range branch starting around line 322. v1.10.0 (#94)
+  added the per-engine split — pre-1.10.0 we read combustionRange
+  as a scalar only and got wrong values on Kodiaq iV.
+}

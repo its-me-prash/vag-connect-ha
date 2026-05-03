@@ -1,0 +1,38 @@
+meta {
+  name: POST set charge limit (target SoC)
+  type: http
+  seq: 8
+}
+
+post {
+  url: {{base_url}}/api/v1/charging/{{vin}}/set-charge-limit
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "targetStateOfChargeInPercent": 80
+  }
+}
+
+docs {
+  Sets the target charge limit (SoC %) for the EV. No S-PIN required
+  on Skoda mysmob — auth is bearer-only.
+
+  Implementation: SkodaClient.command_set_target_soc() in
+  custom_components/vag_connect/cariad/api/skoda.py:464.
+
+  Backs the number.<vin>_target_soc entity. Body is a single integer
+  field; mysmob accepts 50..100 in 10-step increments on most models
+  (validated client-side by the number entity, not by us).
+}

@@ -1,0 +1,37 @@
+meta {
+  name: POST start charging
+  type: http
+  seq: 9
+}
+
+post {
+  url: {{base_url}}/api/v1/charging/{{vin}}/start
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {}
+}
+
+docs {
+  Starts AC/DC charging on the connected plug. Empty JSON body — no
+  parameters required. No S-PIN needed (Skoda mysmob is bearer-only
+  for charging commands; only vehicle-access/unlock takes the S-PIN).
+
+  Implementation: SkodaClient.command_start_charging() in
+  custom_components/vag_connect/cariad/api/skoda.py:447.
+
+  Backs the button.<vin>_start_charging entity. 202 is the success
+  response — the actual state change shows up on the next charging
+  poll (chargingState becomes CHARGING).
+}

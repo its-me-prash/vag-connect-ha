@@ -1,0 +1,40 @@
+meta {
+  name: POST honk-and-flash (FLASH_ONLY)
+  type: http
+  seq: 11
+}
+
+post {
+  url: {{base_url}}/api/v1/vehicle-access/{{vin}}/honk-and-flash
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "mode": "FLASH_ONLY"
+  }
+}
+
+docs {
+  Triggers the hazard lights to flash so the user can locate the car.
+  We always send mode=FLASH_ONLY (no horn) — the integration exposes
+  only the flash button, never the honk variant, to be neighbour-
+  friendly. Other valid modes per myskoda: HONK_AND_FLASH.
+
+  No S-PIN required (mysmob doesn't gate this command).
+
+  Implementation: SkodaClient.command_flash() in
+  custom_components/vag_connect/cariad/api/skoda.py:453. The
+  latitude/longitude params on the helper are ignored — Skoda
+  mysmob doesn't need them in the body unlike CARIAD-BFF.
+}

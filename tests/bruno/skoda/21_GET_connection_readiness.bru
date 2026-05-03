@@ -1,0 +1,37 @@
+meta {
+  name: GET connection-status readiness
+  type: http
+  seq: 21
+}
+
+get {
+  url: {{base_url}}/api/v2/connection-status/{{vin}}/readiness
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+headers {
+  Accept: application/json
+}
+
+docs {
+  Reports whether the car's connectivity module is currently online
+  and whether the car is in motion.
+
+  Response shape: {"unreachable": bool|null, "inMotion": bool|null,
+  ...}. ``unreachable=null`` is treated as ONLINE (assumes reachable
+  to avoid setting is_online to a misleading false default).
+  ``inMotion=true`` flips the binary_sensor.<vin>_is_driving on.
+
+  Implementation: gathered in SkodaClient.get_status() at
+  custom_components/vag_connect/cariad/api/skoda.py:157, parsed at
+  the readiness branch around line 387.
+
+  Drives: binary_sensor.<vin>_is_online, .<vin>_is_driving, and
+  feeds compute_connection_state() in cariad/_util alongside the
+  carCapturedTimestamp walk.
+}

@@ -1,0 +1,24 @@
+meta {
+  name: POST climatisation stop (separate-route fallback for combined seq 06)
+  type: http
+  seq: 20
+}
+
+post {
+  url: {{base_url}}/vehicle/v1/vehicles/{{vin}}/climatisation/stop
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+headers {
+  Accept: application/json
+}
+
+docs {
+  v1.8.8 (Session 3B) — separate-route climate stop fallback. Mirror
+  of seq 19 start. No body required.
+}

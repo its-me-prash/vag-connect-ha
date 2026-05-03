@@ -1,0 +1,37 @@
+meta {
+  name: POST lock vehicle
+  type: http
+  seq: 12
+}
+
+post {
+  url: {{base_url}}/api/v1/vehicle-access/{{vin}}/lock
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {}
+}
+
+docs {
+  Locks all doors. Empty JSON body — Skoda mysmob does NOT require
+  the S-PIN for lock (unlike SEAT/CUPRA OLA which needs SecToken
+  headers, and unlike CARIAD-BFF which needs the spin in the body).
+
+  Implementation: SkodaClient.command_lock() in
+  custom_components/vag_connect/cariad/api/skoda.py:432.
+
+  Backs the lock entity (lock action). State change reflected on
+  next vehicle-status poll via overall.reliableLockStatus or
+  overall.doorsLocked aggregate.
+}

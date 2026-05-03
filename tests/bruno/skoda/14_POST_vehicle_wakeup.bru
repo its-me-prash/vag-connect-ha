@@ -1,0 +1,38 @@
+meta {
+  name: POST vehicle wakeup
+  type: http
+  seq: 14
+}
+
+post {
+  url: {{base_url}}/api/v1/vehicle-wakeup/{{vin}}?applyRequestLimiter=true
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {}
+}
+
+docs {
+  Wakes the vehicle so subsequent polls return fresh data instead of
+  the last-known cached snapshot. Empty JSON body. The
+  ``applyRequestLimiter=true`` query parameter is REQUIRED — without
+  it the backend rate-limits aggressively and may bounce wakeups for
+  hours after a single use. With the limiter active mysmob enforces
+  ~one wakeup per 5 minutes which is exactly what we want.
+
+  Implementation: SkodaClient.command_wake() in
+  custom_components/vag_connect/cariad/api/skoda.py:461.
+
+  Backs the button.<vin>_wake_up entity. No S-PIN needed.
+}

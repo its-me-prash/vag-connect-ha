@@ -1,0 +1,37 @@
+meta {
+  name: GET air-conditioning status
+  type: http
+  seq: 15
+}
+
+get {
+  url: {{base_url}}/api/v2/air-conditioning/{{vin}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+headers {
+  Accept: application/json
+}
+
+docs {
+  Skoda mysmob air-conditioning status. Provides climatisation state
+  + target temperature + window-heating state + plug connection
+  state (yes — chargerConnectionState lives here, not under
+  /charging).
+
+  Drives: climate entity, target_temperature, window_heating_front /
+  _back binary sensors, plug_connected, connector_locked.
+
+  Implementation: gathered in SkodaClient.get_status() at
+  custom_components/vag_connect/cariad/api/skoda.py:153.
+
+  Defensive: state="INVALID" / "OFF" / None all collapse to
+  climatisation_active=False. v1.10.1 added safe_float for
+  targetTemperature.temperatureValue (some EU firmwares ship
+  "21,5" with a comma).
+}

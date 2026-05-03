@@ -1,0 +1,28 @@
+meta {
+  name: POST charging stop (separate-route fallback for combined seq 07)
+  type: http
+  seq: 18
+}
+
+post {
+  url: {{base_url}}/vehicle/v1/vehicles/{{vin}}/charging/stop
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+body:json {
+  {}
+}
+
+docs {
+  v1.8.8 — separate-route charging stop fallback. Mirror of seq 17.
+}

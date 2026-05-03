@@ -1,0 +1,29 @@
+meta {
+  name: POST charging start (separate-route fallback for combined seq 07)
+  type: http
+  seq: 17
+}
+
+post {
+  url: {{base_url}}/vehicle/v1/vehicles/{{vin}}/charging/start
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+body:json {
+  {}
+}
+
+docs {
+  v1.8.8 (Session 3B) — separate-route charging start fallback. Used
+  when combined /charging/start-stop (seq 07) returns 404. Empty body.
+}

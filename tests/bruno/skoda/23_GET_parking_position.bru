@@ -1,0 +1,38 @@
+meta {
+  name: GET parking position (v3, formatted address)
+  type: http
+  seq: 23
+}
+
+get {
+  url: {{base_url}}/api/v3/maps/positions/vehicles/{{vin}}/parking
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+headers {
+  Accept: application/json
+}
+
+docs {
+  Last known parking position. Response shape:
+    {"parkingPosition": {
+       "gpsCoordinates": {"latitude": <float>, "longitude": <float>},
+       "formattedAddress": "Bünzweg 16, 5504 Othmarsingen, Schweiz",
+       "carCapturedTimestamp": "..."
+     }}
+
+  v3 (vs v2) gained the ``formattedAddress`` field — a backend-side
+  reverse-geocode so we don't need to ship a Nominatim caller.
+
+  Drives device_tracker.<vin> (lat/lon) and
+  sensor.<vin>_parking_address.
+
+  Implementation: gathered in SkodaClient.get_status() at
+  custom_components/vag_connect/cariad/api/skoda.py:154; parsed at
+  the parking branch around line 313.
+}

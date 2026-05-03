@@ -1,0 +1,36 @@
+meta {
+  name: POST vehicleWakeup
+  type: http
+  seq: 21
+}
+
+post {
+  url: {{base_url}}/vehicle/v1/vehicles/{{vin}}/vehicleWakeup
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+body:json {
+  {}
+}
+
+docs {
+  v1.9.1 (#92 Audi S6 C8) — vehicle wakeup with v1→v2 fallback.
+  Premium Audi models return 404 on /vehicle/v1/vehicles/{vin}/vehicleWakeup
+  → _post_command auto-falls-back to /vehicle/v2/.../vehicleWakeup.
+
+  Wake counts against the user's daily wake-budget (3/day soft-cap
+  since v1.12.0). 5-min cooldown per VIN since v1.13.0.
+
+  Implementation: VWEUClient.command_wake() in cariad/api/vw_eu.py:321.
+  Audi inherits.
+}
