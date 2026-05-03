@@ -1,0 +1,28 @@
+meta {
+  name: GET garage (list user's vehicles)
+  type: http
+  seq: 11
+}
+
+get {
+  url: {{base_url}}/v2/users/{{user_id}}/garage/vehicles
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+headers {
+  Accept: application/json
+}
+
+docs {
+  Returns all vehicles in the user's MySEAT/MyCUPRA garage. Response:
+    {"vehicles": [{"vin": "...", ...}, ...]}
+
+  Used during initial setup to enumerate VINs for ConfigEntry creation.
+
+  Implementation: cariad/api/seat_cupra.py:get_vehicles (line ~72).
+}

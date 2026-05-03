@@ -1,0 +1,34 @@
+meta {
+  name: POST aux-heating stop (pycupra fallback URL)
+  type: http
+  seq: 35
+}
+
+post {
+  url: {{base_url}}/api/auxiliary-heating/v1/{{vin}}/stop
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+body:json {
+  {}
+}
+
+docs {
+  v1.17.1 — pycupra-style fallback URL for aux-heating stop.
+
+  Used by SeatCupraClient.command_stop_aux_heating() as the
+  legacy/fallback path when the Bruno-verified primary path
+  ``/v1/vehicles/{vin}/auxiliary-heating/stop`` (seq 32) returns 404.
+
+  No SecToken on stop (Bruno seq 30 confirmed).
+}

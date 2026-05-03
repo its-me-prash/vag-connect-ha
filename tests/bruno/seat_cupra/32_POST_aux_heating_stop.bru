@@ -1,0 +1,37 @@
+meta {
+  name: POST auxiliary heating stop (v1.17.1, no SecToken)
+  type: http
+  seq: 32
+}
+
+post {
+  url: {{base_url}}/v1/vehicles/{{vin}}/auxiliary-heating/stop
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+body:json {
+  {}
+}
+
+docs {
+  v1.17.1 (Bruno seq 30) — Webasto auxiliary heating stop.
+
+  No SecToken required — STOP does not need S-PIN verification (only
+  START does, see 04_POST_aux_heating_start.bru).
+
+  Pycupra alternative URL (used as A/B fallback on 404):
+    POST {{base_url}}/api/auxiliary-heating/v1/{{vin}}/stop
+
+  Implementation: cariad/api/seat_cupra.py:command_stop_aux_heating
+  (line ~915).
+}

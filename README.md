@@ -293,6 +293,40 @@ cards:
 
 ---
 
+## Empfohlene Lovelace-Cards / Recommended Lovelace Cards
+
+Stand 2026-05-03. Diese Custom-Cards harmonieren gut mit unseren Sensor-/Image-/Switch-Entities. Wir recommendieren sie für deine Dashboards bis unsere eigene "Ultimate VAG Vehicle Card" released ist (geplant — siehe unten).
+
+| Card | Wofür | Status | Repo |
+|---|---|---|---|
+| **flex-table-card** | Multi-Vehicle-Dashboards: Tabelle mit allen Fahrzeugen + Status (range, charge, locked, last_seen) als Spalten | ✅ aktiv (custom-cards Org) | [custom-cards/flex-table-card](https://github.com/custom-cards/flex-table-card) |
+| **vehicle-info-card** | Single-Vehicle-Detailansicht mit Image + Charge + Climate + Doors | ⚠️ wenig Updates (war Mercedes-fokussiert) | [ngocjohn/vehicle-info-card](https://github.com/ngocjohn/vehicle-info-card) |
+| **car-card** | Simple Charge-Status-Card mit visuellem Battery-Indicator (für EV-Schnellansicht) | ✅ aktiv | [flixlix/car-card](https://github.com/flixlix/car-card) |
+| **Ultra-Vehicle-Card** | Polished Premium-Look (großes Render + animierte Details) — gute Inspiration für unser eigenes Card-Projekt | ✅ aktiv | [WJDDesigns/Ultra-Vehicle-Card](https://github.com/WJDDesigns/Ultra-Vehicle-Card) |
+
+### 🚧 Geplant: Ultimate VAG Vehicle Card (eigenes Projekt)
+
+Wir bauen eine **eigene HA Lovelace Card** speziell für VAG Connect. Inspiration aus den oberen drei Cards, aber:
+- Volle Multi-Brand-Unterstützung (Audi/VW/Skoda/SEAT/CUPRA/Porsche/VW NA) mit brand-spezifischen Themes
+- Direkte Integration mit unseren Service-Calls (lock, climate, send_destination, etc.)
+- Battery + Range + Climate + Trip-Stats in einem zusammenhängenden View
+- Optional: `browser_mod` Integration für interaktive Popups (z.B. Adress-Suche → `send_destination` Service)
+
+**Status:** in Planung. Eigenes Repo (`vag-connect-lovelace-card`) wird in einer separaten Session aufgesetzt. Track-link bleibt hier sobald live.
+
+### Browser-Mod Integration (optional)
+
+[`thomasloven/hass-browser_mod`](https://github.com/thomasloven/hass-browser_mod) (1700+ stars, MIT, HACS Default) — bietet starke per-Browser-Steuerung. **Kein hard dependency** für VAG Connect, aber wenn du es nutzt, lassen sich coole Dinge bauen:
+
+- **Vehicle-Alert-Popup** wenn 12V-Battery < 11.5V oder Wake-Budget exhausted
+- **NFC-Tap → Quick-Command-Sheet** mit lock/unlock/climate buttons als Popup
+- **Charging-Session-Screensaver** — Vehicle-Card auto-öffnet bei Lade-Start auf einem bestimmten Dashboard
+- **Confirm-Popup** für `vag_connect.send_destination` ("Soll ich 'Office' an dein Auto senden?") bevor der Service aufgerufen wird
+
+Recipe-Doc folgt in v1.18.0 unter `docs/recipes/browser-mod.md`.
+
+---
+
 ## Services / Aktionen
 
 | Service | Beschreibung | Parameter |

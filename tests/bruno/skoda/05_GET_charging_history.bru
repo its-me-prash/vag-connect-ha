@@ -1,0 +1,35 @@
+meta {
+  name: GET charging history (v1.15.0, #35 closer)
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{base_url}}/api/v1/charging/{{vin}}/history?userTimezone=UTC&limit=50
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+headers {
+  Accept: application/json
+}
+
+docs {
+  v1.15.0 (#35 Ladehistorie LTS closer) — Skoda Charging History.
+  Drives sensor.total_charged_energy_kwh (TOTAL_INCREASING) for HA
+  Energy Dashboard plus 2 last-session sensors plus
+  recent_charging_sessions as extra_state_attributes.
+
+  Response shape: {nextCursor, periods: [{totalChargedInKWh,
+  sessions: [{startAt, chargedInKWh, durationInMinutes,
+  currentType: AC|DC}]}]}
+
+  Verified against myskoda/models/charging_history.py.
+  Implementation: SkodaClient.get_charging_history() in
+  custom_components/vag_connect/cariad/api/skoda.py.
+  Coordinator: refresh_charging_history() — 1h cache, brand-restricted.
+}

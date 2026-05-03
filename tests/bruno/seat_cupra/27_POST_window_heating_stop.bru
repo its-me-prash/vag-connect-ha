@@ -1,0 +1,30 @@
+meta {
+  name: POST window heating stop (v1.17.1 Bruno path)
+  type: http
+  seq: 27
+}
+
+post {
+  url: {{base_url}}/vehicles/{{vin}}/windowheating/requests/stop
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+headers {
+  Accept: application/json
+}
+
+docs {
+  v1.17.1 — Window heating stop. Mirrors seq 26.
+
+  Implementation: cariad/api/seat_cupra.py:command_stop_window_heating
+  (line ~849).
+
+  Legacy fallback (used on 404):
+    POST /v2/vehicles/{vin}/climatisation
+         body {"action": "stopWindowHeating"}  ← see seq 25.
+}

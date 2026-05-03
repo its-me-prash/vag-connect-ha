@@ -1,0 +1,9 @@
+{
+  "version": "1",
+  "name": "vag-connect-ha — Skoda mysmob",
+  "type": "collection",
+  "ignore": [
+    "node_modules",
+    ".git"
+  ]
+}

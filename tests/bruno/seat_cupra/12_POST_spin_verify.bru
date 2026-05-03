@@ -1,0 +1,40 @@
+meta {
+  name: POST S-PIN verify (returns SecToken)
+  type: http
+  seq: 12
+}
+
+post {
+  url: {{base_url}}/v2/users/{{user_id}}/spin/verify
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+body:json {
+  {
+    "spin": "1234"
+  }
+}
+
+docs {
+  Verify the user's 4-digit S-PIN against OLA. Returns:
+    {"securityToken": "<opaque-string>"}
+
+  The returned ``securityToken`` is the SecToken used as a per-call header
+  on lock / unlock / aux-heating-start. S-PIN is sent PLAIN — no
+  client-side hashing or RSA challenge/response.
+
+  400/401 = wrong PIN or account locked → SpinError surfaced to HA so
+  the reauth/correct-PIN prompt is shown.
+
+  Implementation: cariad/api/seat_cupra.py:_get_sec_token (line ~598).
+}

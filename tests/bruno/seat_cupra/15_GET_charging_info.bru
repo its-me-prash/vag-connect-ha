@@ -1,0 +1,31 @@
+meta {
+  name: GET charging info (settings)
+  type: http
+  seq: 15
+}
+
+get {
+  url: {{base_url}}/v1/vehicles/{{vin}}/charging/info
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+headers {
+  Accept: application/json
+}
+
+docs {
+  Charging settings (NOT live status — see 02_GET_charging_status.bru).
+  Real-world response (Rainer #109):
+    {"targetSoc_pct": 80, "maxChargeCurrentAC": "maximum",
+     "autoUnlockPlugWhenCharged": "off" | "on" | "permanent"}
+
+  Note: "permanent" means connector unlocks at any SoC, not just when
+  full (#51). Implementation maps "on" + "permanent" → True.
+
+  Implementation: cariad/api/seat_cupra.py:get_status (line ~159).
+}

@@ -1,0 +1,31 @@
+meta {
+  name: POST charging start (v1.17.1 Bruno path)
+  type: http
+  seq: 28
+}
+
+post {
+  url: {{base_url}}/vehicles/{{vin}}/charging/requests/start
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+headers {
+  Accept: application/json
+}
+
+docs {
+  v1.17.1 (Bruno seq 47) — Charging start. No /v1 prefix, no body.
+  Bruno suggests Cariad migrated some charging endpoints away from /v1.
+
+  Implementation: cariad/api/seat_cupra.py:command_start_charging
+  (line ~732).
+
+  Legacy fallback (used on 404):
+    POST /v1/vehicles/{vin}/charging/actions  body {"action": "start"}
+    ← see seq 22.
+}

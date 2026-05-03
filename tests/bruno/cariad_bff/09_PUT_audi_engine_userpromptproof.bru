@@ -1,0 +1,42 @@
+meta {
+  name: PUT engine userpromptproof (Audi ICE — Step 1)
+  type: http
+  seq: 9
+}
+
+put {
+  url: {{base_url}}/vehicle/v1/engine/{{vin}}/userpromptproof
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+body:json {
+  {
+    "spin": "{{spin}}"
+  }
+}
+
+docs {
+  v1.14.0 (#28 Audi ICE Engine Start) — Step 1 of 2-step S-PIN flow.
+  Source: arjenvrh/audi_connect_ha PR #717.
+
+  Note: URL pattern is /vehicle/v1/engine/{VIN}/... — NOT under
+  /vehicles/{VIN}/engine/... (i.e. NO 's' on 'vehicle' between v1 and
+  engine). VIN must be uppercased.
+
+  Returns top-level {"userPromptProof": "<token>"} — extract this
+  for Step 2 (POST /engine/{VIN}/start).
+
+  Audi-only — VW EU does not expose this endpoint.
+  Implementation: AudiClient.command_engine_start() in
+  cariad/api/audi.py.
+}

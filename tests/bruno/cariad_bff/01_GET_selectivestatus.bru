@@ -1,0 +1,29 @@
+meta {
+  name: GET selectivestatus (full vehicle data)
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{base_url}}/vehicle/v1/vehicles/{{vin}}/selectivestatus?jobs=access,charging,climatisation,fuelStatus,measurements,oilLevel,parkingposition,readiness,vehicleHealthInspection,vehicleHealthWarnings,vehicleLights
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+headers {
+  Accept: application/json
+}
+
+docs {
+  Main CARIAD-BFF status endpoint for VW EU + Audi (Audi inherits via
+  AudiClient(VWEUClient)). The ?jobs= query selects which capability
+  areas to return — comma-separated list. Response is a deeply nested
+  JSON tree, one top-level key per job + each job has .value or .error.
+
+  Implementation: VWEUClient.get_status() in cariad/api/vw_eu.py:128.
+  Audi uses the same endpoint via inheritance.
+}

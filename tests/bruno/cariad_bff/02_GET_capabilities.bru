@@ -1,0 +1,29 @@
+meta {
+  name: GET capabilities (CARIAD-BFF schema)
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{base_url}}/vehicle/v1/vehicles/{{vin}}/capabilities
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+headers {
+  Accept: application/json
+}
+
+docs {
+  Returns CARIAD-BFF capabilities (camelCase IDs like ``honkAndFlash``,
+  ``vehicleWakeUpTrigger``, ``access``, ``charging``, etc.).
+  Schema differs from OLA + mysmob — uses {id, status: [...]} where
+  empty status[] means "fully usable" and any entry indicates
+  limitation.
+
+  Implementation: VWEUClient.get_capabilities() in cariad/api/vw_eu.py:115.
+}

@@ -1,0 +1,26 @@
+meta {
+  name: GET parking position (lat/lon)
+  type: http
+  seq: 13
+}
+
+get {
+  url: {{base_url}}/v1/vehicles/{{vin}}/parkingposition
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+headers {
+  Accept: application/json
+}
+
+docs {
+  Returns last known parked GPS coordinates: {"lat": ..., "lon": ...}
+
+  Implementation: cariad/api/seat_cupra.py:get_status (line ~155).
+  Mapped to VehicleData.latitude / longitude.
+}

@@ -1,0 +1,42 @@
+meta {
+  name: POST honk-and-flash (flash mode)
+  type: http
+  seq: 20
+}
+
+post {
+  url: {{base_url}}/v1/vehicles/{{vin}}/honk-and-flash
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+body:json {
+  {
+    "mode": "flash",
+    "userPosition": {
+      "latitude": 47.3901,
+      "longitude": 8.2104
+    }
+  }
+}
+
+docs {
+  SEAT/CUPRA honk-and-flash. Mode MUST be lowercase "flash" (NOT
+  "FLASH_ONLY"). userPosition is REQUIRED — without it OLA returns
+  HTTP 400 "internal-error".
+
+  Coordinates truncated to 4 decimals (~11 m). Integration sends the
+  vehicle's last-known parked position (verified via pycupra).
+
+  Implementation: cariad/api/seat_cupra.py:command_flash (line ~761).
+  Status: WORKING (verified live across multiple users on issue #53).
+}

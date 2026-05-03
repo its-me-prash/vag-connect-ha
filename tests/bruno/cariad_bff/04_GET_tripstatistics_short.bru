@@ -1,0 +1,35 @@
+meta {
+  name: GET tripstatistics shortTerm (#24 closer)
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{base_url}}/vehicle/v1/vehicles/{{vin}}/tripstatistics?type=shortTerm
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+headers {
+  Accept: application/json
+}
+
+docs {
+  v1.14.0 (#24 Verbrauchsdaten / Trip Stats) — VW EU + Audi.
+
+  Returns {tripDataList: {tripData: [...]}}. Sort by overallMileage
+  desc, take [0] = most recent trip. Consumption fields come back as
+  integers ×10 (averageFuelConsumption: 68 = 6.8 l/100km).
+
+  4 sensors fed: last_trip_distance_km, _avg_speed_kmh,
+  _avg_fuel_consumption_l_100km, _avg_electric_consumption_kwh_100km
+  + recent_trips as extra_state_attributes.
+
+  Implementation: VWEUClient.get_trip_statistics() +
+  coordinator._parse_trip_statistics + refresh_trip_statistics
+  (1h cache, brand-restricted to audi+volkswagen).
+}

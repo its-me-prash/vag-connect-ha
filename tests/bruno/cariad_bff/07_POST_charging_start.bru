@@ -1,0 +1,35 @@
+meta {
+  name: POST charging start
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{base_url}}/vehicle/v1/vehicles/{{vin}}/charging/start-stop
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+body:json {
+  {
+    "action": "start"
+  }
+}
+
+docs {
+  v1.8.8 (Session 3B) — combined endpoint primary. On 404 falls back to
+  /vehicle/v1/vehicles/{vin}/charging/start (separate-endpoint variant)
+  with empty body, then on 404 again falls back to /vehicle/v2/.../start.
+
+  Implementation: VWEUClient.command_start_charging() in
+  cariad/api/vw_eu.py:289. Audi inherits.
+}

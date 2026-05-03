@@ -1,0 +1,30 @@
+meta {
+  name: POST vehicle lock (S-PIN protected)
+  type: http
+  seq: 8
+}
+
+post {
+  url: {{base_url}}/v1/vehicles/{{vin}}/access/lock
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+headers {
+  Accept: application/json
+  SecToken: {{sec_token}}
+}
+
+docs {
+  Lock the vehicle remotely. Empty body — pycupra/OLA expect no payload,
+  only the SecToken header.
+
+  SecToken REQUIRED — derived from S-PIN via
+  POST /v2/users/{userId}/spin/verify (see 12_POST_spin_verify.bru).
+
+  Implementation: cariad/api/seat_cupra.py:command_lock (line ~630).
+}

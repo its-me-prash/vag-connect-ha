@@ -1,0 +1,40 @@
+meta {
+  name: POST charging actions (settings/start/stop legacy)
+  type: http
+  seq: 22
+}
+
+post {
+  url: {{base_url}}/v1/vehicles/{{vin}}/charging/actions
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+body:json {
+  {
+    "action": "settings",
+    "targetSOC_pct": 80
+  }
+}
+
+docs {
+  Multi-purpose charging-action endpoint. Body shapes:
+    {"action": "settings", "targetSOC_pct": <0-100>}  ← shown
+    {"action": "start"}                                ← legacy fallback
+    {"action": "stop"}                                 ← legacy fallback
+
+  Implementation:
+  - cariad/api/seat_cupra.py:command_set_target_soc (line ~816) —
+    primary path for setting target SoC.
+  - command_start_charging / command_stop_charging — legacy fallback
+    on 404 from /vehicles/{vin}/charging/requests/start (see seq 27/28).
+}

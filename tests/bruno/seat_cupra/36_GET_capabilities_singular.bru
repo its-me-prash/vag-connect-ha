@@ -1,0 +1,32 @@
+meta {
+  name: GET capabilities (singular fallback path)
+  type: http
+  seq: 36
+}
+
+get {
+  url: {{base_url}}/v1/user/{{user_id}}/vehicle/{{vin}}/capabilities
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+headers {
+  Accept: application/json
+}
+
+docs {
+  v1.17.1 — Bruno-singular fallback URL for capabilities lookup.
+
+  Note the URL differs from the plural primary (seq 07):
+  - Primary: /v1/vehicles/{vin}/capabilities (plural, no userId)
+  - Fallback (this): /v1/user/{user_id}/vehicle/{vin}/capabilities
+                     (singular user + vehicle, with userId)
+
+  Used by SeatCupraClient.get_capabilities() as fallback when the
+  primary 404s. Ensures capability fetching for accounts on different
+  OLA backend versions.
+}

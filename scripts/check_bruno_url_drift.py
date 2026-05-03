@@ -43,13 +43,18 @@ if hasattr(sys.stdout, "reconfigure"):
 # Project root = parent of scripts/ directory.
 _REPO_ROOT = Path(__file__).resolve().parent.parent
 
-# Python-side: f-string URL extraction.
-# Matches f"{_BASE}/some/path/{vin}/etc" or f"{base_url}/..."
-# Captures everything between the leading {var} and the closing quote
-# so we can normalise placeholders.
+# Python-side: f-string URL extraction with named-base regex.
+# Two regexes — one for {_BASE}/{base_url}/{baseurl} (no prefix needed),
+# one for {_ENGINE_BASE} (re-attach engine path so it matches the
+# Bruno URL pattern under the unified base host).
 _PY_URL_RE = re.compile(
     r'f["\']\{(?:_BASE|base_url|baseurl)\}([^"\']+)["\']'
 )
+_PY_ENGINE_URL_RE = re.compile(
+    r'f["\']\{_ENGINE_BASE\}([^"\']+)["\']'
+)
+# The literal value of _ENGINE_BASE in audi.py:32.
+_ENGINE_BASE_PREFIX = "/vehicle/v1/engine"
 
 # Bruno-side: extract URL from `get/post/put/patch/delete { url: ... }` block.
 _BRU_URL_RE = re.compile(
@@ -57,22 +62,24 @@ _BRU_URL_RE = re.compile(
     re.MULTILINE,
 )
 
-# Map of brand → (python file pattern, bruno dir)
-_BRAND_DIRS = {
+# Map of brand → (list[python file], bruno dir).
+# A brand can have URLs across multiple Python files (e.g. cariad_bff
+# = vw_eu.py + audi.py since Audi inherits everything except its own
+# engine endpoints).
+_BRAND_DIRS: dict[str, tuple[list[str], str]] = {
     "seat_cupra": (
-        "custom_components/vag_connect/cariad/api/seat_cupra.py",
+        ["custom_components/vag_connect/cariad/api/seat_cupra.py"],
         "tests/bruno/seat_cupra",
     ),
     "skoda": (
-        "custom_components/vag_connect/cariad/api/skoda.py",
+        ["custom_components/vag_connect/cariad/api/skoda.py"],
         "tests/bruno/skoda",
     ),
-    "vw_eu": (
-        "custom_components/vag_connect/cariad/api/vw_eu.py",
-        "tests/bruno/cariad_bff",
-    ),
-    "audi": (
-        "custom_components/vag_connect/cariad/api/audi.py",
+    "cariad_bff": (
+        [
+            "custom_components/vag_connect/cariad/api/vw_eu.py",
+            "custom_components/vag_connect/cariad/api/audi.py",
+        ],
         "tests/bruno/cariad_bff",
     ),
 }
@@ -106,23 +113,43 @@ _ACTION_EXPANSIONS = {
 
 
 def _expand_action_placeholders(urls: set[str]) -> set[str]:
-    """For each URL containing a known runtime placeholder, also include
-    every concrete expansion. Originals stay (so Bruno can match either)."""
-    out = set(urls)
-    for placeholder, values in _ACTION_EXPANSIONS.items():
-        for url in list(urls):
+    """For each URL containing a known runtime placeholder, REPLACE the
+    template with every concrete expansion. URLs without a placeholder
+    pass through unchanged.
+
+    Replacing (not adding) avoids strict-mode false-positives where a
+    template URL like ``/.../climatisation/{action}`` would never have
+    a literal ``.bru`` counterpart.
+    """
+    out: set[str] = set()
+    for url in urls:
+        matched = False
+        for placeholder, values in _ACTION_EXPANSIONS.items():
             if placeholder in url:
+                matched = True
                 for value in values:
                     out.add(url.replace(placeholder, value))
+        if not matched:
+            out.add(url)
     return out
 
 
-def _extract_python_urls(py_path: Path) -> set[str]:
-    """Return a set of normalised path-after-host URLs from a Python file."""
-    if not py_path.exists():
-        return set()
-    text = py_path.read_text(encoding="utf-8")
-    raw = {_normalise(m.group(1)) for m in _PY_URL_RE.finditer(text)}
+def _extract_python_urls(py_paths: list[str]) -> set[str]:
+    """Return a set of normalised path-after-host URLs from one or
+    more Python files. URLs from `_ENGINE_BASE` get the engine prefix
+    re-attached so they match Bruno specs under the unified base host.
+    """
+    raw: set[str] = set()
+    for rel_path in py_paths:
+        py_path = _REPO_ROOT / rel_path
+        if not py_path.exists():
+            continue
+        text = py_path.read_text(encoding="utf-8")
+        # Standard {_BASE}/... captures.
+        raw.update(_normalise(m.group(1)) for m in _PY_URL_RE.finditer(text))
+        # _ENGINE_BASE prefix re-attachment.
+        for m in _PY_ENGINE_URL_RE.finditer(text):
+            raw.add(_normalise(_ENGINE_BASE_PREFIX + m.group(1)))
     return _expand_action_placeholders(raw)
 
 
@@ -142,8 +169,8 @@ def check_brand(brand: str, *, strict: bool = False) -> int:
     if brand not in _BRAND_DIRS:
         print(f"ERROR: unknown brand {brand!r}", file=sys.stderr)
         return 2
-    py_path, bruno_dir = _BRAND_DIRS[brand]
-    py_urls = _extract_python_urls(_REPO_ROOT / py_path)
+    py_paths, bruno_dir = _BRAND_DIRS[brand]
+    py_urls = _extract_python_urls(py_paths)
     bru_urls = _extract_bruno_urls(_REPO_ROOT / bruno_dir)
 
     py_only = py_urls - bru_urls
@@ -194,14 +221,30 @@ def main() -> int:
     parser.add_argument(
         "--strict",
         action="store_true",
-        help="Exit non-zero on any drift (for CI gating)",
+        help="Exit non-zero on any drift across ALL checked brands (CI gating).",
+    )
+    parser.add_argument(
+        "--strict-brands",
+        default="",
+        help=(
+            "Comma-separated list of brands that should be strict-gated "
+            "(others stay warn-only). Useful for graduating brand-by-brand. "
+            "Example: --strict-brands seat_cupra,audi"
+        ),
     )
     args = parser.parse_args()
+
+    strict_brands_set = {
+        b.strip() for b in args.strict_brands.split(",") if b.strip()
+    }
 
     brands = list(_BRAND_DIRS.keys()) if args.brand == "all" else [args.brand]
     rc = 0
     for brand in brands:
-        result = check_brand(brand, strict=args.strict)
+        # Per-brand strict mode: --strict (universal) OR brand listed
+        # in --strict-brands triggers gating for that brand only.
+        is_strict = args.strict or (brand in strict_brands_set)
+        result = check_brand(brand, strict=is_strict)
         rc = max(rc, result)
     print()
     return rc

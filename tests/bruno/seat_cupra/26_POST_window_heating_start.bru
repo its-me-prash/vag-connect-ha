@@ -1,0 +1,31 @@
+meta {
+  name: POST window heating start (v1.17.1 Bruno path)
+  type: http
+  seq: 26
+}
+
+post {
+  url: {{base_url}}/vehicles/{{vin}}/windowheating/requests/start
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+headers {
+  Accept: application/json
+}
+
+docs {
+  v1.17.1 (Bruno seq 50) — Window heating start. No /v1 prefix, no body.
+  Bruno suggests Cariad migrated this endpoint away from /v1.
+
+  Implementation: cariad/api/seat_cupra.py:command_start_window_heating
+  (line ~828).
+
+  Legacy fallback (used on 404):
+    POST /v2/vehicles/{vin}/climatisation
+         body {"action": "startWindowHeating"}  ← see seq 25.
+}

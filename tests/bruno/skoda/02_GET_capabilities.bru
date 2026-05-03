@@ -1,0 +1,39 @@
+meta {
+  name: GET capabilities (mysmob schema)
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{base_url}}/api/v1/vehicle-access/{{vin}}/capabilities
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+headers {
+  Accept: application/json
+}
+
+docs {
+  Returns Skoda's capabilities document — different schema from
+  CARIAD-BFF and OLA. Format:
+
+    {"capabilities": [
+      {"id": "honk-and-flash", "active": true,
+       "editable": true, "user-enabled": true,
+       "status": [], "license-issue": false,
+       "parameters": {...}}
+    ]}
+
+  The "active" + "user-enabled" + "license-issue" booleans + "status"
+  array all factor into our Phase 3 capability gating. See
+  ``coordinator.vehicle_supports_capability`` for the schema-tolerance
+  logic.
+
+  Implementation: SkodaClient.get_capabilities() in
+  custom_components/vag_connect/cariad/api/skoda.py:43.
+}

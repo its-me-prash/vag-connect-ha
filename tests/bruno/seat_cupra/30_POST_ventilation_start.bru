@@ -1,0 +1,34 @@
+meta {
+  name: POST ventilation start (v1.17.1 Bruno seq 31)
+  type: http
+  seq: 30
+}
+
+post {
+  url: {{base_url}}/v1/vehicles/{{vin}}/ventilation/start
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+body:json {
+  {}
+}
+
+docs {
+  v1.17.1 (Bruno seq 31) — Cabin ventilation (without heating).
+  New OLA feature; never existed in our integration before. No legacy
+  fallback path possible. On 404 the per-VIN capability gate (Phase 3)
+  catches it next reload.
+
+  Implementation: cariad/api/seat_cupra.py:command_start_ventilation
+  (line ~862).
+}

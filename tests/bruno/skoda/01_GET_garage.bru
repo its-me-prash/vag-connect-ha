@@ -1,0 +1,33 @@
+meta {
+  name: GET garage (vehicle list)
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{base_url}}/api/v2/garage?connectivityGenerations=MOD1&connectivityGenerations=MOD2&connectivityGenerations=MOD3&connectivityGenerations=MOD4
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+headers {
+  Accept: application/json
+  User-Agent: vag-connect-ha-tests/1.17.3
+}
+
+docs {
+  Lists VINs in the user's mysmob garage. Multi-key
+  ``connectivityGenerations`` query parameter is REQUIRED for newer
+  Skoda models (Kodiaq Mk2 / Enyaq 2024+ on MOD3/MOD4 connectivity).
+  Without it the backend returns 403 Forbidden.
+
+  Verified against ``skodaconnect/myskoda/rest_api.py::get_garage``.
+  Implementation: SkodaClient.get_vehicles() in
+  custom_components/vag_connect/cariad/api/skoda.py.
+
+  See #75 (Kodiaq Mk2 403) for why this query is essential.
+}
