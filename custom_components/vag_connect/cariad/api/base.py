@@ -88,6 +88,18 @@ class CariadBaseClient:
         # ``"vehicle-status"``); values are the unparsed dict from the
         # backend. Re-populated per poll — never accumulates across polls.
         self.last_raw_responses: dict[str, dict[str, Any]] = {}
+        # v1.19.1 — Pycupra-style API quota visibility. Most VAG backends
+        # send X-RateLimit-Remaining (and sometimes X-RateLimit-Limit /
+        # X-RateLimit-Reset) on successful responses. We capture the
+        # latest value so the coordinator can surface it as a
+        # ``requests_remaining_today`` sensor — users see how close they
+        # are to the daily quota cap (community research: MyCupra/MySeat
+        # ~1500/day, OLA + mysmob behave similarly). None means we have
+        # never observed the header (older backends don't send it on
+        # every endpoint).
+        self.last_rate_limit_remaining: int | None = None
+        self.last_rate_limit_limit: int | None = None
+        self.last_rate_limit_reset_at: str | None = None
 
     @property
     def brand(self) -> BrandConfig:
@@ -253,10 +265,14 @@ class CariadBaseClient:
                     await asyncio.sleep(wait)
                     return await self._request(method, url, retry=retry, _attempt=_attempt + 1, **kwargs)
                 if resp.status == 204:
+                    self._capture_rate_limit_headers(resp.headers)
                     return None
                 if resp.status not in (200, 201, 202, 207):
                     body = await resp.text()
                     raise APIError(resp.status, url, body)
+                # v1.19.1 — capture quota headers on successful response
+                # only (4xx/5xx may omit them or send stale values).
+                self._capture_rate_limit_headers(resp.headers)
                 ct = resp.headers.get("Content-Type", "")
                 if "json" in ct:
                     return await resp.json()
@@ -321,6 +337,52 @@ class CariadBaseClient:
         if not self._tokens:
             raise AuthenticationError("Not authenticated — call authenticate() first.")
         return self._tokens.access_token
+
+    def _capture_rate_limit_headers(self, headers: Any) -> None:
+        """v1.19.1 — Read X-RateLimit-* headers from a response.
+
+        Most VAG backends send these on successful 2xx responses:
+
+        - ``X-RateLimit-Remaining``: int, requests left in the current
+          window. Most useful field — surfaced as
+          ``requests_remaining_today`` sensor by the coordinator.
+        - ``X-RateLimit-Limit``: int, total budget in the current
+          window. Useful for percentage calculations in HA templates.
+        - ``X-RateLimit-Reset``: ISO-8601 timestamp or epoch seconds —
+          when the budget refreshes. Stored as opaque string; the
+          coordinator can parse if needed.
+
+        Older backends omit these headers — we leave the attributes
+        at their previous value rather than reset to None, so a
+        single header-less endpoint doesn't blank an otherwise valid
+        observation. ``None`` means we've never seen the header at all.
+
+        Headers are case-insensitive per RFC 9110; aiohttp's
+        ``CIMultiDict`` handles that already.
+        """
+        remaining = headers.get("X-RateLimit-Remaining")
+        if remaining is not None:
+            try:
+                self.last_rate_limit_remaining = int(remaining)
+            except (TypeError, ValueError):
+                # Some backends ship a float ("1499.5") or "unlimited"
+                # — try float fallback; otherwise leave previous value.
+                try:
+                    self.last_rate_limit_remaining = int(float(remaining))
+                except (TypeError, ValueError):
+                    pass
+        limit = headers.get("X-RateLimit-Limit")
+        if limit is not None:
+            try:
+                self.last_rate_limit_limit = int(limit)
+            except (TypeError, ValueError):
+                try:
+                    self.last_rate_limit_limit = int(float(limit))
+                except (TypeError, ValueError):
+                    pass
+        reset = headers.get("X-RateLimit-Reset")
+        if reset is not None:
+            self.last_rate_limit_reset_at = str(reset)
 
     def _val(self, data: dict[str, Any], *path: str, default: Any = None) -> Any:
         """Safe nested dict access. _val(d, 'a', 'b', 'c') → d['a']['b']['c']."""

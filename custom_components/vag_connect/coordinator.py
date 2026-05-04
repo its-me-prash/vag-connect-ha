@@ -1559,6 +1559,25 @@ class VagConnectCoordinator(DataUpdateCoordinator):
         # Always stamp when we fetched
         data["last_updated_at"] = datetime.now(tz=timezone.utc)
 
+        # v1.19.1 — Pycupra-style API quota visibility. Copy the brand-
+        # client's last-observed X-RateLimit-Remaining header onto each
+        # vehicle's data dict so the coordinator-bound sensor mapping
+        # works without a per-VIN lookup. Same value for all vehicles
+        # of a given brand (auth cookie is brand-scoped, not VIN-scoped).
+        # ``None`` means we've never seen the header (older backend or
+        # endpoint) — sensor stays ``unknown`` instead of showing 0.
+        client = self._cariad_client
+        if client is not None:
+            data["requests_remaining_today"] = getattr(
+                client, "last_rate_limit_remaining", None,
+            )
+            data["requests_limit_today"] = getattr(
+                client, "last_rate_limit_limit", None,
+            )
+            data["requests_reset_at"] = getattr(
+                client, "last_rate_limit_reset_at", None,
+            )
+
         # Fix #32: Defensive is_charging reset.
         # When plug is disconnected, charging MUST be False regardless of API state.
         # Prevents is_charging staying stuck on "True" after charging ends.

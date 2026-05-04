@@ -190,6 +190,9 @@
       "wake_count_today": {
         "name": "Wake-ups Today"
       },
+      "requests_remaining_today": {
+        "name": "API Requests Remaining"
+      },
       "last_trip_distance_km": {
         "name": "Last Trip Distance"
       },

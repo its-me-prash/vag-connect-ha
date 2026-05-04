@@ -184,6 +184,9 @@
       "wake_count_today": {
         "name": "Wake-Ups heute"
       },
+      "requests_remaining_today": {
+        "name": "API-Anfragen verbleibend"
+      },
       "last_trip_distance_km": {
         "name": "Letzte Fahrt — Strecke"
       },
