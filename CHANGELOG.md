@@ -32,6 +32,68 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ## [Unreleased]
 
+## [1.19.0] - 2026-05-04 🚀 CUPRA/SEAT FCM Push Foundation (#57 Phase 1 cont.) / CUPRA/SEAT FCM Push Foundation (#57 Phase 1 cont.)
+
+🚀 **MINOR-Release.** Push-Update-Infrastruktur für CUPRA/SEAT OLA Backend via Firebase Cloud Messaging. Spiegelt v1.18.0 Skoda MQTT Foundation — gleiche `PushManager` base, gleiche Lifecycle-Hooks, gleiche Lazy-Import-Strategy. Default OFF, opt-in via OptionsFlow toggle.
+
+### 🚀 Was ist neu / What's new
+
+- **Neues Push-Module** `cariad/push/cupra_seat_fcm.py`:
+  - `CupraSeatPushManager` Klasse, erbt von `PushManager` (v1.18.0 base)
+  - **Brand-Constructor-Validation** — `brand` Parameter muss `"cupra"` oder `"seat"` sein, sonst `ValueError`
+  - Identische Lifecycle-Hooks wie SkodaPushManager (start/stop, idempotent)
+  - Identische Reconnect-Backoff-Konstanten (5s → 600s mit ±10% Jitter)
+  - Lazy-Import nur für `firebase-messaging` (kein MQTT — CUPRA/SEAT push ist pure FCM)
+  - **Reuses gleiche Lib** wie v1.18.0 Skoda MQTT (Skoda braucht `firebase-messaging` für TOTP-Auth-Credential, CUPRA/SEAT für FCM-Transport)
+- **Neuer Config-Flow Toggle** `CONF_ENABLE_PUSH_FCM` (default False) im OptionsFlow — koexistiert unabhängig mit `CONF_ENABLE_PUSH_MQTT` (Skoda). User mit gemischter Flotte kann beide aktivieren
+- **Bilingual Translations** (DE + EN) für den neuen Toggle
+
+### 🧪 Tests / Tests
+
+- 16 neue Test-Cases in `tests/test_v1190_cupra_seat_fcm_foundation.py`:
+  - 2 Construction (brand validation für cupra/seat/invalid + initial STOPPED state)
+  - 5 Lifecycle (no VINs / missing dep UNAVAILABLE / start+stop / idempotent start / idempotent stop)
+  - 4 Backoff state machine (mirrors v1.18.0 — initial / grows / caps / reset)
+  - 2 Emit + exception isolation
+  - 3 Const + config_flow exposure (CONF_ENABLE_PUSH_FCM defined, exposed in config_flow, two push toggles coexist)
+  - 2 Module exports + inheritance
+- 8/8 standalone assertions verifiziert lokal
+
+### 🛣️ Wire-Up Plan / Wire-Up Plan
+
+```python
+# In coordinator.py async_setup:
+if (
+    options.get(CONF_ENABLE_PUSH_FCM, False)
+    and brand in ("cupra", "seat")
+):
+    from .cariad.push.cupra_seat_fcm import CupraSeatPushManager  # lazy
+    self._push_manager = CupraSeatPushManager(
+        on_event=self.async_handle_push_event,
+        user_id=auth.user_id,
+        access_token_provider=auth.get_access_token,
+        vins=list(self.vehicles.keys()),
+        brand=brand,
+    )
+    await self._push_manager.start()
+```
+
+Wire-Up wartet auf:
+1. CUPRA/SEAT Community-Tester mit aktiver MyCupra/MySeat Subscription
+2. FCM Project + sender_id Verifikation gegen `firebase-messaging` lib (pycupra `firebase.py` als Referenz)
+3. OLA `/v2/subscriptions` POST-Body-Schema Verifikation (was genau muss in `services` dict?)
+
+### 🚫 NICHT in diesem Release / NOT in this release
+
+- **Aktive FCM-Verbindung** — Foundation-Stub schlafen lässt sich verbinden für State-Machine-Test, sendet aber keine echten FCM-Subscriptions
+- **iot_class change** — wartet bis Push primärer Pfad ist (aktuell: Polling für 100% User)
+- **Manifest deps** — bewusst weggelassen, lazy-import vermeidet Bloat
+- **Coordinator wire-in** — gleiche Bedingung wie v1.18.0: nach Live-Test
+
+### 📦 Schließt Issues / Closes
+
+- **#57** Firebase FCM / MQTT Push — **Foundation-Phase komplett für alle 3 push-fähigen Brands** (Skoda v1.18.0 + CUPRA/SEAT v1.19.0). Phase 2 (Live-Activation) für nächste Release-Reihe v1.18.x / v1.19.x
+
 ## [1.18.0] - 2026-05-04 🚀 Skoda MQTT Push Foundation (#57 Phase 1) / Skoda MQTT Push Foundation (#57 Phase 1)
 
 🚀 **MINOR-Release.** Push-Update-Infrastruktur für Skoda mysmob MQTT Broker (`mqtt.messagehub.de:8883`). **Foundation-Phase** — Klassen-Struktur, State-Machine, Lifecycle-Hooks komplett gebaut + getestet, aber Live-Aktivierung wartet auf Community-Tester (Skoda Connect Subscription erforderlich). Default OFF — opt-in via OptionsFlow toggle.

@@ -1,0 +1,269 @@
+# Copyright 2026 Prash Balan (@its-me-prash) — Apache License 2.0
+"""CUPRA/SEAT OLA FCM push manager (v1.19.0 foundation).
+
+Subscribes to Firebase Cloud Messaging push notifications for
+CUPRA/SEAT vehicles registered against the OLA backend at
+``ola.prod.code.seat.cloud.vwgroup.com``.
+
+### Architecture
+
+Two pieces:
+
+1. **FCM client** (``firebase-messaging`` Python lib) — registers
+   a device with the Firebase project ``ola-apps-prod``, persists
+   the resulting credentials via HA's ``Store`` helper, listens
+   for push notifications via the lib's async start() loop.
+
+2. **OLA subscription** — once we have the FCM token, POST it to
+   ``/v2/subscriptions`` with the user's vehicles + service flags
+   (charging, climatisation). OLA then routes change notifications
+   to that FCM token. Subscription is sticky — re-POST only on
+   token rotation.
+
+### Foundation status (v1.19.0)
+
+This module mirrors ``skoda_mqtt.py`` (v1.18.0) — class structure,
+state machine, lifecycle hooks complete, but the actual FCM
+client/OLA subscription code is **lazy-imported** + stubbed.
+Live activation requires a CUPRA/SEAT owner (active MyCupra /
+MySeat subscription) + verified Firebase credentials.
+
+Reuses the same `firebase-messaging` lib that v1.18.0 lazy-imports
+for Skoda MQTT TOTP auth — so opting into either Skoda push OR
+CUPRA/SEAT push triggers the same dependency check.
+
+### References
+
+- WulfgarW/homeassistant-pycupra ``firebase.py`` (FCM register flow)
+- WulfgarW/homeassistant-pycupra ``connection.py`` (OLA subscribe POST)
+
+### Privacy
+
+- VINs masked to last 6 chars in logs
+- user_id masked to first 8 chars
+- FCM tokens, OAuth tokens: NEVER logged
+- TLS verifies OLA cert
+"""
+
+from __future__ import annotations
+
+import asyncio
+import logging
+import random
+from typing import Any
+
+from .base import PushManager, PushManagerState, PushEventCallback
+
+_LOGGER = logging.getLogger(__name__)
+
+# Firebase project the CUPRA/SEAT mobile apps register against.
+# Public sender_id from the Android google-services.json — no
+# secrets here. May rotate; live tester confirms at activation.
+_FCM_PROJECT_ID = "ola-apps-prod"
+_FCM_SENDER_ID = "<sender-id-pending-live-confirmation>"
+
+# OLA subscription endpoint — verified via WulfgarW/homeassistant-pycupra
+# ``connection.py``. POST {token, deviceId, services} to register a
+# given FCM token for push delivery.
+_OLA_BASE = "https://ola.prod.code.seat.cloud.vwgroup.com"
+_SUBSCRIPTIONS_PATH = "/v2/subscriptions"
+
+# Reconnect backoff bounds — same as Skoda MQTT for consistency.
+_INITIAL_BACKOFF_S = 5.0
+_MAX_BACKOFF_S = 600.0
+_BACKOFF_MULTIPLIER = 2.0
+_FAST_RETRY_THRESHOLD = 10
+
+
+class CupraSeatPushManager(PushManager):
+    """CUPRA/SEAT OLA FCM push manager.
+
+    Lifecycle mirrors ``SkodaPushManager``:
+
+    1. ``start()`` — lazy-imports firebase-messaging, registers
+       (or restores) FCM credentials, POSTs subscription to OLA
+       for each VIN, spawns receive loop on the FCM client
+    2. Background loop calls ``self.emit()`` on each push
+    3. On disconnect: backoff + reconnect (refreshes OAuth token
+       used in OLA subscription POST)
+    4. ``stop()`` — cancels loop, closes FCM client
+
+    Idempotent ``start()`` and ``stop()``.
+    """
+
+    def __init__(
+        self,
+        on_event: PushEventCallback,
+        *,
+        user_id: str,
+        access_token_provider: Any,
+        vins: list[str],
+        brand: str,  # "cupra" or "seat"
+    ) -> None:
+        """Initialise.
+
+        Args:
+            on_event: Coordinator callback receiving each event.
+            user_id: OLA user-id (UUID format).
+            access_token_provider: Async coroutine returning fresh
+                OAuth access token. Called before each OLA subscription
+                POST to ensure auth is valid.
+            vins: List of VINs to subscribe to. Each gets its own
+                ``/v2/subscriptions`` POST with the brand's standard
+                services flag set (charging, climatisation,
+                windowHeating).
+            brand: Either ``"cupra"`` or ``"seat"``. Affects the
+                Firebase project / OLA endpoint variant when those
+                differ.
+        """
+        super().__init__(on_event)
+        if brand not in ("cupra", "seat"):
+            raise ValueError(
+                f"CupraSeatPushManager: brand must be 'cupra' or 'seat', "
+                f"got {brand!r}"
+            )
+        self._user_id = user_id
+        self._access_token_provider = access_token_provider
+        self._vins = list(vins)
+        self._brand = brand
+        self._loop_task: asyncio.Task | None = None
+        self._stop_event: asyncio.Event = asyncio.Event()
+        self._backoff_seconds: float = _INITIAL_BACKOFF_S
+        self._consecutive_fast_retries: int = 0
+
+    async def start(self) -> None:
+        """Spawn the FCM receive loop. Idempotent."""
+        if self._state in (PushManagerState.CONNECTED, PushManagerState.STARTING):
+            return
+        if not self._vins:
+            _LOGGER.info(
+                "CUPRA/SEAT push: no VINs to subscribe to — staying STOPPED",
+            )
+            return
+        self._state = PushManagerState.STARTING
+        self._stop_event.clear()
+        try:
+            self._lazy_check_dependencies()
+        except ImportError as err:
+            _LOGGER.warning(
+                "CUPRA/SEAT push: required dependency missing — %s. "
+                "Run `pip install firebase-messaging` in your HA env "
+                "or disable the push option. Falling back to polling.",
+                err,
+            )
+            self._state = PushManagerState.UNAVAILABLE
+            return
+        self._loop_task = asyncio.create_task(
+            self._run_loop(),
+            name=f"vag_connect-{self._brand}-push-{self._user_id[-6:]}",
+        )
+
+    async def stop(self) -> None:
+        """Cancel the loop + clean up. Idempotent."""
+        if self._state == PushManagerState.STOPPED:
+            return
+        self._stop_event.set()
+        task = self._loop_task
+        if task and not task.done():
+            task.cancel()
+            try:
+                await asyncio.wait_for(task, timeout=10.0)
+            except (asyncio.CancelledError, asyncio.TimeoutError):
+                pass
+        self._loop_task = None
+        self._state = PushManagerState.STOPPED
+
+    def _lazy_check_dependencies(self) -> None:
+        """Verify firebase-messaging is importable.
+
+        CUPRA/SEAT only needs firebase-messaging (no MQTT — push
+        is pure FCM). Skoda MQTT also uses firebase-messaging for
+        TOTP auth, so the dep is already familiar from v1.18.0.
+        """
+        import importlib  # noqa: PLC0415
+        try:
+            importlib.import_module("firebase_messaging")
+        except ImportError as err:
+            raise ImportError(f"firebase_messaging: {err}") from err
+
+    async def _run_loop(self) -> None:
+        """Reconnect-with-backoff outer loop. Same shape as
+        SkodaPushManager._run_loop for consistency."""
+        while not self._stop_event.is_set():
+            try:
+                await self._connect_and_listen()
+            except asyncio.CancelledError:
+                raise
+            except Exception as err:  # noqa: BLE001
+                _LOGGER.warning(
+                    "CUPRA/SEAT push: connection lost (vin count=%d, "
+                    "brand=%s): %s — reconnecting in %.1fs",
+                    len(self._vins),
+                    self._brand,
+                    err,
+                    self._backoff_seconds,
+                )
+                self._state = PushManagerState.RECONNECTING
+                try:
+                    await asyncio.wait_for(
+                        self._stop_event.wait(),
+                        timeout=self._backoff_seconds,
+                    )
+                    break
+                except asyncio.TimeoutError:
+                    pass
+                self._advance_backoff()
+
+    async def _connect_and_listen(self) -> None:
+        """One FCM register + OLA subscribe + receive cycle.
+
+        v1.19.0 foundation: this is a STUB. The real implementation
+        will:
+
+        1. Lazy-import ``firebase_messaging.FcmClient``
+        2. Build FcmRegisterConfig with project_id=ola-apps-prod +
+           sender_id from app metadata
+        3. ``await client.checkin_or_register()`` — returns FCM token
+        4. POST token + vins to ``{_OLA_BASE}{_SUBSCRIPTIONS_PATH}``
+           with bearer auth from ``self._access_token_provider``
+        5. ``await client.start()`` with on_message callback that
+           parses notification → PushUpdateEvent → ``self.emit()``
+
+        For now: refresh OAuth token then sleep until stopped so
+        the lifecycle state machine can be exercised without
+        network I/O.
+        """
+        token = await self._access_token_provider()  # noqa: F841 — used in real impl
+        self._state = PushManagerState.CONNECTED
+        _LOGGER.info(
+            "CUPRA/SEAT push: foundation stub — live activation pending. "
+            "Brand=%s, would POST subscription for VINs: %s",
+            self._brand,
+            [f"***{vin[-6:]}" for vin in self._vins],
+        )
+        try:
+            await self._stop_event.wait()
+        except asyncio.CancelledError:
+            raise
+        self._state = PushManagerState.STOPPED
+
+    def _advance_backoff(self) -> None:
+        """Bump backoff with jitter, capped. Mirrors SkodaPushManager."""
+        self._consecutive_fast_retries += 1
+        if self._consecutive_fast_retries <= _FAST_RETRY_THRESHOLD:
+            self._backoff_seconds = min(
+                self._backoff_seconds * _BACKOFF_MULTIPLIER,
+                _MAX_BACKOFF_S,
+            )
+        else:
+            self._backoff_seconds = _MAX_BACKOFF_S
+        jitter = self._backoff_seconds * 0.1 * (2 * random.random() - 1)
+        self._backoff_seconds = max(
+            _INITIAL_BACKOFF_S,
+            self._backoff_seconds + jitter,
+        )
+
+    def _reset_backoff(self) -> None:
+        """Reset after successful connect. Called on first message."""
+        self._backoff_seconds = _INITIAL_BACKOFF_S
+        self._consecutive_fast_retries = 0

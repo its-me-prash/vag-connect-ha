@@ -34,6 +34,21 @@ CONF_FORCE_PPE_CLIMATE        = "force_ppe_climate"
 # at coordinator setup and forwards backend events to
 # coordinator.async_handle_push_event for near-real-time refresh.
 CONF_ENABLE_PUSH_MQTT         = "enable_push_mqtt"
+# v1.19.0 (#57 Push Bundle, foundation phase) — opt-in toggle for
+# CUPRA/SEAT OLA Firebase Cloud Messaging push updates. Default
+# False because:
+# (1) requires firebase-messaging dep (lazy-imported in
+#     cariad/push/cupra_seat_fcm.py — same dep that v1.18.0 lazy-
+#     imports for Skoda MQTT TOTP, so opting into either backend
+#     triggers the same install requirement)
+# (2) live activation pending community tester (CUPRA/SEAT owner
+#     with active subscription) for FCM project + sender_id
+#     verification
+# (3) only meaningful for brand in {cupra, seat} — others ignore
+# When True + brand matches + dep installed: CupraSeatPushManager
+# spawns at coordinator setup, registers FCM, POSTs OLA
+# subscription, forwards events to coordinator.
+CONF_ENABLE_PUSH_FCM          = "enable_push_fcm"
 
 # Supported brands — must match CariadClientFactory.create() keys
 BRANDS = {

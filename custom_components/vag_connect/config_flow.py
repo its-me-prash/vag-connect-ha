@@ -28,6 +28,7 @@ from homeassistant.helpers.selector import (
 from .const import (
     BRANDS,
     CONF_BRAND,
+    CONF_ENABLE_PUSH_FCM,
     CONF_ENABLE_PUSH_MQTT,
     CONF_ENABLE_REVERSE_GEOCODING,
     CONF_FORCE_ACCESS,
@@ -445,6 +446,18 @@ class VagConnectOptionsFlow(config_entries.OptionsFlow):
                     default=current_options.get(
                         CONF_ENABLE_PUSH_MQTT,
                         current_data.get(CONF_ENABLE_PUSH_MQTT, False),
+                    ),
+                ): _BOOL_SELECTOR,
+                # v1.19.0 (#57 Push Bundle, foundation phase) — opt-in
+                # toggle for CUPRA/SEAT OLA Firebase Cloud Messaging
+                # push updates. Default False; same lazy-import +
+                # foundation pattern as v1.18.0 Skoda MQTT toggle. Only
+                # meaningful for brand in {cupra, seat}.
+                vol.Optional(
+                    CONF_ENABLE_PUSH_FCM,
+                    default=current_options.get(
+                        CONF_ENABLE_PUSH_FCM,
+                        current_data.get(CONF_ENABLE_PUSH_FCM, False),
                     ),
                 ): _BOOL_SELECTOR,
             }),
