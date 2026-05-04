@@ -32,6 +32,53 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ## [Unreleased]
 
+## [1.17.7] - 2026-05-04 🌡️🔧 Skoda outside_temperature + preferred_workshop attrs / Skoda outside_temperature + preferred_workshop attrs
+
+🌡️🔧 **PATCH-Release.** Wires up zwei existing-but-not-Skoda-populated Datenpunkte aus den v1.17.5 Scout-Reports:
+
+### 🌡️ Skoda outside_temperature (#129 + #130 + #133) / Skoda outside_temperature
+
+Drei unabhängige User berichteten in 24h dass Skoda mysmob jetzt `outsideTemperature.{temperatureValue,temperatureUnit,carCapturedTimestamp}` auf dem `air-conditioning` Endpoint shippt. v1.17.5 hat das via EXPECTED_KEYS Wildcard silenced; jetzt wird es **tatsächlich gelesen**:
+
+- Bestehender `outside_temp` Sensor (existiert seit early releases, populated von VW EU + SEAT/CUPRA) bekommt **Skoda als zusätzliche Datenquelle**
+- Native CELSIUS values (3 Reports konvergent), defensive FAHRENHEIT-Konversion via `(F - 32) * 5/9` falls jemals shipped
+- `safe_float` für Wert-Konversion (handelt Strings + dot-decimal — locale-comma "21,5" ist offen, nicht in v1.17.7 gefixt)
+- **Kein neuer Sensor, kein neuer Translation-Key, kein neues HACS-Manifest-Field** — purer Datenquellen-Hookup → echter PATCH
+
+### 🔧 Skoda preferred_workshop attrs (#130 + #133) / Skoda preferred_workshop attrs
+
+Skoda exposed jetzt komplette Werkstatt-Info auf dem `maintenance` Endpoint via `preferredServicePartner.{name,brand,partnerNumber,id,contact,address,location,openingHours}`. v1.17.5 hat das silenced; jetzt wird es **gelesen + als attrs angeboten**:
+
+- Neues Model-Field `VehicleData.preferred_workshop: dict | None` (defaults None für alle anderen Brands)
+- Skoda Parser kopiert das Dict verbatim, dropped nur `openingHours` (rare actionable in HA UI, hält state-machine lean)
+- **`extra_state_attributes` auf bestehendem `service_due_in_days` Sensor** — `attrs["preferred_workshop"]` zeigt name/brand/partnerNumber/id/contact/address/location dem User direkt im Dashboard. Ander Brands kriegen weiterhin None
+- Pattern analog v1.14.0 #24 (`recent_trips` auf `last_trip_distance_km`) und v1.15.0 #35 (`recent_charging_sessions` auf `total_charged_energy_kwh`)
+- **Kein neuer Sensor, kein neuer Entity-ID** → echter PATCH
+
+### 🧪 Tests / Tests
+
+- 14 neue Test-Cases in `tests/test_v1177_skoda_outside_temp_workshop.py`:
+  - 7 outside_temperature: Celsius/Fahrenheit-Konversion, Garbage-Values, Missing-Block, Unit-Default
+  - 5 preferred_workshop: Pass-through, openingHours-Drop, Missing/Empty/Non-Dict, Full #133-Payload
+  - 2 VehicleData field invariants
+- Pattern follows v1.15.0 Skoda Modernization (inline parsing reproduction in tests, weil Skoda's `get_status` monolithisch ist ohne separate `_parse_status` Methode)
+- Lokal verifiziert: 13/13 assertions pass
+
+### 📦 Schließt Issues / Closes
+
+- **#129** rocksandclouds (Skoda outsideTemperature) — Datenpunkt jetzt wirksam als Sensor
+- **#130** Chr1sDub (Skoda preferred_workshop + outsideTemperature) — beide Datenpunkte jetzt wirksam
+- **#133** christianmhz (Skoda komplette Maintenance-Block) — als attrs auf service_due_in_days Sensor
+
+### 🚫 NICHT in diesem Release / NOT in this release
+
+- **`customerService.activeBookings/bookingHistory` als sensors** — niedrige UX-Wert (Booking-History meist leer für deutsche User), deferred
+- **VW heaterSource ("electric") als data feature** — silencing only in v1.17.5; brauchen Live-Test ob als Klima-Modus-Sensor nützlich
+- **VW EU outside_temp Verstärkung mit fuelLevelStatus.value.secondaryEngineType** — nichts kaputt, kein dringender Bedarf
+- **HomeRegion wire-up** — bleibt scaffolding bis Live-Test es bestätigt
+- **Push Bundle** — eigene v1.18.0 Release (Skoda MQTT) + v1.19.0 (CUPRA/SEAT FCM)
+- **locale-comma "21,5" für safe_float** — separater Fix, niedrige Priorität (Skoda hat das nur einmal historisch geshipt)
+
 ## [1.17.6] - 2026-05-04 🌍 HomeRegion-Helper Scaffolding (evcc port) / HomeRegion Helper Scaffolding (evcc port)
 
 🌍 **PATCH-Release.** evcc-Pattern für region-import / non-EU-routed Vehicles eingebaut. Neuer Helper `cariad/_home_region.py` löst per-VIN die Base-URI auf via Discovery-Endpoint `https://mal-1a.prd.ece.vwg-connect.com/api/cs/vds/v1/vehicles/{vin}/homeRegion`. **Scaffolding-only** — Helper ist gebaut, getestet, dokumentiert, aber NOCH NICHT in `vw_eu.py` URL-Builders integriert (würde 13 Call-Sites berühren — Risk-Reward für 99%-EU-User vs. 1%-Edge-Case ungünstig). Wire-Up-Plan ist im `_home_region.py` Modul-Header dokumentiert; Aktivierung erfolgt via separatem PATCH falls Live-Tests (#75 Skoda Kodiaq Mk2 oder ähnlich) bestätigen dass HomeRegion-Resolution den Bug fixt.

@@ -793,6 +793,18 @@ class VagConnectSensor(VagConnectEntity, SensorEntity):
             profiles = self._vehicle.get("charging_profiles")
             if isinstance(profiles, list) and profiles:
                 return {"profiles": profiles}
+        # v1.17.7 (#130 Chr1sDub + #133 christianmhz, 2026-05-04) —
+        # Skoda preferred-workshop block surfaced on the
+        # ``service_due_in_days`` sensor. Same audi #113 pattern:
+        # composite metadata lives in attributes (workshop name,
+        # contact, address, location, partner-id) so the sensor's
+        # native_value (the int day-count) stays clean for templates.
+        # Other brands keep returning None until they grow analogous
+        # parsing.
+        if self.entity_description.key == "service_due_in_days":
+            workshop = self._vehicle.get("preferred_workshop")
+            if isinstance(workshop, dict) and workshop:
+                return {"preferred_workshop": workshop}
         return None
 
     @property
