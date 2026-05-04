@@ -32,6 +32,60 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ## [Unreleased]
 
+## [1.17.6] - 2026-05-04 🌍 HomeRegion-Helper Scaffolding (evcc port) / HomeRegion Helper Scaffolding (evcc port)
+
+🌍 **PATCH-Release.** evcc-Pattern für region-import / non-EU-routed Vehicles eingebaut. Neuer Helper `cariad/_home_region.py` löst per-VIN die Base-URI auf via Discovery-Endpoint `https://mal-1a.prd.ece.vwg-connect.com/api/cs/vds/v1/vehicles/{vin}/homeRegion`. **Scaffolding-only** — Helper ist gebaut, getestet, dokumentiert, aber NOCH NICHT in `vw_eu.py` URL-Builders integriert (würde 13 Call-Sites berühren — Risk-Reward für 99%-EU-User vs. 1%-Edge-Case ungünstig). Wire-Up-Plan ist im `_home_region.py` Modul-Header dokumentiert; Aktivierung erfolgt via separatem PATCH falls Live-Tests (#75 Skoda Kodiaq Mk2 oder ähnlich) bestätigen dass HomeRegion-Resolution den Bug fixt.
+
+### 🛠️ Was ist gebaut / What is built
+
+- **`custom_components/vag_connect/cariad/_home_region.py`** (155 Zeilen):
+  - `HomeRegionCache` Klasse mit per-VIN dict + 7-Tage TTL
+  - `async def resolve_home_region(client, vin, *, cache=None) -> str` — ruft Discovery-Endpoint, parsed `homeRegion.baseUri.content`, fallback auf `DEFAULT_BASE` bei Fehler/Malformed-Response
+  - `DEFAULT_BASE = "https://emea.bff.cariad.digital"` (= identisch mit `vw_eu._BASE`)
+  - `DISCOVERY_BASE = "https://mal-1a.prd.ece.vwg-connect.com"`
+  - Defensiv gegen alle Failure-Modi (404, network error, malformed JSON, missing keys)
+- **`tests/bruno/cariad_bff/22_GET_homeRegion.bru`** — menschen-runbar via Bruno CLI für manuelle Verifikation. Drift-check silent weil mal-1a anderer Host (kein `{{base_url}}` Prefix → keine Bruno-URL-Extraktion → kein Counting-Mismatch)
+- **`tests/test_v1176_homeregion.py`** — 14 Test-Cases:
+  - Cache: hit/miss/expiry/clear/per-VIN-isolation
+  - Resolution: success/trailing-slash/correct-discovery-URL
+  - Fallback: network error/404/malformed-response (9 variants)/no-cache-mode
+  - Failure-caching (default base cached on lookup failure to skip retry)
+  - Invariant test: `DEFAULT_BASE == vw_eu._BASE`
+
+### 🔌 Wire-Up Plan (für späteren PATCH wenn nötig) / Wire-Up Plan
+
+```python
+# In VWEUClient.__init__:
+self._vehicle_bases: dict[str, str] = {}
+self._home_region_cache = HomeRegionCache()
+
+# In VWEUClient.get_vehicles, nach VIN-Liste:
+for vin in vins:
+    self._vehicle_bases[vin] = await resolve_home_region(
+        self, vin, cache=self._home_region_cache,
+    )
+
+# Helper für synchronen Zugriff in URL-Buildern:
+def _base_for_vin(self, vin: str) -> str:
+    return self._vehicle_bases.get(vin, _BASE)
+
+# Alle 13 ``f"{_BASE}/..."`` Stellen umstellen auf:
+# ``f"{self._base_for_vin(vin)}/..."``
+```
+
+Audi erbt automatisch via `AudiClient(VWEUClient)`. Skoda mysmob hat eigenen Backend-Hostname und braucht separaten Helper falls dort auch nötig (TBD basierend auf Live-Test-Daten von #75).
+
+### 🚫 NICHT in diesem Release / NOT in this release
+
+- **Wire-Up in `vw_eu.py`** — opt-in scaffolding, kein Risiko für EU-User
+- **Skoda mysmob HomeRegion** — analoger Helper möglich, abhängig von #75 Live-Test
+- **VW NA / Porsche / SEAT/CUPRA HomeRegion** — andere Auth-Pipelines, nicht von HomeRegion betroffen
+- **PKCE-OAuth Hardening** — separater Patch, niedrige Prio
+
+### 📦 Schließt Issues / Closes
+
+Keine User-Issues direkt — Pure Infrastruktur-Vorbereitung. Hilft potentiell beim Lösen von #75 (Skoda Kodiaq Mk2 403) wenn Christian's Vehicle in nicht-Standard-Region geroutet ist (zu verifizieren wenn er antwortet).
+
 ## [1.17.5] - 2026-05-04 🛰️ Scout-Welle 5: 4 Community-Reports an einem Tag + 4 Verification-Pings / Scout Wave 5: 4 community reports in one day + 4 verification pings
 
 🛰️ **PATCH-Release.** Vehicle Data Scout Pipeline (v1.9.0) hat innerhalb von 24h **4 neue Community-Reports** geliefert: rocksandclouds (#129), Chr1sDub (#130), rborkenhagen (#132), christianmhz (#133) — plus Gerhard's parallele Cupra Born v1.17.4-Test-Reaktion (#53). Total **42 neue Felder über 4 Brands** (Skoda + VW + Audi + Cupra/Seat) registriert in EXPECTED_KEYS. Plus Sprint-A Verification-Pings auf 4 ältere Issues.

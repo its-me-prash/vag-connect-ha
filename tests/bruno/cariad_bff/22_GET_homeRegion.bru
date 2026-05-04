@@ -1,0 +1,55 @@
+meta {
+  name: GET homeRegion (per-VIN base URI discovery, evcc port)
+  type: http
+  seq: 22
+}
+
+get {
+  url: https://mal-1a.prd.ece.vwg-connect.com/api/cs/vds/v1/vehicles/{{vin}}/homeRegion
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+headers {
+  Accept: application/json
+}
+
+docs {
+  v1.17.6 — HomeRegion discovery endpoint, ported from evcc-io/evcc
+  (vehicle/vw/api.go). Returns the per-VIN base URI for status/control
+  calls. Used to route region-imported vehicles (US-spec VW EU, etc.)
+  to the correct gateway instead of the default emea.bff.cariad.digital.
+
+  Response shape (verified evcc-io/evcc source):
+    {
+      "homeRegion": {
+        "baseUri": {
+          "content": "https://emea.bff.cariad.digital"
+        }
+      }
+    }
+
+  For EU/standard vehicles the response baseUri.content equals our
+  default _BASE. For region-routed vehicles it's a different gateway
+  (e.g. mal-3a.prd.eu.dp.vwg-connect.com legacy MAL, or fal-... for
+  Frankfurt). evcc rewrites mal-3a → fal- + /fs-car suffix in their
+  HomeRegion() function, but we keep the returned URI verbatim.
+
+  Implementation:
+    custom_components/vag_connect/cariad/_home_region.py
+    - resolve_home_region(client, vin, cache=...) -> str
+    - HomeRegionCache: per-VIN result with 7d TTL
+    - DEFAULT_BASE constant matches vw_eu._BASE
+
+  Wire-up status: SCAFFOLDING ONLY in v1.17.6. Not yet integrated
+  into vw_eu.py URL builders to avoid regressing the 99%-EU user
+  base for an edge-case fix. Wire-in plan documented at top of
+  _home_region.py.
+
+  Privacy: VIN goes to the manufacturer's own discovery endpoint
+  with the user's existing token. No third-party data leak.
+}
