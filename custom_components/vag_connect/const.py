@@ -24,6 +24,16 @@ CONF_READ_ONLY                = "read_only_mode"
 # Auto-detection from VIN/model/year is unreliable (no public PPE list);
 # user-overridable until we have a proper detection mechanism.
 CONF_FORCE_PPE_CLIMATE        = "force_ppe_climate"
+# v1.18.0 (#57 Push Bundle, foundation phase) — opt-in toggle for
+# Skoda mysmob MQTT push updates. Default False because:
+# (1) requires aiomqtt + firebase-messaging deps (not yet in
+#     manifest, lazy-imported in cariad/push/skoda_mqtt.py)
+# (2) live activation pending community tester validation
+# (3) only meaningful for brand=skoda (other brands ignore)
+# When True + brand=skoda + deps installed: SkodaPushManager spawns
+# at coordinator setup and forwards backend events to
+# coordinator.async_handle_push_event for near-real-time refresh.
+CONF_ENABLE_PUSH_MQTT         = "enable_push_mqtt"
 
 # Supported brands — must match CariadClientFactory.create() keys
 BRANDS = {

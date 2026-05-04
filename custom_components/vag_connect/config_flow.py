@@ -28,6 +28,7 @@ from homeassistant.helpers.selector import (
 from .const import (
     BRANDS,
     CONF_BRAND,
+    CONF_ENABLE_PUSH_MQTT,
     CONF_ENABLE_REVERSE_GEOCODING,
     CONF_FORCE_ACCESS,
     CONF_FORCE_PPE_CLIMATE,
@@ -430,6 +431,20 @@ class VagConnectOptionsFlow(config_entries.OptionsFlow):
                     default=current_options.get(
                         CONF_FORCE_PPE_CLIMATE,
                         current_data.get(CONF_FORCE_PPE_CLIMATE, False),
+                    ),
+                ): _BOOL_SELECTOR,
+                # v1.18.0 (#57 Push Bundle, foundation phase) — opt-in
+                # toggle for Skoda mysmob MQTT push updates. Default
+                # False because deps (aiomqtt + firebase-messaging) are
+                # lazy-imported (not in manifest yet) and live activation
+                # is pending community-tester validation. Other brands
+                # ignore this option for now (CUPRA/SEAT FCM will land
+                # in v1.19.0).
+                vol.Optional(
+                    CONF_ENABLE_PUSH_MQTT,
+                    default=current_options.get(
+                        CONF_ENABLE_PUSH_MQTT,
+                        current_data.get(CONF_ENABLE_PUSH_MQTT, False),
                     ),
                 ): _BOOL_SELECTOR,
             }),
