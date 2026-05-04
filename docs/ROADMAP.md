@@ -126,7 +126,7 @@ Strict order — P0 (next release) > P1 (planned MINOR) > P2 (later) > P3 (resea
 | Session | Version | Scope | Issues |
 |---|---|---|---|
 | **Pycupra-driven Hardening** | **v1.19.1** ⭐ | PATCH aus pycupra source-reading: port `find_path()` als `cariad/_safe_path.py`, extend exception taxonomy mit `PyCupraThrottledException`-equivalent, surface `X-RateLimit-Remaining` als `requests_remaining_today` sensor. Notes in `docs/research/vag-ha-integration-research.md`. ~2-3h. | (HACS-Checklist) |
-| **AdBlue Range Skoda** | **v1.19.2** | PATCH: Field `adblue_range_km` existiert in `models.py` aber Skoda parser liest es nicht aus `driving-range` endpoint. ~30min Quick-Win. | CC-skoda #24 |
+| ~~AdBlue Range Skoda~~ | ✅ **DONE** (already implemented, finding 2026-05-04) | Code-Audit zeigt: `skoda.py:386` liest bereits `v(driving_range, "adBlueRange", "distanceInKm") → d.adblue_range_km`; `vw_eu.py:778` macht das gleiche für VW EU/Audi via `measurements.rangeStatus.value.adBlueRange`. Sensor existiert in `sensor.py:367` mit `condition="combustion"` Gating + DE/EN translations. ROADMAP-Eintrag war veraltet — kein Handlungsbedarf. | ~~CC-skoda #24~~ done |
 | **Skoda Vehicle-Info Bundle + Cross-Brand OTA Live-Test** | **v1.20.0** | MINOR: deferred aus v1.16.0 — `GET /v1/vehicle-information/{vin}` + `/renders` + `/equipment` + lightweight `/v2/widgets/vehicle-status/{vin}` für Skoda DeviceInfo Erweiterung. Plus Cross-Brand OTA Live-Test per `docs/RESEARCH_NOTES_2026-05-02_OTA_PROBE.md`. Plus Charging Profile Write-Side. | (Live-Test asks) |
 | **Push Bundle Phase 2 — Live Activation** | v1.18.x + v1.19.x Patches | Phase 1 Foundation komplett (v1.18.0 Skoda MQTT + v1.19.0 CUPRA/SEAT FCM). Phase 2 wartet auf Community-Tester (Skoda Connect Sub + MyCupra/MySeat Sub) für FCM-Project-ID + TOTP + OLA-Subscription-Schema Verifikation. Wire-In: coordinator hooks + replace foundation stubs mit real aiomqtt + firebase-messaging calls. | #57 Phase 2 |
 | **HomeRegion Wire-In** | v1.17.x Patch | Foundation v1.17.6 ist gebaut, NICHT integriert. Activation: 13 `_BASE` replacements in vw_eu.py + per-VIN cache integration in coordinator. Wartet auf #75 Christian region-Info (wenn non-EU vehicle bestätigt). | #75 |
@@ -172,7 +172,7 @@ Strict order — P0 (next release) > P1 (planned MINOR) > P2 (later) > P3 (resea
 
 ### Standalone enhancements (no version pin yet)
 
-- ~~**Diesel AdBlue Range** for Škoda (CC-skoda #24)~~ — scheduled v1.19.2
+- ~~**Diesel AdBlue Range** for Škoda (CC-skoda #24)~~ — already done (code-audit 2026-05-04: `skoda.py:386` + `vw_eu.py:778` + sensor.py:367 + DE/EN translations all wired)
 - **`/v2/widgets/vehicle-status/{vin}`** as lightweight Skoda endpoint
   (myskoda PR #557): for battery-friendly polling. Pairs well with v1.20.0
   Skoda Vehicle-Info Bundle.
