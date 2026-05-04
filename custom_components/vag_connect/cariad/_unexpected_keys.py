@@ -124,6 +124,17 @@ EXPECTED_KEYS: dict[str, dict[str, set[str]]] = {
             "timers",
             "outsideTemperature",
             "errors",
+            # v1.17.5 (#129 rocksandclouds + #130 Chr1sDub + #133
+            # christianmhz — three independent Skoda Scout-Reports
+            # 2026-05-03/04 converging on the same outsideTemperature
+            # leaf set). Backend now ships full block on air-conditioning
+            # endpoint with value/unit/timestamp. Wildcard covers
+            # potential future sub-fields without re-registering.
+            "outsideTemperature.*",
+            # v1.17.5 (#133 christianmhz) — targetTemperature now
+            # includes the in-car display unit (CELSIUS|FAHRENHEIT)
+            # alongside the value. Sibling of temperatureValue.
+            "targetTemperature.unitInCar",
         },
         "parking": {
             "parkingPosition", "parkingPosition.gpsCoordinates",
@@ -131,6 +142,13 @@ EXPECTED_KEYS: dict[str, dict[str, set[str]]] = {
             "parkingPosition.gpsCoordinates.longitude",
             "parkingPosition.formattedAddress",
             "carCapturedTimestamp",
+            # v1.17.5 (#133 christianmhz) — Skoda mysmob now wraps
+            # transient lookup failures (e.g. "no recent GPS fix") in
+            # an ``errors`` array on the parking endpoint, mirroring
+            # the same convention seen on air-conditioning + driving-
+            # range. Defensive registration with wildcard.
+            "errors",
+            "errors.*",
         },
         "driving-range": {
             "totalRangeInKm", "electricRange", "electricRange.distanceInKm",
@@ -176,6 +194,17 @@ EXPECTED_KEYS: dict[str, dict[str, set[str]]] = {
             # without per-field whack-a-mole.
             "predictiveMaintenance.setting",
             "predictiveMaintenance.setting.*",
+            # v1.17.5 (#130 Chr1sDub Octavia iV 2024 + #133 christianmhz —
+            # both reported the same maintenance shape on 2026-05-04).
+            # Skoda mysmob exposes preferred-workshop info (name, brand,
+            # partner-id, contact, address, location, opening hours) and
+            # service-booking history (active + past). Wildcards because
+            # contact/address/location/openingHours are deeply nested
+            # composite blocks; we don't read them yet but registering
+            # silences the Scout. Future feature work can wire a
+            # ``preferred_workshop_name`` sensor + booking attrs.
+            "preferredServicePartner.*",
+            "customerService.*",
         },
         "readiness": {
             "unreachable", "inMotion", "carCapturedTimestamp",
@@ -225,6 +254,14 @@ EXPECTED_KEYS: dict[str, dict[str, set[str]]] = {
             # future primary children without per-field whack-a-mole.
             "engines.primary",
             "engines.primary.*",
+            # v1.17.5 (#53 Gerhard Born v1.17.4 test 2026-05-04) —
+            # ``services`` block on mycar has been registered as parent
+            # since v1.10.2; Born now exposes the per-service entitlement
+            # children (charging/climatisation/windowHeating). Each is a
+            # multi-key dict (subscription state + caps + limits) that we
+            # don't drill into yet — wildcard silences Scout for any
+            # future per-service shape changes.
+            "services.*",
         },
         "charging": {
             "battery", "battery.stateOfChargeInPercent", "battery.currentSOC_pct",
@@ -266,6 +303,16 @@ EXPECTED_KEYS: dict[str, dict[str, set[str]]] = {
             "chargingCareSettings",
             "chargingCareStatus",
             "carCapturedTimestamp",
+            # v1.17.5 (#53 Gerhard Born v1.17.4 test 2026-05-04) — Born
+            # now publishes the per-setting children directly under
+            # ``settings`` (lowercase ``Ac`` suffix variant alongside the
+            # uppercase ``AC`` we already had above) and the charge-care
+            # status leaves. Wildcards because the dict shape is settled
+            # for now but Born firmware migrations have shown to add
+            # fields each release.
+            "settings.*",
+            "chargingCareSettings.*",
+            "chargingCareStatus.*",
         },
         "climatisation": {
             "status", "status.climatisationState", "status.state",
@@ -497,6 +544,21 @@ EXPECTED_KEYS: dict[str, dict[str, set[str]]] = {
             "readiness.readinessStatus.value.connectionState.dailyPowerBudgetAvailable",
             "readiness.readinessStatus.value.connectionWarning.insufficientBatteryLevelWarning",
             "readiness.readinessStatus.value.connectionWarning.dailyPowerBudgetWarning",
+            # v1.17.5 (#132 rborkenhagen Scout-Report 2026-05-04 on a
+            # VW PHEV/EV) — three new leaves on selectivestatus:
+            #   - climatisation.climatisationSettings.value.heaterSource
+            #     ("electric" — used by Born/ID family to choose between
+            #     PTC and HV-loop pre-conditioning)
+            #   - measurements.fuelLevelStatus.value.secondaryEngineType
+            #     ("electric" — companion to primaryEngineType, hardens
+            #     the PHEV detection from v1.11.1 #96)
+            #   - departureTimers (top-level job from selectivestatus
+            #     query already in v1.13.0+ but never explicitly in
+            #     EXPECTED_KEYS catalog — wildcard for future shape)
+            "climatisation.climatisationSettings.value.heaterSource",
+            "measurements.fuelLevelStatus.value.secondaryEngineType",
+            "departureTimers",
+            "departureTimers.*",
         },
         "parkingposition": {
             "data", "data.lon", "data.lat", "data.carCapturedTimestamp",

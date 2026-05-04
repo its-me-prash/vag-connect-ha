@@ -32,6 +32,64 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ## [Unreleased]
 
+## [1.17.5] - 2026-05-04 🛰️ Scout-Welle 5: 4 Community-Reports an einem Tag + 4 Verification-Pings / Scout Wave 5: 4 community reports in one day + 4 verification pings
+
+🛰️ **PATCH-Release.** Vehicle Data Scout Pipeline (v1.9.0) hat innerhalb von 24h **4 neue Community-Reports** geliefert: rocksandclouds (#129), Chr1sDub (#130), rborkenhagen (#132), christianmhz (#133) — plus Gerhard's parallele Cupra Born v1.17.4-Test-Reaktion (#53). Total **42 neue Felder über 4 Brands** (Skoda + VW + Audi + Cupra/Seat) registriert in EXPECTED_KEYS. Plus Sprint-A Verification-Pings auf 4 ältere Issues.
+
+### 🛰️ Scout-Silencing — 5 Reports, 4 Brands / Scout Silencing — 5 Reports, 4 Brands
+
+**Skoda mysmob (#129 + #130 + #133, 3 unabhängige User mit konvergenten Findings):**
+
+- `outsideTemperature.*` Wildcard auf `air-conditioning` Endpoint — deckt `temperatureValue` (z.B. `24.0`), `temperatureUnit` ("CELSIUS"), `carCapturedTimestamp` ab
+- `targetTemperature.unitInCar` ("CELSIUS"|"FAHRENHEIT") auf `air-conditioning` Endpoint
+- `preferredServicePartner.*` Wildcard auf `maintenance` Endpoint — deckt `name`, `brand`, `partnerNumber`, `id`, `contact`, `address`, `location`, `openingHours` ab (Skoda exposed jetzt komplette Werkstatt-Info)
+- `customerService.*` Wildcard auf `maintenance` Endpoint — deckt `activeBookings`, `bookingHistory` ab
+- `errors`, `errors.*` auf `parking` Endpoint (Skoda mysmob wraps "no recent GPS fix" und ähnliche transient errors jetzt im gleichen Pattern wie air-conditioning + driving-range)
+
+**Volkswagen + Audi CARIAD-BFF (#132 rborkenhagen):**
+
+- `climatisation.climatisationSettings.value.heaterSource` ("electric" für Born/ID — wird vom Backend gemeldet, von uns noch nicht für PHEV-PTC vs HV-loop Logik genutzt)
+- `measurements.fuelLevelStatus.value.secondaryEngineType` ("electric" — companion zu primaryEngineType, hardens v1.11.1 #96 Golf GTE PHEV-detection)
+- `departureTimers`, `departureTimers.*` Wildcard (top-level job ist seit v1.13.0 in selectivestatus query, aber nie explizit in EXPECTED_KEYS catalog gewesen)
+- Audi erbt VW EU's selectivestatus shape — alle drei Silencings gelten automatisch
+
+**Cupra/Seat OLA (#53 Gerhard's Born v1.17.4-Test):**
+
+- `services.*` Wildcard auf `mycar` Endpoint — Born exposed per-service entitlement children (charging/climatisation/windowHeating); jeder ist multi-key dict (subscription state + caps + limits)
+- `settings.*` Wildcard auf `charging-info` Endpoint — Born nutzt lowercase `Ac` suffix variant (`maxChargeCurrentAc`, `autoUnlockPlugWhenChargedAc`, `targetSoc`) parallel zur uppercase `AC` variant
+- `chargingCareSettings.*` und `chargingCareStatus.*` Wildcards — neue Charge-Care-Subsystem leaves (`batteryCareMode=true`, `batteryCareTargetSoc=80`)
+- Seat erbt Cupra's OLA shape — alle Silencings gelten automatisch
+
+### 📨 Sprint-A Verification-Pings + Diagnostic-Pings / Sprint A Verification + Diagnostic Pings
+
+4 ältere Issues mit Verweis auf Hardening-Bundles seit ihrer Original-Report-Version:
+
+- **#118 eismarkt** "restart After Update" — User auf v1.9.0; v1.10.1 + v1.11.1 + v1.13.0 Hardening-Bundles seitdem
+- **#51 Audi RS e-tron GT 404** — User auf v1.5.10; v1.8.4 SecToken + v1.8.5 v1/v2 fallback + v1.9.1 Wake-Fix + v1.13.0 Capability-Filter Phase 3 + v1.14.0 Audi Feature Pack seitdem
+- **#48 all-actions-fail** — Generic; v1.8.5 fallback + v1.9.1 classify_command_failure + v1.13.0 Phase 3 seitdem
+- **#42 migendi CUPRA Formentor v1.5.9** — v1.10.2 Born firmware + v1.16.1 Klima-Fix + v1.17.1 Bruno-Quick-Wins seitdem
+
+Plus **#131 Chr1sDub Skoda Octavia** Diagnostic-Ping: Subscription-Verifikation (Connect-Abo: NEIN ist mutmaßlich Root-Cause für die HTTP 500 Klima-Failures) + S-PIN Re-Check (Optionen-Variante vs Initial-Config) — kein Code-Fix in diesem Release weil 500 → NOT_ENTITLED Klassifikation false-positive Risiko hat (transient backend errors würden Entities verstecken).
+
+Plus **#53 Gerhard Born Klima-Stop 404 Diagnose-Frage** — A/B Fallback in v1.16.1 deckt 2 URLs ab; Gerhards Born scheint einen dritten Pfad zu brauchen. Warten auf DEBUG-Log + 404-Body um den fehlenden Path zu identifizieren.
+
+### 🧪 Tests / Tests
+
+- 16 neue Test-Cases in `tests/test_v1175_scout_silencing.py` — alle 5 Scout-Reports verifiziert für Skoda/VW/Audi/Cupra/Seat (inkl. Inheritance-Tests für audi←volkswagen und seat←cupra)
+- Alle bestehenden Tests grün
+- Bruno-Drift unverändert: 80/80 strict pass
+
+### 🚫 NICHT in diesem Release / NOT in this release
+
+- **outside_temperature_c Sensor (Skoda)** — strict semver MINOR weil neuer Sensor; deferred zu v1.18.0
+- **preferredServicePartner als attrs-Sensor** — same reason; deferred
+- **500-Klassifikation für Skoda mysmob** — false-positive Risiko zu hoch; alternative wäre per-VIN failure-rate threshold (komplexer; deferred)
+- **HomeRegion-Helper (evcc port)** — eigener PATCH v1.17.6 oder mit v1.18.0 gebündelt
+
+### 📦 Schließt Issues / Closes
+
+Keine User-Issues direkt geschlossen — Verification-Pings warten auf User-Confirmation. Pure Scout-Silencing für #129/#130/#132/#133/#53.
+
 ## [1.17.4] - 2026-05-03 🎯 Bruno-CI Stufe 2 COMPLETE — Full Strict Coverage / Bruno-CI Stufe 2 Complete (Skoda + CARIAD-BFF strict)
 
 🎯 **Bruno-CI Stufe 2 ist COMPLETE.** Skoda + CARIAD-BFF auf 100% coverage gebracht, alle 3 Brands jetzt strict mode in CI. **80 .bru files total**, 80/80 match (35 seat_cupra + 24 skoda + 21 cariad_bff).
