@@ -141,24 +141,24 @@ class TestVehicleDataQuotaFields:
 
 class TestSensorExposure:
     def test_sensor_description_present(self):
-        from custom_components.vag_connect.sensor import _SENSOR_DESCRIPTIONS
-        keys = {d.key for d in _SENSOR_DESCRIPTIONS}
+        from custom_components.vag_connect.sensor import SENSOR_DESCRIPTIONS
+        keys = {d.key for d in SENSOR_DESCRIPTIONS}
         assert "requests_remaining_today" in keys
 
     def test_sensor_is_diagnostic_category(self):
-        from custom_components.vag_connect.sensor import _SENSOR_DESCRIPTIONS
+        from custom_components.vag_connect.sensor import SENSOR_DESCRIPTIONS
         from homeassistant.helpers.entity import EntityCategory
         desc = next(
-            (d for d in _SENSOR_DESCRIPTIONS if d.key == "requests_remaining_today"),
+            (d for d in SENSOR_DESCRIPTIONS if d.key == "requests_remaining_today"),
             None,
         )
         assert desc is not None
         assert desc.entity_category == EntityCategory.DIAGNOSTIC
 
     def test_sensor_has_translation_key(self):
-        from custom_components.vag_connect.sensor import _SENSOR_DESCRIPTIONS
+        from custom_components.vag_connect.sensor import SENSOR_DESCRIPTIONS
         desc = next(
-            (d for d in _SENSOR_DESCRIPTIONS if d.key == "requests_remaining_today"),
+            (d for d in SENSOR_DESCRIPTIONS if d.key == "requests_remaining_today"),
             None,
         )
         assert desc is not None
