@@ -282,6 +282,17 @@ class VehicleData:
     # DATE-class sensor and the int sensor both work.
     service_due_in_days: int | None = None
     oil_service_due_in_days: int | None = None
+    # v1.17.7 (#130 Chr1sDub + #133 christianmhz — two converging Skoda
+    # Scout-Reports 2026-05-04). Skoda mysmob now exposes the user's
+    # registered preferred-workshop info on the maintenance endpoint.
+    # Surfaced as extra_state_attributes on the ``service_due_in_days``
+    # sensor (see sensor.py) so users see workshop name + contact
+    # alongside the "next service in X days" number. Dict shape is
+    # whatever the backend ships — typical keys: name, brand,
+    # partnerNumber, id, contact{phone, email}, address{street, city,
+    # postalCode, country}, location{lat, lon}, openingHours[].
+    # Currently populated by SkodaClient; other brands leave it None.
+    preferred_workshop: dict[str, Any] | None = None
 
     # Departure timers
     departure_timer_1_enabled: bool = False

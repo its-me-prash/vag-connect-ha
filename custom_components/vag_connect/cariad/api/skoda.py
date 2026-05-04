@@ -303,6 +303,26 @@ class SkodaClient(CariadBaseClient):
             d.window_heating_front = v(wh, "front") == "ON"
             d.window_heating_back = v(wh, "rear") == "ON"
 
+            # v1.17.7 (#129 rocksandclouds + #130 Chr1sDub + #133
+            # christianmhz — three converging Skoda Scout-Reports
+            # 2026-05-03/04). Skoda mysmob now exposes the outside
+            # temperature on the air-conditioning endpoint, mirroring
+            # what VW EU + SEAT/CUPRA already provided. Native Celsius
+            # value (no Kelvin conversion needed). Stale-detection via
+            # carCapturedTimestamp is left to the existing connection-
+            # state pipeline. ``safe_float`` handles locale-comma
+            # variants (Skoda firmwares have shipped "21,5" once).
+            outside_t = v(ac, "outsideTemperature", "temperatureValue")
+            if outside_t is not None:
+                # Backend always sends Celsius for Skoda (verified across
+                # 3 user reports), but defensively check unit anyway.
+                unit = v(ac, "outsideTemperature", "temperatureUnit")
+                ot_val = safe_float(outside_t)
+                if ot_val is not None:
+                    if unit == "FAHRENHEIT":
+                        ot_val = round((ot_val - 32) * 5 / 9, 1)
+                    d.outside_temp = ot_val
+
             plug_conn = v(ac, "chargerConnectionState")
             if plug_conn:
                 d.plug_connected = plug_conn == "CONNECTED"
@@ -382,6 +402,30 @@ class SkodaClient(CariadBaseClient):
             # alongside the existing DATE-converted sensors.
             d.service_due_in_days = safe_int(d.service_due_at)
             d.oil_service_due_in_days = safe_int(d.oil_service_at)
+            # v1.17.7 (#130 Chr1sDub + #133 christianmhz, 2026-05-04) —
+            # Skoda mysmob now exposes the user's preferred-workshop
+            # registration on the maintenance endpoint. Surfaced as
+            # extra_state_attributes on the ``service_due_in_days``
+            # sensor (sensor.py) so users see the workshop name +
+            # contact data alongside the next-service countdown.
+            #
+            # We pass the raw dict through verbatim — backend ships
+            # nested contact/address/location/openingHours blocks
+            # whose exact keys vary (DE vs CH vs AT vehicles see
+            # different address shapes). HA's recorder is fine with
+            # nested attrs as long as the total serialised size fits;
+            # for CIS-region accounts the openingHours array can be
+            # large so we drop it (rarely actionable in HA UI).
+            workshop = v(maintenance, "preferredServicePartner")
+            if isinstance(workshop, dict) and workshop:
+                # Shallow copy + drop openingHours to keep attrs lean
+                # in the HA state machine. Users who need full hours
+                # can read the diagnostics export.
+                trimmed = {
+                    k: val for k, val in workshop.items()
+                    if k != "openingHours"
+                }
+                d.preferred_workshop = trimmed
 
         # ── Connection status ────────────────────────────────────────────────
         if isinstance(readiness, dict):
