@@ -203,8 +203,21 @@ EXPECTED_KEYS: dict[str, dict[str, set[str]]] = {
             # composite blocks; we don't read them yet but registering
             # silences the Scout. Future feature work can wire a
             # ``preferred_workshop_name`` sensor + booking attrs.
+            #
+            # Both 2-segment + 3-segment wildcards needed because the
+            # Scout walker (``_walk`` in this module) DESCENDS through
+            # known parents. ``preferredServicePartner.*`` matches the
+            # 2-segment children (``contact``, ``address``, ``location``,
+            # ``openingHours``) — those ARE dicts so the walker recurses
+            # into them and 3-segment leaves (``contact.phone``,
+            # ``address.street``, ``location.lat/lon``) need their own
+            # wildcard. ``customerService`` is shallower (2 keys both
+            # arrays) so 2-segment alone suffices but 3-segment is safe
+            # future-proofing.
             "preferredServicePartner.*",
+            "preferredServicePartner.*.*",
             "customerService.*",
+            "customerService.*.*",
         },
         "readiness": {
             "unreachable", "inMotion", "carCapturedTimestamp",
@@ -260,8 +273,10 @@ EXPECTED_KEYS: dict[str, dict[str, set[str]]] = {
             # children (charging/climatisation/windowHeating). Each is a
             # multi-key dict (subscription state + caps + limits) that we
             # don't drill into yet — wildcard silences Scout for any
-            # future per-service shape changes.
+            # future per-service shape changes. 3-segment wildcard for
+            # the per-service leaves (sub state, expiry, etc.).
             "services.*",
+            "services.*.*",
         },
         "charging": {
             "battery", "battery.stateOfChargeInPercent", "battery.currentSOC_pct",
@@ -309,10 +324,13 @@ EXPECTED_KEYS: dict[str, dict[str, set[str]]] = {
             # uppercase ``AC`` we already had above) and the charge-care
             # status leaves. Wildcards because the dict shape is settled
             # for now but Born firmware migrations have shown to add
-            # fields each release.
+            # fields each release. 3-segment for any nested settings dicts.
             "settings.*",
+            "settings.*.*",
             "chargingCareSettings.*",
+            "chargingCareSettings.*.*",
             "chargingCareStatus.*",
+            "chargingCareStatus.*.*",
         },
         "climatisation": {
             "status", "status.climatisationState", "status.state",
@@ -559,6 +577,10 @@ EXPECTED_KEYS: dict[str, dict[str, set[str]]] = {
             "measurements.fuelLevelStatus.value.secondaryEngineType",
             "departureTimers",
             "departureTimers.*",
+            # 3-segment wildcard for per-timer leaves (enabled, time,
+            # repetition pattern, etc.). Walker descends into known
+            # `departureTimers.{id}` containers.
+            "departureTimers.*.*",
         },
         "parkingposition": {
             "data", "data.lon", "data.lat", "data.carCapturedTimestamp",
