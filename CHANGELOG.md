@@ -32,6 +32,73 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ## [Unreleased]
 
+## [1.18.0] - 2026-05-04 🚀 Skoda MQTT Push Foundation (#57 Phase 1) / Skoda MQTT Push Foundation (#57 Phase 1)
+
+🚀 **MINOR-Release.** Push-Update-Infrastruktur für Skoda mysmob MQTT Broker (`mqtt.messagehub.de:8883`). **Foundation-Phase** — Klassen-Struktur, State-Machine, Lifecycle-Hooks komplett gebaut + getestet, aber Live-Aktivierung wartet auf Community-Tester (Skoda Connect Subscription erforderlich). Default OFF — opt-in via OptionsFlow toggle.
+
+### 🚀 Was ist neu / What's new
+
+- **Neues Push-Package** `custom_components/vag_connect/cariad/push/`:
+  - `base.py` — abstract `PushManager` + `PushUpdateEvent` (frozen dataclass) + `PushManagerState` enum (6 Phasen: STOPPED, STARTING, CONNECTED, RECONNECTING, DISABLED, UNAVAILABLE)
+  - `skoda_mqtt.py` — `SkodaPushManager` Implementation mit Lifecycle, Reconnect-Backoff (5s → 600s mit ±10% Jitter, evcc + myskoda PR #566 Constants), Lazy-Import für `aiomqtt` + `firebase-messaging`
+  - `__init__.py` — Package-Doku + Exports
+- **Neuer Config-Flow Toggle** `CONF_ENABLE_PUSH_MQTT` (default False) im OptionsFlow — User aktiviert Push pro Integration; bilingual Translations (DE + EN strings)
+- **Lazy-Import-Strategie** für Push-Deps: `aiomqtt` + `firebase-messaging` werden NICHT in `manifest.json` requirements gelistet (kein Bloat für 99% Polling-User). Wenn User Toggle aktiviert OHNE Deps installiert zu haben → Manager geht in `UNAVAILABLE` State + logged Hinweis "pip install aiomqtt firebase-messaging" + fällt still auf Polling zurück
+
+### 🧪 Tests / Tests
+
+- 18 neue Test-Cases in `tests/test_v1180_skoda_push_foundation.py`:
+  - 3 Push base types (state enum, frozen dataclass, payload variant)
+  - 6 SkodaPushManager lifecycle (initial state, empty VINs, missing-deps UNAVAILABLE, start+stop cleanup, idempotent start, idempotent stop)
+  - 5 backoff state machine (initial 5s, grows, caps at 600s + 15% jitter buffer, reset returns to initial, jitter floor)
+  - 2 event emit + exception isolation (callback called, failing callback doesn't crash loop)
+  - 1 const + config_flow option (CONF_ENABLE_PUSH_MQTT exposed)
+  - 1 package exports (PushManager, PushUpdateEvent importable)
+- Alle 10 standalone-Logic-Assertions verifiziert lokal
+
+### 🛣️ Wire-Up Plan / Wire-Up Plan
+
+```python
+# In coordinator.py async_setup or async_setup_entry:
+if (
+    options.get(CONF_ENABLE_PUSH_MQTT, False)
+    and brand == "skoda"
+):
+    from .cariad.push.skoda_mqtt import SkodaPushManager  # lazy
+    self._push_manager = SkodaPushManager(
+        on_event=self.async_handle_push_event,
+        user_id=auth.user_id,
+        access_token_provider=auth.get_access_token,  # async
+        vins=list(self.vehicles.keys()),
+    )
+    await self._push_manager.start()
+
+# In coordinator.async_unload or async_unload_entry:
+if self._push_manager:
+    await self._push_manager.stop()
+
+# In coordinator new method async_handle_push_event(event):
+#   - filter event.event_type for refresh trigger
+#   - call get_status(event.vin) for affected VIN
+#   - async_set_updated_data(updated_dict)
+```
+
+Wire-Up wartet auf:
+1. Community-Tester mit Skoda + Connect Subscription bestätigt FCM-Project-ID + TOTP-Scheme
+2. Endpoint-Verifikation des Brokers (mqtt.messagehub.de:8883 noch live? auth-Format unverändert?)
+3. Push-Parität-Mapping: welche Events triggern get_status vs welche carry full state?
+
+### 🚫 NICHT in diesem Release / NOT in this release
+
+- **Aktive MQTT-Verbindung** — Foundation-Stub schlafen lässt sich verbinden (für State-Machine-Test) aber sendet keine echten MQTT-Subscribes. Live-Activation in v1.18.x Patch-Reihe sobald Tester sich melden
+- **CUPRA/SEAT FCM** — analoge Foundation kommt in v1.19.0 (reuses gleiche `firebase-messaging` lib via lazy-import)
+- **iot_class change cloud_polling → cloud_push** — wartet bis Push primärer Pfad ist (aktuell: Polling für 100% User, Push opt-in für 0%)
+- **Manifest deps** (`aiomqtt`, `firebase-messaging`) — bewusst weggelassen um kein Bloat für non-Skoda User; opt-in User installieren manuell via `pip install` in HA env
+
+### 📦 Schließt Issues / Closes
+
+- **#57** Firebase FCM / MQTT Push (real-time updates) — **Phase 1 Foundation** geschlossen, Phase 2 (Live-Aktivierung) für nächste Release-Reihe v1.18.x
+
 ## [1.17.7] - 2026-05-04 🌡️🔧 Skoda outside_temperature + preferred_workshop attrs / Skoda outside_temperature + preferred_workshop attrs
 
 🌡️🔧 **PATCH-Release.** Wires up zwei existing-but-not-Skoda-populated Datenpunkte aus den v1.17.5 Scout-Reports:
