@@ -5,7 +5,7 @@
 > mirrors it for archive/historical purposes and links the active GitHub
 > issues for each session.
 
-**Last updated:** 2026-05-04 — post v1.19.0 (CUPRA/SEAT FCM Push Foundation, #57 Phase 1 cont. — `cariad/push/cupra_seat_fcm.py` mit `CupraSeatPushManager` Klasse erbt von `PushManager` base, brand-validation für cupra/seat, identische Lifecycle + Reconnect-Backoff wie v1.18.0 SkodaPushManager. Reuses gleiche `firebase-messaging` Lib via lazy-import. Neuer `CONF_ENABLE_PUSH_FCM` toggle koexistiert mit MQTT toggle. Schließt #57 Phase 1 — Foundation komplett für alle 3 push-fähigen Brands. Phase 2 = Live-Activation in v1.18.x / v1.19.x Patches sobald Tester sich melden). Plus voriges v1.18.0 (Skoda MQTT Push Foundation, #57 Phase 1 — Push-Package mit `base.py` + `skoda_mqtt.py`, Lifecycle + State-Machine + Reconnect-Backoff komplett gebaut, opt-in via OptionsFlow toggle, Lazy-Import für aiomqtt + firebase-messaging deps. Live-Activation wartet auf Community-Tester. v1.19.0 = analoge CUPRA/SEAT FCM Foundation. v1.18.x Patches aktivieren MQTT live sobald Tester sich melden). Plus voriges v1.17.7 (Skoda outside_temp + preferred_workshop attrs als PATCH — beides nutzt EXISTIERENDE sensor + model fields, kein neuer Sensor → echter PATCH. Schließt #129 + #130 + #133. Plus voriges v1.17.6 = HomeRegion-Helper
+**Last updated:** 2026-05-04 — post v1.19.0 + Backlog-Cleanup. **5 Releases an einem Tag** geshipt (v1.17.5 + v1.17.6 + v1.17.7 + v1.18.0 + v1.19.0). **5 Issues geschlossen** (#129/#130/#132/#133 Scout-Reports done als wired-data; #76 out-of-scope Pre-MQB MBB legacy). **6 GitHub Verification/Diagnostic Pings** für #42/#48/#51/#118/#131/#53. Open Issues von 16→11. Nächste P0 in laufender Sprint-Sequenz: v1.19.1 Pycupra-Hardening (`_safe_path.py` + `PyCupraThrottledException` + RateLimit-Sensor) + v1.19.2 AdBlue Range Skoda. Plus voriges v1.19.0 (CUPRA/SEAT FCM Push Foundation, #57 Phase 1 cont. — `cariad/push/cupra_seat_fcm.py` mit `CupraSeatPushManager` Klasse erbt von `PushManager` base, brand-validation für cupra/seat, identische Lifecycle + Reconnect-Backoff wie v1.18.0 SkodaPushManager. Reuses gleiche `firebase-messaging` Lib via lazy-import. Neuer `CONF_ENABLE_PUSH_FCM` toggle koexistiert mit MQTT toggle. Schließt #57 Phase 1 — Foundation komplett für alle 3 push-fähigen Brands. Phase 2 = Live-Activation in v1.18.x / v1.19.x Patches sobald Tester sich melden). Plus voriges v1.18.0 (Skoda MQTT Push Foundation, #57 Phase 1 — Push-Package mit `base.py` + `skoda_mqtt.py`, Lifecycle + State-Machine + Reconnect-Backoff komplett gebaut, opt-in via OptionsFlow toggle, Lazy-Import für aiomqtt + firebase-messaging deps. Live-Activation wartet auf Community-Tester. v1.19.0 = analoge CUPRA/SEAT FCM Foundation. v1.18.x Patches aktivieren MQTT live sobald Tester sich melden). Plus voriges v1.17.7 (Skoda outside_temp + preferred_workshop attrs als PATCH — beides nutzt EXISTIERENDE sensor + model fields, kein neuer Sensor → echter PATCH. Schließt #129 + #130 + #133. Plus voriges v1.17.6 = HomeRegion-Helper
 Scaffolding, evcc port — `cariad/_home_region.py` mit per-VIN
 7d-cache + `resolve_home_region()` async helper für
 `mal-1a.prd.ece.vwg-connect.com` Discovery-Endpoint, defensiv
@@ -119,40 +119,40 @@ Strict order — P0 (next release) > P1 (planned MINOR) > P2 (later) > P3 (resea
 | ~~v1.18.0~~ | Skoda MQTT Push Foundation (#57 Phase 1) — Push-Package `cariad/push/` mit `PushManager` abstract + `SkodaPushManager` (Lifecycle + Backoff), Lazy-Import-Strategy, OptionsFlow toggle (default OFF), Wire-Up-Plan dokumentiert für Live-Activation | done |
 | ~~v1.19.0~~ | CUPRA/SEAT FCM Push Foundation (#57 Phase 1 cont.) — `cariad/push/cupra_seat_fcm.py` mit `CupraSeatPushManager` (erbt von PushManager, brand-validation, identical lifecycle), `CONF_ENABLE_PUSH_FCM` toggle koexistiert mit MQTT toggle. Foundation komplett für alle 3 push-fähigen Brands | done |
 
-### 🔴 P0 — Nächste Release (v1.18.0 ODER weitere v1.17.x)
+### 🔴 P0 — Nächste Releases (post v1.19.0)
 
 | Session | Version | Scope | Issues |
 |---|---|---|---|
-| **Push Bundle (FCM CUPRA/SEAT + MQTT Skoda)** | **v1.18.0** ⭐ | MINOR (big session): Firebase FCM via `mqtt.messagehub.de` (CUPRA/SEAT) + mysmob MQTT broker (Škoda-only — myskoda PR #566). Eliminiert 12V-Wake-Cycle für Real-Time-Updates. Bisher P2 — durch Push-Konsens jetzt P0. 2-3 Wochen Arbeit. | #57, #27 |
+| **Pycupra-driven Hardening** | **v1.19.1** ⭐ | PATCH aus pycupra source-reading: port `find_path()` als `cariad/_safe_path.py`, extend exception taxonomy mit `PyCupraThrottledException`-equivalent, surface `X-RateLimit-Remaining` als `requests_remaining_today` sensor. Notes in `docs/research/vag-ha-integration-research.md`. ~2-3h. | (HACS-Checklist) |
+| **AdBlue Range Skoda** | **v1.19.2** | PATCH: Field `adblue_range_km` existiert in `models.py` aber Skoda parser liest es nicht aus `driving-range` endpoint. ~30min Quick-Win. | CC-skoda #24 |
+| **Skoda Vehicle-Info Bundle + Cross-Brand OTA Live-Test** | **v1.20.0** | MINOR: deferred aus v1.16.0 — `GET /v1/vehicle-information/{vin}` + `/renders` + `/equipment` + lightweight `/v2/widgets/vehicle-status/{vin}` für Skoda DeviceInfo Erweiterung. Plus Cross-Brand OTA Live-Test per `docs/RESEARCH_NOTES_2026-05-02_OTA_PROBE.md`. Plus Charging Profile Write-Side. | (Live-Test asks) |
+| **Push Bundle Phase 2 — Live Activation** | v1.18.x + v1.19.x Patches | Phase 1 Foundation komplett (v1.18.0 Skoda MQTT + v1.19.0 CUPRA/SEAT FCM). Phase 2 wartet auf Community-Tester (Skoda Connect Sub + MyCupra/MySeat Sub) für FCM-Project-ID + TOTP + OLA-Subscription-Schema Verifikation. Wire-In: coordinator hooks + replace foundation stubs mit real aiomqtt + firebase-messaging calls. | #57 Phase 2 |
+| **HomeRegion Wire-In** | v1.17.x Patch | Foundation v1.17.6 ist gebaut, NICHT integriert. Activation: 13 `_BASE` replacements in vw_eu.py + per-VIN cache integration in coordinator. Wartet auf #75 Christian region-Info (wenn non-EU vehicle bestätigt). | #75 |
 | **Eigenes Lovelace-Card Repo** | parallel session | Standalone session: HACS-Plugin Skeleton (lit-element + ts-build via vite/esbuild), inspiriert von Ultra-Vehicle-Card + car-card. Stretch-goal: Designer-Mode für PHEV-Range-Triple + Charging-Profile-Picker + Aux-Heating-Switch. | (community) |
-| **Pycupra-driven Hardening** | **v1.17.x** | PATCH aus pycupra source-reading: port `find_path()` als `cariad/_safe_path.py`, extend exception taxonomy mit `PyCupraThrottledException`-equivalent, surface `X-RateLimit-Remaining` als `requests_remaining_today` sensor. Notes in `docs/research/vag-ha-integration-research.md`. | (HACS-Checklist outstanding) |
-| **Skoda Vehicle-Info Bundle + Cross-Brand OTA Live-Test** | **v1.18.0 oder eigenes Bundle** | MINOR: deferred aus v1.16.0 — `GET /v1/vehicle-information/{vin}` + `/renders` + `/equipment` + lightweight `/v2/widgets/vehicle-status/{vin}` für Skoda DeviceInfo Erweiterung. Plus Cross-Brand OTA Live-Test per `docs/RESEARCH_NOTES_2026-05-02_OTA_PROBE.md`. Plus Charging Profile Write-Side. | (Live-Test asks) |
-| **Old-Bug Verify-Pings** | community | User-Comments auf #42 (CUPRA Formentor) + #48 (all-actions-fail) + #51 (Audi RS e-tron GT 404) — höchstwahrscheinlich gefixt durch v1.8.4 SecToken / v1.8.5 v1/v2 fallback / v1.9.1 Wake-Fix / v1.10.2 Born firmware fixes. Status-Bestätigung gefragt. | #42, #48, #51 |
 
-### 🟠 P2 — Future MINOR Sprints (v1.16.0+)
+### 🟠 P2 — Future MINOR Sprints (v1.20.0+)
 
 | Session | Version | Scope | Issues |
 |---|---|---|---|
-| **Theft / Alarm Binary** | v1.16.0 | API-Endpoint research nötig — alarmStatus job in CARIAD selectivestatus? Feature-Discovery dann implementation. | #33 |
-| **Navigation: Ziel ans Auto** | v1.16.x | MINOR: Service `vag_connect.send_destination` + payload research. | #36 |
-| **Standort-spez. Ladeziel + Ladeprofile (Write-Side)** | v1.17.0 | MINOR: location-based charging (zone-aware target_soc) + multiple Ladeprofile pro Standort schreibbar. Verlängerung der read-only Implementierung aus v1.15.0. | #25, #31 |
-| **Ladehistorie LTS** | v1.17.x | API-Discovery nötig — `chargedEnergy_kWh` Feld nicht in CARIAD selectivestatus verifiziert (Research v1.13.0). Wartet auf neuen Endpoint-Hinweis aus Live-Tests. | #35 |
-
-### 🔵 P2 — Big Architectural
-
-| Session | Version | Scope | Issues |
-|---|---|---|---|
-| **Push CUPRA/SEAT + Push Škoda** | v1.18.0 | MINOR: Firebase FCM via `mqtt.messagehub.de` (CUPRA/SEAT) + mysmob MQTT broker (Škoda-only — myskoda PR #566). Eliminiert 12V-Wake-Cycle für Real-Time-Updates. Big session, 2-3 Wochen Arbeit. | #57, #27 |
+| **Theft / Alarm Binary** | v1.20.x | API-Endpoint research nötig — alarmStatus job in CARIAD selectivestatus? Feature-Discovery dann implementation. | #33 |
+| **Standort-spez. Ladeziel + Ladeprofile (Write-Side)** | v1.21.0 | MINOR: location-based charging (zone-aware target_soc) + multiple Ladeprofile pro Standort schreibbar. Verlängerung der read-only Implementierung aus v1.15.0. | #25, #31 |
+| **Ladehistorie LTS** | TBD | API-Discovery nötig — `chargedEnergy_kWh` Feld nicht in CARIAD selectivestatus verifiziert (Research v1.13.0). Wartet auf neuen Endpoint-Hinweis aus Live-Tests. | #35 |
+| **Departure-Timer UI Bundle** | v1.21.x | MINOR: `departureTimers.*` (silenced v1.17.5) als writable timers — analog zu v1.16.0 #26 HA time platform. Enhanced UI für PHEV pre-conditioning. | (community) |
+| **Klima-Modus / heaterSource exposure** | v1.21.x | MINOR: `heaterSource` ("electric" für Born/ID) als Klima-Modus-Sensor — silenced v1.17.5, brauchen Live-Test ob als read-only Sensor oder schreibbarer select. | (#132 follow-up) |
 
 ### ⚪ P3 — Wait on User / Community
 
 | Session | Status | Action |
 |---|---|---|
 | **#13 Live-Tests gesucht** | ongoing community | Brand-Captains-Liste (Teil von #64) wird das organisieren |
-| **#53 CUPRA Born Funktionstest** | active mit Gerhard | v1.12.1 hat Fixture committed; nächster Test-Cycle wartet auf Gerhard's nächste Antwort |
+| **#53 CUPRA Born Funktionstest** | active mit Gerhard | v1.12.1 Fixture committed; v1.17.4 + v1.17.7 + v1.18.0 +v1.19.0 gestestet. Klima-Stop 404 wartet auf DEBUG-Log + 404-Body von Gerhard |
 | **#74 VW Passat 2025 B9** | wait | Marco Debug-Log offen — needed für PPC platform routing |
-| **#75 Skoda Kodiaq 2 Mk2** | wait | tester needed |
-| **#76 VW T6 Multivan Legacy MBB** | wait | tester needed |
+| **#75 Skoda Kodiaq 2 Mk2 (Christian)** | wait | Region-Info offen → wenn non-EU bestätigt: HomeRegion-Helper Wire-In (v1.17.6 Foundation ready) |
+| **#118 / #51 / #48 / #42 / #131 Verification-Pings** | sent 2026-05-04 | wait for User-Confirmation; auf 14d stale-close ggf. dann Close |
+| **#129 / #130 / #132 / #133 Scout-Reports** | done v1.17.5/v1.17.7 + closed | — |
+| **#76 VW T6 Multivan Legacy MBB** | closed 2026-05-04 | out-of-scope (Pre-MQB legacy MBB platform); marq24/ha-fordpass-Pattern |
+| **#27 GPS-Push** | open mit status update | wartet auf Push Bundle Phase 2 Live-Activation |
+| **#57 Push Bundle** | Phase 1 done v1.18.0+v1.19.0 | Phase 2 wartet auf Skoda + CUPRA/SEAT Tester |
 
 ### 🛠️ Discovery-Tooling-Strategie (Scope-Klarstellung post v1.17.4)
 
@@ -170,22 +170,19 @@ Strict order — P0 (next release) > P1 (planned MINOR) > P2 (later) > P3 (resea
 
 ### Standalone enhancements (no version pin yet)
 
-- **Diesel AdBlue Range** for Škoda (CC-skoda #24): field `adblue_range_km`
-  exists in `models.py` but Skoda parser doesn't read it from
-  `driving-range` endpoint. Small targeted session.
+- ~~**Diesel AdBlue Range** for Škoda (CC-skoda #24)~~ — scheduled v1.19.2
 - **`/v2/widgets/vehicle-status/{vin}`** as lightweight Skoda endpoint
-  (myskoda PR #557): for battery-friendly polling. Pairs well with Session 6.
-- **Region-routing** `_get_cariad_url(region)` for US users (volkswagencarnet
-  PRs #648/#676): hardcoded `emea.` breaks US-based VW EU users.
+  (myskoda PR #557): for battery-friendly polling. Pairs well with v1.20.0
+  Skoda Vehicle-Info Bundle.
+- ~~**Region-routing** `_get_cariad_url(region)` for US users~~ — Foundation
+  built v1.17.6, wire-in pending (waits on #75)
 - **TermsAndConditionsError repair issue** (volkswagencarnet PR #307):
   HA `ir.async_create_issue` with deeplink to vehicle-account login portal
-  when 401 with `terms_of_use` body is detected.
-- **ICE Engine Start S-PIN flow** (audi_connect_ha PR #717): two-step
-  PUT `/engine/{VIN}/userpromptproof` then POST `/engine/{VIN}/start`.
-  ICE-only feature, capability-gated.
-- **PPE Climate Body** (audi_connect_ha PR #644 + #677): `climatisationMode:
-  "comfort"` mandatory, `targetTemperature*` must be omitted for PPE
-  (Q6 e-tron, A6 e-tron, etc.). Conditional body shape.
+  when 401 with `terms_of_use` body is detected. Quick PATCH (~1-2h).
+- ~~**ICE Engine Start S-PIN flow**~~ — done v1.14.0 #28 (Audi engine pack)
+- ~~**PPE Climate Body**~~ — done v1.14.0 #29 (force_ppe_climate option)
+- **MQTT v5 broker testing for Skoda Push** (myskoda PR #566): foundation
+  built v1.18.0, waits on community tester for live activation.
 
 ---
 
