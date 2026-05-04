@@ -68,7 +68,7 @@ import logging
 import random
 from typing import Any
 
-from .base import PushManager, PushManagerState, PushUpdateEvent, PushEventCallback
+from .base import PushManager, PushManagerState, PushEventCallback
 
 _LOGGER = logging.getLogger(__name__)
 
