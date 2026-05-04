@@ -441,6 +441,22 @@ SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
         entity_category=EntityCategory.DIAGNOSTIC,
         suggested_display_precision=0,
     ),
+    # v1.19.1 — Pycupra-style API quota visibility. Populated from
+    # X-RateLimit-Remaining response header when the backend sends it
+    # (most VAG endpoints do; older firmwares omit). Community research:
+    # MyCupra/MySeat ~1500 calls/day, OLA + mysmob behave similarly.
+    # Sensor stays "unknown" if backend never sends the header (gated
+    # via ``_DATA_PRESENT_REQUIRED`` to avoid phantom 0 on first poll
+    # before any header has been observed).
+    VagSensorDescription(
+        key="requests_remaining_today",
+        translation_key="requests_remaining_today",
+        data_key="requests_remaining_today",
+        state_class=SensorStateClass.MEASUREMENT,
+        icon="mdi:gauge-low",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        suggested_display_precision=0,
+    ),
     # v1.15.0 — Skoda software-version (mysmob, app v8.10.0+).
     # Population depends on Skoda backend; entity is gated via
     # ``_DATA_PRESENT_REQUIRED`` so non-Skoda vehicles + older Skoda

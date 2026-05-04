@@ -32,6 +32,43 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ## [Unreleased]
 
+## [1.19.1] - 2026-05-04 📊 Pycupra-style API Quota Sensor / Pycupra-style API Quota Sensor
+
+📊 **PATCH-Release.** Inspired by `WulfgarW/homeassistant-pycupra` source-reading. Wires up X-RateLimit-* response headers (sent by most VAG backends on successful responses) als neuen `requests_remaining_today` Diagnostic-Sensor — User sehen wie nah sie am täglichen Quota-Limit sind (~1500/Tag MyCupra/MySeat per Community-Research).
+
+### 📊 Was ist neu / What's new
+
+- **`base.py:_capture_rate_limit_headers(headers)`** — neue Methode parst nach jedem 2xx-Response:
+  - `X-RateLimit-Remaining` → `int`, surfaced as Sensor
+  - `X-RateLimit-Limit` → `int`, available für HA-Template-Berechnungen via attrs
+  - `X-RateLimit-Reset` → ISO-8601 string oder Epoch-Sekunden (opaque pass-through)
+  - Defensive: float-fallback ("1499.5"), garbage-strings ("unlimited") und missing-headers lassen vorherige Werte bestehen (besser stale als wrong, kein Sensor-Flackern)
+- **`models.py`**: drei neue Felder `requests_remaining_today`, `requests_limit_today`, `requests_reset_at` (defaults None)
+- **`coordinator.py:_enrich`**: kopiert die brand-client-attribute auf jedes VIN's data-dict (auth ist brand-scoped, alle VINs derselben Brand sehen das gleiche Quota)
+- **`sensor.py`**: neuer `requests_remaining_today` Sensor (`EntityCategory.DIAGNOSTIC`, MEASUREMENT state-class, `mdi:gauge-low` icon)
+- **Translations** für DE + EN
+- **Was wir NICHT extra bauen mussten** (already covered):
+  - `find_path()` equivalent — `base.py:_val()` macht das gleiche seit early releases
+  - `PyCupraThrottledException` equivalent — `_request()` retried 429 transparent mit exponential backoff seit v1.8.7
+
+### 🧪 Tests / Tests
+
+- 16 neue Test-Cases in `tests/test_v1191_pycupra_hardening.py`:
+  - 8 Header-Parser Edge-Cases (initial / int / float-fallback / garbage / missing / partial / preserved)
+  - 2 VehicleData field invariants (default None, accepts int)
+  - 3 Sensor exposure (description present, diagnostic category, translation key match)
+  - 2 Translation strings (EN + DE haben den Sensor-Namen)
+- Header-parser standalone-Logic 8/8 lokal verifiziert
+
+### 📦 Schließt Issues / Closes
+
+- Pycupra-driven Hardening-Item aus HACS-Checklist (Roadmap P0)
+
+### 🚫 NICHT in diesem Release / NOT in this release
+
+- **Coordinator-side quota-warning notification** (z.B. "you have <100 requests left today") — könnte als follow-up wenn User sich melden dass es nützlich wäre
+- **Pro-Brand quota-tracking** — aktuell shared globally via brand-client-state; CUPRA + Skoda haben ggf. unterschiedliche Quotas — refinement später
+
 ## [1.19.0] - 2026-05-04 🚀 CUPRA/SEAT FCM Push Foundation (#57 Phase 1 cont.) / CUPRA/SEAT FCM Push Foundation (#57 Phase 1 cont.)
 
 🚀 **MINOR-Release.** Push-Update-Infrastruktur für CUPRA/SEAT OLA Backend via Firebase Cloud Messaging. Spiegelt v1.18.0 Skoda MQTT Foundation — gleiche `PushManager` base, gleiche Lifecycle-Hooks, gleiche Lazy-Import-Strategy. Default OFF, opt-in via OptionsFlow toggle.

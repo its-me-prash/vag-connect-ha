@@ -294,6 +294,18 @@ class VehicleData:
     # Currently populated by SkodaClient; other brands leave it None.
     preferred_workshop: dict[str, Any] | None = None
 
+    # v1.19.1 — Pycupra-style API quota visibility. Populated from
+    # X-RateLimit-Remaining response header captured by base.py
+    # ``_capture_rate_limit_headers``. Brand-shared (the same auth
+    # cookie / token has the same daily budget regardless of which
+    # vehicle's endpoint we hit), so the coordinator copies it onto
+    # every VIN's data dict for HA sensor mapping. ``None`` means the
+    # backend has never sent the header for this brand — sensor stays
+    # ``unknown`` instead of showing a stale 0.
+    requests_remaining_today: int | None = None
+    requests_limit_today: int | None = None
+    requests_reset_at: Any | None = None
+
     # Departure timers
     departure_timer_1_enabled: bool = False
     departure_timer_1_time: str | None = None
