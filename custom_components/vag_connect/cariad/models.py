@@ -306,6 +306,15 @@ class VehicleData:
     requests_limit_today: int | None = None
     requests_reset_at: Any | None = None
 
+    # v1.20.0 (Bundle 2 Phase A — Skoda widget + vehicle-info + equipment).
+    # Three new static-ish enrichment fields populated from myskoda PR
+    # #557 widget endpoint + /vehicle-information/{vin} + /equipment.
+    # Currently Skoda-only; other brands leave them None.
+    license_plate: str | None = None       # widget.vehicle.licensePlate
+    render_url: str | None = None          # widget.vehicle.renderUrl (image)
+    equipment: list[dict[str, Any]] | None = None  # equipment.equipment[]
+    equipment_count: int | None = None     # derived: len(equipment)
+
     # Departure timers
     departure_timer_1_enabled: bool = False
     departure_timer_1_time: str | None = None

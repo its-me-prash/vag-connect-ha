@@ -457,6 +457,27 @@ SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
         entity_category=EntityCategory.DIAGNOSTIC,
         suggested_display_precision=0,
     ),
+    # v1.20.0 Bundle 2 Phase A (myskoda PR #557 widget + vehicle-info).
+    # Two diagnostic sensors enriching DeviceInfo for Skoda vehicles:
+    # license_plate (from widget per-tick) + equipment_count (from
+    # equipment endpoint, 24h cache). Both data-present-gated so non-
+    # Skoda brands don't get phantom entities.
+    VagSensorDescription(
+        key="license_plate",
+        translation_key="license_plate",
+        data_key="license_plate",
+        icon="mdi:card-text-outline",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    VagSensorDescription(
+        key="equipment_count",
+        translation_key="equipment_count",
+        data_key="equipment_count",
+        state_class=SensorStateClass.MEASUREMENT,
+        icon="mdi:format-list-bulleted",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        suggested_display_precision=0,
+    ),
     # v1.15.0 — Skoda software-version (mysmob, app v8.10.0+).
     # Population depends on Skoda backend; entity is gated via
     # ``_DATA_PRESENT_REQUIRED`` so non-Skoda vehicles + older Skoda
@@ -821,6 +842,14 @@ class VagConnectSensor(VagConnectEntity, SensorEntity):
             workshop = self._vehicle.get("preferred_workshop")
             if isinstance(workshop, dict) and workshop:
                 return {"preferred_workshop": workshop}
+        # v1.20.0 Bundle 2 Phase A — full equipment list as attrs on
+        # the equipment_count sensor (analog v1.14.0 #24 recent_trips
+        # pattern). Native_value stays the int count for clean
+        # templates; full list ([{id, name}, ...]) lives in attrs.
+        if self.entity_description.key == "equipment_count":
+            equip = self._vehicle.get("equipment")
+            if isinstance(equip, list) and equip:
+                return {"equipment": equip}
         return None
 
     @property

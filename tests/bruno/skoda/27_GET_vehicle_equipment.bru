@@ -1,0 +1,41 @@
+meta {
+  name: GET vehicle-information equipment list
+  type: http
+  seq: 27
+}
+
+get {
+  url: {{base_url}}/api/v1/vehicle-information/{{vin}}/equipment
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+headers {
+  Accept: application/json
+}
+
+docs {
+  v1.20.0 (Bundle 2 Phase A) — Skoda equipment list.
+  Source: skodaconnect/myskoda rest_api.py:get_vehicle_equipment().
+
+  Response shape:
+    {
+      "equipment": [
+        {"id": "1234", "name": "Heated steering wheel"},
+        {"id": "5678", "name": "Towbar"},
+        ...
+      ]
+    }
+
+  Use case: surface as equipment_count Diagnostic-Sensor +
+  full list as extra_state_attributes (analog v1.14.0 #24
+  recent_trips pattern). Static — 24h cache via coordinator.
+
+  Implementation: SkodaClient.get_vehicle_equipment() in
+  cariad/api/skoda.py. Combined with /vehicle-information via
+  get_vehicle_static_info() helper for one-shot 24h fetch.
+}

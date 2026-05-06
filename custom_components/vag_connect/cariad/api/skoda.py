@@ -142,6 +142,122 @@ class SkodaClient(CariadBaseClient):
         )
         return data if isinstance(data, dict) else {}
 
+    async def get_widget(self, vin: str) -> dict[str, Any]:
+        """v1.20.0 (Bundle 2 Phase A) — Skoda lightweight widget endpoint.
+
+        Endpoint: ``GET /api/v2/widgets/vehicle-status/{vin}``
+        Source: skodaconnect/myskoda PR #557 (merged 2026-04-15) —
+        models/widget.py + rest_api.py:get_widget(). MIT-licensed
+        upstream, fixtures + tests adopted (see NOTICE.md).
+
+        Response shape (verified myskoda WidgetResponse model):
+
+            {
+              "vehicle": {
+                "name": "Octavia iV",
+                "licensePlate": "BE-XXX-1234",
+                "renderUrl": "https://..."  // image URL
+              },
+              "vehicleStatus": {
+                "doorsLocked": true,
+                "drivingRangeInKm": 380
+              },
+              "chargingStatus": {  // optional, EV/PHEV only
+                "stateOfChargeInPercent": 80,
+                "remainingTimeToFullyChargedInMinutes": 45
+              },
+              "parkingPosition": {
+                "state": "PARKED",
+                "maps": {"lightMapUrl": "https://...", "darkMapUrl": "..."},
+                "gpsCoordinates": {"latitude": 52.5, "longitude": 13.4},
+                "formattedAddress": "Hauptstraße 1, 12345 Berlin"
+              }
+            }
+
+        Use case: lightweight per-tick polling complement to the full
+        ``/v2/vehicle-status/{vin}`` endpoint. Returns curated subset
+        for the in-app glance card. Smaller payload but myskoda's PR
+        doesn't claim a quota benefit — treat parity as unverified.
+
+        Subscription tier: base (same auth path, no premium gate).
+
+        Best-effort: 404 / 403 / network error → ``{}`` (caller skips
+        widget-derived enrichment, full vehicle-status still works).
+        """
+        try:
+            data = await self._get(f"{_BASE}/api/v2/widgets/vehicle-status/{vin}")
+        except Exception:  # noqa: BLE001
+            return {}
+        return data if isinstance(data, dict) else {}
+
+    async def get_vehicle_info(self, vin: str) -> dict[str, Any]:
+        """v1.20.0 (Bundle 2 Phase A) — Skoda vehicle-information endpoint.
+
+        Endpoint: ``GET /api/v1/vehicle-information/{vin}``
+        Source: skodaconnect/myskoda rest_api.py:get_vehicle_info().
+
+        Response shape (verified myskoda VehicleInfo model — keys
+        observed across multiple Skoda fixtures):
+
+            {
+              "name": "Octavia iV",
+              "licensePlate": "BE-XXX-1234",
+              "model": "Octavia iV",
+              "modelYear": "2024",
+              "engine": {"power": 110, "type": "TSI iV"},
+              "specification": {
+                "title": "Octavia Combi iV Style",
+                "trimLevel": "Style",
+                "modelKey": "NX5DBY",
+                "battery": {"capacityInKWH": 13},
+                ...
+              },
+              "softwareVersion": "..."
+            }
+
+        Static data — coordinator caches 24h (analog to capabilities).
+        Used to enrich HA DeviceInfo (model name, year, software
+        version) without re-fetching every poll cycle.
+
+        Best-effort: 404 / 403 → ``{}``.
+        """
+        try:
+            data = await self._get(f"{_BASE}/api/v1/vehicle-information/{vin}")
+        except Exception:  # noqa: BLE001
+            return {}
+        return data if isinstance(data, dict) else {}
+
+    async def get_vehicle_equipment(self, vin: str) -> dict[str, Any]:
+        """v1.20.0 (Bundle 2 Phase A) — Skoda equipment list endpoint.
+
+        Endpoint: ``GET /api/v1/vehicle-information/{vin}/equipment``
+        Source: skodaconnect/myskoda rest_api.py:get_vehicle_equipment().
+
+        Response shape (verified myskoda VehicleEquipment model):
+
+            {
+              "equipment": [
+                {"id": "1234", "name": "Heated steering wheel"},
+                {"id": "5678", "name": "Towbar"},
+                ...
+              ]
+            }
+
+        Static data — coordinator caches 24h. Surfaced as
+        ``equipment_count`` sensor + full list in extra_state_attributes
+        on the maintenance sensor (analog v1.17.7 preferred_workshop
+        pattern).
+
+        Best-effort: 404 / 403 → ``{}``.
+        """
+        try:
+            data = await self._get(
+                f"{_BASE}/api/v1/vehicle-information/{vin}/equipment",
+            )
+        except Exception:  # noqa: BLE001
+            return {}
+        return data if isinstance(data, dict) else {}
+
     async def get_status(self, vin: str) -> VehicleData:
         """Fetch full status from Škoda API."""
         v = self._val
@@ -162,11 +278,16 @@ class SkodaClient(CariadBaseClient):
             self._get(
                 f"{_BASE}/api/v1/vehicle-information/{vin}/software-version/update-status"
             ),
+            # v1.20.0 (Bundle 2 Phase A, myskoda PR #557) — lightweight
+            # widget endpoint. Returns curated subset (license plate,
+            # render image URL, formatted parking address) for HA
+            # DeviceInfo enrichment + image platform.
+            self._get(f"{_BASE}/api/v2/widgets/vehicle-status/{vin}"),
             return_exceptions=True,
         )
         (
             status, charging, ac, parking, driving_range,
-            maintenance, readiness, sw_update,
+            maintenance, readiness, sw_update, widget,
         ) = results
 
         # v1.9.0 — Vehicle Data Scout opt-in. Stash raw responses keyed by
@@ -185,6 +306,10 @@ class SkodaClient(CariadBaseClient):
             # v1.15.0 — register the new endpoint so Vehicle Data Scout
             # detects new fields once a 2026+ Skoda surfaces them.
             ("software-version-update-status", sw_update),
+            # v1.20.0 (Bundle 2 Phase A) — widget endpoint (myskoda PR
+            # #557) for Vehicle Data Scout drift detection on the
+            # lightweight per-tick payload.
+            ("widget", widget),
         ):
             if isinstance(payload, dict):
                 self.last_raw_responses[name] = payload
@@ -469,7 +594,65 @@ class SkodaClient(CariadBaseClient):
             if isinstance(notes, str) and notes:
                 d.ota_release_notes_url = notes
 
+        # ── Widget endpoint (v1.20.0 Bundle 2 Phase A) ────────────────────────
+        # Lightweight per-tick payload from /v2/widgets/vehicle-status/{vin}
+        # (myskoda PR #557). Carries 4 fields useful in HA:
+        #   - vehicle.licensePlate  → DeviceInfo enrichment
+        #   - vehicle.renderUrl     → image platform integration
+        #   - vehicle.name          → may be more accurate than garage nickname
+        #   - parkingPosition.formattedAddress → reverse-geocoding-free address
+        # Defensive: missing endpoint = 404 = exception in gather → skip.
+        if isinstance(widget, dict):
+            vehicle_meta = v(widget, "vehicle") or {}
+            if isinstance(vehicle_meta, dict):
+                lic = vehicle_meta.get("licensePlate")
+                if isinstance(lic, str) and lic:
+                    d.license_plate = lic
+                render = vehicle_meta.get("renderUrl")
+                if isinstance(render, str) and render.startswith("http"):
+                    d.render_url = render
+            # formattedAddress beats reverse-geocoding when present —
+            # backend resolves locale-aware. Coordinator's _enrich
+            # checks parking_address-already-set so we don't clobber.
+            addr = v(widget, "parkingPosition", "formattedAddress")
+            if isinstance(addr, str) and addr and not d.parking_address:
+                d.parking_address = addr
+
         return d
+
+    # ── Static info enrichment (v1.20.0 Bundle 2 Phase A) ───────────────────
+    # vehicle-information + equipment endpoints serve static data that
+    # changes only on physical vehicle changes (firmware update, plate
+    # swap, hardware retrofit). Coordinator caches 24h via the same
+    # capability-cache pattern (see ``coordinator.refresh_capabilities``).
+
+    async def get_vehicle_static_info(self, vin: str) -> dict[str, Any]:
+        """v1.20.0 Bundle 2 Phase A — combined static-data fetch.
+
+        Returns a single dict combining the two static endpoints so
+        the coordinator can cache + apply with one method call:
+
+            {
+              "info":      {... from /vehicle-information/{vin}},
+              "equipment": [{...}, ...] from /vehicle-information/{vin}/equipment
+            }
+
+        Both calls use the existing best-effort error handling — a
+        404 on either endpoint just leaves that key missing.
+        """
+        info, equip = await asyncio.gather(
+            self.get_vehicle_info(vin),
+            self.get_vehicle_equipment(vin),
+            return_exceptions=True,
+        )
+        out: dict[str, Any] = {}
+        if isinstance(info, dict) and info:
+            out["info"] = info
+        if isinstance(equip, dict) and equip:
+            equip_list = equip.get("equipment")
+            if isinstance(equip_list, list):
+                out["equipment"] = equip_list
+        return out
 
     # ── Commands ─────────────────────────────────────────────────────────────
 

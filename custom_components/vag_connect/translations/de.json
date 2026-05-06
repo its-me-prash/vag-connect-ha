@@ -187,6 +187,12 @@
       "requests_remaining_today": {
         "name": "API-Anfragen verbleibend"
       },
+      "license_plate": {
+        "name": "Kennzeichen"
+      },
+      "equipment_count": {
+        "name": "Ausstattungs-Anzahl"
+      },
       "last_trip_distance_km": {
         "name": "Letzte Fahrt — Strecke"
       },

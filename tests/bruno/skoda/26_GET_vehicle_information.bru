@@ -1,0 +1,38 @@
+meta {
+  name: GET vehicle-information (static device info)
+  type: http
+  seq: 26
+}
+
+get {
+  url: {{base_url}}/api/v1/vehicle-information/{{vin}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+headers {
+  Accept: application/json
+}
+
+docs {
+  v1.20.0 (Bundle 2 Phase A) — Skoda static vehicle-information.
+  Source: skodaconnect/myskoda rest_api.py:get_vehicle_info().
+
+  Returns static device data:
+    - name, licensePlate, model, modelYear
+    - engine.{power, type}
+    - specification.{title, trimLevel, modelKey, battery, ...}
+    - softwareVersion
+
+  Use case: HA DeviceInfo enrichment without re-fetching every poll.
+  24h cache via coordinator.refresh_static_info (analog to existing
+  capability-cache pattern). Best-effort: 404/403 → silent skip.
+
+  Implementation: SkodaClient.get_vehicle_info() in
+  cariad/api/skoda.py. Combined with /equipment via
+  get_vehicle_static_info() helper for one-shot 24h fetch.
+}
