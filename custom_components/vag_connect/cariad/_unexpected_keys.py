@@ -106,6 +106,22 @@ EXPECTED_KEYS: dict[str, dict[str, set[str]]] = {
             "settings.autoUnlockPlugWhenChargedAC",
             "settings.maxChargeCurrentAC",
             "settings.carCapturedTimestamp",
+            # v1.19.3 (#143 whaak58 Skoda Scout-Report 2026-05-04) —
+            # Skoda mysmob now ships full charging settings under
+            # ``settings`` directly (lowercase Ac variants alongside
+            # legacy AC) plus location-aware flag + transient-error
+            # container + carCapturedTimestamp at top level. Wildcards
+            # cover all current + future setting children.
+            "isVehicleInSavedLocation",
+            "carCapturedTimestamp",
+            "errors",
+            "errors.*",
+            "settings.autoUnlockPlugWhenCharged",
+            "settings.availableChargeModes",
+            "settings.batteryCareModeTargetValueInPercent",
+            "settings.chargingCareMode",
+            "settings.maxChargeCurrentAc",
+            "settings.preferredChargeMode",
         },
         "air-conditioning": {
             "state", "targetTemperature", "targetTemperature.temperatureValue",
@@ -135,6 +151,17 @@ EXPECTED_KEYS: dict[str, dict[str, set[str]]] = {
             # includes the in-car display unit (CELSIUS|FAHRENHEIT)
             # alongside the value. Sibling of temperatureValue.
             "targetTemperature.unitInCar",
+            # v1.19.3 (#143 whaak58 Skoda Scout-Report 2026-05-04) —
+            # newer Skoda firmware exposes per-feature toggles on the
+            # air-conditioning endpoint: airConditioningAtUnlock (auto-
+            # AC when unlocking via app), seatHeatingActivated (dict
+            # for front-left/front-right state), windowHeatingEnabled.
+            # Wildcards on seatHeatingActivated because per-seat dict
+            # may grow rear-seat keys on premium models.
+            "airConditioningAtUnlock",
+            "seatHeatingActivated",
+            "seatHeatingActivated.*",
+            "windowHeatingEnabled",
         },
         "parking": {
             "parkingPosition", "parkingPosition.gpsCoordinates",
@@ -221,6 +248,13 @@ EXPECTED_KEYS: dict[str, dict[str, set[str]]] = {
         },
         "readiness": {
             "unreachable", "inMotion", "carCapturedTimestamp",
+            # v1.19.3 (#143 whaak58 Skoda Scout-Report 2026-05-04) —
+            # newer Skoda firmware exposes additional readiness flags:
+            # ignitionOn (boolean) + batteryProtectionLimitOn (12V
+            # protection threshold reached). Useful future signals
+            # for "car is being driven" / "12V critical" automations.
+            "ignitionOn",
+            "batteryProtectionLimitOn",
         },
     },
     "cupra": {
@@ -581,6 +615,36 @@ EXPECTED_KEYS: dict[str, dict[str, set[str]]] = {
             # repetition pattern, etc.). Walker descends into known
             # `departureTimers.{id}` containers.
             "departureTimers.*.*",
+            # v1.19.3 (#145 manentw + #146 ammelch + #147 gudden —
+            # three convergent VW Scout-Reports 2026-05-05/06).
+            # Newer CARIAD-BFF firmware ships:
+            # - 5-segment leaves under automation.chargingProfiles.value
+            #   (nextChargingTimer.id + .targetSOCreachable). Existing
+            #   `automation.chargingProfiles.value.*` only matches
+            #   4-segment paths; 5-segment needs explicit wildcard.
+            # - Top-level batteryChargingCare.chargingCareSettings.value
+            #   container (3 segments). Sibling of existing
+            #   batteryChargingCare wildcard but the latter only matched
+            #   2-segment children.
+            # - charging.chargingCareSettings.value.batteryCareMode (4
+            #   segments). Existing charging.chargingCareSettings.* only
+            #   matched 2-segment children.
+            # - climatisationTimers.climatisationTimersStatus.value (3
+            #   segments). Status wrapper analogous to other CARIAD
+            #   .{xxxStatus}.value pattern from v1.12.0.
+            "automation.chargingProfiles.value.*.*",
+            "batteryChargingCare.chargingCareSettings",
+            "batteryChargingCare.chargingCareSettings.value",
+            # Proactive 4-segment for batteryChargingCare leaves
+            # (#145 reported `{1 keys}` shape but didn't surface the
+            # leaf name — register wildcard so future Scout doesn't
+            # re-fire on the inner key).
+            "batteryChargingCare.chargingCareSettings.value.*",
+            "charging.chargingCareSettings.value",
+            "charging.chargingCareSettings.value.*",
+            "climatisationTimers.climatisationTimersStatus",
+            "climatisationTimers.climatisationTimersStatus.value",
+            "climatisationTimers.climatisationTimersStatus.value.*",
         },
         "parkingposition": {
             "data", "data.lon", "data.lat", "data.carCapturedTimestamp",
