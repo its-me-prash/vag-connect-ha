@@ -340,6 +340,26 @@ def _register_services(hass: HomeAssistant) -> None:
         hass.services.async_register(DOMAIN, name, handler, schema)
 
 
+async def async_remove_entry(hass: HomeAssistant, entry: VagConnectConfigEntry) -> None:
+    """Clean up persisted IDK tokens when the user removes the integration.
+
+    v1.19.2 (#118 follow-up) — coordinator's TokenStorage writes
+    tokens to ``.storage/vag_connect_tokens_<entry_id>``; on
+    full-remove (not reload!) we delete that file so the next
+    setup of this same brand+account doesn't accidentally pick up
+    stale tokens that were issued for a now-removed config-entry.
+    """
+    from homeassistant.helpers.storage import Store  # noqa: PLC0415
+    from .cariad.auth._token_storage import (  # noqa: PLC0415
+        TokenStorage,
+        storage_key_for_entry,
+        _STORAGE_VERSION,
+    )
+    store = Store(hass, _STORAGE_VERSION, storage_key_for_entry(entry.entry_id))
+    storage = TokenStorage(store)
+    await storage.clear()
+
+
 async def async_unload_entry(hass: HomeAssistant, entry: VagConnectConfigEntry) -> bool:
     """Unload a config entry."""
     coordinator: VagConnectCoordinator | None = getattr(entry, "runtime_data", None)

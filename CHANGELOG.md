@@ -32,6 +32,66 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ## [Unreleased]
 
+## [1.19.2] - 2026-05-05 🔐 Token-Persistence über HACS-Updates (#118 fix) / Token Persistence across HACS Updates (#118 fix)
+
+🔐 **PATCH-Release.** Schließt #118 von eismarkt — "After every update of VAG Connect, the password must be entered again". Root-Cause: IDK-Tokens lebten nur im Memory, jeder HACS-Update / HA-Restart triggered einen vollen `authenticate()` gegen das IDK-Backend → konnte transient fehlschlagen → ConfigEntryAuthFailed → User-Reauth-Prompt. v1.19.1 brachte den Bug-Report-Use-Case explizit zutage.
+
+### 🔐 Was ist neu / What's new
+
+- **Neues Modul** `cariad/auth/_token_storage.py`:
+  - `TokenStorage` Klasse wraps HA's `Store` helper mit defensive Load/Save/Clear contract
+  - `storage_key_for_entry(entry_id) -> str` für per-config-entry Isolation
+  - Defensive: jeder Storage-Error wird gelogged aber nicht propagiert (worst-case = ein extra Login beim nächsten Start)
+- **`CariadBaseClient` Erweiterungen**:
+  - Neuer optional callback `on_tokens_changed: Awaitable[Callable[[TokenSet], Coroutine]]`
+  - Neue Methode `set_persisted_tokens(tokens)` — injiziert geladene Tokens vor erstem API-Call
+  - Neue Methode `_notify_tokens_changed()` — fires hook nach erfolgreichem `authenticate()` und `_refresh_tokens()`
+- **Coordinator Wire-Up** (`coordinator.py:async_setup`):
+  - Erstellt `Store(hass, _STORAGE_VERSION, storage_key_for_entry(entry_id))`
+  - Lädt persisted tokens BEVOR `authenticate()` versucht wird
+  - Wenn Tokens da → skip Initial-Login, nutze 401-refresh-path bei Bedarf
+  - Hooked `client.on_tokens_changed = storage.save` für automatische Persistenz nach jedem Refresh
+- **`__init__.py` neuer `async_remove_entry`**:
+  - Cleanup von persisted tokens beim full Config-Entry-Remove (NOT bei reload — da bleiben sie für Re-Setup)
+
+### 🧪 Tests / Tests
+
+- 18 neue Test-Cases in `tests/test_v1192_token_persistence.py`:
+  - 7 Load: never-saved / non-dict / version-mismatch / missing-tokens / incomplete / valid round-trip / storage-error
+  - 3 Save: round-trip / incomplete refused / storage-error swallowed
+  - 2 Clear: idempotent / storage-error swallowed
+  - 1 Storage-key per-entry isolation
+  - 5 CariadBaseClient hooks: set_persisted (valid/None/incomplete) + _notify (callback fires / no callback / no tokens / exception isolated)
+- 12 standalone-logic assertions verifiziert lokal
+
+### 🛣️ User Impact / User Impact
+
+**Vor v1.19.2:**
+1. HACS update → integration reload → in-memory tokens weg
+2. `authenticate()` → IDK-Login → wenn flaky → `ConfigEntryAuthFailed`
+3. User sieht "Reauth required" Notification → muss Password neu eingeben
+
+**Ab v1.19.2:**
+1. HACS update → integration reload → tokens werden aus `.storage/vag_connect_tokens_<entry_id>` geladen
+2. Erste API-Call nutzt persisted tokens direkt → 200 OK
+3. Bei expired access_token → `_refresh_tokens()` läuft transparent + persisted refresh_token → neue Tokens werden wieder gespeichert
+4. **Kein User-Action nötig** — auch bei daily quota-limit oder transient IDK-Issue läuft alles weiter
+
+### 🔒 Privacy / Privacy
+
+- Tokens werden in `.storage/vag_connect_tokens_<entry_id>` geschrieben — same trust-level wie credentials im config-entry (HA Storage area)
+- Nie in Logs (existing `_unexpected_keys.py:_JWT_RE` redaction handles diagnostics-export)
+- Auto-cleanup bei Config-Entry-Remove (`async_remove_entry`)
+
+### 📦 Schließt Issues / Closes
+
+- **#118** eismarkt "restart After Update" — Token-Persistence ist die strukturelle Lösung; User wird nach v1.19.2-Update einmal Password eingeben (initial migration), danach nie wieder
+
+### 🚫 NICHT in diesem Release / NOT in this release
+
+- **Per-VIN HomeRegion-Cache Persistence** — analoges Pattern für v1.17.6 Foundation; eigener Patch wenn Live-Test-Bedarf
+- **Push FCM-Credential Persistence** — v1.18.x Phase 2 wire-in, separater Patch
+
 ## [1.19.1] - 2026-05-04 📊 Pycupra-style API Quota Sensor / Pycupra-style API Quota Sensor
 
 📊 **PATCH-Release.** Inspired by `WulfgarW/homeassistant-pycupra` source-reading. Wires up X-RateLimit-* response headers (sent by most VAG backends on successful responses) als neuen `requests_remaining_today` Diagnostic-Sensor — User sehen wie nah sie am täglichen Quota-Limit sind (~1500/Tag MyCupra/MySeat per Community-Research).
