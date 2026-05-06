@@ -193,6 +193,12 @@
       "requests_remaining_today": {
         "name": "API Requests Remaining"
       },
+      "license_plate": {
+        "name": "License Plate"
+      },
+      "equipment_count": {
+        "name": "Equipment Count"
+      },
       "last_trip_distance_km": {
         "name": "Last Trip Distance"
       },

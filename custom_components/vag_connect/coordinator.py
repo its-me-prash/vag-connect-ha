@@ -551,6 +551,15 @@ class VagConnectCoordinator(DataUpdateCoordinator):
                 return_exceptions=True,
             )
 
+            # v1.20.0 Bundle 2 Phase A — Skoda static-info prefetch.
+            # Only Skoda gets the vehicle-information + equipment 24h
+            # cache (other brands return early in refresh_static_info).
+            # Failure debug-logged, never blocks setup.
+            await asyncio.gather(
+                *[self.refresh_static_info(vin) for vin in self.vehicles],
+                return_exceptions=True,
+            )
+
             self._started = True
             found = len(self.vehicles)
             _LOGGER.info("VAG Connect: setup complete — %d vehicle(s)", found)
@@ -1206,6 +1215,60 @@ class VagConnectCoordinator(DataUpdateCoordinator):
             len(data),
         )
 
+    # ── v1.20.0 Bundle 2 Phase A — Skoda static info 24h cache ───────────
+    _STATIC_INFO_REFRESH_INTERVAL = timedelta(hours=24)
+    _STATIC_INFO_BRANDS = ("skoda",)  # mysmob only — CARIAD/OLA equivalents TBD
+
+    def is_static_info_cache_fresh(self, vin: str) -> bool:
+        """Return True if static-info was fetched within last 24h."""
+        if not hasattr(self, "_static_info_fetched_at"):
+            return False
+        last = self._static_info_fetched_at.get(vin)
+        if last is None:
+            return False
+        return (datetime.now(tz=timezone.utc) - last) < self._STATIC_INFO_REFRESH_INTERVAL
+
+    async def refresh_static_info(self, vin: str, force: bool = False) -> None:
+        """v1.20.0 Bundle 2 Phase A — fetch + cache vehicle-information +
+        equipment endpoints for ``vin``.
+
+        Same best-effort pattern as ``refresh_capabilities``: errors
+        logged at debug, never blocks. Cache stays on error. Only
+        Skoda's mysmob backend is wired in this release.
+        """
+        brand = (self.entry.data.get(CONF_BRAND) or "").lower()
+        if brand not in self._STATIC_INFO_BRANDS:
+            return
+        if not force and self.is_static_info_cache_fresh(vin):
+            return
+        client = self._cariad_client
+        if client is None or not hasattr(client, "get_vehicle_static_info"):
+            return
+        try:
+            data = await client.get_vehicle_static_info(vin)
+        except Exception as err:  # noqa: BLE001
+            _LOGGER.debug(
+                "Static info fetch failed for %s: %s", mask_vin(vin), err,
+            )
+            return
+        if not isinstance(data, dict):
+            return
+        if not hasattr(self, "vehicle_static_info"):
+            self.vehicle_static_info: dict[str, dict[str, Any]] = {}
+        if not hasattr(self, "_static_info_fetched_at"):
+            self._static_info_fetched_at: dict[str, datetime] = {}
+        self.vehicle_static_info[vin] = data
+        self._static_info_fetched_at[vin] = datetime.now(tz=timezone.utc)
+        info = data.get("info") or {}
+        equip = data.get("equipment") or []
+        _LOGGER.debug(
+            "Static info cached for %s — model=%r, year=%r, equipment=%d",
+            mask_vin(vin),
+            info.get("model"),
+            info.get("modelYear"),
+            len(equip),
+        )
+
     # ── v1.14.0 (#24) — Trip Statistics 1h cache + parser ────────────────
     _TRIP_STATS_REFRESH_INTERVAL = timedelta(hours=1)
     _TRIP_STATS_BRANDS = ("audi", "volkswagen")  # CARIAD-BFF only
@@ -1596,6 +1659,42 @@ class VagConnectCoordinator(DataUpdateCoordinator):
 
         # Always stamp when we fetched
         data["last_updated_at"] = datetime.now(tz=timezone.utc)
+
+        # v1.20.0 Bundle 2 Phase A — Skoda static-info enrichment.
+        # If we have a cached vehicle-information + equipment block
+        # for this VIN, surface the most-useful fields onto the data
+        # dict for HA DeviceInfo + new sensors. Brand-restricted
+        # (Skoda only currently). Lazy refresh: trigger a 24h-cache
+        # check so the next poll picks up changes (model rename in
+        # MyŠkoda app, software update, retrofit).
+        vin = data.get("vin")
+        if isinstance(vin, str) and vin:
+            static = getattr(self, "vehicle_static_info", {}).get(vin)
+            if isinstance(static, dict):
+                info = static.get("info") or {}
+                equip = static.get("equipment") or []
+                # Don't clobber widget-derived license_plate (which
+                # is fresher) — only fill if not already set
+                if not data.get("license_plate"):
+                    plate = info.get("licensePlate")
+                    if isinstance(plate, str) and plate:
+                        data["license_plate"] = plate
+                if not data.get("model") and isinstance(info.get("model"), str):
+                    data["model"] = info["model"]
+                if not data.get("model_year") and info.get("modelYear"):
+                    data["model_year"] = info["modelYear"]
+                if not data.get("software_version") and isinstance(
+                    info.get("softwareVersion"), str
+                ):
+                    data["software_version"] = info["softwareVersion"]
+                if isinstance(equip, list):
+                    data["equipment"] = equip
+                    data["equipment_count"] = len(equip)
+            # Trigger lazy 24h cache refresh — if fresh, no-op
+            try:
+                await self.refresh_static_info(vin)
+            except Exception:  # noqa: BLE001
+                pass  # Best-effort, never blocks _enrich
 
         # v1.19.1 — Pycupra-style API quota visibility. Copy the brand-
         # client's last-observed X-RateLimit-Remaining header onto each

@@ -32,6 +32,70 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ## [Unreleased]
 
+## [1.20.0] - 2026-05-06 🚗 Bundle 2 Phase A: Skoda Widget + Vehicle-Info + Equipment / Bundle 2 Phase A: Skoda Widget + Vehicle-Info + Equipment
+
+🚗 **MINOR-Release.** Drei neue Skoda mysmob endpoints adoptiert von `skodaconnect/myskoda` (MIT-lizenziert, attribution in `NOTICE.md`). Bringt richere DeviceInfo-Enrichment + 2 neue Diagnostic-Sensoren. Skoda-only in dieser Phase; CARIAD-BFF/OLA Equivalente kommen wenn upstream identifiziert.
+
+### 🚗 Was ist neu / What's new
+
+**3 neue Skoda mysmob endpoints** (in `cariad/api/skoda.py`):
+
+- **`GET /api/v2/widgets/vehicle-status/{vin}`** (myskoda PR #557, merged 2026-04-15)
+  - Lightweight glance-card payload: `vehicle.{name, licensePlate, renderUrl}`, `vehicleStatus.{doorsLocked, drivingRangeInKm}`, `chargingStatus.*`, `parkingPosition.{state, maps, gpsCoordinates, formattedAddress}`
+  - Wired in `get_status()` als 9. endpoint im asyncio.gather (per-tick polling)
+  - Defensive: 404/network-error → `{}`, full vehicle-status liefert weiterhin alle Daten
+
+- **`GET /api/v1/vehicle-information/{vin}`** (myskoda `rest_api.py:get_vehicle_info()`)
+  - Static device data: `name`, `licensePlate`, `model`, `modelYear`, `engine.{power, type}`, `specification.{title, trimLevel, modelKey, battery}`, `softwareVersion`
+  - 24h cache via neuem `coordinator.refresh_static_info()` (analog zum capability-cache pattern)
+
+- **`GET /api/v1/vehicle-information/{vin}/equipment`** (myskoda `rest_api.py:get_vehicle_equipment()`)
+  - Static equipment list: `[{id, name}, ...]` (e.g. "Heated steering wheel", "Towbar", "Panoramic sunroof")
+  - Same 24h cache, batched mit vehicle-info via `get_vehicle_static_info()` helper
+
+### 🆕 Neue Datenpunkte / New data points
+
+- **`license_plate`** (sensor + DeviceInfo enrichment) — String, populated from widget per-tick + vehicle-info als Fallback
+- **`render_url`** (model field) — Image URL für die geplante image platform integration
+- **`equipment`** (model field, list) — Full equipment list as `extra_state_attributes` auf equipment_count sensor
+- **`equipment_count`** (sensor) — int count, MEASUREMENT state-class, DIAGNOSTIC entity_category
+- **DeviceInfo Auto-Enrichment** — `model`, `model_year`, `software_version` werden aus vehicle-info gefüllt wenn vom garage-call nicht gesetzt
+- **`parking_address` Fallback** — wenn das Widget eine `formattedAddress` liefert, nutzen wir die ohne Reverse-Geocoding (backend-resolved, locale-aware)
+
+### 🛣️ Architecture / Architecture
+
+- **Per-tick widget call**: `get_status()` macht jetzt 9 parallele endpoint-calls (war 8). Widget ist defensive — wenn 404, verschwindet kein anderer Datenpunkt.
+- **24h static-cache**: Neue Methode `coordinator.refresh_static_info(vin)` mit `_STATIC_INFO_REFRESH_INTERVAL = timedelta(hours=24)` und brand-restriction `_STATIC_INFO_BRANDS = ("skoda",)`. Pre-fetched bei setup, lazy-refresh in `_enrich`.
+- **Brand-isolation**: Andere Brands (VW EU/Audi/Cupra/Seat/Porsche/VW NA) erhalten weiterhin `None` für die neuen Felder — keine Phantom-Sensoren via `_DATA_PRESENT_REQUIRED` gating.
+
+### 🛡️ Bruno-CI Coverage / Bruno-CI Coverage
+
+- 3 neue Bruno-Files: `tests/bruno/skoda/{25_GET_widget, 26_GET_vehicle_information, 27_GET_vehicle_equipment}.bru`
+- Drift-check Skoda: 24/24 → **27/27** strict pass
+- EXPECTED_KEYS["skoda"]["widget"] mit 14 expliziten Pfaden + 6 wildcards für Vehicle Data Scout drift detection auf der lightweight payload
+
+### 🧪 Tests / Tests
+
+- 16 neue Test-Cases in `tests/test_v1200_skoda_widget_info_equipment.py`:
+  - 5 widget parse-block (full payload / missing blocks / partial vehicle / render-URL filter / address-clobber-prevention)
+  - 2 equipment parsing (count derivation / empty list)
+  - 3 EXPECTED_KEYS coverage (endpoint registered / full silent / in-motion silent)
+  - 4 Model field defaults
+  - 2 Sensor exposure (license_plate + equipment_count diagnostic category)
+  - 2 Static-info cache constants (24h interval / Skoda-only)
+- 10 standalone-logic assertions verifiziert lokal
+
+### 📝 Attribution / Attribution
+
+`NOTICE.md` listet bereits `skodaconnect/myskoda` als MIT-Referenz seit v1.15.0. Endpoint-Definitions, response-shape parsing patterns + Bruno fixture references adoptiert von ihrem `rest_api.py` + `models/widget.py`. Keine eigenständigen Code-Copies, nur Schema-Referenz.
+
+### 🚫 NICHT in diesem Release / NOT in this release
+
+- **Phase B (renders)** — `/v1/vehicle-information/{vin}/renders` separater 4–8 image entity setup nötig; UX-Decision benötigt → deferred to v1.21.0
+- **Image platform integration** für `render_url` — erfordert image platform extension; separater PATCH wenn community Bedarf
+- **Charging Profile Write-Side** — eigener v1.21.0 oder v1.22.0 Bundle
+- **CARIAD-BFF / OLA equivalente** der 3 endpoints — wenn vorhanden upstream identifizieren first
+
 ## [1.19.4] - 2026-05-06 🔧📊 Bundle 1: T&C Brand-Deeplinks + Quota Repair-Issue / Bundle 1: T&C Brand-Deeplinks + Quota Repair-Issue
 
 🔧📊 **PATCH-Release Bundle 1.** Zwei Erweiterungen der existierenden Repair-Flow-Infrastruktur — beide reduzieren User-Reibung bei known UX-Problemen:

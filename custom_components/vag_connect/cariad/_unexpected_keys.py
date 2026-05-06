@@ -256,6 +256,36 @@ EXPECTED_KEYS: dict[str, dict[str, set[str]]] = {
             "ignitionOn",
             "batteryProtectionLimitOn",
         },
+        # v1.20.0 (Bundle 2 Phase A) — myskoda PR #557 widget endpoint
+        # for lightweight per-tick polling. Schema verified against
+        # myskoda WidgetResponse model + 2 fixtures (parked + inmotion).
+        # Wildcards on per-section subtree because parking + maps blocks
+        # carry varying optional children depending on vehicle state
+        # (in-motion vs parked, with/without GPS).
+        "widget": {
+            "vehicle", "vehicle.name", "vehicle.licensePlate",
+            "vehicle.renderUrl",
+            "vehicleStatus", "vehicleStatus.doorsLocked",
+            "vehicleStatus.drivingRangeInKm",
+            "chargingStatus",
+            "chargingStatus.stateOfChargeInPercent",
+            "chargingStatus.remainingTimeToFullyChargedInMinutes",
+            "parkingPosition", "parkingPosition.state",
+            "parkingPosition.formattedAddress",
+            "parkingPosition.gpsCoordinates",
+            "parkingPosition.gpsCoordinates.latitude",
+            "parkingPosition.gpsCoordinates.longitude",
+            "parkingPosition.maps",
+            "parkingPosition.maps.lightMapUrl",
+            "parkingPosition.maps.darkMapUrl",
+            # Wildcards for forward-compat children we haven't seen yet
+            "vehicle.*",
+            "vehicleStatus.*",
+            "chargingStatus.*",
+            "parkingPosition.*",
+            "parkingPosition.maps.*",
+            "parkingPosition.gpsCoordinates.*",
+        },
     },
     "cupra": {
         "status": {

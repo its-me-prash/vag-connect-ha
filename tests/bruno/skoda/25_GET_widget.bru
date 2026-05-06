@@ -1,0 +1,39 @@
+meta {
+  name: GET widget vehicle-status (lightweight glance card)
+  type: http
+  seq: 25
+}
+
+get {
+  url: {{base_url}}/api/v2/widgets/vehicle-status/{{vin}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+headers {
+  Accept: application/json
+}
+
+docs {
+  v1.20.0 (Bundle 2 Phase A) — Skoda lightweight widget endpoint.
+  Source: skodaconnect/myskoda PR #557 (merged 2026-04-15).
+
+  Returns curated subset for in-app glance card:
+    - vehicle.{name, licensePlate, renderUrl}
+    - vehicleStatus.{doorsLocked, drivingRangeInKm}
+    - chargingStatus.{stateOfChargeInPercent,
+        remainingTimeToFullyChargedInMinutes}  // EV/PHEV only
+    - parkingPosition.{state, maps.lightMapUrl, gpsCoordinates,
+        formattedAddress}
+
+  Use case: per-tick polling complement to /v2/vehicle-status/{vin}.
+  Smaller payload than full vehicle-status; subscription tier: base.
+
+  Implementation: SkodaClient.get_widget() in cariad/api/skoda.py.
+  Wired into get_status() asyncio.gather as 9th endpoint.
+  EXPECTED_KEYS["skoda"]["widget"] for Vehicle Data Scout coverage.
+}
