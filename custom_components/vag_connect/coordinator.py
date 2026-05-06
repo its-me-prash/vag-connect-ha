@@ -493,7 +493,7 @@ class VagConnectCoordinator(DataUpdateCoordinator):
             storage_key_for_entry,
             _STORAGE_VERSION,
         )
-        store = Store(
+        store: Store[dict[str, Any]] = Store(
             self.hass,
             _STORAGE_VERSION,
             storage_key_for_entry(self.entry.entry_id),

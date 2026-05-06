@@ -11,7 +11,7 @@ Architecture:
 from __future__ import annotations
 
 import logging
-from typing import TypeAlias
+from typing import Any, TypeAlias
 
 import voluptuous as vol
 
@@ -355,7 +355,9 @@ async def async_remove_entry(hass: HomeAssistant, entry: VagConnectConfigEntry) 
         storage_key_for_entry,
         _STORAGE_VERSION,
     )
-    store = Store(hass, _STORAGE_VERSION, storage_key_for_entry(entry.entry_id))
+    store: Store[dict[str, Any]] = Store(
+        hass, _STORAGE_VERSION, storage_key_for_entry(entry.entry_id),
+    )
     storage = TokenStorage(store)
     await storage.clear()
 
