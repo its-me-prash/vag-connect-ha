@@ -32,6 +32,59 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ## [Unreleased]
 
+## [1.19.3] - 2026-05-06 🛰️ Scout-Welle 6: 5 Reports, 19 truly new paths silenced / Scout Wave 6: 5 reports, 19 truly new paths silenced
+
+🛰️ **PATCH-Release.** Vehicle Data Scout Pipeline lieferte 5 weitere Community-Reports zwischen 2026-05-04 und 2026-05-06. Audit gegen aktuelles EXPECTED_KEYS-State zeigte: nur **19 von ~58 Felder** sind tatsächlich neu (Rest deckt v1.17.5 + v1.12.x Wildcards bereits ab). Alle 19 silenced.
+
+### 🛰️ Scout-Welle 6 / Scout Wave 6
+
+| Report | User | Brand | Total Felder | Davon truly new |
+|---|---|---|---|---|
+| #143 | whaak58 | Skoda | 14 | **14 (alle neu)** |
+| #144 | HaaseJ64 | VW ID.4 Pro | 24 | 0 (alle silenced) |
+| #145 | manentw | VW | 10 | 5 |
+| #146 | ammelch | VW | 5 | 0 (subset von #145) |
+| #147 | gudden | VW | 5 | 0 (= #146 — 3-User-Konvergenz) |
+| **Total** | — | — | **58** | **19** |
+
+### 🛰️ Skoda silencing (#143 whaak58, 14 fields) / Skoda silencing
+
+- **`charging` endpoint** (9 fields): `isVehicleInSavedLocation`, `carCapturedTimestamp`, `errors` + `errors.*` wildcard, plus 6 settings-leaves in lowercase variants alongside legacy uppercase: `settings.{autoUnlockPlugWhenCharged, availableChargeModes, batteryCareModeTargetValueInPercent, chargingCareMode, maxChargeCurrentAc, preferredChargeMode}`
+- **`air-conditioning` endpoint** (3 fields): `airConditioningAtUnlock` (auto-AC bei App-Unlock), `seatHeatingActivated` + `seatHeatingActivated.*` wildcard (per-seat dict, future rear-seats covered), `windowHeatingEnabled`
+- **`readiness` endpoint** (2 fields): `ignitionOn` (boolean), `batteryProtectionLimitOn` (12V protection flag — useful für "12V kritisch" Automationen)
+
+### 🛰️ Volkswagen + Audi silencing (3 convergent reports, 5 fields) / Volkswagen + Audi silencing
+
+3 unabhängige User (#145, #146, #147) berichteten dieselben 5 Felder = starke Konvergenz, future-proof Wildcards angemessen:
+
+- `automation.chargingProfiles.value.*.*` — 5-segment wildcard für `nextChargingTimer.{id, targetSOCreachable}` (existing 4-segment wildcard reichte nicht)
+- `batteryChargingCare.chargingCareSettings` + `.value` + `.value.*` — neuer 3-segment Container plus 4-segment future-proof
+- `charging.chargingCareSettings.value` + `.value.*` — 4-segment für `batteryCareMode` leaf
+- `climatisationTimers.climatisationTimersStatus` + `.value` + `.value.*` — 3-segment Status-Wrapper analog zu anderen CARIAD `.{xxxStatus}.value` Pattern aus v1.12.0
+
+Audi erbt automatisch via `EXPECTED_KEYS["audi"] = EXPECTED_KEYS["volkswagen"]`.
+
+### 🧪 Tests / Tests
+
+- 12 neue Test-Cases in `tests/test_v1193_scout_welle_6.py`:
+  - 5 Skoda silencing (charging settings, top-level meta, AC toggles, readiness flags, full payload)
+  - 6 VW silencing (5-segment timer, batteryChargingCare, chargingCareSettings, climatisationTimers, audi inheritance, full payload)
+  - 1 cross-check: full convergent VW payload aus #145/#146/#147 returns 0 unexpected
+- Audit-script standalone-verified: 19/19 paths silenced
+
+### 📦 Schließt Issues / Closes
+
+- **#143** whaak58 (Skoda 14 fields silenced)
+- **#144** HaaseJ64 (VW ID.4 Pro — 24/24 already silenced via earlier wildcards)
+- **#145** manentw (VW 5 truly-new + 5 already-silenced)
+- **#146** ammelch (VW — convergent with #145)
+- **#147** gudden (VW — convergent with #145/#146)
+
+### 🚫 NICHT in diesem Release / NOT in this release
+
+- **Wired sensors für any der Welle-6 fields** — pure silencing, kein neuer entity_id (strict semver: PATCH)
+- **`isVehicleInSavedLocation` als sensor** — interessantes Skoda Born-Pattern (zone-aware charging), könnte v1.20.x Mini-Feature werden wenn community Bedarf
+
 ## [1.19.2] - 2026-05-05 🔐 Token-Persistence über HACS-Updates (#118 fix) / Token Persistence across HACS Updates (#118 fix)
 
 🔐 **PATCH-Release.** Schließt #118 von eismarkt — "After every update of VAG Connect, the password must be entered again". Root-Cause: IDK-Tokens lebten nur im Memory, jeder HACS-Update / HA-Restart triggered einen vollen `authenticate()` gegen das IDK-Backend → konnte transient fehlschlagen → ConfigEntryAuthFailed → User-Reauth-Prompt. v1.19.1 brachte den Bug-Report-Use-Case explizit zutage.
