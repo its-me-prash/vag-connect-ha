@@ -640,16 +640,23 @@ class SkodaClient(CariadBaseClient):
         Both calls use the existing best-effort error handling — a
         404 on either endpoint just leaves that key missing.
         """
-        info, equip = await asyncio.gather(
+        # mypy strict can't infer the unpacked types from
+        # ``asyncio.gather(..., return_exceptions=True)`` because each
+        # slot may be ``T | BaseException``. Bind the result first
+        # then index with explicit isinstance gates so the type
+        # narrowing is unambiguous.
+        results = await asyncio.gather(
             self.get_vehicle_info(vin),
             self.get_vehicle_equipment(vin),
             return_exceptions=True,
         )
+        info_result = results[0]
+        equip_result = results[1]
         out: dict[str, Any] = {}
-        if isinstance(info, dict) and info:
-            out["info"] = info
-        if isinstance(equip, dict) and equip:
-            equip_list = equip.get("equipment")
+        if isinstance(info_result, dict) and info_result:
+            out["info"] = info_result
+        if isinstance(equip_result, dict) and equip_result:
+            equip_list = equip_result.get("equipment")
             if isinstance(equip_list, list):
                 out["equipment"] = equip_list
         return out

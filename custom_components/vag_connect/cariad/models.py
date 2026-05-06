@@ -310,7 +310,8 @@ class VehicleData:
     # Three new static-ish enrichment fields populated from myskoda PR
     # #557 widget endpoint + /vehicle-information/{vin} + /equipment.
     # Currently Skoda-only; other brands leave them None.
-    license_plate: str | None = None       # widget.vehicle.licensePlate
+    # NOTE: ``license_plate`` already exists above (line 156) — do not
+    # re-declare. Skoda widget parser populates the existing field.
     render_url: str | None = None          # widget.vehicle.renderUrl (image)
     equipment: list[dict[str, Any]] | None = None  # equipment.equipment[]
     equipment_count: int | None = None     # derived: len(equipment)
