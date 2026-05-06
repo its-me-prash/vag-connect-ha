@@ -479,8 +479,46 @@ class VagConnectCoordinator(DataUpdateCoordinator):
         session = async_get_clientsession(self.hass)
         self._cariad_client = CariadClientFactory.create(brand, session, username, password, spin)
 
+        # v1.19.2 (#118 eismarkt) — token persistence wire-up.
+        # Load any persisted IDK tokens from HA storage BEFORE the
+        # first authenticate() so HACS updates / HA restarts don't
+        # force a full re-login (was burning ~2-3s + counting against
+        # daily quota + occasionally triggering the v1.8.7 token-
+        # refresh-storm protection on consecutive transient failures).
+        # Hook the persistence callback so every successful refresh
+        # writes back automatically.
+        from homeassistant.helpers.storage import Store  # noqa: PLC0415
+        from .cariad.auth._token_storage import (  # noqa: PLC0415
+            TokenStorage,
+            storage_key_for_entry,
+            _STORAGE_VERSION,
+        )
+        store: Store[dict[str, Any]] = Store(
+            self.hass,
+            _STORAGE_VERSION,
+            storage_key_for_entry(self.entry.entry_id),
+        )
+        self._token_storage = TokenStorage(store)
+        persisted = await self._token_storage.load()
+        if persisted is not None:
+            self._cariad_client.set_persisted_tokens(persisted)
+        # Fire-and-forget save callback — never blocks API path.
+        self._cariad_client.on_tokens_changed = self._token_storage.save
+
         try:
-            await self._cariad_client.authenticate()
+            # If persisted tokens were loaded successfully, the next
+            # API call will use them directly; the 401 path triggers
+            # _refresh_tokens which writes back. We still call
+            # authenticate() if NO persisted tokens exist (first setup,
+            # storage cleared, or version mismatch).
+            if persisted is None:
+                await self._cariad_client.authenticate()
+            else:
+                _LOGGER.debug(
+                    "VAG Connect: using persisted IDK tokens for %s "
+                    "— skipping fresh login",
+                    brand,
+                )
             vins = await self._cariad_client.get_vehicles()
             if not vins:
                 return False

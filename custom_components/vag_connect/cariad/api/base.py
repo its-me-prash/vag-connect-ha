@@ -100,6 +100,13 @@ class CariadBaseClient:
         self.last_rate_limit_remaining: int | None = None
         self.last_rate_limit_limit: int | None = None
         self.last_rate_limit_reset_at: str | None = None
+        # v1.19.2 (#118 eismarkt) — token persistence callback hook.
+        # Coordinator wires this to ``TokenStorage.save`` so every
+        # successful authenticate() / _refresh_tokens() result is
+        # persisted across HA restarts + HACS updates. Optional —
+        # if None (e.g. tests without storage), tokens stay in-memory.
+        # Signature: ``async def on_tokens_changed(tokens: TokenSet) -> None``
+        self.on_tokens_changed: Any | None = None
 
     @property
     def brand(self) -> BrandConfig:
@@ -110,6 +117,45 @@ class CariadBaseClient:
         """Perform full login and store tokens."""
         self._tokens = await self._auth.authenticate(self._email, self._password)
         _LOGGER.debug("Authenticated for brand %s", self._brand.name)
+        await self._notify_tokens_changed()
+
+    def set_persisted_tokens(self, tokens: TokenSet | None) -> None:
+        """v1.19.2 (#118) — inject tokens loaded from HA storage at
+        coordinator setup, before the first API call. If valid, the
+        client will skip the initial authenticate() and rely on the
+        existing 401-refresh path for any expired access_token.
+
+        No-op for None / invalid tokens — coordinator falls through to
+        a normal authenticate() flow.
+        """
+        if tokens is not None and tokens.is_valid():
+            self._tokens = tokens
+            _LOGGER.debug(
+                "Loaded persisted tokens for brand %s "
+                "(expires_at=%.0f)",
+                self._brand.name,
+                tokens.expires_at,
+            )
+
+    async def _notify_tokens_changed(self) -> None:
+        """v1.19.2 — fire the persistence hook if registered.
+
+        Called from authenticate() and _refresh_tokens() success
+        paths. Defensive: callback errors are logged but never
+        propagate, so a broken storage path can't break runtime
+        polling.
+        """
+        if self.on_tokens_changed is None or self._tokens is None:
+            return
+        try:
+            await self.on_tokens_changed(self._tokens)
+        except Exception as err:  # noqa: BLE001
+            _LOGGER.warning(
+                "Token persistence callback failed (%s) — runtime "
+                "tokens still valid in-memory, will retry on next "
+                "refresh",
+                err,
+            )
 
     async def get_vehicles(self) -> list[str]:
         """Return list of VINs in the account garage."""
@@ -326,6 +372,12 @@ class CariadBaseClient:
             if self._tokens and self._tokens.refresh_token:
                 try:
                     self._tokens = await self._auth.refresh(self._tokens.refresh_token)
+                    # v1.19.2 (#118) — persist refreshed tokens so the
+                    # next HACS update / HA restart picks up the
+                    # already-valid session instead of re-running the
+                    # full OAuth login (which counts against quota +
+                    # can trigger reauth-storm on transient failures).
+                    await self._notify_tokens_changed()
                     return
                 except TokenExpiredError:
                     pass
