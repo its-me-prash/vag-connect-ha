@@ -453,6 +453,14 @@
     "error_reporter_findings": {
       "title": "Fehler-Berichter — {count} aktuelle Fehler bei {brand}",
       "description": "Der Fehler-Berichter hat **{count}** aktuelle Fehler in der Integration mit {brand} aufgezeichnet.\n\nDas Melden hilft uns, Fehler zu finden, die nur bei bestimmten Fahrzeugen oder Firmware-Versionen auftreten.\n\n**1-Klick-Bericht:**\n📤 Klicke unten auf **Mehr erfahren**, um ein vorausgefülltes GitHub-Issue zu öffnen.\n\n**Für Facebook / Forum:** Einstellungen → Geräte → VAG Connect → Diagnose → Herunterladen — der Bericht ist enthalten, VINs und Tokens maskiert.\n\n_Datenschutz: VINs maskiert, Bearer/JWT/UUID/E-Mail-Tokens aus Nachrichten und Tracebacks entfernt. Keine Zugangsdaten enthalten._"
+    },
+    "quota_low": {
+      "title": "API-Quota niedrig — {remaining} Anfragen heute übrig",
+      "description": "Dein VAG-Account nähert sich dem täglichen API-Limit ({remaining} von {limit} übrig, {pct}%).\n\nUm einen Quota-Lockout zu vermeiden (das Hersteller-Backend kann bei Erreichen des Tageslimits den Account temporär sperren), kannst du:\n\n1. **Update-Intervall erhöhen** — Einstellungen → Geräte & Dienste → VAG Connect → Konfigurieren → Update-Intervall (typisch 5–10 min)\n2. **Andere VAG-Integrationen reduzieren**, die parallel auf dem gleichen Account laufen (jede zählt gegen das gleiche Limit)\n3. **Tägliches Reset abwarten** — meistens um Mitternacht in der Hersteller-Heimatzone\n\nDiese Warnung verschwindet automatisch, sobald sich das Kontingent erholt hat."
+    },
+    "quota_critical": {
+      "title": "API-Quota KRITISCH — {remaining} Anfragen heute übrig",
+      "description": "Dein VAG-Account hat weniger als 25 API-Anfragen heute übrig ({remaining} von {limit}, {pct}%). Das Hersteller-Backend kann den Account temporär sperren wenn das Limit erschöpft wird.\n\n**Sofort-Maßnahmen:**\n1. **Polling pausieren** — Einstellungen → Geräte & Dienste → VAG Connect → Konfigurieren → Update-Intervall → auf 30 min oder höher setzen\n2. Manuelle Refreshes / Fahrzeug-Wakeups vermeiden bis das Kontingent zurückgesetzt ist\n\nDiese Warnung verschwindet automatisch, sobald sich das Kontingent erholt hat."
     }
   },
   "exceptions": {
