@@ -465,6 +465,14 @@
     "error_reporter_findings": {
       "title": "Error Reporter — {count} recent error(s) on {brand}",
       "description": "The Error Reporter captured **{count}** recent integration error(s) for {brand}.\n\nReporting them helps us find bugs that only show up on specific vehicles or firmware versions.\n\n**1-click report:**\n📤 Click **Learn more** below to open a pre-filled GitHub issue.\n\n**For Facebook / forum:** open Settings → Devices → VAG Connect → Diagnostics → Download — the report is included with VINs and tokens masked.\n\n_Privacy: VINs masked, Bearer/JWT/UUID/email tokens stripped from messages and tracebacks. No credentials are included._"
+    },
+    "quota_low": {
+      "title": "API quota low — {remaining} requests remaining today",
+      "description": "Your VAG account is approaching the daily API request limit ({remaining} of {limit} remaining, {pct}%).\n\nTo protect against quota lockout (the manufacturer backend can soft-suspend the account when the daily cap is reached), consider:\n\n1. **Increase the update interval** — Settings → Devices & Services → VAG Connect → Configure → Update Interval (currently typically 5–10 min)\n2. **Reduce other VAG integrations** running on the same account (each counts against the same quota)\n3. **Wait for daily reset** — usually around midnight in the manufacturer's home time zone\n\nThis warning auto-clears when the remaining count recovers."
+    },
+    "quota_critical": {
+      "title": "API quota CRITICAL — {remaining} requests remaining today",
+      "description": "Your VAG account has fewer than 25 API requests remaining today ({remaining} of {limit}, {pct}%). The manufacturer backend may soft-suspend the account if you exhaust the budget.\n\n**Immediate action:**\n1. **Pause polling** — Settings → Devices & Services → VAG Connect → Configure → Update Interval → set to 30 min or higher\n2. Avoid manual refreshes / vehicle wake-ups until the budget resets\n\nThis warning auto-clears when the remaining count recovers."
     }
   },
   "exceptions": {

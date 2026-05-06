@@ -32,6 +32,59 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ## [Unreleased]
 
+## [1.19.4] - 2026-05-06 🔧📊 Bundle 1: T&C Brand-Deeplinks + Quota Repair-Issue / Bundle 1: T&C Brand-Deeplinks + Quota Repair-Issue
+
+🔧📊 **PATCH-Release Bundle 1.** Zwei Erweiterungen der existierenden Repair-Flow-Infrastruktur — beide reduzieren User-Reibung bei known UX-Problemen:
+
+### 🔧 Brand-aware T&C Deeplinks / Brand-aware T&C Deeplinks
+
+Vor v1.19.4 zeigte das T&C-Repair-Issue (wenn IDK-Backend "terms-and-conditions" body sendet) einen generischen "Learn more"-Link zum README. Jetzt: **direkter Deeplink zum richtigen Account-Portal** des Brands — User klickt einmal und landet auf der Akzeptieren-Seite.
+
+- `skoda` → `https://skodaid.vwgroup.io/landing-page`
+- `volkswagen` → `https://vwid.vwgroup.io/account`
+- `audi` → `https://my.audi.com`
+- `seat` + `cupra` → `https://seat-cupra.cloud.vwgroup.com`
+- `porsche` → `https://my.porsche.com`
+- `volkswagen_na` → `https://www.vw.com/myvw`
+- Unknown / no-brand → fallback README (backwards-compat)
+
+Pattern adoptiert von `skodaconnect/myskoda` `issues.py`. `raise_issue_auth_required()` akzeptiert jetzt optionalen `brand=` parameter (legacy callers funktionieren weiter).
+
+### 📊 Quota Warning Repair-Issue / Quota Warning Repair-Issue
+
+Extension von v1.19.1 (X-RateLimit-Remaining sensor): User sehen jetzt **proactive UI-Warning** im HA Repairs Dashboard wenn das tägliche Quota-Cap näher rückt. Pattern: pycupra nutzt persistent_notification (älteres HA), wir nutzen Repair-Issue (more discoverable + auto-clears).
+
+- `QUOTA_WARN_THRESHOLD = 100` → Severity WARNING
+- `QUOTA_CRITICAL_THRESHOLD = 25` → Severity ERROR
+- `raise_issue_quota_low()` und `clear_quota_issue()` als public API in `repairs.py`
+- Coordinator's `_enrich`: bei Schwellenüberschreitung wird Issue erstellt, bei Erholung (z.B. midnight reset) automatisch entfernt
+- Bilingual translations (DE + EN) mit `{remaining}` / `{limit}` / `{pct}` placeholders + actionable Hinweise (Update-Intervall erhöhen via OptionsFlow)
+
+### 🧪 Tests / Tests
+
+- 20 neue Test-Cases in `tests/test_v1194_bundle1_tnc_quota.py`:
+  - 12 brand-aware deeplink lookups (skoda/vw/audi/seat/cupra/porsche/vw_na/unknown/none/marketing_consent/case-insensitive/non-T&C-fallback)
+  - 2 raise_issue_auth_required brand-parameter integration
+  - 5 Quota Repair-Issue (thresholds, severities, per-entry isolation, clear, no-limit edge case)
+  - 1 thresholds constants
+- 20 standalone-logic assertions verifiziert lokal
+
+### 🛣️ User Impact / User Impact
+
+**Vor v1.19.4:**
+- T&C-Repair "Learn more" → README → User muss selbst zum richtigen Portal navigieren
+- Quota-Cap-Hit → Backend gibt 401 / Account temporär gesperrt → User sieht nur "Authentication failed"
+
+**Ab v1.19.4:**
+- T&C-Repair → 1-click direkt zum Brand-Portal → Terms akzeptieren → HA-Restart → fertig
+- Quota-Cap näher rückend → proactive HA-Repair-Issue mit Schritt-für-Schritt-Anleitung (Update-Intervall erhöhen, andere VAG-Integrationen pausieren) — User kann reagieren BEVOR Backend lockt
+
+### 🚫 NICHT in diesem Release / NOT in this release
+
+- **Quota auto-pause polling** wenn critical → könnte v1.20.x Mini-Feature werden (jetzt nur warning, kein automatic action)
+- **`is_fixable=True` mit handler** für T&C-Repair (würde Reauth-Flow direkt aus Issue auslösen) — größeres UX-Pattern, separater Patch
+- **Per-VIN quota tracking** — aktuell brand-shared (ein Auth-Cookie für alle VINs einer Brand)
+
 ## [1.19.3] - 2026-05-06 🛰️ Scout-Welle 6: 5 Reports, 19 truly new paths silenced / Scout Wave 6: 5 reports, 19 truly new paths silenced
 
 🛰️ **PATCH-Release.** Vehicle Data Scout Pipeline lieferte 5 weitere Community-Reports zwischen 2026-05-04 und 2026-05-06. Audit gegen aktuelles EXPECTED_KEYS-State zeigte: nur **19 von ~58 Felder** sind tatsächlich neu (Rest deckt v1.17.5 + v1.12.x Wildcards bereits ab). Alle 19 silenced.

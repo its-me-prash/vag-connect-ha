@@ -1606,15 +1606,40 @@ class VagConnectCoordinator(DataUpdateCoordinator):
         # endpoint) — sensor stays ``unknown`` instead of showing 0.
         client = self._cariad_client
         if client is not None:
-            data["requests_remaining_today"] = getattr(
-                client, "last_rate_limit_remaining", None,
-            )
-            data["requests_limit_today"] = getattr(
-                client, "last_rate_limit_limit", None,
-            )
+            remaining = getattr(client, "last_rate_limit_remaining", None)
+            limit = getattr(client, "last_rate_limit_limit", None)
+            data["requests_remaining_today"] = remaining
+            data["requests_limit_today"] = limit
             data["requests_reset_at"] = getattr(
                 client, "last_rate_limit_reset_at", None,
             )
+
+            # v1.19.4 Bundle 1 — Quota-Warning Repair-Issue trigger.
+            # Pattern matches v1.13.0 stale-vehicle persistent_notification:
+            # idempotent issue creation when threshold crossed, idempotent
+            # delete when remaining recovers (e.g. midnight reset). Only
+            # fires when we have a real value (not None — that means the
+            # backend doesn't send the header for this brand/endpoint).
+            if remaining is not None:
+                from .repairs import (  # noqa: PLC0415
+                    raise_issue_quota_low,
+                    clear_quota_issue,
+                    QUOTA_WARN_THRESHOLD,
+                    QUOTA_CRITICAL_THRESHOLD,
+                )
+                if remaining < QUOTA_CRITICAL_THRESHOLD:
+                    raise_issue_quota_low(
+                        self.hass, self.entry.entry_id,
+                        remaining=remaining, limit=limit, critical=True,
+                    )
+                elif remaining < QUOTA_WARN_THRESHOLD:
+                    raise_issue_quota_low(
+                        self.hass, self.entry.entry_id,
+                        remaining=remaining, limit=limit, critical=False,
+                    )
+                else:
+                    # Quota recovered — clear any stale warning
+                    clear_quota_issue(self.hass, self.entry.entry_id)
 
         # Fix #32: Defensive is_charging reset.
         # When plug is disconnected, charging MUST be False regardless of API state.
