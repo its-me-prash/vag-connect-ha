@@ -1617,25 +1617,30 @@ class VagConnectCoordinator(DataUpdateCoordinator):
             # v1.19.4 Bundle 1 — Quota-Warning Repair-Issue trigger.
             # Pattern matches v1.13.0 stale-vehicle persistent_notification:
             # idempotent issue creation when threshold crossed, idempotent
-            # delete when remaining recovers (e.g. midnight reset). Only
-            # fires when we have a real value (not None — that means the
-            # backend doesn't send the header for this brand/endpoint).
-            if remaining is not None:
+            # delete when remaining recovers (e.g. midnight reset).
+            #
+            # Defensive: only fires when remaining is an actual int (not
+            # None = backend doesn't send the header; not MagicMock =
+            # existing TestEnrich tests stub the client). Same isinstance
+            # check applies to limit so the safe-divide in repairs.py
+            # never sees garbage.
+            if isinstance(remaining, int):
                 from .repairs import (  # noqa: PLC0415
                     raise_issue_quota_low,
                     clear_quota_issue,
                     QUOTA_WARN_THRESHOLD,
                     QUOTA_CRITICAL_THRESHOLD,
                 )
+                quota_limit = limit if isinstance(limit, int) else None
                 if remaining < QUOTA_CRITICAL_THRESHOLD:
                     raise_issue_quota_low(
                         self.hass, self.entry.entry_id,
-                        remaining=remaining, limit=limit, critical=True,
+                        remaining=remaining, limit=quota_limit, critical=True,
                     )
                 elif remaining < QUOTA_WARN_THRESHOLD:
                     raise_issue_quota_low(
                         self.hass, self.entry.entry_id,
-                        remaining=remaining, limit=limit, critical=False,
+                        remaining=remaining, limit=quota_limit, critical=False,
                     )
                 else:
                     # Quota recovered — clear any stale warning
