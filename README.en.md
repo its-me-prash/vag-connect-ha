@@ -38,7 +38,7 @@ Since v0.14.1, VAG Connect speaks **directly** to the CARIAD API via its own asy
 
 > ✅ **Active multi-brand successor** to [`mitch-dc/volkswagen_we_connect_id`](https://github.com/mitch-dc/volkswagen_we_connect_id) (archived 2025-10-29) and [`skodaconnect/homeassistant-skodaconnect`](https://github.com/skodaconnect/homeassistant-skodaconnect) (deprecated 2025-03-14). One integration for Audi, VW, Škoda, SEAT, CUPRA, Porsche and VW US/CA — no separate plugin per brand.
 
-## Current Status & Honest Limits (v1.12.3)
+## Current Status & Honest Limits (v1.24.1)
 
 VAG Connect is under active development. So you know what works and what's coming:
 

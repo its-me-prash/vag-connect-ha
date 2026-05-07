@@ -14,9 +14,9 @@ are not patched.
 
 | Version | Supported |
 |---|---|
-| 1.8.x | ✅ |
-| 1.7.x | ❌ — please update |
-| < 1.7 | ❌ — please update |
+| 1.24.x | ✅ |
+| 1.23.x | ✅ (last MINOR before 1.24) |
+| < 1.23 | ❌ — please update |
 
 Home Assistant supports the integration on its own currently-supported core
 versions (typically the last 4 monthly releases). Any HA below the
@@ -81,8 +81,16 @@ mitigation within **14 days** for high-severity issues.
 - **Reverse geocoding opt-in** (since v1.8.0 / #60) — vehicle GPS is
   not sent to third-party services unless the user explicitly enables it.
 - **TLS-only API calls** — the integration uses HTTPS for every endpoint.
-- **No persistent token store outside Home Assistant** — tokens live in
-  the standard HA config-entry storage, encrypted by Home Assistant.
+- **Token cache lives inside Home Assistant's protected `.storage/` dir**
+  — since v1.19.2 the integration persists OAuth tokens (per-config-entry)
+  via HA's `Store` helper to `.storage/vag_connect_tokens_<entry_id>`. The
+  file is JSON, scoped to the HA instance's config volume (same trust
+  boundary as `entry.data` credentials), and is removed automatically when
+  the integration is removed via `async_remove_entry`.
+- **Token redaction in diagnostics** — `access_token`, `refresh_token`,
+  `id_token`, `client_secret` (snake_case + camelCase variants) and email
+  addresses are masked in `diagnostics.py` exports. JWT-pattern strings
+  are stripped from any value field via `JWT_RE`.
 
 ---
 
@@ -96,4 +104,4 @@ mitigation within **14 days** for high-severity issues.
 
 ---
 
-*Last updated: 2026-04-26 — v1.8.0*
+*Last updated: 2026-05-08 — v1.24.1*

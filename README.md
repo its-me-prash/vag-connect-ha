@@ -35,7 +35,7 @@
 
 > ✅ **Aktiv gepflegter Multi-Brand-Nachfolger** für [`mitch-dc/volkswagen_we_connect_id`](https://github.com/mitch-dc/volkswagen_we_connect_id) (archiviert am 29.10.2025) und [`skodaconnect/homeassistant-skodaconnect`](https://github.com/skodaconnect/homeassistant-skodaconnect) (deprecated am 14.03.2025). Eine Integration für Audi, VW, Škoda, SEAT, CUPRA, Porsche und VW US/CA — kein separates Plugin pro Marke.
 
-## Aktueller Stand & ehrliche Limits / Current Status & Honest Limits (v1.12.3)
+## Aktueller Stand & ehrliche Limits / Current Status & Honest Limits (v1.24.1)
 
 VAG Connect entwickelt sich aktiv weiter. Damit du weißt, was funktioniert und was kommt:
 
@@ -99,28 +99,23 @@ Field-Name-Fallback-Kette: `battery.currentSocPercentage` (Born 2026) → `curre
 
 ### ⚠️ Was noch in Arbeit ist / What's still in progress (geplante Sessions)
 
-**Recent shipped (v1.13.0 → v1.20.0):**
+**Recent shipped (v1.20.0 → v1.24.1):**
 
-- ~~**v1.13.0**~~ ✅ — Capability-Filter Phase 3 + Read-only Phase 2/3 + Anonymized Diagnostics
-- ~~**v1.14.0**~~ ✅ — Trip Statistics + Audi ICE Engine Start (#24, #28)
-- ~~**v1.15.0**~~ ✅ — Skoda Charging History + OTA + 8 cap-ids (#35)
-- ~~**v1.16.0**~~ ✅ — HA `time` platform für Departure Timers + Skoda Charging Profiles (#25, #26, #31)
-- ~~**v1.17.0–v1.17.4**~~ ✅ — Operational Hardening + Bruno-CI Stufe 2 COMPLETE (80/80 strict coverage)
-- ~~**v1.17.5–v1.17.7**~~ ✅ — 5 Scout-Wellen + HomeRegion Foundation + Skoda outside_temperature + workshop attrs
-- ~~**v1.18.0**~~ ✅ — **Skoda MQTT Push Foundation** (lazy-import; live activation pending Skoda Connect tester)
-- ~~**v1.19.0**~~ ✅ — **CUPRA/SEAT FCM Push Foundation** (analog Skoda; pending MyCupra/MySeat tester)
-- ~~**v1.19.1**~~ ✅ — Pycupra-style API Quota Sensor (X-RateLimit-Remaining)
-- ~~**v1.19.2**~~ ✅ — **Token-Persistence** via HA `Store` (#118 fix, survives HACS-Updates)
-- ~~**v1.19.3**~~ ✅ — Scout-Welle 6 silencing (5 Reports closed)
-- ~~**v1.19.4**~~ ✅ — T&C Brand-Deeplinks + Quota Repair-Issue
 - ~~**v1.20.0**~~ ✅ — **Bundle 2 Phase A**: Skoda widget + vehicle-info + equipment (myskoda PR #557 adoptiert)
+- ~~**v1.20.1–v1.20.3**~~ ✅ — LOCK-class invert (#131) + Skoda parser hardening + Cariad-wrapper-404 detection (8 user reports)
+- ~~**v1.21.0**~~ ✅ — **Audi/VW MBB Legacy-Path Migration Phase 1** — strukturelle Lösung für 8 user-bugs (per-VIN backend cache, HomeRegion aktiviert, command_wake auto-fallback)
+- ~~**v1.22.0**~~ ✅ — **Skoda Widget Render → Image Entity** (Bundle 2 Phase B Pragmatic)
+- ~~**v1.23.0**~~ ✅ — **Audi/VW Push Foundation** (Cariad FCM channel, user-suggested) — alle 3 push-tracks foundation-komplett
+- ~~**v1.24.0**~~ ✅ — **Cross-brand Image-Entity Wiring** — fixes silent CUPRA/SEAT bug + wires Skoda multi-angle composites (myskoda PR #571)
+- ~~**v1.24.1**~~ ✅ — Doc Hygiene + CI-Fix + Quick-Win Hardening (Audit 2026-05-08)
 
 **Geplant / Planned:**
 
-- **v1.20.1 PATCH** — Skoda Bug-Fix: BinarySensor LOCK-class invert + S-PIN unlock check (#131 Chr1sDub) + Bundle 2 Phase B vehicle renders
-- **v1.21.0 MINOR** — Charging Profile Write-Side (#25/#31 extension) ODER Departure-Timer UI Bundle (#132 follow-up)
-- **v1.18.x / v1.19.x Patches** — Push Phase 2 Live-Activation sobald Community-Tester sich melden
-- **v1.17.x Patch** — HomeRegion Wire-In wenn #75 Christian non-EU vehicle bestätigt
+- **v1.24.2 PATCH** — Test Foundation: property-tests via hypothesis (safe_int/safe_float/etc.) + Porsche/VW NA parity tests + bare int()/float() Migration in 4 Brand-Modulen
+- **v1.25.0 MINOR** — Charging-Profile + Departure-Timer Write-Side bundle (slipped 4×, endlich) + `_normalize.py` (DRY für Kelvin/drivetrain) + `BaseAPIClient` extract (Porsche unter HTTP-machinery) + coordinator Phase-1 refactor
+- **post-v1.25 PATCH** — MBB Phase 2: lock/unlock/climate/charger fallbacks, sobald Maintainer-Fleet wake live-test (A4 B9 + Q5 2021 + Golf 7 2015) bestätigt
+- **v1.18.x / v1.19.x / v1.23.x Patches** — Push Phase 2 Live-Activation sobald Community-Tester pro Brand sich melden
+- **v1.17.x Patch** — HomeRegion full wire-in (12 weitere call-sites in vw_eu.py beyond `command_wake`) wenn #75 Christian non-EU vehicle bestätigt
 - **v2.0.0 MAJOR** — HACS Default + Live-Tests alle Marken + EU Data Act ready (pycupra `EUDAConnection` als Reference, September 2026 Deadline) (#13, #59).
 
 ### 🚫 Bewusste Limits / Conscious limits

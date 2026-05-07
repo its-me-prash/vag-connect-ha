@@ -150,13 +150,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - uses: "home-assistant/actions/hassfest@master"
+      # SHA-pinned per supply-chain-hardening (v1.24.1, 2026-05-08).
+      # home-assistant/actions has no semver tags — pin to commit SHA.
+      # Bump manually when upstream announces breaking changes.
+      - uses: "home-assistant/actions/hassfest@f6f29a7ee3fa0eccadf3620a7b9ee00ab54ec03b"
 
   hacs:
     name: HACS Validation
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - uses: hacs/action@main
+      # Tag-pinned per supply-chain-hardening (v1.24.1, 2026-05-08).
+      # hacs/action ships dated tags (e.g. 22.5.0). Bump on hacs releases.
+      - uses: hacs/action@22.5.0
         with:
           category: integration

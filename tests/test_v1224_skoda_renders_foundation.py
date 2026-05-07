@@ -231,18 +231,18 @@ def _parse_composite_renders(static: dict[str, Any]) -> dict[str, str] | None:
         if not isinstance(layers, list) or not layers:
             continue
         real_layers = [
-            l for l in layers
-            if isinstance(l, dict)
-            and l.get("type") == "REAL"
-            and isinstance(l.get("url"), str)
-            and isinstance(l.get("viewPoint"), str)
+            layer for layer in layers
+            if isinstance(layer, dict)
+            and layer.get("type") == "REAL"
+            and isinstance(layer.get("url"), str)
+            and isinstance(layer.get("viewPoint"), str)
         ]
         if not real_layers:
             continue
         base = min(
             real_layers,
-            key=lambda l: l.get("order", 0)
-            if isinstance(l.get("order"), int) else 0,
+            key=lambda layer: layer.get("order", 0)
+            if isinstance(layer.get("order"), int) else 0,
         )
         view = base["viewPoint"].lower()
         flat[view] = base["url"]
