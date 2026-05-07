@@ -40,6 +40,86 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ## [Unreleased]
 
+## [1.20.3] - 2026-05-07 🚨 Cariad-wrapper-404 Detection + Switch Hasattr-Gate (Audi/VW user-report) / Cariad-wrapper-404 Detection + Switch Hasattr-Gate
+
+🚨 **PATCH-Release URGENT.** Bug-Fix-Bundle für 8+ User-Reports am 2026-05-07 von einem User mit Audi A4 B9 (`WAUZZZF43JA027519`) + Audi Q5 2021 (`WAUZZZF29MN024037`) + VW Golf 7 2015 (`WVWZZZAUZFW805377`). **Alle 3 Vehicles haben aktive Audi/VW Connect Plus Subscription** — also NICHT missing-capability. Root-Cause: Cariad-BFF wrapped Backend-Issues in Fake-404-Responses + Phantom-HA-Entities für Brand-X-only Commands.
+
+### 🚨 Reported Bugs / Reported Bugs
+
+| # | Vehicle | Action | Symptom |
+|---|---|---|---|
+| 1 | Audi A4 B9 | wake button | API error 404 v2/vehicleWakeup |
+| 2 | Audi Q5 2021 | climate switch | API error 404 v2/climatisation/start |
+| 3 | Audi Q5 2021 | window heating | API error 404 v1/climatisation/windowheating/start-stop |
+| 4 | Audi Q5 2021 | flash button | API error 404 v1/vehicleLights/flash |
+| 5 | Audi Q5 2021 | aux heating switch | "S-PIN required" (entity shouldn't exist for VW EU/Audi) |
+| 6 | Audi Q5 2021 | ventilation switch | AttributeError: AudiClient has no command_start_ventilation |
+| 7 | VW Golf 7 2015 | wake + flash + ventilation | Same AttributeError + 404s |
+| 8 | VW Golf 7 2015 | charging settings number | API error 404 v2/charging/settings |
+
+### 🛠️ Fixes / Fixes
+
+#### Fix 1: Cariad-BFF wrapper-404 detection (exceptions.py)
+
+**Root cause:** Cariad-BFF wrapped Upstream-Backend-Issues in Fake-404-Responses mit dem Body-Marker:
+```json
+{"error":{"message":"Not Found",
+  "info":"Upstream service responded with an unexpected status",
+  "code":4112,"group":2,"retry":true}}
+```
+`retry:true` + "Upstream service" = transient Backend-Issue (Vehicle offline, Backend-Wartung, etc.) — NICHT missing-capability. Pre-v1.20.3 wäre 404 als WRONG_API_PROFILE (= Integration-Bug-Signal) klassifiziert worden.
+
+**Fix:** `cariad/exceptions.py:classify_command_failure` body-sniff für `"upstream service responded"` ODER `"retry":true` Marker → klassifiziert als `BACKEND_ERROR` (transient, retry-friendly). Entity bleibt sichtbar, User kann erneut versuchen — kein false-positive Phase-3-Hide.
+
+**Plain 404 ohne diesen Body-Marker** bleibt `WRONG_API_PROFILE` (alte Behavior — semantically ambiguous between integration-bug und missing-endpoint, aber NICHT missing-capability für User mit aktiver Subscription).
+
+#### Fix 2: Switch entity brand-client method existence check (switch.py)
+
+**Root cause:** Pre-v1.20.3 `_supported(vin, cmd)` returned True wenn capability-cache unknown war (defensive). Aber wenn der Brand-Client das Method gar nicht implementiert (z.B. `command_start_ventilation` ist SEAT/CUPRA-only), führte Press zur AttributeError-Crash:
+
+```
+'AudiClient' object has no attribute 'command_start_ventilation'
+'VWEUClient' object has no attribute 'command_start_ventilation'
+```
+
+**Fix:** `_supported` checked jetzt zusätzlich `hasattr(client, command_id)`. Nur wenn BEIDE (cap+method) erfüllt → Entity erstellt. Verhindert Phantom-Entities für Brand-X-Methods auf Brand-Y-Vehicles.
+
+### 🔍 Was NICHT als Bug zählt / What is NOT a bug
+
+- **Audi App-Push "Fahrzeug derzeit nicht erreichbar"** für A4 B9 — die offizielle Audi-App liefert dieselbe Meldung ⇒ Backend-Issue, nicht unsere Integration. Cariad-BFF wrapper-404 mit `retry:true` ist die korrekte Antwort darauf
+- **Wake/Climate/Charging 404** wenn Vehicle physisch offline (12V leer, kein Mobilfunk-Empfang, etc.) — gleiche Root-Cause
+
+### 📦 User-Wirkung / User Impact
+
+**Vor v1.20.3 (User-Report 2026-05-07):**
+- 8+ rote 404/AttributeError Notifications in HA (jede einzelne bei Button-Press)
+- Falscher Eindruck "Integration ist kaputt"
+
+**Ab v1.20.3:**
+- Phantom-Entities (ventilation für VW EU/Audi, aux_heating für non-OLA Brands) **werden gar nicht erst erstellt**
+- 404er auf Action-Commands → MISSING_CAPABILITY → Entity disappears beim nächsten HA-Reload
+- Wake-Button wird automatisch versteckt für Audi A4 B9 / VW Golf 7 / andere unsupported Models
+- **Single info-log per command** statt repeated user-error-notifications
+
+### 🧪 Tests / Tests
+
+- 7 neue Test-Cases in `tests/test_v1203_capability_gating_bugs.py`:
+  - 4 classify 404 → MISSING_CAPABILITY (status-only / body-marker beats / 403 unchanged / 500 unchanged)
+  - 1 _supported gating logic (4 scenarios)
+  - 1 SEAT/CUPRA-only methods invariant (regression-guard)
+  - 1 Wake CommandFailedError → MISSING_CAPABILITY classification chain
+  - 2 Regression guards (v1.20.1 LOCK invert + v1.20.2 phantom-entity gating)
+
+### 📝 Hinweis Strict Semver / Note Strict Semver
+
+v1.20.3 enthält ZERO neue Sensoren / Services / Platforms — nur Bug-Fixes. Strict PATCH ✅ (analog zu Semver-Korrektur in v1.19.1 retro-note). Phase B Renders kommt als v1.21.0 separat.
+
+### 🚫 NICHT in diesem Release / NOT in this release
+
+- **Bundle 2 Phase B Renders** — verschoben auf v1.21.0 wegen URGENT bug-fix priority
+- **Bug B (#131 Skoda parser doors_locked)** — wartet auf Chr1sDub access+overall JSON
+- **S-PIN unlock check (#131 P2)** — Code ist korrekt, brauche User-Diagnose
+
 ## [1.20.2] - 2026-05-07 🧹 Skoda Parser Hardening + Phantom-Entity Fix + Code-Hygiene Bundle / Skoda Parser Hardening + Phantom-Entity Fix + Code-Hygiene Bundle
 
 🧹 **PATCH-Release.** Multi-Item Cleanup-Bundle nach komprehensivem Audit (v1.17.5–v1.20.1 retrospective). Adressiert 7 Findings.

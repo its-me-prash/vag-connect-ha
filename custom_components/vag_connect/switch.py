@@ -25,8 +25,23 @@ async def async_setup_entry(
     # the backend explicitly reports the underlying capability missing.
     # ``False`` only when explicitly confirmed missing; ``None`` (unknown)
     # keeps the entity (Phase 2 catches at runtime).
+    # v1.21.0 (Audi Q5 2021 user-report 2026-05-07) — extend the
+    # capability-gate with a brand-client-method-existence check.
+    # Pre-v1.21.0: ``coordinator.command_capability_supported`` returns
+    # None for unknown caps and the entity was created defensively. For
+    # commands that only certain brand-clients implement (e.g.
+    # ``command_start_ventilation`` is SEAT/CUPRA-only), pressing the
+    # phantom switch on Audi raised ``AttributeError: 'AudiClient'
+    # object has no attribute 'command_start_ventilation'``. Now we
+    # ALSO require the brand-client to actually expose the method —
+    # AttributeError-prevention plus zero phantom entities for brands
+    # that genuinely don't implement the command.
+    client = coordinator._cariad_client
+
     def _supported(vin: str, command_id: str) -> bool:
-        return coordinator.command_capability_supported(vin, command_id) is not False
+        cap_supported = coordinator.command_capability_supported(vin, command_id) is not False
+        client_has_method = client is not None and hasattr(client, command_id)
+        return cap_supported and client_has_method
 
     for vin, vehicle in coordinator.vehicles.items():
         if _supported(vin, "command_lock"):

@@ -350,6 +350,16 @@ class VWEUClient(CariadBaseClient):
         ``_post_command`` helper auto-falls-back to ``/vehicle/v2/...``
         on a 404 and remembers the result per VIN so subsequent calls
         skip the dead path.
+
+        v1.20.3 (user-report 2026-05-07): when BOTH v1 and v2 return
+        404 for an Audi A4 B9 / Q5 2021 / VW Golf 7 (all WITH active
+        Audi/VW Connect+ subscription), the actual root-cause is
+        often a Cariad-BFF wrapper-404 around an upstream-backend
+        issue (body marker ``"Upstream service responded"`` +
+        ``retry:true``). Body-sniff in classify_command_failure now
+        catches these as BACKEND_ERROR so the wake button stays
+        visible and user can retry — instead of being hidden by
+        Phase 3 incorrectly.
         """
         await self._post_command(vin, "vehicleWakeup", json={})
 

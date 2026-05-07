@@ -147,6 +147,7 @@ Strict order — P0 (next release) > P1 (planned MINOR) > P2 (later) > P3 (resea
 | ~~v1.20.0~~ | Bundle 2 Phase A: Skoda widget + vehicle-info + equipment (3 myskoda PR #557 endpoints, license_plate + equipment_count sensors, 24h static-cache via refresh_static_info, DeviceInfo auto-enrichment, Bruno 83/83) | done |
 | ~~v1.20.1~~ | BinarySensor LOCK-class invert fix (#131 Chr1sDub) + Doc refresh (README + FAQ für v1.18-v1.20 features) | done |
 | ~~v1.20.2~~ | Skoda parser hardening (Bug B proactive #131) + phantom-entity fix für license_plate/equipment_count + safe_float locale-comma + scaffolding-markers + ROADMAP+CHANGELOG hygiene | done |
+| ~~v1.20.3~~ | Capability-Gating Bug-Fix Bundle (8 user-reports Audi A4 B9 + Q5 2021 + VW Golf 7 2015): 404→MISSING_CAPABILITY classification + wake graceful-fail + switch hasattr-gate (prevents AttributeError on phantom buttons) | done |
 
 ### 🔴 P0 — Nächste Releases (post v1.19.0)
 
