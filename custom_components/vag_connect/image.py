@@ -66,9 +66,9 @@ async def async_setup_entry(
     www_dir = hass.config.path("www", _CACHE_SUBDIR)
     await hass.async_add_executor_job(os.makedirs, www_dir, 0o755, True)
 
-    def _add_entities_for_vin(vin: str, vehicle: dict) -> list:
+    def _add_entities_for_vin(vin: str, vehicle: dict) -> list[ImageEntity]:
         image_urls: dict[str, str] = vehicle.get("image_urls") or {}
-        entities = []
+        entities: list[ImageEntity] = []
         for meta in RENDER_IMAGE_TYPES:
             url = image_urls.get(meta["media_type"])
             if url:
