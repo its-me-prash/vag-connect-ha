@@ -1,0 +1,61 @@
+meta {
+  name: GET vehicle-information renders (multi-angle)
+  type: http
+  seq: 28
+}
+
+get {
+  url: {{base_url}}/api/v1/vehicle-information/{{vin}}/renders
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+headers {
+  Accept: application/json
+}
+
+docs {
+  v1.22.x foundation (myskoda PR #571 confirmed live 2026-05-02) —
+  Skoda multi-angle composite vehicle renders.
+
+  Source: skodaconnect/myskoda PR #571 ("Api endpoint update",
+  merged 2026-05-02T21:12:05Z). Endpoint marked verified (✅) in
+  upstream docs/api_endpoints.md after the merge.
+
+  Response shape (verified PR #571 example payload, Enyaq 2021):
+    {
+      "renders": [],
+      "compositeRenders": [
+        {
+          "layers": [
+            {
+              "url": "https://iprenders.blob.core.windows.net/...png",
+              "viewPoint": "EXTERIOR_SIDE",
+              "type": "REAL",
+              "order": 0
+            }
+          ],
+          "viewType": "UNMODIFIED_EXTERIOR_SIDE"
+        },
+        ... 5 more entries (EXTERIOR_FRONT, EXTERIOR_REAR,
+            INTERIOR_SIDE, INTERIOR_FRONT, INTERIOR_BOOT) ...
+      ]
+    }
+
+  Six view points observed in fixture: EXTERIOR_{SIDE,FRONT,REAR},
+  INTERIOR_{SIDE,FRONT,BOOT}. Older / less documented vehicles may
+  return an empty compositeRenders[] — that is normal.
+
+  Use case: foundation for multi-angle Skoda image entities
+  (deferred to next MINOR — adding ~6 ImageEntity per VIN bumps
+  entity inventory). Cached 24h via get_vehicle_static_info()
+  alongside vehicle-information + equipment.
+
+  Implementation: SkodaClient.get_vehicle_renders() in
+  cariad/api/skoda.py. Parser in coordinator._enrich populates
+  data["composite_render_urls"]: dict[viewpoint_lower, url].
+}

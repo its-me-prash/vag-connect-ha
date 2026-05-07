@@ -227,6 +227,54 @@ class SkodaClient(CariadBaseClient):
             return {}
         return data if isinstance(data, dict) else {}
 
+    async def get_vehicle_renders(self, vin: str) -> dict[str, Any]:
+        """v1.22.x foundation (myskoda PR #571 confirmed live 2026-05-02) —
+        Skoda multi-angle vehicle renders.
+
+        Endpoint: ``GET /api/v1/vehicle-information/{vin}/renders``
+        Source: skodaconnect/myskoda PR #571 — endpoint marked verified
+        (✅) in upstream ``docs/api_endpoints.md`` after the merge on
+        2026-05-02T21:12:05Z.
+
+        Response shape (verified from PR #571 example payload, Enyaq
+        2021 fixture, identifying data redacted):
+
+            {
+              "renders": [],
+              "compositeRenders": [
+                {
+                  "layers": [
+                    {
+                      "url": "https://iprenders.blob.core.windows.net/...png",
+                      "viewPoint": "EXTERIOR_SIDE",
+                      "type": "REAL",
+                      "order": 0
+                    }
+                  ],
+                  "viewType": "UNMODIFIED_EXTERIOR_SIDE"
+                },
+                ...
+              ]
+            }
+
+        Six view points observed in the live Enyaq fixture: EXTERIOR_
+        {SIDE,FRONT,REAR}, INTERIOR_{SIDE,FRONT,BOOT}. Older / less
+        documented vehicles may return an empty ``compositeRenders[]``
+        — that is normal and the parser must tolerate it.
+
+        Static data — the coordinator caches the same 24h window as
+        ``get_vehicle_info`` / ``get_vehicle_equipment``. Best-effort:
+        404 / 403 → ``{}`` (older firmware before PR #571 was wired
+        upstream, or accounts without the capability).
+        """
+        try:
+            data = await self._get(
+                f"{_BASE}/api/v1/vehicle-information/{vin}/renders",
+            )
+        except Exception:  # noqa: BLE001
+            return {}
+        return data if isinstance(data, dict) else {}
+
     async def get_vehicle_equipment(self, vin: str) -> dict[str, Any]:
         """v1.20.0 (Bundle 2 Phase A) — Skoda equipment list endpoint.
 
@@ -669,16 +717,19 @@ class SkodaClient(CariadBaseClient):
     async def get_vehicle_static_info(self, vin: str) -> dict[str, Any]:
         """v1.20.0 Bundle 2 Phase A — combined static-data fetch.
 
-        Returns a single dict combining the two static endpoints so
-        the coordinator can cache + apply with one method call:
+        Returns a single dict combining the static endpoints so the
+        coordinator can cache + apply with one method call:
 
             {
               "info":      {... from /vehicle-information/{vin}},
-              "equipment": [{...}, ...] from /vehicle-information/{vin}/equipment
+              "equipment": [{...}, ...] from /vehicle-information/{vin}/equipment,
+              "renders":   {... from /vehicle-information/{vin}/renders},
             }
 
-        Both calls use the existing best-effort error handling — a
-        404 on either endpoint just leaves that key missing.
+        ``renders`` added v1.22.x foundation (myskoda PR #571 — multi-
+        angle composite renders for the image platform). All three
+        calls use the existing best-effort error handling — a 404 on
+        any endpoint just leaves that key missing from ``out``.
         """
         # mypy strict can't infer the unpacked types from
         # ``asyncio.gather(..., return_exceptions=True)`` because each
@@ -688,10 +739,12 @@ class SkodaClient(CariadBaseClient):
         results = await asyncio.gather(
             self.get_vehicle_info(vin),
             self.get_vehicle_equipment(vin),
+            self.get_vehicle_renders(vin),
             return_exceptions=True,
         )
         info_result = results[0]
         equip_result = results[1]
+        renders_result = results[2]
         out: dict[str, Any] = {}
         if isinstance(info_result, dict) and info_result:
             out["info"] = info_result
@@ -699,6 +752,8 @@ class SkodaClient(CariadBaseClient):
             equip_list = equip_result.get("equipment")
             if isinstance(equip_list, list):
                 out["equipment"] = equip_list
+        if isinstance(renders_result, dict) and renders_result:
+            out["renders"] = renders_result
         return out
 
     # ── Commands ─────────────────────────────────────────────────────────────

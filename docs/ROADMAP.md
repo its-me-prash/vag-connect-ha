@@ -5,9 +5,15 @@
 > mirrors it for archive/historical purposes and links the active GitHub
 > issues for each session.
 
-**Last updated:** 2026-05-07 — post v1.20.1.
+**Last updated:** 2026-05-08 — post v1.24.0.
 
 **Recent shipped (chronological):**
+- **v1.24.0** MINOR — Cross-brand image-entity wiring. Fixes silent CUPRA/SEAT latent bug (OLA viewPoints fetched but never spawned entities) + wires v1.22.x Skoda multi-angle composites (`compositeRenders[].layers[]` from myskoda PR #571) + broadens spawn trigger (`render_url` / `composite_render_urls`). Single `_synthesize_meta` helper + Branch-2 leftover-keys path keeps `VagRenderImageEntity` reusable. New entities: 4-7 per CUPRA/SEAT VIN (was 0), up to 6 per Skoda VIN (multi-angle).
+- **v1.23.0** MINOR — Audi/VW Push Foundation (Cariad FCM channel, user-suggested 2026-05-07). All 3 push-tracks foundation-complete.
+- **v1.22.0** MINOR — Skoda Widget Render → ImageEntity (Bundle 2 Phase B pragmatic, exposes `data["render_url"]` from v1.20.0 widget endpoint)
+- **v1.21.0** MINOR — Audi/VW MBB Legacy-Path Migration Phase 1 (per-VIN backend-detection cache, HomeRegion-Helper aktiviert, `command_wake` Cariad→MBB auto-fallback)
+- **v1.20.3** — Cariad-wrapper-404 Detection (body-sniff `"Upstream service responded"` → BACKEND_ERROR) + Switch hasattr-gate (8 user-reports across A4 B9 + Q5 2021 + Golf 7 2015)
+- **v1.20.2** — Skoda parser hardening (Bug B proactive #131) + phantom-entity fix (license_plate/equipment_count) + safe_float locale-comma + scaffolding-markers
 - **v1.20.1** — BinarySensor LOCK-class invert fix #131 + README/FAQ refresh
 - **v1.20.0** MINOR — Bundle 2 Phase A: Skoda widget + vehicle-info + equipment (myskoda PR #557 adopted, 2 new sensors, 24h static-cache)
 - **v1.19.4** — Bundle 1: T&C brand-deeplinks + Quota Repair-Issue
@@ -19,20 +25,23 @@
 - **v1.17.6 / v1.17.7** — HomeRegion scaffolding + Skoda outside_temp + workshop attrs
 - **v1.17.5** — Scout-Welle 5: 4 community reports, 42 fields silenced
 
-**Pending bundles:** v1.20.2 (Skoda parser hardening + cleanup), v1.21.0 (Bundle 2 Phase B Renders), v1.22.0 (Charging Profile Write-Side), v1.23.0 (Departure-Timer Write-Side).
+**Pending bundles:** v1.22.x (multi-angle `/v1/vehicle-information/{vin}/renders` adoption — myskoda #571 confirmed live 2026-05-02), v1.24.0 MINOR (Charging-Profile + Departure-Timer Write-Side bundle — slipped from v1.22.0/v1.23.0 in favour of MBB migration + push foundation).
 
-**External-blocked:** Push Phase 2 wire-in (waits on Skoda + CUPRA/SEAT testers), HomeRegion wire-in (waits on #75 Christian region info), #131 Bug B (waits on Chr1sDub access+overall JSON), S-PIN unlock check (waits on Chr1sDub diagnostic). **5 Releases an einem Tag** geshipt (v1.17.5 + v1.17.6 + v1.17.7 + v1.18.0 + v1.19.0). **5 Issues geschlossen** (#129/#130/#132/#133 Scout-Reports done als wired-data; #76 out-of-scope Pre-MQB MBB legacy). **6 GitHub Verification/Diagnostic Pings** für #42/#48/#51/#118/#131/#53. Open Issues von 16→11. Nächste P0 in laufender Sprint-Sequenz: v1.19.1 Pycupra-Hardening (`_safe_path.py` + `PyCupraThrottledException` + RateLimit-Sensor) + v1.19.2 AdBlue Range Skoda. Plus voriges v1.19.0 (CUPRA/SEAT FCM Push Foundation, #57 Phase 1 cont. — `cariad/push/cupra_seat_fcm.py` mit `CupraSeatPushManager` Klasse erbt von `PushManager` base, brand-validation für cupra/seat, identische Lifecycle + Reconnect-Backoff wie v1.18.0 SkodaPushManager. Reuses gleiche `firebase-messaging` Lib via lazy-import. Neuer `CONF_ENABLE_PUSH_FCM` toggle koexistiert mit MQTT toggle. Schließt #57 Phase 1 — Foundation komplett für alle 3 push-fähigen Brands. Phase 2 = Live-Activation in v1.18.x / v1.19.x Patches sobald Tester sich melden). Plus voriges v1.18.0 (Skoda MQTT Push Foundation, #57 Phase 1 — Push-Package mit `base.py` + `skoda_mqtt.py`, Lifecycle + State-Machine + Reconnect-Backoff komplett gebaut, opt-in via OptionsFlow toggle, Lazy-Import für aiomqtt + firebase-messaging deps. Live-Activation wartet auf Community-Tester. v1.19.0 = analoge CUPRA/SEAT FCM Foundation. v1.18.x Patches aktivieren MQTT live sobald Tester sich melden). Plus voriges v1.17.7 (Skoda outside_temp + preferred_workshop attrs als PATCH — beides nutzt EXISTIERENDE sensor + model fields, kein neuer Sensor → echter PATCH. Schließt #129 + #130 + #133. Plus voriges v1.17.6 = HomeRegion-Helper
-Scaffolding, evcc port — `cariad/_home_region.py` mit per-VIN
-7d-cache + `resolve_home_region()` async helper für
-`mal-1a.prd.ece.vwg-connect.com` Discovery-Endpoint, defensiv
-gegen alle Failure-Modi. SCAFFOLDING-ONLY: Helper gebaut +
-14 Tests + Bruno-Doku, NICHT in `vw_eu.py` integriert weil
-99%-EU-User vs 1%-Edge-Case Risk-Reward ungünstig — Wire-Up-
-Plan im Modul-Header dokumentiert für späteren PATCH falls
-Live-Tests bestätigen). Nächste P0 in laufender Sprint-Sequenz:
-v1.18.0 (B = outside_temperature_c Skoda Sensor + workshop
-attrs, MINOR weil neue Sensoren) → v1.19.0 (A = Push Bundle
-FCM CUPRA/SEAT + MQTT Skoda, big architectural).
+**External-blocked:**
+- **MBB Phase 2** (lock/climate/charger fallbacks) — needs A4 B9 / Q5 2021 / Golf 7 2015 owners (= maintainer fleet) confirming v1.21.0 wake fallback works before extending to write-side commands
+- **Push Phase 2 wire-in** (all 3 tracks: Skoda MQTT + CUPRA/SEAT FCM + Audi/VW FCM) — waits on community testers for FCM project-ID + TOTP + subscription-schema verification per brand
+- **HomeRegion full wire-in** (12 remaining call-sites in vw_eu.py beyond `command_wake`) — waits on #75 Christian region-info + 1-2 reproduce reports of region-routing causing hard 403s elsewhere
+
+**Sprint summary 2026-05-04 → 2026-05-08:** 13 releases in 5 days
+(v1.17.5 → v1.23.0). 9 issues closed (#118/#129/#130/#132/#133/#143/
+#144/#145/#146/#147 — Scout-Reports wired or silenced). 6 GitHub
+Verification/Diagnostic Pings (#42/#48/#51/#118/#131/#53). Open issues
+16 → 11. Three new architectural foundations landed: 3-brand Push
+Manager hierarchy (Skoda MQTT + CUPRA/SEAT FCM + Audi/VW FCM),
+Cariad↔MBB per-VIN backend cache + auto-fallback (`command_wake`
+proven path, write-side commands deferred to Phase 2 pending
+maintainer-fleet live confirmation), HomeRegion-Helper activated
+after 4-version scaffolding period.
 
 ---
 
@@ -151,6 +160,7 @@ Strict order — P0 (next release) > P1 (planned MINOR) > P2 (later) > P3 (resea
 | ~~v1.21.0~~ | Audi/VW MBB Legacy-Path Migration Phase 1 — strukturelle Lösung für 8 user-bugs: per-VIN backend-detection (`MBBBackendCache`), HomeRegion-Helper aktiviert (war seit v1.17.6 scaffolding), `command_wake` auto-fallback Cariad→MBB on wrapper-404. Phase 2+ folgt für lock/climate/charger | done |
 | ~~v1.22.0~~ | Skoda Widget Render → Image Entity (Bundle 2 Phase B Pragmatic) — `VagSkodaWidgetImageEntity` exposes `data["render_url"]` aus v1.20.0 widget endpoint als `image.<vin>_render_widget` Entity mit local cache | done |
 | ~~v1.23.0~~ | Audi/VW Push Foundation (Cariad FCM channel, user-suggested 2026-05-07) — `cariad/push/audi_vw_fcm.py` mit `AudiVWPushManager` Klasse erbt von PushManager. Brand-validation für audi/volkswagen, identical lifecycle wie v1.18.0/v1.19.0, lazy-import firebase-messaging. Neuer `CONF_ENABLE_PUSH_AUDI_VW` toggle. Foundation komplett für alle 3 push-tracks (Skoda + CUPRA/SEAT + Audi/VW). 12 neue Tests | done |
+| ~~v1.24.0~~ | Cross-brand image-entity wiring (Bruno-confirmed cross-brand renders) — fixes silent CUPRA/SEAT latent bug (`_fetch_renders` populated `image_urls` with viewPoint keys but `_add_entities_for_vin` only iterated Audi/VW MediaType IDs → 0 entities ever spawned for OLA users since render support landed) + wires v1.22.x Skoda mysmob multi-angle composites by merging `composite_render_urls` into `image_urls` in coordinator `_enrich`. New `_synthesize_meta(viewPoint)` + `_safe_slug` + `_humanize` helpers in `image.py`. Branch-2 leftover-keys path catches both fixes via the existing `VagRenderImageEntity` (no parallel class). Cache layer extended to mirror Branch-2. Spawn trigger broadened from `image_urls` only to `_has_image_data()` (image_urls / render_url / composite_render_urls). New entities: 4-7 per CUPRA/SEAT VIN (was 0), up to 6 per Skoda VIN (multi-angle). 24 new tests across 4 classes (helpers, trigger, cross-brand entity-creation, coordinator merge). All 12 standalone-logic checks pass. Bruno strict 84/84 unchanged (no new endpoints) | done |
 
 ### 🔴 P0 — Nächste Releases (post v1.19.0)
 

@@ -1690,6 +1690,62 @@ class VagConnectCoordinator(DataUpdateCoordinator):
                 if isinstance(equip, list):
                     data["equipment"] = equip
                     data["equipment_count"] = len(equip)
+                # v1.22.x foundation (myskoda PR #571) — multi-angle
+                # composite renders. Parse compositeRenders[].layers[]
+                # into a flat dict keyed by lowercased viewPoint, value
+                # = highest-order REAL layer URL. Defensive against
+                # empty list (older firmware), missing layers (corrupt
+                # entries), missing viewPoint (forward-compat unknown
+                # types), missing url (backend hiccup).
+                renders = static.get("renders") or {}
+                if isinstance(renders, dict):
+                    composites = renders.get("compositeRenders")
+                    if isinstance(composites, list) and composites:
+                        flat: dict[str, str] = {}
+                        for entry in composites:
+                            if not isinstance(entry, dict):
+                                continue
+                            layers = entry.get("layers")
+                            if not isinstance(layers, list) or not layers:
+                                continue
+                            # Pick the lowest-order REAL layer (order=0
+                            # is the base render — additional layers
+                            # are overlays we don't surface here).
+                            real_layers = [
+                                l for l in layers
+                                if isinstance(l, dict)
+                                and l.get("type") == "REAL"
+                                and isinstance(l.get("url"), str)
+                                and isinstance(l.get("viewPoint"), str)
+                            ]
+                            if not real_layers:
+                                continue
+                            base = min(
+                                real_layers,
+                                key=lambda l: l.get("order", 0)
+                                if isinstance(l.get("order"), int) else 0,
+                            )
+                            view = base["viewPoint"].lower()
+                            flat[view] = base["url"]
+                        if flat:
+                            data["composite_render_urls"] = flat
+                            # v1.24.0 — Merge composite renders into
+                            # ``image_urls`` so the unified image-
+                            # platform entity-creation path picks them
+                            # up via the same "leftover key" branch
+                            # that catches CUPRA/SEAT OLA viewPoints.
+                            # ``setdefault`` keeps any pre-existing
+                            # value (defensive — mysmob does not write
+                            # ``image_urls`` directly, but if that
+                            # changes upstream, the explicit set wins).
+                            existing = data.get("image_urls")
+                            merged: dict[str, str] = (
+                                dict(existing)
+                                if isinstance(existing, dict) else {}
+                            )
+                            for view, url in flat.items():
+                                merged.setdefault(view, url)
+                            data["image_urls"] = merged
             # Trigger lazy 24h cache refresh — if fresh, no-op
             try:
                 await self.refresh_static_info(vin)

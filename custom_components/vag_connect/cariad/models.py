@@ -315,6 +315,16 @@ class VehicleData:
     render_url: str | None = None          # widget.vehicle.renderUrl (image)
     equipment: list[dict[str, Any]] | None = None  # equipment.equipment[]
     equipment_count: int | None = None     # derived: len(equipment)
+    # v1.22.x foundation (myskoda PR #571 confirmed live 2026-05-02) —
+    # multi-angle composite renders from
+    # ``GET /api/v1/vehicle-information/{vin}/renders``.
+    # Keyed by lowercased ``viewPoint`` (e.g. ``exterior_side``,
+    # ``interior_boot``); value is the highest-order ``REAL`` layer URL
+    # found in that ``compositeRenders[]`` entry. SCAFFOLDING: parser
+    # + cache wired here, image-platform entity expansion deferred to
+    # next MINOR (would add ~6 new ImageEntity per Skoda VIN — strict
+    # semver requires MINOR for new entity inventory).
+    composite_render_urls: dict[str, str] | None = None
 
     # Departure timers
     departure_timer_1_enabled: bool = False
