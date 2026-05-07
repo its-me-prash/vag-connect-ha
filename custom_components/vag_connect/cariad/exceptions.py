@@ -128,10 +128,36 @@ def classify_command_failure(exc: BaseException) -> CommandFailureReason:
     ):
         return CommandFailureReason.NOT_ENTITLED
 
+    # v1.20.3 — Cariad-BFF wraps real upstream backend issues in
+    # fake-404 responses with a specific body marker. User-report
+    # 2026-05-07 (Audi A4 B9 + Q5 2021 + VW Golf 7) showed all 3
+    # vehicles WITH active Audi Connect Plus subscriptions hit the
+    # same 404 for write commands. Body sample:
+    #   {"error":{"message":"Not Found",
+    #     "info":"Upstream service responded with an unexpected status",
+    #     "code":4112,"group":2,"retry":true}}
+    # The ``retry:true`` + "Upstream service" marker = transient
+    # backend issue, NOT missing capability. Classify as
+    # BACKEND_ERROR so the entity stays visible (user can retry)
+    # instead of being hidden by Capability-Filter Phase 3.
+    if (
+        "upstream service responded" in body
+        or "\"retry\":true" in body
+        or "'retry': true" in body
+    ):
+        return CommandFailureReason.BACKEND_ERROR
+
     # Fall back to status-code-only classification.
     if status == 403:
         return CommandFailureReason.NOT_ENTITLED
     if status == 404:
+        # 404 without a body marker is ambiguous: could mean we have
+        # the wrong URL (integration bug) OR backend route doesn't
+        # exist for this model (missing capability). Keep as
+        # WRONG_API_PROFILE — Capability-Filter Phase 2 records the
+        # failure for entity-availability tracking but doesn't
+        # permanently hide. Phase 3 only hides on confirmed missing-
+        # capability body markers.
         return CommandFailureReason.WRONG_API_PROFILE
     if status >= 500:
         return CommandFailureReason.BACKEND_ERROR
