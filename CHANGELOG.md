@@ -40,6 +40,72 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ## [Unreleased]
 
+## [1.21.0] - 2026-05-07 🔄 Audi/VW MBB Legacy-Path Migration Phase 1 / Audi/VW MBB Legacy-Path Migration Phase 1
+
+🔄 **MINOR-Release.** Strukturelle Lösung für 8 user-bugs aus v1.20.3 — ältere MIB3-Audi/VW (A4 B9, Q5 2021, Golf 7 etc.) sprechen das **legacy MBB-stack** statt Cariad-BFF. v1.21.0 erkennt das automatisch und routed auf MBB. Phase 1: `command_wake` als POC; Phase 2+ erweitert auf lock/climate/charger/etc.
+
+### 🔄 MBB-Migration Phase 1 / MBB-Migration Phase 1
+
+**Architektur:**
+
+1. **Per-VIN Backend-Detection** via `MBBBackendCache` (`cariad/_mbb.py`)
+   - 3-state cache: `"cariad"` / `"mbb"` / unknown
+   - 7-Tage TTL — sticky decision after first detection
+   - In-memory only (kein persistence — coordinator-restart re-learns einmal)
+
+2. **HomeRegion-Helper aktiviert** (war Scaffolding seit v1.17.6 #75)
+   - Per-VIN read-base resolution via `mal-1a.prd.ece.vwg-connect.com/api/cs/vds/v1/vehicles/{vin}/homeRegion`
+   - Defaults to `https://msg.volkswagen.de` bei Discovery-Failure
+   - 7-Tage cache wie schon ge-built
+
+3. **`is_cariad_wrapper_404` Detection-Helper** (`cariad/_mbb.py`)
+   - Body-sniff für `"upstream service responded"` ODER `"retry":true`
+   - True → MBB-backed VIN candidate
+   - False → genuine 404 (entweder real missing endpoint oder integration-bug)
+
+4. **`command_wake` Auto-Fallback in `vw_eu.py`**:
+   - **Step 1**: Check `MBBBackendCache` — wenn VIN als MBB markiert, skip Cariad
+   - **Step 2**: Try Cariad-BFF (existing v1→v2 fallback)
+   - **Step 3**: Wenn Cariad-wrapper-404 → mark VIN als MBB + retry on MBB
+   - **Step 4**: MBB POST: `{readBase}/fs-car/bs/vsr/v1/{Brand}/{country}/vehicles/{vin}/requests`
+
+### 📚 Endpoint-Catalog adoptiert / Endpoint Catalog Adopted
+
+URL-Patterns + brand-segment mapping verifiziert gegen `audiconnect/audi_connect_ha` `audi_services.py:478-510`. MIT-licensed, attribution in `NOTICE.md` (skodaconnect/myskoda + audi_connect_ha).
+
+### 🛣️ Phase 2+ Roadmap (future releases)
+
+- `command_lock` / `command_unlock` MBB mit SPIN secure-token flow (2-step request-challenge → SHA-512 hash → submit-completed)
+- `command_start_climate` / `_stop` MBB (`/fs-car/bs/climatisation/v1/...`)
+- `command_start_charging` / `_stop` MBB (`/fs-car/bs/batterycharge/v1/...`)
+- `command_set_target_soc` / `_set_max_charge_current` MBB
+- `command_flash` / `command_lights` MBB (limited support upstream)
+
+### 🧪 Tests / Tests
+
+- 21 neue Test-Cases in `tests/test_v1210_mbb_migration.py`:
+  - 6 `is_cariad_wrapper_404` detection (full body / retry-only / upstream-only / genuine-404 / empty / case-insensitive)
+  - 5 `MBBBackendCache` (initial / set+get / invalid backend raises / per-VIN isolation / clear)
+  - 7 brand-segment + URL-builder (Audi/VW DE + AT + unknown-default)
+  - 2 constants (setter base + default read base)
+  - 1 case-sensitive defensive
+- 21 standalone-logic assertions verifiziert lokal
+
+### 📦 User Impact / User Impact
+
+**Vor v1.21.0:** Audi A4 B9 + Q5 2021 + VW Golf 7 wake-button → Cariad-wrapper-404 → entity stays available aber error-notification bei Press → User frustriert.
+
+**Ab v1.21.0:** Erste wake-button-Press: Cariad-Versuch → wrapper-404 detected → mark MBB → retry MBB. **Wenn MBB succeeds**: button funktioniert ab dann immer + sticky-cached. **Wenn MBB auch failt**: bubble error wie sonst (echter Backend-Issue oder unsere MBB-URL falsch).
+
+### 🚫 NICHT in diesem Release / NOT in this release
+
+- **MBB für andere Commands** (lock/climate/charger) — Phase 2+, separate Releases
+- **SPIN secure-token flow** — needed für lock/unlock auf MBB, kommt mit Phase 2
+- **Country-detection** aus IDK token — aktuell hardcoded `DE`, später dynamisch
+- **VSR job-status polling** — aktuell fire-and-forget POST, Status käme via existing /selectivestatus poll
+- **Bundle 2 Phase B Renders** — verschoben auf v1.22.0
+- **Audi/VW Push Foundation** (FCM channel) — verschoben auf v1.23.0
+
 ## [1.20.3] - 2026-05-07 🚨 Cariad-wrapper-404 Detection + Switch Hasattr-Gate (Audi/VW user-report) / Cariad-wrapper-404 Detection + Switch Hasattr-Gate
 
 🚨 **PATCH-Release URGENT.** Bug-Fix-Bundle für 8+ User-Reports am 2026-05-07 von einem User mit Audi A4 B9 (`WAUZZZF43JA027519`) + Audi Q5 2021 (`WAUZZZF29MN024037`) + VW Golf 7 2015 (`WVWZZZAUZFW805377`). **Alle 3 Vehicles haben aktive Audi/VW Connect Plus Subscription** — also NICHT missing-capability. Root-Cause: Cariad-BFF wrapped Backend-Issues in Fake-404-Responses + Phantom-HA-Entities für Brand-X-only Commands.

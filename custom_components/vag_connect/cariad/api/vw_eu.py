@@ -342,7 +342,7 @@ class VWEUClient(CariadBaseClient):
         )
 
     async def command_wake(self, vin: str) -> None:
-        """Wake vehicle.
+        """Wake vehicle — Cariad-BFF first, MBB legacy fallback.
 
         v1.9.1 (#92, Audi S6 C8 2021): premium Audi models return ``404``
         on the legacy ``/vehicle/v1/vehicles/{vin}/vehicleWakeup`` path.
@@ -351,17 +351,101 @@ class VWEUClient(CariadBaseClient):
         on a 404 and remembers the result per VIN so subsequent calls
         skip the dead path.
 
-        v1.20.3 (user-report 2026-05-07): when BOTH v1 and v2 return
-        404 for an Audi A4 B9 / Q5 2021 / VW Golf 7 (all WITH active
-        Audi/VW Connect+ subscription), the actual root-cause is
-        often a Cariad-BFF wrapper-404 around an upstream-backend
-        issue (body marker ``"Upstream service responded"`` +
-        ``retry:true``). Body-sniff in classify_command_failure now
-        catches these as BACKEND_ERROR so the wake button stays
-        visible and user can retry — instead of being hidden by
-        Phase 3 incorrectly.
+        v1.21.0 (Audi A4 B9 / Q5 2021 / VW Golf 7 user-report
+        2026-05-07): older MIB3 cars (pre-PPE/MEB) reject Cariad-BFF
+        completely — both v1 and v2 return Cariad-wrapper-404 with
+        body marker ``"Upstream service responded"`` + ``retry:true``.
+        These vehicles speak the **legacy MBB stack** instead.
+
+        New strategy:
+        1. Check ``MBBBackendCache`` — if VIN previously detected as
+           MBB-backed, skip Cariad-BFF entirely + go straight to MBB
+        2. Otherwise: try Cariad-BFF (v1+v2 fallback as before)
+        3. If Cariad returns wrapper-404 → mark VIN as MBB-backed,
+           resolve homeRegion, retry on MBB
+        4. Cache the backend choice for 7 days
+
+        See ``cariad/_mbb.py`` for backend-detection logic and
+        ``cariad/_home_region.py`` for per-VIN read-base resolution.
         """
-        await self._post_command(vin, "vehicleWakeup", json={})
+        from .._mbb import (  # noqa: PLC0415
+            MBBBackendCache,
+            is_cariad_wrapper_404,
+        )
+        from .._home_region import HomeRegionCache  # noqa: PLC0415
+
+        # Lazy-init per-client caches (one MBBBackendCache + one
+        # HomeRegionCache per VWEUClient instance)
+        if not hasattr(self, "_mbb_backend_cache"):
+            self._mbb_backend_cache: MBBBackendCache = MBBBackendCache()
+        if not hasattr(self, "_home_region_cache"):
+            self._home_region_cache: HomeRegionCache = HomeRegionCache()
+
+        # Step 1: cached backend?
+        cached_backend = self._mbb_backend_cache.get(vin)
+
+        if cached_backend == "mbb":
+            # Skip Cariad entirely — go straight to MBB
+            await self._command_wake_mbb(vin)
+            return
+
+        # Step 2: try Cariad-BFF (existing v1→v2 fallback)
+        try:
+            await self._post_command(vin, "vehicleWakeup", json={})
+            # Success — mark VIN as Cariad-backed if not already
+            if cached_backend != "cariad":
+                self._mbb_backend_cache.set(vin, "cariad")
+            return
+        except APIError as err:
+            # APIError's message includes body[:200] — use str(err)
+            # for marker detection (no separate .body attribute).
+            body = str(err)
+            if not is_cariad_wrapper_404(body):
+                # Real failure — propagate (could be auth, real
+                # missing endpoint, etc.)
+                raise
+            _LOGGER.info(
+                "VAG wake: Cariad-wrapper-404 for vin ***%s — "
+                "marking as MBB-backed and retrying via legacy path",
+                vin[-6:],
+            )
+
+        # Step 3: detected MBB — cache the flag and retry
+        self._mbb_backend_cache.set(vin, "mbb")
+        await self._command_wake_mbb(vin)
+
+    async def _command_wake_mbb(self, vin: str) -> None:
+        """v1.21.0 — Wake via MBB legacy stack.
+
+        Resolves per-VIN homeRegion (cached 7d), then POSTs to
+        ``{readBase}/fs-car/bs/vsr/v1/{Brand}/{country}/vehicles/{vin}/requests``.
+        """
+        from .._mbb import build_mbb_wake_url, MBB_DEFAULT_READ_BASE  # noqa: PLC0415
+        from .._home_region import resolve_home_region  # noqa: PLC0415
+
+        # Resolve home region — defaults to MBB read-base if discovery fails
+        try:
+            read_base = await resolve_home_region(
+                self, vin, cache=self._home_region_cache,
+            )
+        except Exception:  # noqa: BLE001
+            read_base = MBB_DEFAULT_READ_BASE
+        # If discovery returned the Cariad default, MBB needs the actual
+        # read base — fall back to msg.volkswagen.de (most common).
+        if "cariad.digital" in read_base or "bff.cariad" in read_base:
+            read_base = MBB_DEFAULT_READ_BASE
+
+        # Brand segment: Audi/VW. Country defaults to DE — most users
+        # are EU. Future enhancement: detect country from IDK token.
+        brand_name = self._brand.name  # 'volkswagen' or 'audi'
+        country = "DE"
+        url = build_mbb_wake_url(read_base, brand_name, country, vin)
+        _LOGGER.debug(
+            "MBB wake POST → %s (vin ***%s)",
+            url.replace(vin, f"***{vin[-6:]}"),
+            vin[-6:],
+        )
+        await self._post(url, json={})
 
     # ── v1/v2 endpoint dispatch (Session 3A — #51, #74) ─────────────────────
     #
