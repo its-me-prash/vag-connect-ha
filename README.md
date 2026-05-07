@@ -99,12 +99,28 @@ Field-Name-Fallback-Kette: `battery.currentSocPercentage` (Born 2026) → `curre
 
 ### ⚠️ Was noch in Arbeit ist / What's still in progress (geplante Sessions)
 
-- **v1.13.0 MINOR** — Anonymized Diagnostics-Export (#62) + Capability-Filter Phase 3 (`capability.active && user-enabled` PRE-Entity-Creation, versteckt Buttons wie MyCupra-App) + Read-only Phase 2/3 (Command-Locking + cloud_refresh vs wake_vehicle Service-Trennung).
-- **v1.14.0 MINOR** — Trip Statistics aus Audi `tripstatistics/v1` (#24, #35).
-- **v1.15.0+ MINOR** — PPC Climate Body conditional shape (#29, #51), Theft/Alarm Binary (#33), Klima-Timer UI (#26).
-- **v1.16.0 MINOR** — Standort-spezifischer Ladeziel-SoC + Ladeprofile (#25, #31).
-- **v1.17.0 MINOR** — Remote Start ICE (#28, audi_connect_ha #717 Pattern).
-- **v1.18.0 MINOR** — Push CUPRA/SEAT (Firebase FCM) + Push Skoda (mysmob MQTT) für Real-Time-Updates ohne Polling (#57, #27).
+**Recent shipped (v1.13.0 → v1.20.0):**
+
+- ~~**v1.13.0**~~ ✅ — Capability-Filter Phase 3 + Read-only Phase 2/3 + Anonymized Diagnostics
+- ~~**v1.14.0**~~ ✅ — Trip Statistics + Audi ICE Engine Start (#24, #28)
+- ~~**v1.15.0**~~ ✅ — Skoda Charging History + OTA + 8 cap-ids (#35)
+- ~~**v1.16.0**~~ ✅ — HA `time` platform für Departure Timers + Skoda Charging Profiles (#25, #26, #31)
+- ~~**v1.17.0–v1.17.4**~~ ✅ — Operational Hardening + Bruno-CI Stufe 2 COMPLETE (80/80 strict coverage)
+- ~~**v1.17.5–v1.17.7**~~ ✅ — 5 Scout-Wellen + HomeRegion Foundation + Skoda outside_temperature + workshop attrs
+- ~~**v1.18.0**~~ ✅ — **Skoda MQTT Push Foundation** (lazy-import; live activation pending Skoda Connect tester)
+- ~~**v1.19.0**~~ ✅ — **CUPRA/SEAT FCM Push Foundation** (analog Skoda; pending MyCupra/MySeat tester)
+- ~~**v1.19.1**~~ ✅ — Pycupra-style API Quota Sensor (X-RateLimit-Remaining)
+- ~~**v1.19.2**~~ ✅ — **Token-Persistence** via HA `Store` (#118 fix, survives HACS-Updates)
+- ~~**v1.19.3**~~ ✅ — Scout-Welle 6 silencing (5 Reports closed)
+- ~~**v1.19.4**~~ ✅ — T&C Brand-Deeplinks + Quota Repair-Issue
+- ~~**v1.20.0**~~ ✅ — **Bundle 2 Phase A**: Skoda widget + vehicle-info + equipment (myskoda PR #557 adoptiert)
+
+**Geplant / Planned:**
+
+- **v1.20.1 PATCH** — Skoda Bug-Fix: BinarySensor LOCK-class invert + S-PIN unlock check (#131 Chr1sDub) + Bundle 2 Phase B vehicle renders
+- **v1.21.0 MINOR** — Charging Profile Write-Side (#25/#31 extension) ODER Departure-Timer UI Bundle (#132 follow-up)
+- **v1.18.x / v1.19.x Patches** — Push Phase 2 Live-Activation sobald Community-Tester sich melden
+- **v1.17.x Patch** — HomeRegion Wire-In wenn #75 Christian non-EU vehicle bestätigt
 - **v2.0.0 MAJOR** — HACS Default + Live-Tests alle Marken + EU Data Act ready (pycupra `EUDAConnection` als Reference, September 2026 Deadline) (#13, #59).
 
 ### 🚫 Bewusste Limits / Conscious limits
