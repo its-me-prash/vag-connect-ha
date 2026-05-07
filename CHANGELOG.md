@@ -40,6 +40,53 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ## [Unreleased]
 
+## [1.22.0] - 2026-05-07 🖼️ Skoda Widget Render → Image Entity (Bundle 2 Phase B Pragmatic) / Skoda Widget Render → Image Entity (Bundle 2 Phase B Pragmatic)
+
+🖼️ **MINOR-Release.** Pragmatischer Phase-B-Implementation: statt neuen `/v1/vehicle-information/{vin}/renders` endpoint zu erforschen, exposen wir die seit v1.20.0 schon vorhandene `data["render_url"]` (aus widget endpoint, myskoda PR #557) als Image-Entity. Single render per Skoda VIN — funktioniert sofort ohne weitere Backend-Recherche.
+
+### 🖼️ Was ist neu / What's new
+
+- **Neue Image-Entity** `image.<skoda_vin>_render_widget`:
+  - Single render-URL aus widget endpoint (Skoda Cariad-BFF hat keinen GraphQL media endpoint wie Audi/VW)
+  - Refresh on backend-update (User changed paint via app → URL ändert sich)
+  - Local cache wie Audi/VW (`/config/www/vehicles/{vin}_widget.png`)
+  - extra_state_attributes mit `license_plate` + `model` + `source_url`
+
+- **`VagSkodaWidgetImageEntity` Klasse** in `image.py` (~80 LOC):
+  - Erbt von HA `ImageEntity` analog zur bestehenden `VagRenderImageEntity` (Audi/VW)
+  - Defensive: nur erstellt wenn `data["render_url"]` valid http(s) URL
+  - Cache-invalidation bei URL-Change
+
+- **`_cache_all_images` Erweiterung**: cached jetzt auch Skoda widget renders im Hintergrund
+
+### 🛣️ Phase B Scope-Decision / Phase B Scope Decision
+
+Original-Plan war `/v1/vehicle-information/{vin}/renders` mit 4-8 image variants (analog Audi/VW GraphQL). Audit zeigte:
+
+- **myskoda PR #557 widget endpoint** liefert bereits `vehicle.renderUrl` (single)
+- v1.20.0 hatte das schon in `data["render_url"]` populated, mit Kommentar "ready for image platform integration"
+- Kein neuer endpoint, kein Schema-Research, sofort lieferbar
+
+`/renders` mit multi-angle support kommt als optionales v1.22.x Patch wenn Community-Bedarf besteht.
+
+### 🧪 Tests / Tests
+
+- 7 neue Test-Cases in `tests/test_v1220_skoda_widget_image.py`:
+  - 4 ImageEntity behavior (initial URL / refresh on change / non-http defensive / None handling)
+  - 1 extra_state_attributes coverage
+  - 2 setup gating (creates für Skoda mit render_url, skip für Audi/VW)
+
+### 📦 User Impact / User Impact
+
+Für **Skoda User mit aktivem Connect Plus**: nach v1.22.0 erscheint automatisch eine `image.<vehicle>_render_widget` Entity mit dem aktuellen Render des Fahrzeugs. Nutzbar in Lovelace `picture-entity` Cards + Dashboard-Hero-Banners — analog zu Audi/VW's render-Entities.
+
+### 🚫 NICHT in diesem Release / NOT in this release
+
+- **`/renders` endpoint** mit multi-angle support — verschoben auf v1.22.x patch (UX-Decision benötigt + Schema-Research)
+- **CUPRA/SEAT widget renders** — OLA backend hat eigenen render flow, separate research
+- **Audi/VW Push Foundation** — verschoben auf v1.23.0
+- **MBB Phase 2** (lock/climate/charger) — verschoben auf v1.21.x patches
+
 ## [1.21.0] - 2026-05-07 🔄 Audi/VW MBB Legacy-Path Migration Phase 1 / Audi/VW MBB Legacy-Path Migration Phase 1
 
 🔄 **MINOR-Release.** Strukturelle Lösung für 8 user-bugs aus v1.20.3 — ältere MIB3-Audi/VW (A4 B9, Q5 2021, Golf 7 etc.) sprechen das **legacy MBB-stack** statt Cariad-BFF. v1.21.0 erkennt das automatisch und routed auf MBB. Phase 1: `command_wake` als POC; Phase 2+ erweitert auf lock/climate/charger/etc.
