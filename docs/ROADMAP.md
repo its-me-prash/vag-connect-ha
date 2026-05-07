@@ -5,7 +5,23 @@
 > mirrors it for archive/historical purposes and links the active GitHub
 > issues for each session.
 
-**Last updated:** 2026-05-07 — post v1.20.1 (BinarySensor LOCK-class invert fix #131 — bug seit early-release dass `data["doors_locked"]=True` als `is_on=True` durchgereicht wurde, HA's LOCK class hat invertierte Semantik → "Unlocked" UI für tatsächlich verriegelte Vehicles. Plus README + FAQ refresh für v1.18-v1.20 features). Plus voriges v1.20.0 Bundle 2 Phase A (3 neue Skoda mysmob endpoints adoptiert von skodaconnect/myskoda MIT — `/v2/widgets/vehicle-status/{vin}` lightweight per-tick + `/v1/vehicle-information/{vin}` static 24h-cache + `/v1/vehicle-information/{vin}/equipment` static 24h-cache. 4 neue Model-Felder + 2 neue Diagnostic-Sensoren license_plate + equipment_count. Bruno coverage 80/80 → 83/83). Plus voriges v1.19.4 Bundle 1 (T&C brand-deeplinks + Quota Repair-Issue — 2 UX-Erweiterungen der existierenden Repair-Flow-Infrastruktur). Plus voriges v1.19.3 (Scout-Welle 6: 5 Reports von 5 Usern in 48h — #143 Skoda 14 + #144 VW ID.4 Pro 24 + #145/#146/#147 VW convergent 5. Audit zeigte 19 truly new paths von ~58 — Rest von v1.17.5+v1.12.x bereits silenced. Schließt #143/#144/#145/#146/#147). Plus voriges v1.19.2 (Token-Persistence schließt #118 eismarkt — IDK tokens werden jetzt via HA `Store` helper über HACS-Updates + HA-Restarts persistiert; user muss nach v1.19.2-Update einmal Password eingeben, danach nie wieder. Plus voriges v1.19.0 + Backlog-Cleanup vom 2026-05-04. **5 Releases an einem Tag** geshipt (v1.17.5 + v1.17.6 + v1.17.7 + v1.18.0 + v1.19.0). **5 Issues geschlossen** (#129/#130/#132/#133 Scout-Reports done als wired-data; #76 out-of-scope Pre-MQB MBB legacy). **6 GitHub Verification/Diagnostic Pings** für #42/#48/#51/#118/#131/#53. Open Issues von 16→11. Nächste P0 in laufender Sprint-Sequenz: v1.19.1 Pycupra-Hardening (`_safe_path.py` + `PyCupraThrottledException` + RateLimit-Sensor) + v1.19.2 AdBlue Range Skoda. Plus voriges v1.19.0 (CUPRA/SEAT FCM Push Foundation, #57 Phase 1 cont. — `cariad/push/cupra_seat_fcm.py` mit `CupraSeatPushManager` Klasse erbt von `PushManager` base, brand-validation für cupra/seat, identische Lifecycle + Reconnect-Backoff wie v1.18.0 SkodaPushManager. Reuses gleiche `firebase-messaging` Lib via lazy-import. Neuer `CONF_ENABLE_PUSH_FCM` toggle koexistiert mit MQTT toggle. Schließt #57 Phase 1 — Foundation komplett für alle 3 push-fähigen Brands. Phase 2 = Live-Activation in v1.18.x / v1.19.x Patches sobald Tester sich melden). Plus voriges v1.18.0 (Skoda MQTT Push Foundation, #57 Phase 1 — Push-Package mit `base.py` + `skoda_mqtt.py`, Lifecycle + State-Machine + Reconnect-Backoff komplett gebaut, opt-in via OptionsFlow toggle, Lazy-Import für aiomqtt + firebase-messaging deps. Live-Activation wartet auf Community-Tester. v1.19.0 = analoge CUPRA/SEAT FCM Foundation. v1.18.x Patches aktivieren MQTT live sobald Tester sich melden). Plus voriges v1.17.7 (Skoda outside_temp + preferred_workshop attrs als PATCH — beides nutzt EXISTIERENDE sensor + model fields, kein neuer Sensor → echter PATCH. Schließt #129 + #130 + #133. Plus voriges v1.17.6 = HomeRegion-Helper
+**Last updated:** 2026-05-07 — post v1.20.1.
+
+**Recent shipped (chronological):**
+- **v1.20.1** — BinarySensor LOCK-class invert fix #131 + README/FAQ refresh
+- **v1.20.0** MINOR — Bundle 2 Phase A: Skoda widget + vehicle-info + equipment (myskoda PR #557 adopted, 2 new sensors, 24h static-cache)
+- **v1.19.4** — Bundle 1: T&C brand-deeplinks + Quota Repair-Issue
+- **v1.19.3** — Scout-Welle 6: 5 reports, 19 truly new paths silenced (closes #143/#144/#145/#146/#147)
+- **v1.19.2** — Token-Persistence via HA `Store` (closes #118)
+- **v1.19.1** — Pycupra-style API Quota Sensor (note: borderline MINOR, kept as PATCH for HACS continuity — see Semver-Korrektur section)
+- **v1.19.0** MINOR — CUPRA/SEAT FCM Push Foundation (Phase 1)
+- **v1.18.0** MINOR — Skoda MQTT Push Foundation (Phase 1)
+- **v1.17.6 / v1.17.7** — HomeRegion scaffolding + Skoda outside_temp + workshop attrs
+- **v1.17.5** — Scout-Welle 5: 4 community reports, 42 fields silenced
+
+**Pending bundles:** v1.20.2 (Skoda parser hardening + cleanup), v1.21.0 (Bundle 2 Phase B Renders), v1.22.0 (Charging Profile Write-Side), v1.23.0 (Departure-Timer Write-Side).
+
+**External-blocked:** Push Phase 2 wire-in (waits on Skoda + CUPRA/SEAT testers), HomeRegion wire-in (waits on #75 Christian region info), #131 Bug B (waits on Chr1sDub access+overall JSON), S-PIN unlock check (waits on Chr1sDub diagnostic). **5 Releases an einem Tag** geshipt (v1.17.5 + v1.17.6 + v1.17.7 + v1.18.0 + v1.19.0). **5 Issues geschlossen** (#129/#130/#132/#133 Scout-Reports done als wired-data; #76 out-of-scope Pre-MQB MBB legacy). **6 GitHub Verification/Diagnostic Pings** für #42/#48/#51/#118/#131/#53. Open Issues von 16→11. Nächste P0 in laufender Sprint-Sequenz: v1.19.1 Pycupra-Hardening (`_safe_path.py` + `PyCupraThrottledException` + RateLimit-Sensor) + v1.19.2 AdBlue Range Skoda. Plus voriges v1.19.0 (CUPRA/SEAT FCM Push Foundation, #57 Phase 1 cont. — `cariad/push/cupra_seat_fcm.py` mit `CupraSeatPushManager` Klasse erbt von `PushManager` base, brand-validation für cupra/seat, identische Lifecycle + Reconnect-Backoff wie v1.18.0 SkodaPushManager. Reuses gleiche `firebase-messaging` Lib via lazy-import. Neuer `CONF_ENABLE_PUSH_FCM` toggle koexistiert mit MQTT toggle. Schließt #57 Phase 1 — Foundation komplett für alle 3 push-fähigen Brands. Phase 2 = Live-Activation in v1.18.x / v1.19.x Patches sobald Tester sich melden). Plus voriges v1.18.0 (Skoda MQTT Push Foundation, #57 Phase 1 — Push-Package mit `base.py` + `skoda_mqtt.py`, Lifecycle + State-Machine + Reconnect-Backoff komplett gebaut, opt-in via OptionsFlow toggle, Lazy-Import für aiomqtt + firebase-messaging deps. Live-Activation wartet auf Community-Tester. v1.19.0 = analoge CUPRA/SEAT FCM Foundation. v1.18.x Patches aktivieren MQTT live sobald Tester sich melden). Plus voriges v1.17.7 (Skoda outside_temp + preferred_workshop attrs als PATCH — beides nutzt EXISTIERENDE sensor + model fields, kein neuer Sensor → echter PATCH. Schließt #129 + #130 + #133. Plus voriges v1.17.6 = HomeRegion-Helper
 Scaffolding, evcc port — `cariad/_home_region.py` mit per-VIN
 7d-cache + `resolve_home_region()` async helper für
 `mal-1a.prd.ece.vwg-connect.com` Discovery-Endpoint, defensiv
@@ -130,6 +146,7 @@ Strict order — P0 (next release) > P1 (planned MINOR) > P2 (later) > P3 (resea
 | ~~v1.19.4~~ | Bundle 1: T&C brand-deeplinks (raise_issue_auth_required brand=) + Quota Repair-Issue (raise_issue_quota_low + clear_quota_issue, coordinator threshold-trigger, DE+EN translations) | done |
 | ~~v1.20.0~~ | Bundle 2 Phase A: Skoda widget + vehicle-info + equipment (3 myskoda PR #557 endpoints, license_plate + equipment_count sensors, 24h static-cache via refresh_static_info, DeviceInfo auto-enrichment, Bruno 83/83) | done |
 | ~~v1.20.1~~ | BinarySensor LOCK-class invert fix (#131 Chr1sDub) + Doc refresh (README + FAQ für v1.18-v1.20 features) | done |
+| ~~v1.20.2~~ | Skoda parser hardening (Bug B proactive #131) + phantom-entity fix für license_plate/equipment_count + safe_float locale-comma + scaffolding-markers + ROADMAP+CHANGELOG hygiene | done |
 
 ### 🔴 P0 — Nächste Releases (post v1.19.0)
 
@@ -183,14 +200,10 @@ Strict order — P0 (next release) > P1 (planned MINOR) > P2 (later) > P3 (resea
 ### Standalone enhancements (no version pin yet)
 
 - ~~**Diesel AdBlue Range** for Škoda (CC-skoda #24)~~ — already done (code-audit 2026-05-04: `skoda.py:386` + `vw_eu.py:778` + sensor.py:367 + DE/EN translations all wired)
-- **`/v2/widgets/vehicle-status/{vin}`** as lightweight Skoda endpoint
-  (myskoda PR #557): for battery-friendly polling. Pairs well with v1.20.0
-  Skoda Vehicle-Info Bundle.
+- ~~**`/v2/widgets/vehicle-status/{vin}`** as lightweight Skoda endpoint~~ — done v1.20.0 (Bundle 2 Phase A) — myskoda PR #557 adopted, wired into get_status as 9th endpoint, Bruno seq 25
 - ~~**Region-routing** `_get_cariad_url(region)` for US users~~ — Foundation
   built v1.17.6, wire-in pending (waits on #75)
-- **TermsAndConditionsError repair issue** (volkswagencarnet PR #307):
-  HA `ir.async_create_issue` with deeplink to vehicle-account login portal
-  when 401 with `terms_of_use` body is detected. Quick PATCH (~1-2h).
+- ~~**TermsAndConditionsError repair issue** (volkswagencarnet PR #307)~~ — done v1.19.4 (Bundle 1) — brand-aware deeplinks for skoda/vw/audi/seat/cupra/porsche/vw_na all wired in repairs.py
 - ~~**ICE Engine Start S-PIN flow**~~ — done v1.14.0 #28 (Audi engine pack)
 - ~~**PPE Climate Body**~~ — done v1.14.0 #29 (force_ppe_climate option)
 - **MQTT v5 broker testing for Skoda Push** (myskoda PR #566): foundation

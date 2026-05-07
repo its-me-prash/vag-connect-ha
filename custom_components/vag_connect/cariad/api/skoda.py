@@ -317,7 +317,21 @@ class SkodaClient(CariadBaseClient):
         # ── Access / doors / windows / detail ────────────────────────────────
         if isinstance(status, dict):
             access = v(status, "access") or {}
-            d.doors_locked = v(access, "overallStatus") != "OPEN"
+            # v1.20.2 (#131 Chr1sDub Skoda Octavia iV bug B) — drop the
+            # buggy ``overallStatus != "OPEN"`` fallback. The
+            # ``access.overallStatus`` field describes the access *state*
+            # (e.g. "OPEN", "CLOSED", "UNAVAILABLE", "LOCKED") — it is
+            # NOT a doors-locked indicator. Pre-v1.20.2 we treated any
+            # value other than "OPEN" as locked, which incorrectly
+            # marked closed-but-unlocked vehicles as locked AND
+            # left ``UNAVAILABLE``-state vehicles falsely "locked".
+            #
+            # Newer Skoda firmware (Octavia iV 2024+, Kodiaq Mk2) ships
+            # the proper ``overall.reliableLockStatus`` /
+            # ``overall.doorsLocked`` / ``overall.locked`` flags that
+            # the block below reads authoritatively. Leave
+            # ``doors_locked`` as ``None`` if neither is present —
+            # better "unknown" than "wrong".
             d.doors_open = v(access, "doorsOpenedCount", default=0) > 0
             d.windows_open = v(access, "windowsOpenedCount", default=0) > 0
 
@@ -351,7 +365,33 @@ class SkodaClient(CariadBaseClient):
                 or v(overall, "locked")
             )
             if isinstance(lock_raw, str):
-                d.doors_locked = lock_raw.upper() in ("YES", "LOCKED", "TRUE")
+                # v1.20.2 (#131 Bug B hardening) — explicit unlocked-
+                # value enumeration for safety. Pre-v1.20.2 only matched
+                # locked-values and let everything else fall through to
+                # whatever line 320 set (which was buggy). Now we're
+                # explicit: if value clearly says locked → True, if
+                # clearly says unlocked → False, otherwise log + None.
+                up = lock_raw.upper()
+                _locked_values = {"YES", "LOCKED", "TRUE", "RELIABLE_LOCKED"}
+                _unlocked_values = {
+                    "NO", "UNLOCKED", "FALSE", "OPEN", "RELIABLE_UNLOCKED",
+                }
+                if up in _locked_values:
+                    d.doors_locked = True
+                elif up in _unlocked_values:
+                    d.doors_locked = False
+                else:
+                    # Forward-compat shield (myskoda #503 pattern) —
+                    # log unknown enum value so we can extend the table
+                    # without breaking the parser. Leave field None
+                    # rather than guessing — the binary_sensor / lock
+                    # entity stays "unknown" instead of showing wrong.
+                    _LOGGER.info(
+                        "Skoda lock status: unknown value %r — leaving "
+                        "doors_locked as None. Please report on issue "
+                        "#131 so we can extend the value table.",
+                        lock_raw,
+                    )
 
             def _detail_open(field: str) -> bool | None:
                 """Map detail.{sunroof,trunk,bonnet} string to bool open.
