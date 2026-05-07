@@ -150,6 +150,7 @@ Strict order — P0 (next release) > P1 (planned MINOR) > P2 (later) > P3 (resea
 | ~~v1.20.3~~ | Cariad-wrapper-404 Detection + Switch Hasattr-Gate (8 user-reports Audi A4 B9 + Q5 2021 + VW Golf 7 2015): body-sniff für `"Upstream service responded"` + `"retry":true` → BACKEND_ERROR (transient, retry-friendly), switch hasattr-gate verhindert AttributeError für brand-X-only methods | done |
 | ~~v1.21.0~~ | Audi/VW MBB Legacy-Path Migration Phase 1 — strukturelle Lösung für 8 user-bugs: per-VIN backend-detection (`MBBBackendCache`), HomeRegion-Helper aktiviert (war seit v1.17.6 scaffolding), `command_wake` auto-fallback Cariad→MBB on wrapper-404. Phase 2+ folgt für lock/climate/charger | done |
 | ~~v1.22.0~~ | Skoda Widget Render → Image Entity (Bundle 2 Phase B Pragmatic) — `VagSkodaWidgetImageEntity` exposes `data["render_url"]` aus v1.20.0 widget endpoint als `image.<vin>_render_widget` Entity mit local cache | done |
+| ~~v1.23.0~~ | Audi/VW Push Foundation (Cariad FCM channel, user-suggested 2026-05-07) — `cariad/push/audi_vw_fcm.py` mit `AudiVWPushManager` Klasse erbt von PushManager. Brand-validation für audi/volkswagen, identical lifecycle wie v1.18.0/v1.19.0, lazy-import firebase-messaging. Neuer `CONF_ENABLE_PUSH_AUDI_VW` toggle. Foundation komplett für alle 3 push-tracks (Skoda + CUPRA/SEAT + Audi/VW). 12 neue Tests | done |
 
 ### 🔴 P0 — Nächste Releases (post v1.19.0)
 

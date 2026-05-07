@@ -40,6 +40,71 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ## [Unreleased]
 
+## [1.23.0] - 2026-05-07 🚀 Audi/VW Push Foundation (Cariad FCM channel) / Audi/VW Push Foundation (Cariad FCM channel)
+
+🚀 **MINOR-Release.** Push-Update-Foundation für **Audi + Volkswagen** via Cariad FCM-channel — der gleiche den auch myAudi + WeConnect mobile Apps nutzen für lock-results, charging-state, climate, alarm. Dritte und letzte Push-Foundation der Bundle-Reihe (Skoda v1.18.0 + CUPRA/SEAT v1.19.0 → jetzt Audi/VW v1.23.0). User-suggested 2026-05-07 (myAudi App push notifications → HA-Side feedback channel).
+
+### 🚀 Was ist neu / What's new
+
+- **Neues Modul** `cariad/push/audi_vw_fcm.py`:
+  - `AudiVWPushManager` Klasse, erbt von `PushManager` (v1.18.0 base)
+  - Brand-Constructor-Validation: `audi` ODER `volkswagen` (beide auf Cariad-BFF)
+  - Identische Lifecycle + Reconnect-Backoff wie Skoda + CUPRA/SEAT (5s→600s ±10% jitter, evcc/myskoda Constants)
+  - Lazy-Import nur für `firebase-messaging` (gleiche lib wie v1.18.0/v1.19.0)
+  - Stub-implementation: foundation kann start/stop ohne network — live activation pending
+- **Neuer Config-Flow Toggle** `CONF_ENABLE_PUSH_AUDI_VW` (default False) — coexistiert mit MQTT (Skoda) + FCM (CUPRA/SEAT) toggles. User mit mixed-fleet kann beliebige Kombination opt-in
+- **Bilingual translations** (DE + EN)
+- **`# SCAFFOLDING — NOT WIRED`** Header (analog v1.20.2 Hygiene-Pattern für die anderen 2 push managers)
+
+### 🛣️ User Impact (post-Phase-2 wire-in) / User Impact
+
+Nach Live-Activation (Phase 2 in v1.23.x patches):
+- **Real-time vehicle status updates** ohne 12V-Wake-Cycle
+- **Command-Result Push** in HA als persistent_notification — analog dem myAudi App "Audi S6 Avant wurde verriegelt"
+- Alarm/Theft notifications direkt in HA Repair-Issues statt nur in der App
+- Eliminiert das "musste auf Reload warten um zu sehen ob Lock geklappt hat" UX-Problem
+
+### 🧪 Tests / Tests
+
+- 12 neue Test-Cases in `tests/test_v1230_audi_vw_push_foundation.py`:
+  - 2 brand validation (audi/volkswagen + invalid raises)
+  - 3 lifecycle (no VINs / missing dep / start+stop)
+  - 4 backoff (constants + grow + cap + reset)
+  - 2 const + config_flow (CONF_ENABLE_PUSH_AUDI_VW exposed, all 3 toggles coexist)
+  - 1 inheritance check (AudiVW ⊂ PushManager + all 3 managers share base)
+
+### 🛣️ Phase 2 (live activation) Wire-Up Plan / Phase 2 Wire-Up Plan
+
+```python
+# coordinator.async_setup:
+if (
+    options.get(CONF_ENABLE_PUSH_AUDI_VW, False)
+    and brand in ("audi", "volkswagen")
+):
+    from .cariad.push.audi_vw_fcm import AudiVWPushManager
+    self._push_manager = AudiVWPushManager(
+        on_event=self.async_handle_push_event,
+        user_id=auth.user_id,
+        access_token_provider=auth.get_access_token,
+        vins=list(self.vehicles.keys()),
+        brand=brand,
+    )
+    await self._push_manager.start()
+```
+
+Wartet auf:
+1. Audi/VW Connect+ Tester mit aktivem Abo
+2. Cariad Firebase project_id + sender_id + api_key (TBD via audi_connect_ha cross-reference oder mitmproxy capture)
+3. Notification-subscription endpoint URL Verifikation
+4. Push-event payload schema (welche Events triggern get_status, welche carry full state)
+
+### 🚫 NICHT in diesem Release / NOT in this release
+
+- **Aktive FCM-Verbindung** — Foundation-Stub schlafen lässt sich verbinden für State-Machine-Test
+- **Cariad Firebase credentials** — placeholders, Live-Tester-Verifikation pending
+- **Coordinator wire-in** — analog v1.18.0/v1.19.0 erst wenn Live-Test bestätigt
+- **iot_class change** — wartet bis Push primärer Pfad ist (aktuell 0% User opt-in)
+
 ## [1.22.0] - 2026-05-07 🖼️ Skoda Widget Render → Image Entity (Bundle 2 Phase B Pragmatic) / Skoda Widget Render → Image Entity (Bundle 2 Phase B Pragmatic)
 
 🖼️ **MINOR-Release.** Pragmatischer Phase-B-Implementation: statt neuen `/v1/vehicle-information/{vin}/renders` endpoint zu erforschen, exposen wir die seit v1.20.0 schon vorhandene `data["render_url"]` (aus widget endpoint, myskoda PR #557) als Image-Entity. Single render per Skoda VIN — funktioniert sofort ohne weitere Backend-Recherche.
