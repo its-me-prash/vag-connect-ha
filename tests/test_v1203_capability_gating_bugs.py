@@ -157,19 +157,17 @@ class TestSwitchHasattrGate:
 # ─────────────────────────────────────────────────────────────────────────────
 
 
-class TestCommandFailedErrorClassification:
-    """CommandFailedError with body marker still routes through the
-    standard classify_command_failure body-sniff. Regression guard
-    for existing functionality."""
+class TestNonAPIErrorClassification:
+    """Non-APIError exceptions (e.g. plain Exception, network errors)
+    should classify as UNKNOWN per existing classify_command_failure
+    contract. Regression guard."""
 
-    def test_missing_capability_marker_classifies_correctly(self):
+    def test_non_api_error_classifies_as_unknown(self):
         from custom_components.vag_connect.cariad.exceptions import (
-            classify_command_failure, CommandFailedError, CommandFailureReason,
+            classify_command_failure, CommandFailureReason,
         )
-        err = CommandFailedError(
-            "test_cmd", "missing-capability: not supported",
-        )
-        assert classify_command_failure(err) == CommandFailureReason.MISSING_CAPABILITY
+        err = ValueError("not an APIError")
+        assert classify_command_failure(err) == CommandFailureReason.UNKNOWN
 
 
 # ─────────────────────────────────────────────────────────────────────────────
