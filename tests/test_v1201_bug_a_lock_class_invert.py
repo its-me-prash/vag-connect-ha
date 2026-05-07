@@ -129,11 +129,11 @@ class TestBinarySensorLockInvert:
         is_locked=True when actually locked. Same data field as
         binary_sensor but different entity type. Verify lock entity
         still reads the field correctly."""
-        from custom_components.vag_connect.lock import VagConnectLock
+        from custom_components.vag_connect.lock import VagDoorLock
         coordinator = MagicMock()
         coordinator.data = {"V": {"doors_locked": True}}
         # Construct without going through __init__ to skip HA wiring
-        lock = VagConnectLock.__new__(VagConnectLock)
+        lock = VagDoorLock.__new__(VagDoorLock)
         lock.coordinator = coordinator
         lock._vin = "V"
         # Lock entity reads doors_locked directly — True means locked
