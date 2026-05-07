@@ -371,9 +371,8 @@ class VWEUClient(CariadBaseClient):
         from .._mbb import (  # noqa: PLC0415
             MBBBackendCache,
             is_cariad_wrapper_404,
-            build_mbb_wake_url,
         )
-        from .._home_region import HomeRegionCache, resolve_home_region  # noqa: PLC0415
+        from .._home_region import HomeRegionCache  # noqa: PLC0415
 
         # Lazy-init per-client caches (one MBBBackendCache + one
         # HomeRegionCache per VWEUClient instance)
