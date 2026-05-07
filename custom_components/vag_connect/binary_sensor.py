@@ -269,6 +269,24 @@ class VagConnectBinarySensor(VagConnectEntity, BinarySensorEntity):
         val = self._vehicle.get(self.entity_description.data_key)
         if val is None:
             return None
+        # v1.20.1 (#131 Chr1sDub Skoda Octavia iV bug-report) — fix
+        # inverted UI for HA's LOCK device class. HA convention:
+        # ``BinarySensorDeviceClass.LOCK`` → ``is_on=True`` means
+        # "open" / "unsafe" / "unlocked"; ``is_on=False`` means
+        # "locked" / "safe". Our internal model field convention
+        # (``data["doors_locked"] = True`` when locked) matches the
+        # natural-language reading but is the opposite of the LOCK
+        # class semantic. Without this invert, HA showed "Unlocked"
+        # in the UI for actually-locked vehicles — confusing for
+        # every Skoda user since the binary_sensor was added.
+        # The lock entity (lock.py:is_locked) reads the same field
+        # but uses the LockEntity convention which is non-inverted,
+        # so it was always correct.
+        if (
+            self.entity_description.device_class
+            == BinarySensorDeviceClass.LOCK
+        ):
+            return not bool(val)
         return bool(val)
 
     @property

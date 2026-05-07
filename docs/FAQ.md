@@ -119,7 +119,9 @@ until the cloud resets at ~02:00 local.
 ## 🔁 How do I update credentials after a manufacturer password change?
 
 VAG Connect supports HA's standard re-authentication flow since
-v1.8.x:
+v1.8.x. **Since v1.19.2 IDK tokens are persisted via HA's Store
+helper** — HACS-Updates und HA-Restarts zwingen dich nicht mehr
+zu Re-Auth, solange das hinterlegte Password noch gültig ist.
 
 1. After your password change, the integration's next poll fails
    with a "Reauthenticate" notice
@@ -246,6 +248,92 @@ each):
 - **VW China (2026+)** — CEA/XPeng platform, undocumented
 - **Lamborghini / Bentley / Bugatti** — no verified public API
 - **Ford Explorer Electric** — use [marq24/ha-fordpass](https://github.com/marq24/ha-fordpass)
+
+---
+
+## 🚀 Push Updates (v1.18.0+ Foundation, Phase 2 pending)
+
+Since v1.18.0 (Skoda MQTT) and v1.19.0 (CUPRA/SEAT FCM), VAG Connect
+ships **opt-in Push-Foundation** für Real-Time-Updates ohne 12V-
+Wake-Cycle:
+
+- **Skoda** (mysmob MQTT broker `mqtt.messagehub.de:8883`)
+- **CUPRA / SEAT** (Firebase Cloud Messaging via OLA)
+
+### Aktueller Status
+
+**Phase 1 = Foundation komplett** (v1.18.0 + v1.19.0):
+- `cariad/push/skoda_mqtt.py` — `SkodaPushManager` mit Lifecycle + Reconnect-Backoff
+- `cariad/push/cupra_seat_fcm.py` — `CupraSeatPushManager` analog
+- `OptionsFlow` toggles `enable_push_mqtt` (Skoda) + `enable_push_fcm` (CUPRA/SEAT) — beide default OFF
+- Lazy-Import: `aiomqtt` + `firebase-messaging` werden nur beim Aktivieren benötigt (kein Bloat für Polling-User)
+
+**Phase 2 = Live-Activation pending Community-Tester**:
+- Wir brauchen einen User mit aktiver Skoda Connect Subscription für FCM-Project-ID + TOTP-Verifikation
+- Genauso für MyCupra/MySeat: aktive Subscription + FCM credential check
+- Ping uns auf #57 wenn du dich als Tester anbieten willst
+
+### Wenn ich den Toggle JETZT aktiviere?
+
+Aktuell läuft die Foundation-Stub: Manager startet, schläft im Connect-Loop, aber sendet keine echten MQTT/FCM-Subscriptions. Polling läuft normal weiter — kein Daten-Verlust. Foundation-only ist sicher zu aktivieren, schadet nichts, hilft aber auch noch nicht real-time.
+
+---
+
+## 📊 API Quota Sensor (v1.19.1+) + Quota Repair-Issue (v1.19.4+)
+
+Seit v1.19.1 zeigt VAG Connect den **API Quota** des Tages an:
+
+- `sensor.<vehicle>_requests_remaining_today` (Diagnostic) — verbleibende Anfragen heute
+- Wenn dein Backend X-RateLimit-Remaining Header sendet (alle modernen VAG-APIs tun das), siehst du wieviel Quota du noch hast
+
+**v1.19.4+ Repair-Issue** — bei kritischem Stand bekommst du eine HA-Repair-Notification:
+
+- Warning bei < 100 verbleibenden Anfragen
+- Critical bei < 25 verbleibenden Anfragen
+- Auto-clears bei Erholung (z.B. nach Mitternacht)
+
+Tipp: Wenn du mehrere VAG-Integrationen parallel betreibst (volkswagencarnet, audi, etc.) zählen die alle gegen das gleiche Quota.
+
+---
+
+## 📜 Token-Persistence (v1.19.2+)
+
+Vor v1.19.2: bei jedem HACS-Update wurden IDK-Tokens neu geholt → bei transient Auth-Issues triggerte das Reauth-Prompt → User musste Password neu eingeben.
+
+Ab v1.19.2: IDK-Tokens werden via HA's `Store` Helper in `.storage/vag_connect_tokens_<entry_id>` persistiert. HACS-Update + HA-Restart laden die Tokens automatisch — kein Reauth-Prompt mehr.
+
+**Was du tun musst beim Wechsel von v1.19.1 (oder älter) auf v1.19.2+**:
+1. HACS-Update + HA-Restart
+2. Einmalig Reauth-Prompt durchklicken (da noch keine Tokens persistiert)
+3. Ab dann nie wieder
+
+---
+
+## 🔧 T&C / Terms-Repair-Issue (v1.19.4+)
+
+Wenn das VAG-Backend "terms-and-conditions" oder "terms_of_use" body sendet (= neue AGB akzeptieren nötig), wird ein HA-Repair-Issue erstellt. **Seit v1.19.4** zeigt der "Learn more"-Button direkt zum richtigen Brand-Account-Portal:
+
+- Skoda → `skodaid.vwgroup.io/landing-page`
+- VW EU → `vwid.vwgroup.io/account`
+- Audi → `my.audi.com`
+- SEAT/CUPRA → `seat-cupra.cloud.vwgroup.com`
+- Porsche → `my.porsche.com`
+- VW NA → `vw.com/myvw`
+
+Klick → Login → AGB akzeptieren → HA-Restart → Issue verschwindet automatisch.
+
+---
+
+## 🚗 Skoda Vehicle-Info Extras (v1.20.0+ Phase A)
+
+Skoda-User bekommen seit v1.20.0 zwei neue Diagnostic-Sensoren + DeviceInfo-Enrichment:
+
+- `sensor.<vehicle>_license_plate` — Kennzeichen aus Skoda mysmob widget endpoint (myskoda PR #557)
+- `sensor.<vehicle>_equipment_count` — Anzahl der Ausstattungsfeatures (z.B. "Sitzheizung", "Anhängerkupplung")
+  - Volle Liste als `extra_state_attributes` (klick auf Sensor → Attribute)
+- DeviceInfo zeigt jetzt model-name + model-year + software-version aus `/vehicle-information/{vin}` wenn vom Garage-Call leer
+
+Static data wird 24h gecached — kein Quota-Burn pro Poll.
 
 ---
 

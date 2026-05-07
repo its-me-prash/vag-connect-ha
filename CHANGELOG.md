@@ -32,6 +32,53 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ## [Unreleased]
 
+## [1.20.1] - 2026-05-07 🔓📚 BinarySensor LOCK-class fix (#131) + Doc refresh / BinarySensor LOCK-class fix (#131) + Doc refresh
+
+🔓📚 **PATCH-Release.** Schließt Chr1sDub's Bug-Report aus #131 ("Türschloss zeigt Unlocked obwohl tatsächlich verriegelt") und bringt README + FAQ auf Stand v1.18-v1.20 features.
+
+### 🔓 Bug A — BinarySensor LOCK device-class invert (#131) / BinarySensor LOCK device-class invert (#131)
+
+**Root cause:** HA's `BinarySensorDeviceClass.LOCK` hat **invertierte Semantik** — `is_on=True` bedeutet "open/unsafe/unlocked", `is_on=False` bedeutet "locked/safe". Unser `data["doors_locked"] = True` (= "ja, verriegelt") wurde direkt als `is_on=True` durchgereicht und HA zeigte "Unlocked" für tatsächlich verriegelte Fahrzeuge. **Bug seit der early release** des binary_sensors — betraf alle Brands, nicht nur Skoda.
+
+**Fix:** In `binary_sensor.py:is_on`, invertiere den Wert wenn `device_class == LOCK`. Andere device-classes (DOOR, WINDOW, PLUG, etc.) bleiben unverändert. Der LockEntity (`lock.py:is_locked`) hat NICHT-invertierte HA-Konvention (True = locked) und liest denselben Datenfeld — bleibt korrekt.
+
+```python
+# binary_sensor.py:is_on
+if self.entity_description.device_class == BinarySensorDeviceClass.LOCK:
+    return not bool(val)  # ← inverted for LOCK class
+return bool(val)
+```
+
+### 📚 Doc refresh / Doc refresh
+
+- **README.md "Was noch in Arbeit ist"** Section komplett aktualisiert: v1.13.0-v1.20.0 als done markiert, v1.20.1+ + v1.21.0+ + v2.0.0 als geplant
+- **FAQ.md** neue Sektionen für v1.18-v1.20 features:
+  - 🚀 Push Updates (v1.18.0+ Foundation, Phase 2 pending tester)
+  - 📊 API Quota Sensor + Quota Repair-Issue (v1.19.1 + v1.19.4)
+  - 📜 Token-Persistence (v1.19.2)
+  - 🔧 T&C / Terms-Repair-Issue mit Brand-Deeplinks (v1.19.4)
+  - 🚗 Skoda Vehicle-Info Extras (v1.20.0 Phase A — license_plate + equipment_count)
+- Bestehende Reauth-Sektion erweitert um Token-Persistence-Hinweis
+
+### 🧪 Tests / Tests
+
+- 7 neue Test-Cases in `tests/test_v1201_bug_a_lock_class_invert.py`:
+  - LOCK class inverts True/False/None
+  - DOOR class does NOT invert (control)
+  - WINDOW class does NOT invert (control)
+  - PLUG class does NOT invert (control)
+  - LockEntity.is_locked unchanged (different convention, correct as-is)
+
+### 📦 Schließt Issues / Closes
+
+- **#131** Chr1sDub Bug A (Türschloss-Status invertiert) — Bug B (Skoda Octavia iV doors_locked false trotz tatsächlich locked) wartet auf weiteren Diagnose-Output
+
+### 🚫 NICHT in diesem Release / NOT in this release
+
+- **Bug B** (Skoda parser-spezifischer doors_locked = False trotz locked) — wartet auf Chr1sDub's spezifische `access` + `overall` JSON-Subobjekte → wird v1.20.2 PATCH wenn Daten kommen
+- **S-PIN unlock check** (Punkt 2 von Chr1sDub) — wartet auf seine Verifikation ob S-PIN-Feld in Optionen wirklich befüllt ist
+- **Bundle 2 Phase B Renders** — `/v1/vehicle-information/{vin}/renders` als image entities; UX-Decision (4-8 Renders pro VIN?) → deferred zu v1.21.0
+
 ## [1.20.0] - 2026-05-06 🚗 Bundle 2 Phase A: Skoda Widget + Vehicle-Info + Equipment / Bundle 2 Phase A: Skoda Widget + Vehicle-Info + Equipment
 
 🚗 **MINOR-Release.** Drei neue Skoda mysmob endpoints adoptiert von `skodaconnect/myskoda` (MIT-lizenziert, attribution in `NOTICE.md`). Bringt richere DeviceInfo-Enrichment + 2 neue Diagnostic-Sensoren. Skoda-only in dieser Phase; CARIAD-BFF/OLA Equivalente kommen wenn upstream identifiziert.
