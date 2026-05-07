@@ -22,6 +22,14 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 > Semver-Typen vergeben. Retroaktive Korrektur:
 > `0.9.0→0.8.1`, `0.10.0→0.8.2`, `0.11.0→0.9.0`,
 > `0.12.0→0.10.0`, `0.13.0→0.10.1`, `0.14.0→0.11.0`
+>
+> **v1.19.1 historischer Hinweis (2026-05-07 Audit):** v1.19.1 hat
+> einen neuen Sensor `requests_remaining_today` eingeführt — nach
+> strikter Semver-Regel wäre das MINOR (`v1.20.0`) gewesen, nicht
+> PATCH. Wurde als PATCH released für HACS-Continuity (User-Side
+> kein Breaking Change). Tag bleibt v1.19.1; nachfolgende Releases
+> v1.20.0+ zählen ab v1.19.4 → v1.20.0 als legitime MINOR-Bumps.
+> Lessons-learned dokumentiert für v1.20.2+ Audit-Disziplin.
 
 ---
 
@@ -31,6 +39,54 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 > Methodik dahinter.
 
 ## [Unreleased]
+
+## [1.20.2] - 2026-05-07 🧹 Skoda Parser Hardening + Phantom-Entity Fix + Code-Hygiene Bundle / Skoda Parser Hardening + Phantom-Entity Fix + Code-Hygiene Bundle
+
+🧹 **PATCH-Release.** Multi-Item Cleanup-Bundle nach komprehensivem Audit (v1.17.5–v1.20.1 retrospective). Adressiert 7 Findings.
+
+### 🔓 Bug B Proactive Fix — Skoda doors_locked parser hardening (#131)
+
+**Pre-v1.20.2:** `skoda.py:320` hatte buggy fallback `d.doors_locked = v(access, "overallStatus") != "OPEN"` der jeden non-"OPEN" Wert als "locked" interpretierte — auch "CLOSED" (= unlocked aber zu) und "UNAVAILABLE". Plus die echte `lock_raw` Auswertung (line 354) hatte nur einen begrenzten Locked-Value-Set (`YES/LOCKED/TRUE`) und ließ alles andere (inkl. `UNLOCKED`) durchfallen auf den buggy Default.
+
+**v1.20.2 Fix:**
+- Buggy line 320 fallback **entfernt** — `doors_locked` bleibt None wenn kein authoritative Wert vorhanden (besser unknown als wrong)
+- Erweitertes value-set in line 354:
+  - **Locked**: `YES`, `LOCKED`, `TRUE`, `RELIABLE_LOCKED`
+  - **Unlocked**: `NO`, `UNLOCKED`, `FALSE`, `OPEN`, `RELIABLE_UNLOCKED`
+  - **Unknown** → log + leave None (forward-compat shield analog myskoda #503 safe_enum pattern)
+- Per `_LOGGER.info` werden unknown values an die Issue #131 weitergeleitet für proactive value-table-extension
+
+### 🛠️ Phantom-Entity Fix (v1.20.0 follow-up)
+
+v1.20.0 Bundle 2 Phase A führte 2 Skoda-only Sensoren ein (`license_plate` + `equipment_count`) aber vergessen sie in `_DATA_PRESENT_REQUIRED` (`sensor.py:704`) zu adden. **Folge:** alle non-Skoda User (Audi/VW EU/CUPRA/SEAT/Porsche/VW NA) sahen seit v1.20.0 zwei phantom "License Plate: unknown" + "Equipment Count: unknown" Diagnostic-Entities. **Fix:** beide jetzt in `_DATA_PRESENT_REQUIRED` — Entity wird gar nicht erst erstellt für VINs ohne Wert.
+
+### 🌍 `safe_float` Locale-Comma Fallback
+
+v1.10.1 #58 docs versprachen Skoda's gelegentliches `"21,5"` (locale-comma) wäre handled, aber der originale Code akzeptierte nur dot-decimal. v1.20.2 fügt fallback-Replacement `",", "."` als zweiten Versuch hinzu. Backwards-compat: dot-decimal funktioniert weiter unverändert.
+
+### 📋 Code-Hygiene + Doku-Drift Cleanup
+
+- **3 Scaffolding-Module mit `# SCAFFOLDING — NOT WIRED` Header**: `cariad/_home_region.py`, `cariad/push/skoda_mqtt.py`, `cariad/push/cupra_seat_fcm.py` — macht expliziter dass diese Module foundations sind, nicht in production call-paths verdrahtet
+- **ROADMAP "Standalone enhancements" Cleanup**: 2 done-aber-noch-TODO Items markiert (`/v2/widgets/vehicle-status` done v1.20.0, T&C Repair done v1.19.4)
+- **ROADMAP "Last updated" Header**: 11+ run-on "Plus voriges..." durch concise date + bullet-list "Recent shipped (chronological)" ersetzt — drift-prone für future maintainers entlastet
+- **CHANGELOG Semver-Korrektur**: Retrospektive Notiz dass v1.19.1 strikt MINOR hätte sein sollen (neuer Sensor) aber als PATCH released wurde für HACS-Continuity. Tags bleiben, Lessons-learned dokumentiert.
+
+### 🧪 Tests / Tests
+
+- **`test_v1202_skoda_doors_locked_hardening.py`** — 16 Test-Cases: locked-values (6) + unlocked-values (4) + unknown-values + buggy-fallback-removed-regression + priority-chain
+- **Standalone-verified locally**: safe_float locale-comma (6 assertions) + Skoda parser hardening (7 assertions) — 13 total
+
+### 📦 Schließt Issues / Closes
+
+Keine User-Issues direkt — proactive Bug B fix für #131 (wartet weiterhin auf Chr1sDub's spezifische access+overall JSON für targeted fix). Cleanup-Bundle für Audit-Findings.
+
+### 🚫 NICHT in diesem Release / NOT in this release
+
+- **Bug B targeted fix** mit Chr1sDub's exakten JSON-Werten — wartet auf Daten
+- **S-PIN unlock check** (#131 Punkt 2) — Code-Audit zeigt: `coordinator.py:1929-1940` Cascade ist bereits korrekt, brauche User-Diagnose zur Reproduktion
+- **Bundle 2 Phase B Renders** — v1.21.0 (UX-Decision benötigt für 4-8 image entities)
+- **Charging Profile Write-Side** — v1.22.0
+- **Departure-Timer Write-Side** — v1.23.0
 
 ## [1.20.1] - 2026-05-07 🔓📚 BinarySensor LOCK-class fix (#131) + Doc refresh / BinarySensor LOCK-class fix (#131) + Doc refresh
 

@@ -1,4 +1,13 @@
 # Copyright 2026 Prash Balan (@its-me-prash) — Apache License 2.0
+#
+# ╔════════════════════════════════════════════════════════════════════╗
+# ║ SCAFFOLDING — NOT WIRED INTO PRODUCTION CALL PATHS                ║
+# ║ Foundation built v1.18.0; OptionsFlow toggle exists but           ║
+# ║ Coordinator does NOT instantiate SkodaPushManager.start() yet.    ║
+# ║ Live activation requires community Skoda Connect+ tester for      ║
+# ║ FCM-Project-ID + TOTP scheme + broker auth verification.          ║
+# ║ See ROADMAP "Push Bundle Phase 2" + #57 Phase 2.                  ║
+# ╚════════════════════════════════════════════════════════════════════╝
 """Skoda mysmob MQTT push manager (v1.18.0 foundation).
 
 Subscribes to ``mqtt.messagehub.de:8883`` (TLS, MQTTv5) for the user's

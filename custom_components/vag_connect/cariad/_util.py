@@ -77,6 +77,17 @@ def safe_float(value: Any, default: float | None = None) -> float | None:
         try:
             return float(stripped)
         except ValueError:
+            # v1.20.2 — locale-comma fallback. Skoda has shipped
+            # ``"21,5"`` (comma decimal, EU locale formatting) on EU
+            # accounts at least once historically. v1.10.1 #58 docs
+            # claimed safe_float handles this but the original code
+            # only accepted dot-decimal — locale-comma silently
+            # returned default. Try once more with comma → dot.
+            if "," in stripped:
+                try:
+                    return float(stripped.replace(",", ".", 1))
+                except ValueError:
+                    return default
             return default
     return default
 

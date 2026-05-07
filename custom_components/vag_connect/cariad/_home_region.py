@@ -1,4 +1,13 @@
 # Copyright 2026 Prash Balan (@its-me-prash) — Apache License 2.0
+#
+# ╔════════════════════════════════════════════════════════════════════╗
+# ║ SCAFFOLDING — NOT WIRED INTO PRODUCTION CALL PATHS                ║
+# ║ Built v1.17.6 as foundation for region-routing edge cases.        ║
+# ║ Wire-up plan documented below. Activation pending live-test       ║
+# ║ confirmation on issue #75 (Christian Skoda Kodiaq Mk2 region).    ║
+# ║ See ROADMAP P3 "HomeRegion Wire-In" — sundown candidate v2.0.0    ║
+# ║ if no community user reports a non-EU regional vehicle.           ║
+# ╚════════════════════════════════════════════════════════════════════╝
 """HomeRegion resolution for CARIAD-BFF brands (VW EU + Audi).
 
 Ported from ``evcc-io/evcc`` (``vehicle/vw/api.go``). Some VAG vehicles

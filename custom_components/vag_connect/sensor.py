@@ -701,6 +701,15 @@ _DATA_PRESENT_REQUIRED: frozenset[str] = frozenset({
     # Field stays None for non-OLA brands and for accounts where
     # battery-care isn't supported / configured.
     "battery_care_target_soc_pct",
+    # v1.20.2 (post-v1.20.0 phantom-entity fix) — Bundle 2 Phase A
+    # introduced two Skoda-only sensors but forgot to gate them.
+    # Without this set membership, all non-Skoda VINs (Audi/VW EU/
+    # CUPRA/SEAT/Porsche/VW NA) showed a phantom "License Plate:
+    # unknown" + "Equipment Count: unknown" diagnostic entity since
+    # v1.20.0 was released. Field stays None for those brands so the
+    # data-present gate keeps the entity from ever being created.
+    "license_plate",
+    "equipment_count",
 })
 
 # v1.14.0 (#24) — Trip Statistics is brand-restricted at the API level

@@ -1,4 +1,13 @@
 # Copyright 2026 Prash Balan (@its-me-prash) — Apache License 2.0
+#
+# ╔════════════════════════════════════════════════════════════════════╗
+# ║ SCAFFOLDING — NOT WIRED INTO PRODUCTION CALL PATHS                ║
+# ║ Foundation built v1.19.0; OptionsFlow toggle exists but           ║
+# ║ Coordinator does NOT instantiate CupraSeatPushManager.start().    ║
+# ║ Live activation requires community MyCupra/MySeat tester for      ║
+# ║ FCM project + sender_id + OLA /v2/subscriptions schema.           ║
+# ║ See ROADMAP "Push Bundle Phase 2" + #57 Phase 2.                  ║
+# ╚════════════════════════════════════════════════════════════════════╝
 """CUPRA/SEAT OLA FCM push manager (v1.19.0 foundation).
 
 Subscribes to Firebase Cloud Messaging push notifications for
