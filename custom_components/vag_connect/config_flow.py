@@ -28,6 +28,7 @@ from homeassistant.helpers.selector import (
 from .const import (
     BRANDS,
     CONF_BRAND,
+    CONF_ENABLE_PUSH_AUDI_VW,
     CONF_ENABLE_PUSH_FCM,
     CONF_ENABLE_PUSH_MQTT,
     CONF_ENABLE_REVERSE_GEOCODING,
@@ -458,6 +459,19 @@ class VagConnectOptionsFlow(config_entries.OptionsFlow):
                     default=current_options.get(
                         CONF_ENABLE_PUSH_FCM,
                         current_data.get(CONF_ENABLE_PUSH_FCM, False),
+                    ),
+                ): _BOOL_SELECTOR,
+                # v1.23.0 (#57 Push Bundle, foundation phase, Audi/VW
+                # track) — opt-in toggle for Audi/VW Cariad-BFF FCM
+                # push updates. Default False; same lazy-import +
+                # foundation pattern as v1.18.0 + v1.19.0. Only
+                # meaningful for brand in {audi, volkswagen}.
+                # User-suggested 2026-05-07 (myAudi App push → HA).
+                vol.Optional(
+                    CONF_ENABLE_PUSH_AUDI_VW,
+                    default=current_options.get(
+                        CONF_ENABLE_PUSH_AUDI_VW,
+                        current_data.get(CONF_ENABLE_PUSH_AUDI_VW, False),
                     ),
                 ): _BOOL_SELECTOR,
             }),

@@ -49,6 +49,20 @@ CONF_ENABLE_PUSH_MQTT         = "enable_push_mqtt"
 # spawns at coordinator setup, registers FCM, POSTs OLA
 # subscription, forwards events to coordinator.
 CONF_ENABLE_PUSH_FCM          = "enable_push_fcm"
+# v1.23.0 (#57 Push Bundle, foundation phase) — opt-in toggle for
+# Audi/VW Cariad-BFF Firebase Cloud Messaging push updates. Default
+# False because:
+# (1) requires firebase-messaging dep (lazy-imported in
+#     cariad/push/audi_vw_fcm.py — same dep as Skoda v1.18.0 +
+#     CUPRA/SEAT v1.19.0)
+# (2) live activation pending community tester (Audi/VW owner with
+#     active Connect+ subscription) for FCM project + sender_id +
+#     notification-subscription endpoint verification
+# (3) only meaningful for brand in {audi, volkswagen} — others ignore
+# When True + brand matches + dep installed: AudiVWPushManager
+# spawns at coordinator setup. User-suggested feature 2026-05-07
+# (myAudi App push notifications → HA-side feedback channel).
+CONF_ENABLE_PUSH_AUDI_VW      = "enable_push_audi_vw"
 
 # Supported brands — must match CariadClientFactory.create() keys
 BRANDS = {
