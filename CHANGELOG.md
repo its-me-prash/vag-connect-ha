@@ -38,6 +38,17 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ## [Unreleased]
 
+### 📚 Docs / Docs
+
+- **`docs/SPRINT_C_v1.25.0_PLAN.md`** — Detail plan for v1.25.0 MINOR (4 sub-PRs: `_normalize.py` → `BaseAPIClient` extract → `CommandDispatcher` refactor → Charging-Profile/Departure-Timer Write-Side bundle). Includes per-PR risk register, test plan, file-level migration recipes.
+- **`docs/EXTERNAL_BLOCKED_ROADMAP.md`** — 7 tracks of work that's technically ready but blocked on external testers (MBB Phase 2, Push Phase 2 ABC, HomeRegion full wire-in, Charging-Profile live, Theft/Alarm sensor, heaterSource exposure). Each track: blocker, what we need from testers, ETA after blocker clears, GH issue link.
+
+### 🐛 Issue Hygiene / Issue Hygiene
+
+- Opened: #160 (MBB Phase 2), #161 (Push Phase 2 umbrella, closes #57 when complete), #162 (Lovelace Card Repo), #163 (heaterSource exposure) — closes the 6-untracked-items visibility gap from the 2026-05-08 audit.
+- Closed: #42, #48, #51 with structural-fix comments (fixed-in v1.20.3 + v1.21.0, ping-silent at 14d-mark).
+- Open issue count: 8 → 5 (-3 stale, +4 new with clear actionable scope).
+
 ## [1.24.2] - 2026-05-08 🧪 Test Foundation: Property-Tests + Porsche/VW NA Parity + safe_int/float Migration / Test Foundation: Property-Tests + Porsche/VW NA Parity + safe_int/float Migration
 
 🧪 **PATCH-Release.** Adressiert die drei Test-Coverage-Lücken aus dem 5-Agent Master-Audit (2026-05-08): NEVER-raise Helper hatten nur Example-Tests, Porsche + VW NA Parser hatten 0 behavioural tests, und 11 Stellen in 4 Brand-Modulen waren noch bare `int()/float()` Landminen.
