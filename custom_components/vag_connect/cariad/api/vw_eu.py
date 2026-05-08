@@ -811,9 +811,9 @@ class VWEUClient(CariadBaseClient):
             engine_range = engine.get("remainingRange_km")
             if engine_range is None:
                 continue
-            try:
-                value = int(engine_range)
-            except (TypeError, ValueError):
+            # v1.24.2 (audit): safe_int instead of bare int() try/except
+            value = safe_int(engine_range)
+            if value is None:
                 continue
             if engine_type in electric_types:
                 d.electric_range_km = value
@@ -834,10 +834,10 @@ class VWEUClient(CariadBaseClient):
                 # Skoda uses for its electricRange/combustionRange blocks).
                 if isinstance(ms_val, dict):
                     ms_val = ms_val.get("distanceInKm")
-                try:
-                    d.combustion_range_km = int(ms_val) if ms_val is not None else None
-                except (TypeError, ValueError):
-                    pass
+                # v1.24.2 (audit): safe_int handles None + non-numeric
+                parsed = safe_int(ms_val)
+                if parsed is not None:
+                    d.combustion_range_km = parsed
 
         # Total range — from explicit field if present.
         # v1.11.1 (#96 Track C) — older GTE firmware fails fuelStatus
@@ -858,10 +858,8 @@ class VWEUClient(CariadBaseClient):
         # primary, ICE see combustion or total.
         battery_range = v(raw, "charging", "batteryStatus", "value", "cruisingRangeElectric_km")
         if d.electric_range_km is None and battery_range is not None:
-            try:
-                d.electric_range_km = int(battery_range)
-            except (TypeError, ValueError):
-                pass
+            # v1.24.2 (audit): safe_int — handles None/string/float defensively
+            d.electric_range_km = safe_int(battery_range)
         if d.has_battery and d.electric_range_km is not None:
             d.range_km = d.electric_range_km
         elif d.total_range_km is not None:
@@ -870,18 +868,20 @@ class VWEUClient(CariadBaseClient):
             d.range_km = d.combustion_range_km
 
         adblue = v(raw, "measurements", "rangeStatus", "value", "adBlueRange")
-        if adblue is not None:
-            d.adblue_range_km = int(adblue)
+        d.adblue_range_km = safe_int(adblue)
 
         # ── Measurements ──────────────────────────────────────────────────────
         d.odometer_km = v(raw, "measurements", "odometerStatus", "value", "odometer")
         d.outside_temp = v(raw, "measurements", "outsideTemperatureStatus", "value", "outsideTemperature_K")
-        if d.outside_temp is not None:
-            d.outside_temp = round(float(d.outside_temp) - 273.15, 1)  # Kelvin → Celsius
+        # v1.24.2 (audit): safe_float for Kelvin → Celsius. Backend has
+        # historically shipped string Kelvin temps + null on some PHEV
+        # firmwares — bare float() crashed the whole vehicle's poll.
+        outside_k = safe_float(d.outside_temp)
+        d.outside_temp = round(outside_k - 273.15, 1) if outside_k is not None else None
 
         bat_min = v(raw, "measurements", "temperatureBatteryStatus", "value", "temperatureHvBatteryMin_K")
-        if bat_min is not None:
-            d.battery_temp = round(float(bat_min) - 273.15, 1)
+        bat_min_k = safe_float(bat_min)
+        d.battery_temp = round(bat_min_k - 273.15, 1) if bat_min_k is not None else None
 
         # v1.12.0 (#23) — 12V starter battery voltage. The CARIAD BFF
         # ``lvBattery`` job publishes voltage in volts (decimal, e.g.

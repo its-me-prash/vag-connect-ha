@@ -570,21 +570,12 @@ class SkodaClient(CariadBaseClient):
                 flat_combustion = v(driving_range, "combustionRange")
                 if isinstance(flat_combustion, (int, float)):
                     combustion = flat_combustion
-            try:
-                if electric is not None:
-                    d.electric_range_km = int(electric)
-            except (TypeError, ValueError):
-                pass
-            try:
-                if combustion is not None:
-                    d.combustion_range_km = int(combustion)
-            except (TypeError, ValueError):
-                pass
-            try:
-                if total is not None:
-                    d.total_range_km = int(total)
-            except (TypeError, ValueError):
-                pass
+            # v1.24.2 (2026-05-08 audit): replaced 3 try/except wrappers
+            # around int() with safe_int — same defensive shape, fewer
+            # lines, and the NEVER-raise contract is property-tested.
+            d.electric_range_km = safe_int(electric)
+            d.combustion_range_km = safe_int(combustion)
+            d.total_range_km = safe_int(total)
             d.has_combustion = combustion is not None
             # Headline number priority: electric for EV/PHEV, then total,
             # then combustion. Matches VW EU/Audi semantics from vw_eu.py.
@@ -597,8 +588,7 @@ class SkodaClient(CariadBaseClient):
             else:
                 d.range_km = electric or total
             adblue = v(driving_range, "adBlueRange", "distanceInKm")
-            if adblue is not None:
-                d.adblue_range_km = int(adblue)
+            d.adblue_range_km = safe_int(adblue)
 
         d.is_electric = d.has_battery and not d.has_combustion
         d.is_hybrid = d.has_battery and d.has_combustion

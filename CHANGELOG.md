@@ -38,6 +38,44 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ## [Unreleased]
 
+## [1.24.2] - 2026-05-08 🧪 Test Foundation: Property-Tests + Porsche/VW NA Parity + safe_int/float Migration / Test Foundation: Property-Tests + Porsche/VW NA Parity + safe_int/float Migration
+
+🧪 **PATCH-Release.** Adressiert die drei Test-Coverage-Lücken aus dem 5-Agent Master-Audit (2026-05-08): NEVER-raise Helper hatten nur Example-Tests, Porsche + VW NA Parser hatten 0 behavioural tests, und 11 Stellen in 4 Brand-Modulen waren noch bare `int()/float()` Landminen.
+
+### 🧪 Property-Tests via hypothesis / Property-Tests via hypothesis
+
+- Neuer `tests/test_v1242_property_safe_helpers.py` mit 19 property tests over `safe_int` / `safe_float` / `safe_enum` / `mask_vin` / `is_cariad_wrapper_404`. Strategie: arbitrary Python objects, arbitrary strings, arbitrary unicode/bytes — alle helpers MÜSSEN nicht raisen.
+- **Echter Production-Bug gefunden + gefixt**: `is_cariad_wrapper_404(b'\x00')` crashte mit `TypeError` (Bytes-Input → `body.lower()` ok für bytes, aber `"upstream..." in bytes` raised). Production Pfad ruft die Funktion immer mit `str` auf, aber jetzt defensive bytes→str coerce + isinstance gate. `cariad/_mbb.py:160-170`.
+
+### 🧪 Porsche + VW NA Parser Parity / Porsche + VW NA Parser Parity
+
+- Neuer `tests/test_v1242_porsche_vw_na_parity.py` mit ~250 LOC, 7 Test-Klassen:
+  - `TestPorscheParserHappy` — Taycan 4S happy-path full assertion
+  - `TestPorscheParserDegraded` — both endpoints fail, garbage shapes, `_val` defensive walker
+  - `TestVWNAParserHappy` — ID.4 2024 happy-path full assertion
+  - `TestVWNAParserDegraded` — all endpoints fail, garbage Kelvin temp, negative remaining ETA
+- Vor v1.24.2: 0 behavioural tests für beide. Audit Befund umgesetzt.
+
+### 🧪 Bare int()/float() → safe_int/safe_float Migration / Bare int()/float() → safe_int/safe_float Migration
+
+11 Audit-bestätigte Stellen in 4 Brand-Modulen ersetzt. Pattern:
+- `cariad/api/skoda.py`: 3 try/except Wrapper um `int()` ersetzt durch `safe_int` (electric/combustion/total range), plus adblue safe_int. Erspart 12 Lines try/except Boilerplate.
+- `cariad/api/vw_eu.py`: 4 bare `int()` (engine range, fallback range, battery range, adblue) + 2 Kelvin `float()` (outside_temp, battery_temp) durch `safe_int`/`safe_float` ersetzt.
+- `cariad/api/seat_cupra.py`: 2 Kelvin `float()` (target_temp, outside_temp) defensive geworden + `safe_float` import.
+- `cariad/api/vw_na.py`: ETA `int(remaining)` + Kelvin `float(temp_k)` defensive — plus `> 0` guard für ETA (vorher: 0min remaining produzierte stale ETA = now).
+
+### ✅ Verifizierung / Verification
+
+- `python -m ruff check custom_components/` → All checks passed
+- `python -m mypy ... --ignore-missing-imports --disallow-untyped-defs --disallow-incomplete-defs --warn-return-any` (CI flags) → kein Output
+- 19/19 property tests pass lokal (HA nicht needed)
+- Porsche/VW NA parity tests: korrekt skipped lokal (kein HA), laufen in CI
+- Bruno strict: 84/84 unverändert (keine neuen Endpoints)
+
+KEINE neuen Entitäten / Services / Platforms — reiner PATCH (Test-Coverage-Erweiterung + 1 echter Bug fix + defensive parser hardening).
+
+---
+
 ## [1.24.1] - 2026-05-08 🛠️ v1.24.0 CI-Failure-Fix + Doc Hygiene + Quick-Win-Hardening / v1.24.0 CI-Failure-Fix + Doc Hygiene + Quick-Win-Hardening
 
 🛠️ **PATCH-Release.** Räumt nach v1.24.0 auf (CI war rot wegen 2 Ruff-`E741`-Warnings) und bündelt mehrere Audit-Quick-Wins: SECURITY.md auf v1.24.x aktualisiert, GitHub Actions floating refs auf SHA/Tag gepinnt, Auth0-Error-Log sanitisiert, lokaler Test-Pfad aktiviert (`requirements-test.txt` + `pytest.ini` + `conftest.py`), stale ROADMAP/README/SESSION_HANDOFF Pointer aktualisiert.

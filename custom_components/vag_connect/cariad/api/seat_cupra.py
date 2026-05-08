@@ -13,7 +13,7 @@ from typing import Any
 
 from aiohttp import ClientSession
 
-from .._util import compute_connection_state, safe_int
+from .._util import compute_connection_state, safe_float, safe_int
 from ..exceptions import APIError, SpinError
 from ..models import BRAND_CUPRA, BRAND_SEAT, BrandConfig, VehicleData
 from .base import CariadBaseClient
@@ -534,8 +534,10 @@ class SeatCupraClient(CariadBaseClient):
             _inactive_states = (None, "OFF", "off", "Off", "unsupported")
             d.climatisation_active = d.climatisation_state not in _inactive_states
             d.target_temperature = v(climate, "settings", "targetTemperature_K")
-            if d.target_temperature:
-                d.target_temperature = round(float(d.target_temperature) - 273.15, 1)
+            # v1.24.2 (audit): safe_float for Kelvin → Celsius
+            target_k = safe_float(d.target_temperature)
+            if target_k is not None:
+                d.target_temperature = round(target_k - 273.15, 1)
             if not d.target_temperature:
                 # `targetTemperatureCelsius` (no "In") is the Rainer #109
                 # Live-response variant; `targetTemperatureInCelsius` is the
@@ -545,8 +547,12 @@ class SeatCupraClient(CariadBaseClient):
                     or v(cs, "targetTemperatureCelsius")  # Rainer #109
                 )
             d.outside_temp = v(cs, "outsideTemperature")
-            if d.outside_temp and d.outside_temp > 100:
-                d.outside_temp = round(float(d.outside_temp) - 273.15, 1)
+            # v1.24.2 (audit): safe_float defensive coerce for Kelvin → Celsius.
+            # > 100 heuristic distinguishes Kelvin (Skoda/CUPRA returns ~280-310 K)
+            # from already-converted Celsius values.
+            outside = safe_float(d.outside_temp)
+            if outside is not None and outside > 100:
+                d.outside_temp = round(outside - 273.15, 1)
             d.window_heating_front = v(cs, "windowHeatingStateFront") == "ON"
             d.window_heating_back = v(cs, "windowHeatingStateRear") == "ON"
 
