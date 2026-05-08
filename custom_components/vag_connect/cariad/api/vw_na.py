@@ -16,6 +16,7 @@ from typing import Any
 from aiohttp import ClientSession
 
 from .._util import mask_vin as _mask_vin
+from .._util import safe_float, safe_int
 from ..models import VehicleData
 from ..exceptions import AuthenticationError, APIError, TokenExpiredError
 from ..auth.idk import IDKAuth
@@ -162,16 +163,17 @@ class VWNAClient:
             d.plug_connected    = plug == "CONNECTED"
             d.plug_state        = plug
             d.target_soc        = v(charge, "chargingSettings", "targetSOC_pct")
-            remaining           = v(charge, "chargingStatus", "remainingChargingTimeToComplete_min")
-            if remaining:
-                d.charge_complete_eta = datetime.now(tz=timezone.utc) + timedelta(minutes=int(remaining))
+            # v1.24.2 (audit): safe_int + safe_float defensive coerce
+            remaining_min = safe_int(v(charge, "chargingStatus", "remainingChargingTimeToComplete_min"))
+            if remaining_min is not None and remaining_min > 0:
+                d.charge_complete_eta = datetime.now(tz=timezone.utc) + timedelta(minutes=remaining_min)
 
         # ── Climate ────────────────────────────────────────────────────────────
         if isinstance(climate, dict):
             d.climatisation_state  = v(climate, "climatisationStatus", "climatisationState")
             d.climatisation_active = d.climatisation_state not in (None, "OFF")
-            temp_k = v(climate, "climatisationSettings", "targetTemperature_K")
-            d.target_temperature = round(float(temp_k) - 273.15, 1) if temp_k else None
+            temp_k = safe_float(v(climate, "climatisationSettings", "targetTemperature_K"))
+            d.target_temperature = round(temp_k - 273.15, 1) if temp_k is not None else None
 
         d.is_electric    = d.has_battery and not d.has_combustion
         d.is_hybrid      = d.has_battery and d.has_combustion

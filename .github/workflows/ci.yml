@@ -104,6 +104,7 @@ jobs:
             pytest \
             pytest-cov \
             pytest-asyncio \
+            hypothesis \
             aiohttp \
             voluptuous \
             homeassistant

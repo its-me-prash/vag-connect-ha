@@ -159,6 +159,18 @@ def is_cariad_wrapper_404(body: str | None) -> bool:
     """
     if not body:
         return False
+    # v1.24.2 (2026-05-08 audit, hypothesis property test): defensive
+    # coerce bytes → str. Production always passes str (from
+    # ``await resp.text()``) but bytes is the natural shape if a future
+    # caller hands raw response bodies in. Best-effort decode; on
+    # failure, classify as not-a-wrapper.
+    if isinstance(body, (bytes, bytearray)):
+        try:
+            body = bytes(body).decode("utf-8", errors="replace")
+        except (UnicodeError, ValueError):
+            return False
+    if not isinstance(body, str):
+        return False
     body_lower = body.lower()
     return (
         "upstream service responded" in body_lower
