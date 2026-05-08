@@ -247,11 +247,19 @@ class IDKAuth:
         )
 
         if status == 400:
-            # Parse error from Auth0 HTML response
+            # Parse error from Auth0 HTML response.
+            # v1.24.1 (2026-05-08 audit): Auth0 error templates can echo the
+            # submitted username/email back into the error string (sometimes
+            # verbatim, sometimes inside a "for user X" phrase). Truncate +
+            # mask the user's email before logging at WARNING level so we
+            # don't leak PII to anyone tailing HA logs.
             err = self._extract_auth0_error(resp_html)
-            _LOGGER.warning("IDK Auth0 400: %s", err)
+            err_safe = (err or "")[:120]
+            if email:
+                err_safe = err_safe.replace(email, "***@***")
+            _LOGGER.warning("IDK Auth0 400: %s", err_safe)
             raise AuthenticationError(
-                f"Auth0 login rejected (400): {err or 'check email/password'}"
+                f"Auth0 login rejected (400): {err_safe or 'check email/password'}"
             )
         if status == 401:
             raise AuthenticationError("Invalid email or password.")

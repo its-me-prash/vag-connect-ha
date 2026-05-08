@@ -133,10 +133,19 @@ async def _validate_credentials(
             _LOGGER.warning("VAG Connect auth failed (%s): %s", brand, err)
             raise ValueError("invalid_credentials") from err
         except Exception as err:  # noqa: BLE001
+            # v1.24.1 (2026-05-08 audit): one-line ERROR with type only,
+            # full traceback at DEBUG. aiohttp can chain InvalidURL with
+            # form-encoded request URLs that may carry username; keeping
+            # the traceback off the default ERROR-level avoids that PII
+            # vector while DEBUG remains available for triage.
             import traceback  # noqa: PLC0415
             _LOGGER.error(
-                "VAG Connect unexpected error during %s auth: %s — %s\nTraceback:\n%s",
-                brand, type(err).__name__, err,
+                "VAG Connect unexpected error during %s auth: %s",
+                brand, type(err).__name__,
+            )
+            _LOGGER.debug(
+                "VAG Connect %s auth traceback: %s\n%s",
+                brand, err,
                 "".join(traceback.format_tb(err.__traceback__)),
             )
             raise ValueError("cannot_connect") from err

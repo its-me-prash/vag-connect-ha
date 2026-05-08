@@ -416,7 +416,9 @@ class VagConnectCoordinator(DataUpdateCoordinator):
         self.vehicle_last_good_at: dict[str, datetime] = {}
 
         # Per-VIN capabilities cache. Hydrated best-effort during setup.
-        # 2A foundation only — entity platforms don't read from this yet.
+        # Read by Capability-Filter Phase 3 (v1.13.0) at PRE-entity-
+        # creation gating in ``cariad/_capabilities.py:cap_id_for`` and
+        # consumed by ``is_command_known_unsupported`` (line ~1010).
         self.vehicle_capabilities: dict[str, dict[str, Any]] = {}
         self._capabilities_fetched_at: dict[str, datetime] = {}
 
@@ -1712,18 +1714,18 @@ class VagConnectCoordinator(DataUpdateCoordinator):
                             # is the base render — additional layers
                             # are overlays we don't surface here).
                             real_layers = [
-                                l for l in layers
-                                if isinstance(l, dict)
-                                and l.get("type") == "REAL"
-                                and isinstance(l.get("url"), str)
-                                and isinstance(l.get("viewPoint"), str)
+                                layer for layer in layers
+                                if isinstance(layer, dict)
+                                and layer.get("type") == "REAL"
+                                and isinstance(layer.get("url"), str)
+                                and isinstance(layer.get("viewPoint"), str)
                             ]
                             if not real_layers:
                                 continue
                             base = min(
                                 real_layers,
-                                key=lambda l: l.get("order", 0)
-                                if isinstance(l.get("order"), int) else 0,
+                                key=lambda layer: layer.get("order", 0)
+                                if isinstance(layer.get("order"), int) else 0,
                             )
                             view = base["viewPoint"].lower()
                             flat[view] = base["url"]

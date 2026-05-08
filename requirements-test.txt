@@ -1,0 +1,16 @@
+# Test-only deps for running the pure-Python test subset locally.
+# v1.24.1 (2026-05-08 audit): enables `pip install -r requirements-test.txt
+# && pytest tests/` for contributors who don't have a full Home Assistant
+# dev install.
+#
+# Tests that import from `homeassistant.*` will be skipped (collected but
+# not runnable) without a separate HA dev install — see CI for the full
+# matrix (`.github/workflows/ci.yml` installs `homeassistant` ad-hoc).
+#
+# Versions intentionally unpinned for forward-compat; CI is the authority.
+
+pytest
+pytest-asyncio
+hypothesis           # v1.24.2+ property-based tests for safe_int / safe_float / etc.
+aiohttp              # used by base.py + brand modules
+voluptuous           # used by config_flow.py

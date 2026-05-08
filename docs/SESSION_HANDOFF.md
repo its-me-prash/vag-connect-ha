@@ -4,8 +4,15 @@
 > next chat / contributor / AI tool has a single page that orients them
 > in 5 minutes.
 
-**Last updated:** 2026-04-29 — post v1.8.12 sprint (Multi-Brand
-Connection-State live, 7 releases shipped today)
+**Last updated:** 2026-05-08 — post v1.24.1 sprint (CI hot-fix + Audit
+Quick-Win-Hardening + Doc-Hygiene — 8 releases since v1.20.0 in 4 days).
+
+> ℹ️ **Sektionen unterhalb sind teilweise historisch (v1.8.x baseline).**
+> Aktuelle authoritative Quellen: [`ROADMAP.md`](ROADMAP.md) für Sprint-
+> Planung, [`../CHANGELOG.md`](../CHANGELOG.md) für Release-Historie.
+> Die `Current state` Box gibt jeweils den jüngsten manifest+release-
+> stand wieder. Voll-Rewrite dieses Dokuments ist als eigene Session
+> in der Sprint-Pipeline (post-v1.25.0).
 
 ---
 
@@ -25,18 +32,38 @@ Connection-State live, 7 releases shipped today)
 
 ---
 
-## Current state — v1.12.1 (released as Latest 2026-04-30)
+## Current state — v1.24.1 (released as Latest 2026-05-08)
 
 ```
 Branch:           main
-Manifest:         version 1.12.1, iot_class cloud_polling
+Manifest:         version 1.24.1, iot_class cloud_polling
 Quality scale:    clean (CI publishes badges dynamically)
 Open PRs:         none
 Branch protection: ON — 5 required checks (Lint, Tests, Hassfest, HACS, CHANGELOG)
-Latest tag:       v1.12.1 → released
-Open issues:      ~24 (5 community / 1 active live-test / 18 roadmap by P0/P1/P2/P3)
-                  → see ROADMAP.md "Sessioned roadmap" for full prioritization
+                  ⚠️ NOTE: v1.24.0 was bypassed via admin override (root-cause:
+                  ruff E741 fixed in v1.24.1). DO NOT bypass again — review
+                  branch-protection settings to disable admin-bypass on main.
+Latest tag:       v1.24.0 → released (v1.24.1 in flight)
+Open issues:      ~8 (4 wait-on-user incl. stale-clock running, 2 wait-on-
+                  community-tester, 1 actionable-now, 1 ongoing-live-test)
+                  → see ROADMAP.md "P0 / P1 / P2" tables for prioritization
+                  → 6 internal ROADMAP items are NOT tracked as GH issues
+                    (visibility gap, action-item to backfill)
 ```
+
+### Recently shipped (post v1.20.0 audit on 2026-05-08)
+
+| Version | Title | New tests |
+|---|---|---|
+| v1.24.1 | CI fix + Doc hygiene + Quick-Win Hardening (Audit 2026-05-08) | (no new tests — pure hygiene) |
+| v1.24.0 | Cross-brand image-entity wiring (CUPRA/SEAT silent bug + Skoda multi-angle) | 24 |
+| v1.23.0 | Audi/VW Push Foundation (Cariad FCM channel) | 12 |
+| v1.22.0 | Skoda Widget Render → Image Entity (Bundle 2 Phase B Pragmatic) | 8 |
+| v1.21.0 | Audi/VW MBB Legacy-Path Migration Phase 1 (8 user-bugs structural fix) | 29 |
+| v1.20.3 | Cariad-wrapper-404 detection + Switch hasattr-gate | 7 |
+| v1.20.2 | Skoda parser hardening + phantom-entity fix + cleanup | 12 |
+| v1.20.1 | BinarySensor LOCK-class invert (#131) + Doc refresh | 7 |
+| v1.20.0 | Bundle 2 Phase A — Skoda Widget + Vehicle-Info + Equipment | 16 |
 
 ### Releases shipped 2026-04-29
 

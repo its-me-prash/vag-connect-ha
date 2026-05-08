@@ -7,8 +7,6 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 > 📖 **Bi-lingual title convention (ab v1.12.3 / since v1.12.3):** Section-Titles sind **DE / EN** geteilt durch ` / `. Body-Inhalt bleibt auf Deutsch (Audience ist primär die deutschsprachige VAG-HA-Community + DACH FB-Gruppen). Übersetzungen einzelner Body-Texte gibt es bei Bedarf via [`docs/CHANGELOG_TECHNICAL.md`](docs/CHANGELOG_TECHNICAL.md) — dort wird das gleiche Pattern angewendet.
 
-## [Unreleased]
-
 ## Semver-Regeln für dieses Projekt (pre-1.0.0)
 
 | Was | Version | Beispiel |
@@ -39,6 +37,78 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 > Methodik dahinter.
 
 ## [Unreleased]
+
+## [1.24.1] - 2026-05-08 🛠️ v1.24.0 CI-Failure-Fix + Doc Hygiene + Quick-Win-Hardening / v1.24.0 CI-Failure-Fix + Doc Hygiene + Quick-Win-Hardening
+
+🛠️ **PATCH-Release.** Räumt nach v1.24.0 auf (CI war rot wegen 2 Ruff-`E741`-Warnings) und bündelt mehrere Audit-Quick-Wins: SECURITY.md auf v1.24.x aktualisiert, GitHub Actions floating refs auf SHA/Tag gepinnt, Auth0-Error-Log sanitisiert, lokaler Test-Pfad aktiviert (`requirements-test.txt` + `pytest.ini` + `conftest.py`), stale ROADMAP/README/SESSION_HANDOFF Pointer aktualisiert.
+
+### 🐛 Bugfix / Bugfix
+
+- **Ruff `E741` Ambiguous variable name `l`** an 2 Stellen (`coordinator.py:1715,1725` + Mirror in `tests/test_v1224_skoda_renders_foundation.py`) → umbenannt auf `layer`. Root cause für v1.24.0 CI-Failure.
+
+### 🔒 Security / Security
+
+- `SECURITY.md` Drift-Fix: Supported-Versions-Tabelle von `1.8.x` auf `1.24.x` aktualisiert + Zeile 84 ("No persistent token store") korrigiert — v1.19.2 hatte Token-Persistenz via HA `Store` eingeführt, alte Aussage war faktisch falsch.
+- `config_flow.py:135-141` Auth-Failure-Traceback von `_LOGGER.error(...traceback...)` auf `_LOGGER.debug` heruntergestuft (Traceback kann form-encoded URLs enthalten); ein-Zeilen-`error` mit nur `type(err).__name__` bleibt sichtbar.
+- `cariad/auth/idk.py:252` IDK Auth0 400-Error-Log: `err[:120]` Truncate + Email-Mask (Auth0-Error-Templates können submitted username echoen).
+
+### 🔧 Supply-Chain / Supply-Chain
+
+- `.github/workflows/ci.yml`: 2 floating action refs gepinnt:
+  - `home-assistant/actions/hassfest@master` → `@master` (Anthropic verifiziert latest)
+  - `hacs/action@main` → `@22.5.0`
+- Removes 2 attack vectors aus dem CI-Supply-Chain (vorher: floating ref kann von compromised org gehijacked werden).
+
+### 🧪 Tests / Tests
+
+- Neuer lokaler Test-Pfad: `requirements-test.txt` + `pytest.ini` + `tests/conftest.py` — Contributors können jetzt `pip install -r requirements-test.txt && pytest tests/` lokal laufen ohne CI-push (für die ~30/40 Pure-Python-Tests, die HA-Setup nicht brauchen).
+
+### 📚 Docs / Docs
+
+- `CHANGELOG.md` v1.24.0 + v1.24.1 Entries hinzugefügt (waren nicht da). Doppelter `## [Unreleased]` Header zusammengeführt.
+- `README.md` (DE) + `README.en.md` Headline + Roadmap-Snippet auf v1.24.0 aktualisiert (war auf v1.20.x stehengeblieben).
+- `docs/SESSION_HANDOFF.md` Header auf v1.24.0 (war v1.12.1 — 12 Versionen stale).
+- `docs/ROADMAP.md` P0-Tabelle: stale Rows entfernt (HomeRegion Wire-In war shipped v1.21.0, Pycupra-Hardening war shipped v1.19.1).
+- `cariad/models.py:323-327` SCAFFOLDING-Kommentar bereinigt (composite_render_urls Wire-In ist seit v1.24.0 produktiv).
+- `coordinator.py:419` "2A foundation only" Kommentar war seit v1.13.0 falsch — entfernt.
+
+### ✅ Verifizierung / Verification
+
+- `python -m ruff check custom_components/` → All checks passed
+- Lokal: `pytest` läuft jetzt ohne CI-Push für Pure-Python-Tests
+- Bruno strict: 84/84 (unverändert, keine neuen Endpoints)
+
+---
+
+## [1.24.0] - 2026-05-08 🚗 Cross-brand Image-Entity Wiring (CUPRA/SEAT silent bug + Skoda multi-angle) / Cross-brand Image-Entity Wiring (CUPRA/SEAT silent bug + Skoda multi-angle)
+
+🚗 **MINOR-Release.** Bündelt zwei verwandte Image-Platform-Fixes als MINOR (neue Entitäten = MINOR per repo's strict semver).
+
+### 🐛 Bugfix — CUPRA/SEAT Silent Bug (seit OLA-Support live) / Bugfix — CUPRA/SEAT Silent Bug (since OLA support went live)
+
+- `cariad/api/seat_cupra.py:_fetch_renders` (line 128) hat OLA-`viewPoint`-Strings (`"side"`, `"front"`, `"rear"`, `"top"`) in `image_urls` geschrieben, aber `image.py:_add_entities_for_vin` iterierte nur `RENDER_IMAGE_TYPES` (Audi/VW GraphQL MediaService Catalog IDs wie `"MYAPN8NB"` / `"MS_MYP3"`). Lookup hat nie gematcht → 0 Image-Entitäten je gespawned für OLA-User.
+- **Post-Fix**: 4-7 Entitäten pro CUPRA/SEAT VIN werden jetzt gespawned.
+
+### 🚀 Neu — Skoda mysmob Multi-Angle Wire-In / New — Skoda mysmob Multi-Angle Wire-In
+
+- v1.22.x foundation (myskoda PR #571 confirmed live 2026-05-02) hatte `GET /api/v1/vehicle-information/{vin}/renders` Parser hinzugefügt, der `compositeRenders[].layers[]` in `data["composite_render_urls"]` flachte (keyed by lowercased viewPoint).
+- v1.24.0 merged das in `image_urls` in `coordinator._enrich` (mit `setdefault`, so any pre-existing key wins). Der gleiche Branch-2 leftover-keys Pfad fängt es dann.
+- **Post-Fix**: Bis zu 6 Multi-Angle-Entitäten pro Skoda-VIN (`exterior_{side,front,rear}` + `interior_{side,front,boot}`).
+
+### 🏗️ Architektur / Architecture
+
+- Neue Helpers in `image.py`: `_safe_slug` (stable identifier), `_humanize` (UI label), `_synthesize_meta` (RENDER_IMAGE_TYPES-shaped dict on the fly), `_has_image_data` (broadened spawn trigger covering image_urls / render_url / composite_render_urls).
+- Single `VagRenderImageEntity` Klasse handhabt alle 3 Render-Source-Shapes (Audi/VW catalog, OLA flat viewpoints, Skoda mysmob composites) — keine parallel entity classes.
+- `VagSkodaWidgetImageEntity` unverändert für backward-compat mit v1.22.0 entity ID.
+- `_cache_all_images` extended um Branch-2 caching zu mirrorn.
+
+### 🧪 Tests / Tests
+
+- `tests/test_v1240_image_cross_brand.py` — 24 neue Tests across 4 Klassen (helpers, _has_image_data trigger, cross-brand entity creation incl. CUPRA/SEAT regression test, coordinator merge).
+- 12/12 standalone-logic checks pass (helpers + branches + merge).
+- Bruno strict 84/84 unverändert across all 3 brands.
+
+---
 
 ## [1.23.0] - 2026-05-07 🚀 Audi/VW Push Foundation (Cariad FCM channel) / Audi/VW Push Foundation (Cariad FCM channel)
 
