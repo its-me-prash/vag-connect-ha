@@ -38,6 +38,20 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ## [Unreleased]
 
+### 🛡️ v1.25.0 Sprint C PR-B — Porsche HTTP Hardening + GraphQL Defensive
+
+- **Porsche `_request` HTTP-Hardening** (Audit Agent A finding — Porsche fehlte v1.8.7 storm-protection + v1.19.1 quota-tracking weil Porsche-Client nicht von CariadBaseClient erbt):
+  - 5xx Retry mit exponential backoff (3s/6s/12s, max 3 attempts)
+  - 429 Rate-Limit Backoff (5s/10s/20s, max 3 attempts)
+  - Transient network error retry (`ClientConnectorError`, `ServerDisconnectedError`, `ClientPayloadError`, `asyncio.TimeoutError`)
+  - X-RateLimit-Remaining/Limit/Reset Header capture → `last_rate_limit_*` properties → `requests_remaining_today` Sensor jetzt auch für Porsche
+  - Refresh-Storm-Protection: max 3 Refreshes pro 3600s sliding window, sonst raise AuthenticationError → HA-UI-Reauth
+- **GraphQL `_parse_response` PPC/PPE defensive** (Audit Agent C — audi_connect_ha #709 lesson):
+  - Erkennt `data.errors[].extensions.code == "INTERNAL_SERVER_ERROR"` (PPC/PPE platform pattern für Q5 PPC 2025+, Q6/A6 PPE)
+  - Logged Error-Path-zu-VIN mapping für Support-Diagnose
+  - Skipt betroffene VINs gracefully — andere Vehicles im selben Response rendern weiter
+- **Pragmatic Approach**: Statt Big-Bang BaseAPIClient extract (Sprint-C-Plan original) wurden die Patterns direkt in PorscheClient + GraphQL eingebaut. Niedrigeres Risiko, gleicher User-Benefit. Full BaseAPIClient extract kann v1.26.x als Architektur-Cleanup folgen wenn gewünscht.
+
 ### 🏗️ v1.25.0 Sprint C PR-A — `_normalize.py` Foundation + Cross-Brand Parity
 
 - **Neu**: `cariad/_normalize.py` — pure-function module (no HA imports) mit:

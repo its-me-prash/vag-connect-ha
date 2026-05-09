@@ -230,8 +230,37 @@ class VehicleImageFetcher:
 
     @staticmethod
     def _parse_response(data: dict[str, Any]) -> dict[str, VehicleImageData]:
-        """Extract VehicleImageData per VIN from GraphQL response."""
+        """Extract VehicleImageData per VIN from GraphQL response.
+
+        v1.25.0 PR-B (Audit Agent C, audi_connect_ha #709 lesson):
+        PPC / PPE platform vehicles (Audi Q5 PPC 2025+, Q6/A6 PPE) can
+        return ``"errors": [{"path": ["userVehicles", N, "vehicle",
+        "core"], "extensions": {"code": "INTERNAL_SERVER_ERROR"}}]``
+        on the bulk ``userVehicles { core mappingVin }`` query — the
+        backend bursts on the affected VIN's ``core`` field while
+        other VINs in the same response are fine.
+
+        We log the error path → VIN mapping so support can see exactly
+        which VIN's ``core`` blew up, then continue parsing the
+        remaining vehicles. Skipping bad-vehicle entries is correct
+        — the user's other cars still render.
+        """
         result: dict[str, VehicleImageData] = {}
+        # Surface PPC/PPE GraphQL partial-failure paths if present
+        errors = data.get("errors") if isinstance(data, dict) else None
+        if isinstance(errors, list) and errors:
+            for err in errors:
+                if not isinstance(err, dict):
+                    continue
+                code = (err.get("extensions") or {}).get("code", "?")
+                path = err.get("path", [])
+                msg = err.get("message", "")
+                _LOGGER.info(
+                    "GraphQL partial error (PPC/PPE platform pattern): "
+                    "code=%s path=%s msg=%s — affected VIN(s) skipped, "
+                    "other vehicles render normally",
+                    code, path, msg[:120],
+                )
         try:
             vehicles = data.get("data", {}).get("userVehicles", []) or []
             for v in vehicles:
