@@ -38,6 +38,12 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ## [Unreleased]
 
+### 📝 Docs / Docs
+
+- **README.md (DE) komplett refactored** auf saubere HACS-Standard-Struktur (472 → 218 Zeilen, 54% schlanker). Klare Sektionen: Was-es-kann / Supported brands matrix / Installation 3-Optionen / Konfiguration Tabelle / Was-du-bekommst / Lovelace examples / FAQ / Privacy / Roadmap / Contributing / License. Historische Session-Notes raus → bleiben in `docs/ROADMAP.md` + `docs/CHANGELOG_TECHNICAL.md`.
+- **README.en.md** spiegelt gleiche Struktur, English mirror.
+- **`docs/GOLF_7_GTE_TANK_GUIDE.md`** neu (130 Zeilen): Step-by-step User-Anleitung für v1.25.0 PR-G MBB VSR Phase 2 Tank-Level fallback. Voraussetzungs-Tabelle, Logs-Pattern, 3 Diagnose-Szenarien, worst-case Alternative-Wege (OBD-II, EU Data Act, CarConnectivity-connector debug), Reporting-Template für Issue #160 follow-up.
+
 ## [1.25.0] - 2026-05-09 🚀 Sprint C — Cross-Brand Parity + UX/UI + MBB VSR Phase 2 (Golf 7 GTE Tank) / Sprint C — Cross-Brand Parity + UX/UI + MBB VSR Phase 2 (Golf 7 GTE Tank)
 
 🚀 **MINOR-Release.** Größter Sprint seit v1.21.0 (8. Mai 2026). Bündelt 6 PRs (#168, #169, #170, #171 + final mega) mit:
