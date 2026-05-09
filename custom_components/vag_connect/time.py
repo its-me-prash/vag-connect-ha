@@ -28,7 +28,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .coordinator import VagConnectCoordinator
-from .entity_base import VagConnectEntity
+from .entity_base import VagConnectEntity, register_dynamic_spawner
 
 
 async def async_setup_entry(
@@ -36,30 +36,23 @@ async def async_setup_entry(
     entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
+    """Set up departure timers. v1.25.0 PR-C: dynamic listener spawn."""
     coordinator: VagConnectCoordinator = entry.runtime_data
-    # v1.12.0 (#63) — Read-only Mode: time entities edit the timer
-    # via a backend command, so they belong with the other write-side
-    # platforms that get skipped in read-only mode.
+    # v1.12.0 (#63) — Read-only Mode: time entities write commands, skip.
     if coordinator.is_read_only():
         return
 
-    entities: list[VagDepartureTimerTime] = []
-    for vin, vehicle in coordinator.vehicles.items():
-        # Only EV/PHEV expose departure timers (same gating as the
-        # existing departure_timer switches in switch.py:42).
+    def _build_for_vin(vin: str, vehicle: dict) -> list:
         if not vehicle.get("has_battery"):
-            continue
-        # v1.13.0 (#56 Phase 3) — capability gate. Same cap-id as the
-        # set-departure-timer command since editing the time triggers
-        # the same backend command.
+            return []
         if (
             coordinator.command_capability_supported(vin, "command_set_departure_timer")
             is False
         ):
-            continue
-        for timer_id in (1, 2, 3):
-            entities.append(VagDepartureTimerTime(coordinator, vin, timer_id))
-    async_add_entities(entities)
+            return []
+        return [VagDepartureTimerTime(coordinator, vin, tid) for tid in (1, 2, 3)]
+
+    register_dynamic_spawner(entry, coordinator, async_add_entities, _build_for_vin)
 
 
 class VagDepartureTimerTime(VagConnectEntity, TimeEntity):

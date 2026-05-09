@@ -7,7 +7,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .coordinator import VagConnectCoordinator
-from .entity_base import VagConnectEntity
+from .entity_base import VagConnectEntity, register_dynamic_spawner
 
 
 async def async_setup_entry(
@@ -15,27 +15,11 @@ async def async_setup_entry(
     entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
+    """Set up switch entities. v1.25.0 PR-C: dynamic listener spawn."""
     coordinator: VagConnectCoordinator = entry.runtime_data
     # v1.12.0 (#63) — Read-only Mode: switches send commands, skip all.
     if coordinator.is_read_only():
         return
-    entities: list[SwitchEntity] = []
-
-    # v1.13.0 (#56 Phase 3) — local helper to skip entity creation when
-    # the backend explicitly reports the underlying capability missing.
-    # ``False`` only when explicitly confirmed missing; ``None`` (unknown)
-    # keeps the entity (Phase 2 catches at runtime).
-    # v1.21.0 (Audi Q5 2021 user-report 2026-05-07) — extend the
-    # capability-gate with a brand-client-method-existence check.
-    # Pre-v1.21.0: ``coordinator.command_capability_supported`` returns
-    # None for unknown caps and the entity was created defensively. For
-    # commands that only certain brand-clients implement (e.g.
-    # ``command_start_ventilation`` is SEAT/CUPRA-only), pressing the
-    # phantom switch on Audi raised ``AttributeError: 'AudiClient'
-    # object has no attribute 'command_start_ventilation'``. Now we
-    # ALSO require the brand-client to actually expose the method —
-    # AttributeError-prevention plus zero phantom entities for brands
-    # that genuinely don't implement the command.
     client = coordinator._cariad_client
 
     def _supported(vin: str, command_id: str) -> bool:
@@ -43,34 +27,27 @@ async def async_setup_entry(
         client_has_method = client is not None and hasattr(client, command_id)
         return cap_supported and client_has_method
 
-    for vin, vehicle in coordinator.vehicles.items():
+    def _build_for_vin(vin: str, vehicle: dict) -> list:
+        entities: list = []
         if _supported(vin, "command_lock"):
             entities.append(VagLockSwitch(coordinator, vin))
         if _supported(vin, "command_start_climate"):
             entities.append(VagClimatisationSwitch(coordinator, vin))
         if _supported(vin, "command_start_window_heating"):
             entities.append(VagWindowHeatingSwitch(coordinator, vin))
-        # v1.17.1 (Bruno seq 31/32) — SEAT/CUPRA cabin ventilation.
         if _supported(vin, "command_start_ventilation"):
             entities.append(VagVentilationSwitch(coordinator, vin))
-        # v1.17.1 (Bruno seq 29/30) — SEAT/CUPRA Webasto aux heating.
-        # SecToken-required on start → Phase-3 cap-gate is the user's
-        # primary protection; missing S-PIN raises ServiceValidationError
-        # at command time (not entity-create time).
         if _supported(vin, "command_start_aux_heating"):
             entities.append(VagAuxHeatingSwitch(coordinator, vin))
-        # VagSeatHeatingSwitch + VagAutoUnlockSwitch removed in v1.8.0:
-        # they relied on internal CarConnectivity object mutation that no
-        # longer exists in our own CARIAD client. They will return once a
-        # real API command is implemented. See issue #60.
         if vehicle.get("has_battery"):  # EV + PHEV
             if _supported(vin, "command_start_charging"):
                 entities.append(VagChargingSwitch(coordinator, vin))
             if _supported(vin, "command_set_departure_timer"):
                 for timer_id in (1, 2, 3):
                     entities.append(VagDepartureTimerSwitch(coordinator, vin, timer_id))
+        return entities
 
-    async_add_entities(entities)
+    register_dynamic_spawner(entry, coordinator, async_add_entities, _build_for_vin)
 
 
 class VagLockSwitch(VagConnectEntity, SwitchEntity):

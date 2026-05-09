@@ -9,7 +9,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .coordinator import VagConnectCoordinator
-from .entity_base import VagConnectEntity
+from .entity_base import VagConnectEntity, register_dynamic_spawner
 
 
 async def async_setup_entry(
@@ -17,23 +17,23 @@ async def async_setup_entry(
     entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
+    """Set up lock entities. v1.25.0 PR-C: dynamic listener spawn."""
     coordinator: VagConnectCoordinator = entry.runtime_data
     # v1.12.0 (#63) — Read-only Mode: lock entity sends commands, skip
     # entity creation entirely when the user enabled the option.
     if coordinator.is_read_only():
         return
-    entities: list[LockEntity] = []
 
-    for vin in coordinator.vehicles:
+    def _build_for_vin(vin: str, vehicle: dict) -> list:  # noqa: ARG001
         # v1.13.0 (#56 Phase 3) — capability-filter PRE entity creation.
         # ``False`` only when backend explicitly reports lock capability
         # missing/limited; ``None`` (unknown) keeps the entity (Phase 2
         # catches at runtime via classify_command_failure).
         if coordinator.command_capability_supported(vin, "command_lock") is False:
-            continue
-        entities.append(VagDoorLock(coordinator, vin))
+            return []
+        return [VagDoorLock(coordinator, vin)]
 
-    async_add_entities(entities)
+    register_dynamic_spawner(entry, coordinator, async_add_entities, _build_for_vin)
 
 
 class VagDoorLock(VagConnectEntity, LockEntity):

@@ -38,6 +38,16 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ## [Unreleased]
 
+### 🔄 v1.25.0 Sprint C PR-C — Listener Pattern (10 Platforms) + GPS Hardening
+
+- **Adoption von volkswagencarnet PR #943 Pattern**: Neuer `register_dynamic_spawner()` Helper in `entity_base.py` der von 10 Platforms verwendet wird (sensor, binary_sensor, switch, lock, climate, button, number, select, time, device_tracker). Vorher: vehicles asleep at HA startup bekamen ihre Entitäten erst nach HA-Restart wenn Auto wach. Jetzt: dynamischer Listener spawnt Entitäten sobald Coordinator-Daten ankommen — kein Restart mehr nötig.
+- **GPS / device_tracker Hardening** (Audit Agent F):
+  - `(0, 0)` lat/lon Guard — pre-fix: Auto erschien off the African coast wenn Backend literal Zeros statt None lieferte
+  - Reichere `extra_state_attributes` für Map-Tooltip: parking_address, parking_city, last_seen_at, vehicle_state, model, model_year, vin_masked
+  - Type-safe lat/lon Properties (mypy `--disallow-untyped-defs` Compliance)
+- **scan_interval no-reload** (HA vw #927 lesson) — bestätigt schon korrekt implementiert in `__init__.py:392-427`. `_async_update_listener` macht hot-apply für scan_interval + spin (kein full reload), nur brand/username/password triggern reload. Doku verbessert.
+- **Konsequenz**: User mit 3 Autos die unterschiedlich oft aufwachen sehen jetzt alle Entitäten konsistent statt "1 Auto fehlt komplett bis nächster Restart".
+
 ### 🛡️ v1.25.0 Sprint C PR-B — Porsche HTTP Hardening + GraphQL Defensive
 
 - **Porsche `_request` HTTP-Hardening** (Audit Agent A finding — Porsche fehlte v1.8.7 storm-protection + v1.19.1 quota-tracking weil Porsche-Client nicht von CariadBaseClient erbt):
