@@ -38,6 +38,41 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ## [Unreleased]
 
+## [1.26.0] - 2026-05-09 🎯 Welle-6 Feature Backlog (#173) — 7 neue Entitäten + Cross-Brand Parity / Welle-6 Feature Backlog (#173) — 7 new entities + Cross-Brand Parity
+
+🎯 **MINOR-Release.** Setzt das Welle-6 Scout-Feature-Backlog (#173) um. **Diese Features waren in den Scout-Reports #129/#130/#132/#133/#143/#144/#145/#146/#147/#165/#167 enthalten aber wurden in v1.19.3 nur EXPECTED_KEYS-silenced statt als Entitäten exposed** — der v1.25.0 Audit hatte das als Pattern-Bruch identifiziert (vergleiche #91 → 5 neue Entitäten in v1.11.0).
+
+### 🆕 Neue Entitäten (7 total)
+
+**Sensoren** (4):
+- **`sensor.<vin>_secondary_engine_range_km`** — Skoda PHEV (Kodiaq iV, Octavia iV, Superb iV) aus `driving-range.secondaryEngineRange.distanceInKm`. Komplementär zu `combustion_range_km` weil Skoda PHEVs beide via separate API-Blöcke seit 2024 firmware reporten. Closes Scout #165 (christianmhz).
+- **`sensor.<vin>_next_charging_timer_id`** — VW EU/Audi aus `automation.chargingProfiles.value.nextChargingTimer.id` (1/2/3). Diagnostic-category. Read-side complement zum v1.16.0 write-side `set_departure_timer` service.
+- **`sensor.<vin>_next_charging_timer_target_soc_reachable`** — VW EU/Audi aus `automation.chargingProfiles.value.nextChargingTimer.targetSOCreachable` ("calculating" oder Prozentwert). User sieht ob das Auto den nächsten Lade-Timer erreichen wird.
+- **`sensor.<vin>_capabilities_count`** — VW EU/Audi aus `userCapabilities.capabilitiesStatus.value[].length` (typisch 54 items). Diagnostic für Power-User die debuggen wollen "warum fehlt Entity X bei mir?".
+
+**Binary Sensors** (3):
+- **`binary_sensor.<vin>_auto_unlock_when_charged`** — Cross-brand (VW EU/Audi via `charging.chargingSettings.value.autoUnlockPlugWhenCharged`; Skoda via `settings.autoUnlockPlugWhenCharged`/`autoUnlockPlugWhenChargedAC`). Diagnostic.
+- **`binary_sensor.<vin>_climate_at_unlock`** — Cross-brand (VW EU/Audi via `climatisation.climatisationSettings.value.climatizationAtUnlock`; Skoda via `airConditioningAtUnlock`). Diagnostic.
+- **`binary_sensor.<vin>_window_heating_enabled`** — Cross-brand (VW EU/Audi via `climatisation.climatisationSettings.value.windowHeatingEnabled`; Skoda via `windowHeatingEnabled`). Distinct from existing `window_heating_front/back` STATE switches — this is the SETTING ("auto-activate during climate?"). Diagnostic.
+
+### 🌍 Cross-Brand Battery-Care Parity
+
+- VW EU/Audi bekommen jetzt `battery_care_enabled` + `battery_care_target_soc_pct` aus Cariad-BFF (`charging.chargingCareSettings.value.batteryCareMode` + `batteryChargingCare.chargingCareSettings.value.batteryCareTargetSoc`). Skoda bekommt zusätzlich Wiring aus `settings.batteryCareModeTargetValueInPercent` + `settings.chargingCareMode`. Existierende Sensor + Binary Sensor (CUPRA/SEAT seit v1.17.5) brauchten kein neues Entity-Description.
+
+### 🌍 Audi/VW EU `charging_rate_kmh` Parität
+
+- Sensor existierte bereits cross-brand seit v1.10.0. Parser für VW EU/Audi war seit dem Anfang da. Closes Scout #167 als bereits-implementiert (Scout-Report kam von Firmware die das Feld zum ersten Mal bei diesem User auslieferte — EXPECTED_KEYS update folgt automatisch über v1.9.0 Pipeline).
+
+### 🛡️ Defensive Coding
+
+- Alle neuen Felder benutzen `safe_int` für Zahlen, explicit `isinstance` für bool/string types
+- `_DATA_PRESENT_REQUIRED` extended um die 4 neuen Sensoren + 3 neuen Binary Sensors → keine Phantom-Entitäten für Brands/Vehicles ohne entsprechende API-Felder
+- Translation-Keys in `strings.json` + DE-Übersetzung + 7 weitere Locales als English-Fallback (proper community translation deferred)
+
+### 📚 Pattern Lessons
+
+Die v1.25.0 Audit-Erkenntnis "silenced ohne Feature-Umsetzung sollte vermieden werden" wird ab jetzt umgesetzt: **Bei jedem Scout-Report VORHER prüfen ob feature-würdig**. Wenn JA: implementieren, dann silencen. Wenn NEIN: silencen + im Close-Comment `category: silence-only` mit Begründung dokumentieren.
+
 ### 📝 Docs / Docs
 
 - **README.md (DE) komplett refactored** auf saubere HACS-Standard-Struktur (472 → 218 Zeilen, 54% schlanker). Klare Sektionen: Was-es-kann / Supported brands matrix / Installation 3-Optionen / Konfiguration Tabelle / Was-du-bekommst / Lovelace examples / FAQ / Privacy / Roadmap / Contributing / License. Historische Session-Notes raus → bleiben in `docs/ROADMAP.md` + `docs/CHANGELOG_TECHNICAL.md`.

@@ -774,6 +774,42 @@ class VWEUClient(CariadBaseClient):
         d.charging_power_kw = v(raw, "charging", "chargingStatus", "value", "chargePower_kW")
         d.charging_rate_kmh = v(raw, "charging", "chargingStatus", "value", "chargeRate_kmph")
 
+        # v1.26.0 Welle-6 Feature Backlog (#173) — Battery-Care for VW EU/Audi.
+        # Skoda + CUPRA/SEAT have these via own paths since v1.17.5; VW EU/Audi
+        # finally exposed via Cariad-BFF (paths from scout reports
+        # #144/#145/#146/#147 — were silenced in v1.19.3, now wired as features).
+        care_mode = v(raw, "charging", "chargingCareSettings", "value", "batteryCareMode")
+        if isinstance(care_mode, str):
+            up = care_mode.upper()
+            if up in ("ACTIVATED", "ACTIVE", "ON", "TRUE"):
+                d.battery_care_enabled = True
+            elif up in ("DEACTIVATED", "INACTIVE", "OFF", "FALSE"):
+                d.battery_care_enabled = False
+        care_target = v(raw, "batteryChargingCare", "chargingCareSettings", "value", "batteryCareTargetSoc")
+        if care_target is None:
+            care_target = v(raw, "charging", "chargingCareSettings", "value", "batteryCareTargetSoc")
+        d.battery_care_target_soc_pct = safe_int(care_target)
+
+        # v1.26.0 — Auto-Unlock plug when charged. From scout #144 VW ID.4 Pro.
+        auto_unlock_raw = v(raw, "charging", "chargingSettings", "value", "autoUnlockPlugWhenCharged")
+        if isinstance(auto_unlock_raw, str):
+            up = auto_unlock_raw.upper()
+            if up in ("PERMANENT", "ON", "ACTIVATED", "TRUE", "YES"):
+                d.auto_unlock_when_charged = True
+            elif up in ("OFF", "DEACTIVATED", "FALSE", "NO"):
+                d.auto_unlock_when_charged = False
+
+        # v1.26.0 — Next-Charging-Timer info (read-side complement to v1.16.0
+        # write-side). From scout #144/#145/#146/#147 (3-user convergence).
+        nct_id = v(raw, "automation", "chargingProfiles", "value", "nextChargingTimer", "id")
+        d.next_charging_timer_id = safe_int(nct_id)
+        nct_target = v(
+            raw, "automation", "chargingProfiles", "value",
+            "nextChargingTimer", "targetSOCreachable",
+        )
+        if isinstance(nct_target, str) and nct_target:
+            d.next_charging_timer_target_soc_reachable = nct_target
+
         # v1.10.1 (#58) — safe_int. New CARIAD firmware shipped this as
         # a stringified decimal at least once — see myskoda #503.
         remaining_min = safe_int(
@@ -1038,6 +1074,22 @@ class VWEUClient(CariadBaseClient):
         d.climatisation_state = v(raw, "climatisation", "climatisationStatus", "value", "climatisationState")
         d.climatisation_active = d.climatisation_state not in (None, "OFF", "CLIMATISATION_STATUS_UNAVAILABLE")
         d.target_temperature = v(raw, "climatisation", "climatisationSettings", "value", "targetTemperature_C")
+
+        # v1.26.0 Welle-6 (#173) — climate-at-unlock + window-heating-enabled
+        # SETTINGS (distinct from front/back STATES). Scout #144 VW ID.4 Pro.
+        clim_at_unlock = v(raw, "climatisation", "climatisationSettings", "value", "climatizationAtUnlock")
+        if isinstance(clim_at_unlock, bool):
+            d.climate_at_unlock = clim_at_unlock
+        wh_enabled = v(raw, "climatisation", "climatisationSettings", "value", "windowHeatingEnabled")
+        if isinstance(wh_enabled, bool):
+            d.window_heating_enabled = wh_enabled
+
+        # v1.26.0 (#173) — capabilities_count diagnostic. From scout #144
+        # (54 items observed). Useful for power-users debugging "why is
+        # entity X missing for me?". Read from selectivestatus envelope.
+        caps = v(raw, "userCapabilities", "capabilitiesStatus", "value")
+        if isinstance(caps, list):
+            d.capabilities_count = len(caps)
 
         wh_status = v(raw, "climatisation", "windowHeatingStatus", "value", "windowHeatingStatus") or []
         for wh in wh_status:

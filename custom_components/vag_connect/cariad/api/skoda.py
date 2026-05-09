@@ -523,6 +523,27 @@ class SkodaClient(CariadBaseClient):
             settings = charging.get("settings", {})
             d.target_soc = v(settings, "targetStateOfChargeInPercent")
             d.auto_unlock_charge = v(settings, "autoUnlockPlugWhenChargedAC") == "ON"
+            # v1.26.0 Welle-6 (#173, scouts #143/#133) — cross-brand alias.
+            # Skoda's autoUnlockPlugWhenCharged or AC-suffix variant.
+            au_raw = v(settings, "autoUnlockPlugWhenCharged") or v(settings, "autoUnlockPlugWhenChargedAC")
+            if isinstance(au_raw, str):
+                up = au_raw.upper()
+                if up in ("ON", "PERMANENT", "TRUE", "YES"):
+                    d.auto_unlock_when_charged = True
+                elif up in ("OFF", "FALSE", "NO"):
+                    d.auto_unlock_when_charged = False
+            # v1.26.0 — Battery-Care Skoda. From scout #143 batteryCareModeTargetValueInPercent
+            # + chargingCareMode "ACTIVATED"/"DEACTIVATED".
+            care_mode_raw = v(settings, "chargingCareMode")
+            if isinstance(care_mode_raw, str):
+                up = care_mode_raw.upper()
+                if up in ("ACTIVATED", "ACTIVE", "ON", "TRUE"):
+                    d.battery_care_enabled = True
+                elif up in ("DEACTIVATED", "INACTIVE", "OFF", "FALSE"):
+                    d.battery_care_enabled = False
+            care_target_pct = v(settings, "batteryCareModeTargetValueInPercent")
+            if d.battery_care_target_soc_pct is None:  # don't clobber CUPRA/SEAT path
+                d.battery_care_target_soc_pct = safe_int(care_target_pct)
 
         # ── Air conditioning (also has plug state!) ──────────────────────────
         if isinstance(ac, dict):
@@ -537,6 +558,15 @@ class SkodaClient(CariadBaseClient):
             wh = v(ac, "windowHeatingState") or {}
             d.window_heating_front = v(wh, "front") == "ON"
             d.window_heating_back = v(wh, "rear") == "ON"
+            # v1.26.0 Welle-6 (#173, scouts #143) — Skoda climate settings.
+            # airConditioningAtUnlock as climate_at_unlock cross-brand alias.
+            au_clim = v(ac, "airConditioningAtUnlock")
+            if isinstance(au_clim, bool):
+                d.climate_at_unlock = au_clim
+            # windowHeatingEnabled (setting, not state — distinct from front/back ON state).
+            wh_en = v(ac, "windowHeatingEnabled")
+            if isinstance(wh_en, bool):
+                d.window_heating_enabled = wh_en
 
             # v1.17.7 (#129 rocksandclouds + #130 Chr1sDub + #133
             # christianmhz — three converging Skoda Scout-Reports
@@ -611,6 +641,12 @@ class SkodaClient(CariadBaseClient):
                 d.range_km = electric or total
             adblue = v(driving_range, "adBlueRange", "distanceInKm")
             d.adblue_range_km = safe_int(adblue)
+            # v1.26.0 Welle-6 (#173, scout #165 christianmhz) — Skoda PHEV
+            # secondary engine range (Kodiaq iV, Octavia iV, Superb iV).
+            # Distinct from combustion_range_km because Skoda PHEVs report
+            # both via separate API blocks since 2024 firmware.
+            sec_eng = v(driving_range, "secondaryEngineRange", "distanceInKm")
+            d.secondary_engine_range_km = safe_int(sec_eng)
 
         d.is_electric = d.has_battery and not d.has_combustion
         d.is_hybrid = d.has_battery and d.has_combustion

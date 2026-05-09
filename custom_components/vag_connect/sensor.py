@@ -654,6 +654,41 @@ SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
         entity_category=EntityCategory.DIAGNOSTIC,
         state_class=SensorStateClass.MEASUREMENT,
     ),
+    # v1.26.0 Welle-6 Feature Backlog (#173) — new sensors from scout reports.
+    VagSensorDescription(
+        key="secondary_engine_range_km",
+        translation_key="secondary_engine_range_km",
+        data_key="secondary_engine_range_km",
+        native_unit_of_measurement="km",
+        device_class=SensorDeviceClass.DISTANCE,
+        state_class=SensorStateClass.MEASUREMENT,
+        icon="mdi:gas-station-outline",
+        condition="combustion",
+        suggested_display_precision=0,
+    ),
+    VagSensorDescription(
+        key="next_charging_timer_id",
+        translation_key="next_charging_timer_id",
+        data_key="next_charging_timer_id",
+        icon="mdi:numeric",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        condition="electric",
+    ),
+    VagSensorDescription(
+        key="next_charging_timer_target_soc_reachable",
+        translation_key="next_charging_timer_target_soc_reachable",
+        data_key="next_charging_timer_target_soc_reachable",
+        icon="mdi:battery-charging-high",
+        condition="electric",
+    ),
+    VagSensorDescription(
+        key="capabilities_count",
+        translation_key="capabilities_count",
+        data_key="capabilities_count",
+        icon="mdi:format-list-numbered",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        state_class=SensorStateClass.MEASUREMENT,
+    ),
 )
 
 # Sensor keys that read from coordinator helpers instead of the per-vehicle
@@ -710,6 +745,15 @@ _DATA_PRESENT_REQUIRED: frozenset[str] = frozenset({
     # data-present gate keeps the entity from ever being created.
     "license_plate",
     "equipment_count",
+    # v1.26.0 Welle-6 Feature Backlog (#173) — phantom protection for
+    # the new sensors. Brand-restricted at the parser level (Skoda has
+    # secondary_engine_range_km only for PHEV; VW EU/Audi have the
+    # next_charging_timer_* + capabilities_count). Other vehicles leave
+    # the field None → no phantom entity created.
+    "secondary_engine_range_km",
+    "next_charging_timer_id",
+    "next_charging_timer_target_soc_reachable",
+    "capabilities_count",
 })
 
 # v1.14.0 (#24) — Trip Statistics is brand-restricted at the API level
