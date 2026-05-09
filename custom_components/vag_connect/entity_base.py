@@ -93,22 +93,36 @@ class VagConnectEntity(CoordinatorEntity[VagConnectCoordinator]):
                 pass
         return True
 
+    # v1.25.0 PR-F: brand-aware "Open in App" deep-links for the
+    # ``configuration_url`` button on the device page.
+    _BRAND_PORTAL: dict[str, str] = {
+        "audi":          "https://my.audi.com/",
+        "volkswagen":    "https://www.volkswagen.de/de/myvolkswagen.html",
+        "skoda":         "https://www.skoda-auto.com/myskoda",
+        "seat":          "https://www.seat.com/owners/myseat.html",
+        "cupra":         "https://www.cupraofficial.com/services/mycupra.html",
+        "porsche":       "https://my.porsche.com/",
+        "volkswagen_na": "https://www.vw.com/myvw/",
+    }
+
     @property
     def device_info(self) -> DeviceInfo:
         """Return HA DeviceInfo keyed by VIN.
 
-        Sets entity_picture to the vehicle render image (side_large preferred)
-        so the car photo appears on the device page in HA.
+        v1.25.0 PR-F changes:
+        - Added ``configuration_url`` (brand-aware) → "Open in App" button
+        - Added ``suggested_area="Garage"`` → auto-Area on first setup
+        - Removed broken ``info["entity_picture"]`` no-op (Audit Agent E)
+        - Vehicle-render is exposed via ``entity_picture`` property below,
+          which is the actual mechanism HA reads for entity-detail pictures
+          AND the source for device-default-picture when this entity becomes
+          the device's "primary" entity (Lovelace heuristic).
         """
         vehicle = self._vehicle
         brand = self.coordinator.entry.data.get("brand", "vag")
         name = _device_name(vehicle, brand)
 
-        # Use vehicle render image as device picture
-        image_urls: dict = vehicle.get("image_urls") or {}
-        picture = VehicleImageFetcher.best_url(image_urls) if image_urls else None
-
-        info = DeviceInfo(
+        return DeviceInfo(
             identifiers={(DOMAIN, self._vin)},
             name=name,
             model=vehicle.get("model") or "VAG Vehicle",
@@ -120,22 +134,41 @@ class VagConnectEntity(CoordinatorEntity[VagConnectCoordinator]):
                 else None
             ),
             sw_version=vehicle.get("firmware_version"),
+            configuration_url=self._BRAND_PORTAL.get(brand.lower()),
+            suggested_area="Garage",
         )
-        if picture:
-            info["entity_picture"] = picture  # type: ignore[typeddict-unknown-key]
-        return info
 
     @property
     def entity_picture(self) -> str | None:
         """Return vehicle render image URL as entity picture.
 
         Shows the car photo on the entity detail page and in dashboards
-        that display entity pictures (e.g. mushroom cards).
+        that display entity pictures (e.g. mushroom cards, glance, etc.).
         Falls back to None so HA uses the entity's icon instead.
         """
         vehicle = self._vehicle
         image_urls: dict = vehicle.get("image_urls") or {}
         return VehicleImageFetcher.best_url(image_urls) if image_urls else None
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any] | None:
+        """Surface ``image_url`` so Custom Lovelace Cards can read it.
+
+        v1.25.0 PR-F (Audit Agent E #5 win): Cards like Ultra-Vehicle-Card,
+        vehicle-info-card, mushroom-template-card consume an ``image_url``
+        attribute to render the car photo next to the entity. By centrally
+        adding it here, every entity (sensor, binary_sensor, switch, etc.)
+        becomes a valid source for those cards.
+
+        Subclasses can override + call ``super().extra_state_attributes``
+        to merge in their own attributes.
+        """
+        vehicle = self._vehicle
+        image_urls: dict = vehicle.get("image_urls") or {}
+        if not image_urls:
+            return None
+        url = VehicleImageFetcher.best_url(image_urls)
+        return {"image_url": url} if url else None
 
 
 # v1.25.0 PR-C — Listener-Pattern helper. Adopts the volkswagencarnet

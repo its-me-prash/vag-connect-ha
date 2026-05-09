@@ -76,14 +76,20 @@
           "spin": "S-PIN",
           "enable_reverse_geocoding": "Reverzní geokódování (adresa parkování)",
           "read_only_mode": "Režim jen pro čtení",
-          "force_ppe_climate": "Audi PPE/PPC klima-tělo (Q6/A6 e-tron, RS e-tron GT Facelift, A3 2024+ PHEV)"
+          "force_ppe_climate": "Audi PPE/PPC klima-tělo (Q6/A6 e-tron, RS e-tron GT Facelift, A3 2024+ PHEV)",
+          "enable_push_mqtt": "Skoda push updates (MQTT, EXPERIMENTAL)",
+          "enable_push_fcm": "CUPRA/SEAT push updates (FCM, EXPERIMENTAL)",
+          "enable_push_audi_vw": "Audi/VW push updates (Cariad FCM, EXPERIMENTAL)"
         },
         "data_description": {
           "scan_interval": "Jak často se stahují data (minuty). Minimum: 3.",
           "spin": "S-PIN pro zamykání dveří.",
           "enable_reverse_geocoding": "Odesílá GPS parkování do OpenStreetMap Nominatim pro získání ulice/města. Výchozí: vypnuto (soukromí).",
           "read_only_mode": "Když je povoleno, vytváří se pouze stavové senzory — žádné spínače, tlačítka, zámky, klima ani posuvníky odesílající příkazy. Užitečné, pokud chcete telemetrii vozidla bez rizika náhodného spuštění. Po přepnutí znovu načtěte integraci.",
-          "force_ppe_climate": "Pouze Audi. Vynucuje nový PPE/PPC formát těla (climatisationMode povinný, targetTemperature vynechaný) při startu klimatizace. Zapnout pouze pokud vlastníš Q6 e-tron, A6 e-tron, RS e-tron GT Facelift nebo A3 2024+ PHEV — jinak API vrátí 400. Po zapnutí znovu načti integraci."
+          "force_ppe_climate": "Pouze Audi. Vynucuje nový PPE/PPC formát těla (climatisationMode povinný, targetTemperature vynechaný) při startu klimatizace. Zapnout pouze pokud vlastníš Q6 e-tron, A6 e-tron, RS e-tron GT Facelift nebo A3 2024+ PHEV — jinak API vrátí 400. Po zapnutí znovu načti integraci.",
+          "enable_push_mqtt": "EXPERIMENTAL: Skoda-only. Enables real-time MQTT push from Skoda mysmob backend (requires aiomqtt + firebase-messaging Python packages — currently lazy-imported, not pre-installed). Foundation phase in v1.18.0; live activation pending community-tester validation. If push is unavailable, the integration silently falls back to polling. Reload the integration after toggling.",
+          "enable_push_fcm": "EXPERIMENTAL: CUPRA/SEAT only. Enables real-time Firebase Cloud Messaging push from OLA backend (requires firebase-messaging Python package — same lazy-import as v1.18.0 Skoda MQTT toggle). Foundation phase in v1.19.0; live activation pending community-tester validation. If push is unavailable, the integration silently falls back to polling. Reload the integration after toggling.",
+          "enable_push_audi_vw": "EXPERIMENTAL: Audi/VW only. Enables real-time push notifications from Cariad FCM channel (same one myAudi/WeConnect mobile apps use — covers lock/unlock results, charging-state, climate, alarm). Requires firebase-messaging Python package (same as Skoda MQTT + CUPRA/SEAT FCM). Foundation phase in v1.23.0; live activation pending community-tester validation. If push is unavailable, the integration silently falls back to polling. Reload the integration after toggling."
         }
       }
     }
@@ -245,6 +251,15 @@
       },
       "error_reporter_count": {
         "name": "Hlásič chyb"
+      },
+      "requests_remaining_today": {
+        "name": "API Requests Remaining"
+      },
+      "license_plate": {
+        "name": "License Plate"
+      },
+      "equipment_count": {
+        "name": "Equipment Count"
       }
     },
     "binary_sensor": {
@@ -458,6 +473,14 @@
     "error_reporter_findings": {
       "title": "Hlásič chyb — {count} nedávných chyb v {brand}",
       "description": "Hlásič chyb zachytil **{count}** nedávných chyb integrace s {brand}.\n\nNahlášení nám pomáhá najít chyby, které se objevují pouze u konkrétních vozidel nebo verzí firmwaru.\n\n**Hlášení jedním kliknutím:**\n📤 Klikněte níže na **Více informací** a otevřete předvyplněný GitHub issue.\n\n**Pro Facebook / fórum:** Nastavení → Zařízení → VAG Connect → Diagnostika → Stáhnout — zpráva je obsažena, VINy a tokeny maskované.\n\n_Soukromí: VINy maskované, tokeny Bearer/JWT/UUID/e-mail odstraněny ze zpráv a tracebacků. Žádná přihlašovací data._"
+    },
+    "quota_low": {
+      "title": "API quota low — {remaining} requests remaining today",
+      "description": "Your VAG account is approaching the daily API request limit ({remaining} of {limit} remaining, {pct}%).\n\nTo protect against quota lockout (the manufacturer backend can soft-suspend the account when the daily cap is reached), consider:\n\n1. **Increase the update interval** — Settings → Devices & Services → VAG Connect → Configure → Update Interval (currently typically 5–10 min)\n2. **Reduce other VAG integrations** running on the same account (each counts against the same quota)\n3. **Wait for daily reset** — usually around midnight in the manufacturer's home time zone\n\nThis warning auto-clears when the remaining count recovers."
+    },
+    "quota_critical": {
+      "title": "API quota CRITICAL — {remaining} requests remaining today",
+      "description": "Your VAG account has fewer than 25 API requests remaining today ({remaining} of {limit}, {pct}%). The manufacturer backend may soft-suspend the account if you exhaust the budget.\n\n**Immediate action:**\n1. **Pause polling** — Settings → Devices & Services → VAG Connect → Configure → Update Interval → set to 30 min or higher\n2. Avoid manual refreshes / vehicle wake-ups until the budget resets\n\nThis warning auto-clears when the remaining count recovers."
     }
   },
   "exceptions": {

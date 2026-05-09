@@ -176,6 +176,27 @@ class VWEUClient(CariadBaseClient):
 
         d = self._parse_status(vin, raw, parking)
 
+        # v1.25.0 PR-G — MBB VSR Phase 2 read-side fallback (Golf 7 GTE
+        # Tank-Level use case). Triggers when:
+        #   1. Cariad-BFF returned no fuel_level (older PHEV firmware
+        #      ships ``fuelStatus.rangeStatus = {error}`` with no
+        #      ``currentFuelLevel_pct``)
+        #   2. AND the VIN is known-MBB-backed via MBBBackendCache
+        #      (was set by a previous wrapper-404 wake fallback in
+        #      v1.21.0 Phase 1)
+        # Then we GET the legacy MBB ``/fs-car/bs/vsr/v1/.../status``
+        # endpoint and parse field IDs ``0x030103000A`` (tank %) +
+        # ``0x0301030005`` (total range km). Defensive: any failure
+        # leaves ``d.fuel_level`` at None — entity stays unknown.
+        if d.fuel_level is None:
+            try:
+                await self._maybe_fill_from_mbb_vsr(vin, d)
+            except Exception as err:  # noqa: BLE001
+                _LOGGER.debug(
+                    "MBB VSR fallback failed for %s — leaving fuel_level None: %s",
+                    vin[-6:], type(err).__name__,
+                )
+
         # v1.9.0 — Vehicle Data Scout opt-in. Endpoint names match
         # ``EXPECTED_KEYS["volkswagen"]`` (Audi inherits the table via
         # AudiClient(VWEUClient) — same backend, same shape).
@@ -446,6 +467,99 @@ class VWEUClient(CariadBaseClient):
             vin[-6:],
         )
         await self._post(url, json={})
+
+    async def _maybe_fill_from_mbb_vsr(self, vin: str, d: VehicleData) -> None:
+        """v1.25.0 PR-G — MBB VSR Phase 2 read-side fallback.
+
+        When Cariad-BFF returns no ``fuel_level`` (Golf 7 GTE / older
+        PHEV firmware ships ``fuelStatus.rangeStatus = {error}``), the
+        underlying MBB OCU still publishes the field via the legacy
+        VSR ``/fs-car/bs/vsr/v1/.../status`` endpoint. This is the
+        read-side complement to v1.21.0's wake-side MBB fallback.
+
+        Only fires when:
+          1. ``d.fuel_level is None`` (Cariad gave us nothing)
+          2. AND VIN is known-MBB-backed (set by previous wrapper-404
+             event in MBBBackendCache; new VINs must hit a wake first
+             to be classified)
+
+        Defensive: any HTTP failure / empty response leaves
+        ``d.fuel_level`` at None — entity stays "unknown".
+
+        References:
+          - audi_connect_ha audi_models.py legacy IDS table for the
+            field-IDs ``0x030103000A`` (tank %) + ``0x0301030005``
+            (total range km)
+          - tillsteinbach/WeConnect-python — same field-IDs
+            confirmed for VW EU MBB stack
+        """
+        from .._mbb import (  # noqa: PLC0415
+            MBBBackendCache,
+            MBB_DEFAULT_READ_BASE,
+            MBB_VSR_FIELD_TANK_PCT,
+            MBB_VSR_FIELD_TOTAL_RANGE_KM,
+            build_mbb_vsr_status_url,
+            parse_mbb_vsr_field,
+        )
+        from .._home_region import HomeRegionCache, resolve_home_region  # noqa: PLC0415
+        from .._util import safe_int  # noqa: PLC0415
+
+        # Lazy-init caches (same pattern as command_wake)
+        if not hasattr(self, "_mbb_backend_cache"):
+            self._mbb_backend_cache = MBBBackendCache()
+        if not hasattr(self, "_home_region_cache"):
+            self._home_region_cache = HomeRegionCache()
+
+        # Only proceed if we KNOW the VIN is MBB-backed. Don't speculatively
+        # probe MBB on every Cariad-BFF poll — too noisy for non-Golf 7
+        # vehicles. The first wrapper-404 wake will set the flag.
+        if self._mbb_backend_cache.get(vin) != "mbb":
+            return
+
+        # Resolve homeRegion-derived read base
+        try:
+            read_base = await resolve_home_region(
+                self, vin, cache=self._home_region_cache,
+            )
+        except Exception:  # noqa: BLE001
+            read_base = MBB_DEFAULT_READ_BASE
+        if "cariad.digital" in read_base or "bff.cariad" in read_base:
+            read_base = MBB_DEFAULT_READ_BASE
+
+        url = build_mbb_vsr_status_url(read_base, self._brand.name, "DE", vin)
+        _LOGGER.debug(
+            "MBB VSR GET → %s (vin ***%s) — Phase 2 fallback for fuel_level",
+            url.replace(vin, f"***{vin[-6:]}"), vin[-6:],
+        )
+
+        try:
+            response = await self._get(url)
+        except Exception as err:  # noqa: BLE001
+            _LOGGER.debug(
+                "MBB VSR fetch failed for ***%s: %s — leaving fuel_level None",
+                vin[-6:], type(err).__name__,
+            )
+            return
+
+        # Tank %
+        tank_raw = parse_mbb_vsr_field(response, MBB_VSR_FIELD_TANK_PCT)
+        tank_pct = safe_int(tank_raw)
+        if tank_pct is not None:
+            d.fuel_level = tank_pct
+            _LOGGER.info(
+                "MBB VSR Phase 2: filled fuel_level=%d%% for ***%s "
+                "(Cariad-BFF was empty)", tank_pct, vin[-6:],
+            )
+        # Total range km — only fill if Cariad didn't already give us one
+        if d.combustion_range_km is None:
+            range_raw = parse_mbb_vsr_field(response, MBB_VSR_FIELD_TOTAL_RANGE_KM)
+            range_km = safe_int(range_raw)
+            if range_km is not None:
+                d.combustion_range_km = range_km
+                _LOGGER.info(
+                    "MBB VSR Phase 2: filled combustion_range_km=%d for ***%s",
+                    range_km, vin[-6:],
+                )
 
     # ── v1/v2 endpoint dispatch (Session 3A — #51, #74) ─────────────────────
     #

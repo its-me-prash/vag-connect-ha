@@ -3,5 +3,7 @@
   "content_in_root": false,
   "hide_default_branch": true,
   "homeassistant": "2024.4.0",
-  "render_readme": true
+  "render_readme": true,
+  "zip_release": true,
+  "filename": "vag_connect.zip"
 }
