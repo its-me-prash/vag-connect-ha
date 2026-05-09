@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import time
 from typing import Any
 
 from aiohttp import ClientSession, ClientTimeout
@@ -24,6 +25,10 @@ _LOGGER = logging.getLogger(__name__)
 _API_BASE   = "https://api.ppa.porsche.com"
 _X_CLIENT   = "41843fb4-691d-4970-85c7-2673e8ecef40"
 _USER_AGENT = "My Porsche/2.1.0 (iPhone; iOS 17.0; Scale/3.00)"
+
+# v1.25.0 PR-B: storm-protection constants (mirror of base.py)
+_REFRESH_MAX_PER_HOUR = 3
+_REFRESH_WINDOW_S = 3600
 
 
 class PorscheClient:
@@ -46,6 +51,15 @@ class PorscheClient:
         self._spin    = spin
         self._tokens: TokenSet | None = None
         self._auth = PorscheAuth(session)
+        # v1.25.0 PR-B: refresh-storm protection state
+        self._refresh_lock: asyncio.Lock | None = None
+        self._refresh_history: list[float] = []
+        # v1.25.0 PR-B: rate-limit header capture (read by coordinator
+        # for the requests_remaining_today sensor — matches CariadBase
+        # surface so coordinator code stays brand-agnostic).
+        self.last_rate_limit_remaining: int | None = None
+        self.last_rate_limit_limit: int | None = None
+        self.last_rate_limit_reset_at: int | None = None
 
     async def authenticate(self, mfa_code: str | None = None) -> None:
         """Auth0 PKCE login."""
@@ -221,13 +235,48 @@ class PorscheClient:
             json={"commandName": command, **(payload or {})},
         )
 
+    # v1.25.0 PR-B: HTTP machinery hardening — port retry / storm-protection
+    # / quota-tracking patterns from CariadBaseClient.
+    #
+    # Pre-v1.25.0 PorscheClient duplicated a much simpler `_request` (no
+    # 5xx retry, no 429 backoff, no quota header capture, no refresh-storm
+    # protection). Audit Agent A flagged this as the highest-impact gap
+    # for PorscheClient. Big-bang abstract-class extract was deemed too
+    # risky for v1.25.0; this PR applies the same battle-tested patterns
+    # in-line so Porsche users get parity.
+
     async def _get(self, url: str, **kwargs: Any) -> Any:
         return await self._request("GET", url, **kwargs)
 
     async def _post(self, url: str, **kwargs: Any) -> Any:
         return await self._request("POST", url, **kwargs)
 
-    async def _request(self, method: str, url: str, retry: bool = True, **kwargs: Any) -> Any:
+    async def _request(
+        self, method: str, url: str,
+        retry: bool = True, _attempt: int = 0, **kwargs: Any,
+    ) -> Any:
+        """Execute authenticated request with retry for transient errors.
+
+        v1.25.0 PR-B parity with CariadBaseClient._request:
+
+        - HTTP 401 → token refresh + 1 retry. Refresh itself throttled to
+          ``_REFRESH_MAX_PER_HOUR`` per rolling hour (storm protection).
+        - HTTP 429 → exponential backoff up to 3 attempts (5s/10s/20s).
+        - HTTP 500/502/503/504 → exponential backoff up to 3 attempts
+          (3s/6s/12s).
+        - Transient network errors (DNS / connection refused / mid-stream
+          disconnects / asyncio timeouts) → same backoff as server errors.
+        - X-RateLimit-Remaining / Limit / Reset headers captured on 2xx
+          responses → exposed via ``last_rate_limit_*`` properties for
+          the coordinator's quota sensor.
+        """
+        from aiohttp import (  # noqa: PLC0415
+            ClientConnectorError, ClientPayloadError, ServerDisconnectedError,
+        )
+        _TRANSIENT = (
+            ClientConnectorError, ServerDisconnectedError,
+            ClientPayloadError, asyncio.TimeoutError,
+        )
         if not self._tokens:
             raise AuthenticationError("Not authenticated")
         headers = kwargs.pop("headers", {})
@@ -237,28 +286,107 @@ class PorscheClient:
             "User-Agent":    _USER_AGENT,
             "Accept":        "application/json",
         })
-        async with self._session.request(
-            method, url, headers=headers,
-            timeout=ClientTimeout(total=30), **kwargs
-        ) as resp:
-            if resp.status == 401 and retry:
-                await self._refresh()
-                return await self._request(method, url, retry=False, **kwargs)
-            if resp.status == 204:
-                return {}
-            if resp.status not in (200, 202):
-                body = await resp.text()
-                raise APIError(resp.status, url, body)
-            return await resp.json()
+        try:
+            async with self._session.request(
+                method, url, headers=headers,
+                timeout=ClientTimeout(total=30), **kwargs,
+            ) as resp:
+                if resp.status == 401 and retry:
+                    await self._refresh()
+                    return await self._request(method, url, retry=False, **kwargs)
+                if resp.status == 429 and _attempt < 3:
+                    wait = (2 ** _attempt) * 5
+                    _LOGGER.debug("Porsche 429 — retrying in %ds", wait)
+                    await asyncio.sleep(wait)
+                    return await self._request(
+                        method, url, retry=retry, _attempt=_attempt + 1, **kwargs,
+                    )
+                if resp.status in (500, 502, 503, 504) and _attempt < 3:
+                    wait = (2 ** _attempt) * 3
+                    _LOGGER.debug("Porsche %d — retrying in %ds", resp.status, wait)
+                    await asyncio.sleep(wait)
+                    return await self._request(
+                        method, url, retry=retry, _attempt=_attempt + 1, **kwargs,
+                    )
+                if resp.status == 204:
+                    self._capture_rate_limit_headers(resp.headers)
+                    return {}
+                if resp.status not in (200, 202):
+                    body = await resp.text()
+                    raise APIError(resp.status, url, body)
+                self._capture_rate_limit_headers(resp.headers)
+                return await resp.json()
+        except _TRANSIENT as err:
+            if _attempt < 3:
+                wait = (2 ** _attempt) * 3
+                _LOGGER.debug(
+                    "Porsche transient (%s) — retrying in %ds",
+                    type(err).__name__, wait,
+                )
+                await asyncio.sleep(wait)
+                return await self._request(
+                    method, url, retry=retry, _attempt=_attempt + 1, **kwargs,
+                )
+            raise APIError(0, url, f"transient: {type(err).__name__}: {err}") from err
+
+    # v1.25.0 PR-B: rate-limit header capture (mirror of base.py:_capture_rate_limit_headers)
+    def _capture_rate_limit_headers(self, headers: Any) -> None:
+        """Store latest X-RateLimit-* headers if present.
+
+        Porsche PPA backend may or may not send these — defensive parsing
+        accepts ints, floats-as-strings ("1499.5"), garbage ("unlimited")
+        without raising. Coordinator reads ``last_rate_limit_remaining``
+        as the ``requests_remaining_today`` sensor source.
+        """
+        for header_name, attr in (
+            ("X-RateLimit-Remaining", "last_rate_limit_remaining"),
+            ("X-RateLimit-Limit",     "last_rate_limit_limit"),
+            ("X-RateLimit-Reset",     "last_rate_limit_reset_at"),
+        ):
+            raw = headers.get(header_name) if hasattr(headers, "get") else None
+            if raw is None:
+                continue
+            try:
+                # int first (most common), then float, then leave as string
+                # for "Reset" which is sometimes a Unix timestamp string.
+                value: Any = int(float(str(raw)))
+            except (ValueError, TypeError):
+                continue
+            setattr(self, attr, value)
 
     async def _refresh(self) -> None:
-        if self._tokens and self._tokens.refresh_token:
-            try:
-                self._tokens = await self._auth.refresh(self._tokens.refresh_token)
-                return
-            except TokenExpiredError:
-                pass
-        await self.authenticate()
+        """Refresh tokens with storm protection (v1.25.0 PR-B parity).
+
+        Pre-v1.25.0 there was no throttle — repeated 401s would spam refresh
+        attempts and could trigger Porsche-side IP rate-limiting. Now mirrors
+        CariadBaseClient: ``_REFRESH_MAX_PER_HOUR`` (3) attempts per
+        ``_REFRESH_WINDOW_S`` (3600) sliding window, then raises
+        AuthenticationError so coordinator triggers HA reauth flow.
+        """
+        if self._refresh_lock is None:
+            self._refresh_lock = asyncio.Lock()
+        async with self._refresh_lock:
+            now = time.monotonic()
+            cutoff = now - _REFRESH_WINDOW_S
+            self._refresh_history = [t for t in self._refresh_history if t > cutoff]
+            if len(self._refresh_history) >= _REFRESH_MAX_PER_HOUR:
+                _LOGGER.error(
+                    "Porsche token refresh storm: %d attempts in last %ds — "
+                    "pausing to prevent IP ban; please reauthenticate from the UI",
+                    len(self._refresh_history), _REFRESH_WINDOW_S,
+                )
+                raise AuthenticationError(
+                    "Porsche token refresh storm — please reauthenticate",
+                )
+            self._refresh_history.append(now)
+
+            if self._tokens and self._tokens.refresh_token:
+                try:
+                    self._tokens = await self._auth.refresh(self._tokens.refresh_token)
+                    return
+                except TokenExpiredError:
+                    pass
+            await self.authenticate()
 
     @staticmethod
     def _val(data: dict, *path: str, default: Any = None) -> Any:
