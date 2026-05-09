@@ -122,6 +122,13 @@ class VagConnectEntity(CoordinatorEntity[VagConnectCoordinator]):
         brand = self.coordinator.entry.data.get("brand", "vag")
         name = _device_name(vehicle, brand)
 
+        # v1.26.1 hotfix: revert configuration_url + suggested_area
+        # additions from v1.25.0 PR-EFG. User-report 2026-05-09:
+        # integration "Nicht geladen" after v1.25.x update. Root cause
+        # likely either DeviceInfo TypedDict-strict-validation in newer
+        # HA core OR quality_scale="platinum" runtime check (also
+        # reverted via manifest.json). configuration_url + suggested_area
+        # come back in v1.27.0 once we've isolated the actual culprit.
         return DeviceInfo(
             identifiers={(DOMAIN, self._vin)},
             name=name,
@@ -134,8 +141,6 @@ class VagConnectEntity(CoordinatorEntity[VagConnectCoordinator]):
                 else None
             ),
             sw_version=vehicle.get("firmware_version"),
-            configuration_url=self._BRAND_PORTAL.get(brand.lower()),
-            suggested_area="Garage",
         )
 
     @property
