@@ -327,6 +327,66 @@ class VehicleData:
     # into ``image_urls`` in ``_enrich`` so the unified path picks it up.
     composite_render_urls: dict[str, str] | None = None
 
+    # v1.26.0 — Welle 6 Feature Backlog (Issue #173).
+    # All these fields were silently shipped in scout reports
+    # (#129/#130/#132/#133/#143/#144/#145/#146/#147/#165/#167) but
+    # only EXPECTED_KEYS-silenced in v1.19.3. v1.26.0 finally exposes
+    # them as user-visible entities. Each field is brand-restricted
+    # via ``_DATA_PRESENT_REQUIRED`` so non-supporting vehicles don't
+    # see phantom "unknown" entities.
+
+    # Battery-Care wiring for VW EU/Audi: existing fields
+    # ``battery_care_enabled`` + ``battery_care_target_soc_pct`` (defined
+    # below for Skoda/CUPRA/SEAT since v1.17.5) are now ALSO populated by
+    # vw_eu.py from ``charging.chargingCareSettings.value.batteryCareMode``
+    # + ``batteryChargingCare.chargingCareSettings.value.batteryCareTargetSoc``.
+    # No new model fields needed — the binary_sensor + sensor entities
+    # auto-spawn via existing ``_DATA_PRESENT_REQUIRED`` gating once the
+    # Cariad-BFF parser fills the values.
+
+    # Auto-Unlock plug when charged: VW EU/Audi from
+    # ``charging.chargingSettings.value.autoUnlockPlugWhenCharged`` ("permanent"/"OFF").
+    # Skoda from ``settings.autoUnlockPlugWhenCharged`` ("ON"/"OFF").
+    auto_unlock_when_charged: bool | None = None
+
+    # Climatization-at-Unlock: VW EU/Audi from
+    # ``climatisation.climatisationSettings.value.climatizationAtUnlock``.
+    # Skoda from ``airConditioningAtUnlock``. CUPRA/SEAT from
+    # ``mycar.climatisation.airConditioningAtUnlock``.
+    climate_at_unlock: bool | None = None
+
+    # Window-heating-enabled: VW EU/Audi from
+    # ``climatisation.climatisationSettings.value.windowHeatingEnabled``.
+    # Distinct from the existing v1.7.0 ``window_heating_front/back`` switches
+    # (those are STATES "on/off"); this is the SETTING ("auto-activate during
+    # climate?"). Boolean.
+    window_heating_enabled: bool | None = None
+
+    # Next-Charging-Timer info (read-side complement to v1.16.0
+    # write-side service ``set_departure_timer``): VW EU/Audi from
+    # ``automation.chargingProfiles.value.nextChargingTimer.{id, targetSOCreachable}``.
+    # ``id`` = which timer (1/2/3) is queued next.
+    # ``target_soc_reachable`` = "calculating" or a percent value.
+    next_charging_timer_id: int | None = None
+    next_charging_timer_target_soc_reachable: str | None = None
+
+    # Skoda PHEV secondary engine range (Kodiaq iV, Octavia iV, Superb iV).
+    # From ``driving-range.secondaryEngineRange.{distanceInKm, ...}``.
+    # Distinct from ``combustion_range_km`` because Skoda PHEVs report
+    # both via separate API blocks since 2024 firmware.
+    secondary_engine_range_km: int | None = None
+
+    # Audi/VW EU charging rate in km/h (parity with Skoda + CUPRA/SEAT
+    # which have ``charging_rate_kmh`` since v1.10.0). From
+    # ``charging.chargingStatus.value.chargeRate_kmph``. Reused field
+    # ``charging_rate_kmh`` already exists for the other brands — we
+    # don't add a new field, just populate it for VW EU/Audi too.
+
+    # Diagnostic: count of capabilities array (already used internally
+    # for capability gating since v1.13.0, now exposed for power users
+    # who want to see "this VIN reports N capabilities").
+    capabilities_count: int | None = None
+
     # Departure timers
     departure_timer_1_enabled: bool = False
     departure_timer_1_time: str | None = None

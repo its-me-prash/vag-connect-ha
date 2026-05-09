@@ -260,6 +260,18 @@
       },
       "equipment_count": {
         "name": "Equipment Count"
+      },
+      "secondary_engine_range_km": {
+        "name": "Secondary Engine Range"
+      },
+      "next_charging_timer_id": {
+        "name": "Next Charging Timer ID"
+      },
+      "next_charging_timer_target_soc_reachable": {
+        "name": "Next Charging Timer Target SoC Reachable"
+      },
+      "capabilities_count": {
+        "name": "Capabilities Count"
       }
     },
     "binary_sensor": {
@@ -328,6 +340,15 @@
       },
       "battery_care_enabled": {
         "name": "Soin Batterie Actif"
+      },
+      "auto_unlock_when_charged": {
+        "name": "Auto Unlock When Charged"
+      },
+      "climate_at_unlock": {
+        "name": "Climate at Unlock"
+      },
+      "window_heating_enabled": {
+        "name": "Window Heating Enabled"
       }
     },
     "switch": {

@@ -195,6 +195,28 @@ _NEW_BINARY: tuple[VagBinarySensorDescription, ...] = (
         icon="mdi:battery-heart-variant",
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
+    # v1.26.0 Welle-6 Feature Backlog (#173) — new binary sensors.
+    VagBinarySensorDescription(
+        key="auto_unlock_when_charged",
+        translation_key="auto_unlock_when_charged",
+        data_key="auto_unlock_when_charged",
+        icon="mdi:lock-open-outline",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    VagBinarySensorDescription(
+        key="climate_at_unlock",
+        translation_key="climate_at_unlock",
+        data_key="climate_at_unlock",
+        icon="mdi:car-electric",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    VagBinarySensorDescription(
+        key="window_heating_enabled",
+        translation_key="window_heating_enabled",
+        data_key="window_heating_enabled",
+        icon="mdi:car-defrost-front",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
 )
 BINARY_DESCRIPTIONS = BINARY_DESCRIPTIONS + _NEW_BINARY
 
@@ -210,6 +232,12 @@ _DATA_PRESENT_REQUIRED: frozenset[str] = frozenset({
     # v1.17.1 — SEAT/CUPRA-only battery care endpoint. Stays None on
     # other brands and on accounts where the feature isn't available.
     "battery_care_enabled",
+    # v1.26.0 Welle-6 Feature Backlog (#173) — phantom protection.
+    # Brand-restricted at parser level (only populated when backend
+    # ships the field). Other vehicles → field stays None → no phantom.
+    "auto_unlock_when_charged",
+    "climate_at_unlock",
+    "window_heating_enabled",
 })
 
 

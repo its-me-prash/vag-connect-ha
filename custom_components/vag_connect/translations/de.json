@@ -260,6 +260,18 @@
       },
       "error_reporter_count": {
         "name": "Fehler-Berichter"
+      },
+      "secondary_engine_range_km": {
+        "name": "Reichweite Verbrenner (sekundär)"
+      },
+      "next_charging_timer_id": {
+        "name": "Nächster Lade-Timer ID"
+      },
+      "next_charging_timer_target_soc_reachable": {
+        "name": "Nächster Lade-Timer Ziel-SoC erreichbar"
+      },
+      "capabilities_count": {
+        "name": "Fähigkeiten-Anzahl"
       }
     },
     "binary_sensor": {
@@ -328,6 +340,15 @@
       },
       "warning_12v_low": {
         "name": "12V Starterbatterie schwach"
+      },
+      "auto_unlock_when_charged": {
+        "name": "Auto-Entriegelung wenn vollgeladen"
+      },
+      "climate_at_unlock": {
+        "name": "Klima beim Entsperren"
+      },
+      "window_heating_enabled": {
+        "name": "Scheibenheizung aktiviert"
       }
     },
     "switch": {
