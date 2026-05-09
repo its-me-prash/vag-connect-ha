@@ -38,6 +38,44 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ## [Unreleased]
 
+## [1.26.2] - 2026-05-09 🚨🔧 Hotfix-2: Root cause `zip_release` revertet — HACS install path / Hotfix-2: Root cause `zip_release` reverted — HACS install path
+
+🚨 **PATCH-Release (Hotfix-2).** v1.26.1 hatte das Loading-Problem nicht gelöst. Root-Cause-Analyse via Diff `v1.24.2..v1.25.0` (last working → first broken) hat den eigentlichen Killer identifiziert:
+
+### 🔍 Root cause
+
+Der einzige relevante Unterschied der HACS-Install-Pfad betrifft war in `hacs.json` (added v1.25.0 PR-EFG):
+
+```diff
++  "zip_release": true,
++  "filename": "vag_connect.zip"
+```
+
+Diese 2 Direktiven ändern HACS's Install-Mechanismus von "default zipball-extract" auf "named zip asset". Bei Migration von einer Vorinstallation (default) auf das neue Format **löscht HACS den alten `/config/custom_components/vag_connect/` Folder, schafft aber den neuen nicht** wenn irgendwas im neuen Pfad fehlschlägt → User landet mit komplett fehlender Integration.
+
+User-Symptom: HA-Log zeigt `Integration 'vag_connect' not found` und vag_connect-Folder ist physisch weg aus `/config/custom_components/`.
+
+### 🔄 Reverted
+
+- **`hacs.json`**: Entfernt `zip_release: true` + `filename: vag_connect.zip`. HACS fällt zurück auf den default install mechanism der seit v1.0.0 funktioniert hat.
+
+### 📋 NICHT reverted
+
+Alle Code-Features aus v1.25.0 (Cross-Brand Parity, Listener Pattern, GPS hardening, MBB VSR Phase 2, Translation sync) und v1.26.0 (Welle-6 Feature Backlog 7 neue Entitäten + Cross-Brand Battery-Care Parity) bleiben aktiv. Plus die manifest-Bereinigung aus v1.26.1 (kein quality_scale, kein loggers field, kein DeviceInfo configuration_url/suggested_area).
+
+### 🧠 Lesson
+
+Vor Aktivierung von HACS-spezifischen Install-Direktiven (`zip_release`, `content_in_root`, `country`, etc.) muss jeder Update-Pfad existing-install → new-install getestet werden. Pure-additive Manifest-Änderungen sind sicher; HACS-Discovery-Format-Änderungen sind risiko-reich weil HACS die Migration nicht atomically macht.
+
+Wenn `zip_release: true` zukünftig wieder gewollt ist (für 50% schnellere Installs), muss der release.yml Workflow erst sicherstellen dass jeder älteste Tag auch den `vag_connect.zip` asset hat — UND dass HACS-Migration explizit getestet wurde mit einer Test-HA-Instanz die vorher v1.24.2 hatte.
+
+### ✅ Verifizierung
+
+- `python -m ruff check custom_components/` → All checks passed
+- `python -m mypy ... (CI flags)` → clean
+- `hacs.json` zurück auf v1.24.2-Schema (keine neuen Felder)
+- manifest.json: nur version 1.26.1 → 1.26.2 bumped
+
 ## [1.26.1] - 2026-05-09 🚨 Hotfix: Integration lädt nicht in v1.25.x / Hotfix: integration won't load in v1.25.x
 
 🚨 **PATCH-Release (Hotfix).** User-Report 2026-05-09 22:35: Integration zeigt "Nicht geladen" in HA nach Update auf v1.25.x. Schneller Rollback der wahrscheinlichsten Verdächtigen aus dem v1.25.0 PR-EFG Mega-Bundle:
