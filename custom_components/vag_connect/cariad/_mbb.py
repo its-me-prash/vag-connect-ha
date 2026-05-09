@@ -191,3 +191,97 @@ def build_mbb_wake_url(read_base: str, brand: str, country: str, vin: str) -> st
     """
     seg = mbb_brand_segment(brand)
     return f"{read_base}/fs-car/bs/vsr/v1/{seg}/{country}/vehicles/{vin}/requests"
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# v1.25.0 PR-G: MBB VSR Phase 2 read-side — Golf 7 GTE Tank-Level
+# ─────────────────────────────────────────────────────────────────────────────
+
+# MBB VSR (Vehicle Status Report) field IDs from audi_connect_ha
+# audi_models.py legacy IDS table. These IDs are guaranteed-stable
+# across all Car-Net-era VAG vehicles (2010–2020 MIB1/MIB2/MIB3 OCUs):
+#
+#   0x030103000A — TANK_LEVEL_IN_PERCENTAGE (% only, no liters)
+#   0x0301030005 — TOTAL_RANGE (km)
+#   0x02040C0001 — ADBLUE_RANGE (km)
+#
+# Verified against:
+# - audiconnect/audi_connect_ha audi_models.py
+# - tillsteinbach/WeConnect-python (uses same field-ID table)
+#
+# Used by Golf 7 GTE PHEV + similar pre-PPE/MEB vehicles where the
+# Cariad-BFF gateway returns ``fuelStatus.rangeStatus = {error: ...}``
+# with no ``currentFuelLevel_pct`` — but the underlying MBB OCU still
+# publishes the field via the legacy VSR endpoint.
+MBB_VSR_FIELD_TANK_PCT = "0x030103000A"
+MBB_VSR_FIELD_TOTAL_RANGE_KM = "0x0301030005"
+MBB_VSR_FIELD_ADBLUE_RANGE_KM = "0x02040C0001"
+
+
+def build_mbb_vsr_status_url(
+    read_base: str, brand: str, country: str, vin: str,
+) -> str:
+    """Build the MBB VSR status-read URL (Phase 2 read-side).
+
+    Pattern: ``{readBase}/fs-car/bs/vsr/v1/{Brand}/{country}/vehicles/{vin}/status``
+    Verified against audi_connect_ha + WeConnect-python references.
+
+    Returns JSON shape::
+
+        {"StoredVehicleDataResponse": {
+            "vehicleData": {"data": [
+              {"id": "0x0301", "field": [
+                {"id": "0x030103000A", "tsCarCaptured": "...",
+                 "value": "60", "unit": "%"},
+                {"id": "0x0301030005", "value": "450", "unit": "km"},
+                ...
+              ]}
+            ]}
+        }}
+
+    Use ``parse_mbb_vsr_field()`` to extract a value by field ID.
+    """
+    seg = mbb_brand_segment(brand)
+    return f"{read_base}/fs-car/bs/vsr/v1/{seg}/{country}/vehicles/{vin}/status"
+
+
+def parse_mbb_vsr_field(response: dict | None, field_id: str) -> str | None:
+    """Walk a MBB VSR response and return the value for ``field_id``.
+
+    Defensive against:
+    - None response (request failed)
+    - Missing ``StoredVehicleDataResponse`` (different envelope)
+    - Missing ``vehicleData`` / ``data`` (older firmware)
+    - Non-dict / non-list elements at any level
+    - Field absent on this vehicle (returns None)
+
+    Returns the raw value as string (caller converts via safe_int /
+    safe_float). The MBB VSR shape always returns string values
+    (``"60"``, ``"450"``, etc.) regardless of the underlying type.
+    """
+    if not isinstance(response, dict):
+        return None
+    svd = response.get("StoredVehicleDataResponse")
+    if not isinstance(svd, dict):
+        return None
+    vehicle_data = svd.get("vehicleData")
+    if not isinstance(vehicle_data, dict):
+        return None
+    data_groups = vehicle_data.get("data")
+    if not isinstance(data_groups, list):
+        return None
+    for group in data_groups:
+        if not isinstance(group, dict):
+            continue
+        fields = group.get("field")
+        if not isinstance(fields, list):
+            continue
+        for f in fields:
+            if not isinstance(f, dict):
+                continue
+            if f.get("id") == field_id:
+                val = f.get("value")
+                if val is None:
+                    return None
+                return str(val)
+    return None

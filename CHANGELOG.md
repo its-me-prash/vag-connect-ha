@@ -38,6 +38,65 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ## [Unreleased]
 
+## [1.25.0] - 2026-05-09 🚀 Sprint C — Cross-Brand Parity + UX/UI + MBB VSR Phase 2 (Golf 7 GTE Tank) / Sprint C — Cross-Brand Parity + UX/UI + MBB VSR Phase 2 (Golf 7 GTE Tank)
+
+🚀 **MINOR-Release.** Größter Sprint seit v1.21.0 (8. Mai 2026). Bündelt 6 PRs (#168, #169, #170, #171 + final mega) mit:
+
+- **Cross-brand parity wins** (Skoda 12V/lights/parking_address; VW EU/Audi/SEAT/CUPRA parking_address)
+- **`_normalize.py`** Foundation (k_to_c, drivetrain, range_headline, first_status_value, NO_UPDATE_AVAILABLE backport)
+- **Porsche HTTP hardening** (retry, 429 backoff, quota headers, refresh-storm-protection)
+- **GraphQL PPC/PPE defensive** (audi_connect_ha #709 lesson)
+- **Listener pattern** in 10 platforms — vehicles asleep at HA startup get entities spawned mid-session
+- **GPS device_tracker hardening** ((0,0) guard, extra_state_attributes für Map-Tooltip)
+- **CommandDispatcher Foundation** (Phase 1A — state extracted, methods stay; Phase 2 v1.26.0)
+- **HA Map Integration**: vehicles als TrackerEntity mit SourceType.GPS + entity_picture sind sauber als Marker auf der Lovelace Map
+- **Brand-aware "Open in App" Button** via `DeviceInfo.configuration_url`
+- **`suggested_area="Garage"`** für Auto-Area beim ersten Setup
+- **Vehicle-Bild als entity_picture** korrekt (war silent-no-op TypedDict bug)
+- **`extra_state_attributes["image_url"]`** zentral — Custom Lovelace Cards (Ultra-Vehicle-Card, vehicle-info-card, mushroom) rendern Auto-Bild automatisch
+- **HACS polish**: `zip_release: true`, `quality_scale: "platinum"`, `loggers` field
+- **Translation sync** alle 8 Locales (de.json +8, en.json +13, 6 weitere +13 als best-effort English fallback)
+- **MBB VSR Phase 2 read-side** für Golf 7 GTE Tank-Level — wenn Cariad-BFF `fuel_level` leer + VIN MBB-backed → fallback auf legacy `/fs-car/bs/vsr/v1/.../status` mit field-IDs `0x030103000A` (tank %) + `0x0301030005` (range)
+
+Volle Detail-Notes der einzelnen Sub-PRs siehe nachfolgende Sub-PR Sections (in CI-Merge-Reihenfolge).
+
+### 🎨 v1.25.0 Sprint C PR-EFG Mega — UX/UI + Translation Sync + MBB VSR Phase 2
+
+Sub-PRs E + F + G bundled in einem Mega-Bundle (Sprint-Effizienz statt 3 separater PR-Cycles).
+
+**🎨 UX/UI Polish (Audit Agent E findings):**
+- `entity_base.py:124-125` Bug entfernt: `info["entity_picture"] = picture` war silent-no-op auf TypedDict — ersatzlos gestrichen weil das die `entity_picture` Property bereits korrekt liefert
+- `DeviceInfo.configuration_url` brand-aware gesetzt (my.audi.com / mvw.de / mySkoda / MyCupra / etc.) — "Open in App" Button im HA Device-Layout
+- `DeviceInfo.suggested_area="Garage"` — Auto-Area beim ersten Setup
+- `extra_state_attributes["image_url"]` zentral in `entity_base.py` — Custom Lovelace Cards (Ultra-Vehicle-Card, vehicle-info-card, mushroom-template-card) lesen das automatisch und rendern Auto-Bild neben jedem Sensor
+
+**📦 HACS / Manifest Polish:**
+- `hacs.json: zip_release: true` + `filename: vag_connect.zip` — schnellere HACS Installs, weniger GitHub-API-Calls
+- `manifest.json: quality_scale: "platinum"` — HA UI Quality-Badge
+- `manifest.json: loggers: ["custom_components.vag_connect"]` — bessere Debug-Toggles in HA UI
+
+**🌍 Translation Audit (Audit Agent D Top 1 finding) — alle 8 Locales synced:**
+- DE: +8 keys (proper German translations für config-flow descriptions, 12V battery, max_charge_current, read_only_mode, scan_interval)
+- EN: +13 keys (license_plate, equipment_count, requests_remaining_today sensors + quota_low/critical issues + push toggles)
+- CS / ES / FR / NL / PL / SV: +13 keys each (best-effort English fallback — community Übersetzer können später ersetzen, war vorher gar nichts)
+- Closes Gold-Quality-Scale `entity-translations` gap aus Audit Agent D
+
+**🛢️ MBB VSR Phase 2 read-side (Golf 7 GTE Tank-Level — Audit Agent B):**
+- Neuer `cariad/_mbb.py` Helper: `build_mbb_vsr_status_url()` + `parse_mbb_vsr_field()` defensive walker für legacy MBB VSR endpoint
+- Field-IDs aus audi_connect_ha legacy IDS table: `0x030103000A` (Tank %), `0x0301030005` (Total Range km), `0x02040C0001` (AdBlue km)
+- `vw_eu.py:_maybe_fill_from_mbb_vsr()` Wire-In: triggers nur wenn Cariad-BFF `fuel_level` leer UND VIN known-MBB-backed (per `MBBBackendCache` von v1.21.0 wake-fallback)
+- **Endlich Lösung für Golf 7 GTE PHEV** + alle pre-PPE/MEB Hybride wo Cariad-BFF `fuelStatus.rangeStatus = {error}` zurückgibt aber MBB OCU das Feld noch publisht
+- Defensive: jeder HTTP-Fehler / leere Response lässt `d.fuel_level=None` — Entity bleibt "unknown" statt zu crashen
+- `tests/test_v1250_mbb_vsr.py` — 17 tests (URL build + 13 defensive parser branches + property test)
+
+**v1.25.0 Manifest version bumped 1.24.2 → 1.25.0** (MINOR: neue Features, Cross-brand parity wins, refactor foundations).
+
+**Skipped from original mega-PR scope (deferred):**
+- `device_action.py` / `device_trigger.py` (1d work) → eigener v1.26.0 Sprint
+- `system_health.py` / `logbook.py` / `async_get_device_diagnostics` → v1.26.x
+- Subscription-expiration Sensor (kein Backend-Datenfeld) → wenn Backend liefert
+- Outside-Temperature Sensor MEB-spezifisch (vw lib #321 finding) → existiert bereits cross-brand seit v1.17.7
+
 ### 🏗️ v1.25.0 Sprint C PR-D — CommandDispatcher Foundation (Phase 1A)
 
 - **Neuer `_command_dispatcher.py`** Modul mit `CommandDispatcher` Klasse — owns per-VIN per-command-class lock map + wake cooldown timestamps. Coordinator delegiert via `self._dispatcher` statt der bisherigen `if not hasattr(self, "_command_locks")` lazy-init Code-Smells.

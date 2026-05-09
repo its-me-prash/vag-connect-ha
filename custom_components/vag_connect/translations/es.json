@@ -76,14 +76,20 @@
           "spin": "S-PIN",
           "enable_reverse_geocoding": "Geocodificación inversa (dirección de aparcamiento)",
           "read_only_mode": "Modo solo lectura",
-          "force_ppe_climate": "Climatización PPE/PPC Audi (Q6/A6 e-tron, RS e-tron GT Facelift, A3 2024+ PHEV)"
+          "force_ppe_climate": "Climatización PPE/PPC Audi (Q6/A6 e-tron, RS e-tron GT Facelift, A3 2024+ PHEV)",
+          "enable_push_mqtt": "Skoda push updates (MQTT, EXPERIMENTAL)",
+          "enable_push_fcm": "CUPRA/SEAT push updates (FCM, EXPERIMENTAL)",
+          "enable_push_audi_vw": "Audi/VW push updates (Cariad FCM, EXPERIMENTAL)"
         },
         "data_description": {
           "scan_interval": "Frecuencia de actualización (minutos). Mínimo: 3.",
           "spin": "S-PIN para bloqueo de puertas.",
           "enable_reverse_geocoding": "Envía GPS de aparcamiento a OpenStreetMap Nominatim para resolver calle/ciudad. Desactivado por defecto (privacidad).",
           "read_only_mode": "Cuando está activado, solo se crean sensores de estado — sin interruptores, botones, cerraduras, clima o deslizadores que envíen comandos. Útil si quieres telemetría del vehículo sin riesgo de actuación accidental. Recarga la integración tras activar.",
-          "force_ppe_climate": "Solo para Audi. Fuerza el nuevo formato PPE/PPC (climatisationMode obligatorio, targetTemperature omitido) al iniciar la climatización. Activar solo si posees Q6 e-tron, A6 e-tron, RS e-tron GT Facelift o A3 2024+ PHEV — de lo contrario la API responde 400. Recarga la integración tras activar."
+          "force_ppe_climate": "Solo para Audi. Fuerza el nuevo formato PPE/PPC (climatisationMode obligatorio, targetTemperature omitido) al iniciar la climatización. Activar solo si posees Q6 e-tron, A6 e-tron, RS e-tron GT Facelift o A3 2024+ PHEV — de lo contrario la API responde 400. Recarga la integración tras activar.",
+          "enable_push_mqtt": "EXPERIMENTAL: Skoda-only. Enables real-time MQTT push from Skoda mysmob backend (requires aiomqtt + firebase-messaging Python packages — currently lazy-imported, not pre-installed). Foundation phase in v1.18.0; live activation pending community-tester validation. If push is unavailable, the integration silently falls back to polling. Reload the integration after toggling.",
+          "enable_push_fcm": "EXPERIMENTAL: CUPRA/SEAT only. Enables real-time Firebase Cloud Messaging push from OLA backend (requires firebase-messaging Python package — same lazy-import as v1.18.0 Skoda MQTT toggle). Foundation phase in v1.19.0; live activation pending community-tester validation. If push is unavailable, the integration silently falls back to polling. Reload the integration after toggling.",
+          "enable_push_audi_vw": "EXPERIMENTAL: Audi/VW only. Enables real-time push notifications from Cariad FCM channel (same one myAudi/WeConnect mobile apps use — covers lock/unlock results, charging-state, climate, alarm). Requires firebase-messaging Python package (same as Skoda MQTT + CUPRA/SEAT FCM). Foundation phase in v1.23.0; live activation pending community-tester validation. If push is unavailable, the integration silently falls back to polling. Reload the integration after toggling."
         }
       }
     }
@@ -245,6 +251,15 @@
       },
       "error_reporter_count": {
         "name": "Reportador de errores"
+      },
+      "requests_remaining_today": {
+        "name": "API Requests Remaining"
+      },
+      "license_plate": {
+        "name": "License Plate"
+      },
+      "equipment_count": {
+        "name": "Equipment Count"
       }
     },
     "binary_sensor": {
@@ -458,6 +473,14 @@
     "error_reporter_findings": {
       "title": "Reportador de errores — {count} error(es) reciente(s) en {brand}",
       "description": "El Reportador de errores ha capturado **{count}** error(es) reciente(s) de la integración {brand}.\n\nReportarlos ayuda a encontrar fallos que solo aparecen en vehículos o versiones de firmware específicos.\n\n**Reporte en 1 clic:**\n📤 Pulsa **Más información** abajo para abrir un issue de GitHub prellenado.\n\n**Para Facebook / foro:** Ajustes → Dispositivos → VAG Connect → Diagnóstico → Descargar — el informe se incluye, VIN y tokens enmascarados.\n\n_Privacidad: VIN enmascarados, tokens Bearer/JWT/UUID/correo eliminados de mensajes y trazas. No se incluyen credenciales._"
+    },
+    "quota_low": {
+      "title": "API quota low — {remaining} requests remaining today",
+      "description": "Your VAG account is approaching the daily API request limit ({remaining} of {limit} remaining, {pct}%).\n\nTo protect against quota lockout (the manufacturer backend can soft-suspend the account when the daily cap is reached), consider:\n\n1. **Increase the update interval** — Settings → Devices & Services → VAG Connect → Configure → Update Interval (currently typically 5–10 min)\n2. **Reduce other VAG integrations** running on the same account (each counts against the same quota)\n3. **Wait for daily reset** — usually around midnight in the manufacturer's home time zone\n\nThis warning auto-clears when the remaining count recovers."
+    },
+    "quota_critical": {
+      "title": "API quota CRITICAL — {remaining} requests remaining today",
+      "description": "Your VAG account has fewer than 25 API requests remaining today ({remaining} of {limit}, {pct}%). The manufacturer backend may soft-suspend the account if you exhaust the budget.\n\n**Immediate action:**\n1. **Pause polling** — Settings → Devices & Services → VAG Connect → Configure → Update Interval → set to 30 min or higher\n2. Avoid manual refreshes / vehicle wake-ups until the budget resets\n\nThis warning auto-clears when the remaining count recovers."
     }
   },
   "exceptions": {
