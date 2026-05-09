@@ -38,6 +38,31 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ## [Unreleased]
 
+## [1.26.1] - 2026-05-09 🚨 Hotfix: Integration lädt nicht in v1.25.x / Hotfix: integration won't load in v1.25.x
+
+🚨 **PATCH-Release (Hotfix).** User-Report 2026-05-09 22:35: Integration zeigt "Nicht geladen" in HA nach Update auf v1.25.x. Schneller Rollback der wahrscheinlichsten Verdächtigen aus dem v1.25.0 PR-EFG Mega-Bundle:
+
+### 🔄 Reverted
+
+- **`manifest.json`**: Entfernt `quality_scale: "platinum"` und `loggers: ["custom_components.vag_connect"]` (beide neu in v1.25.0). HA's runtime quality-scale validator scheint strenger zu sein als hassfest CI — wenn nicht 100% platinum-compliant verweigert HA möglicherweise den Load. Kommt in v1.27.0+ zurück nachdem wir compliance-Lücken analysiert haben.
+- **`entity_base.py:device_info`**: Entfernt `configuration_url=...` (brand-aware "Open in App" Button) + `suggested_area="Garage"` (Auto-Area beim Setup). Diese DeviceInfo-Felder sind dokumentiert valid aber TypedDict-Validation in neueren HA-Cores könnte zu strict sein. Kommt in v1.27.0 zurück nachdem isoliert.
+
+### 🎯 NICHT reverted (bleiben aktiv)
+
+- v1.26.0 Welle-6 Feature Backlog (7 neue Entitäten + Cross-Brand Battery-Care Parity) — bleibt aktiv, betrifft nur per-vehicle parser logic
+- v1.25.0 _normalize.py Foundation, Cross-Brand Parity Wins, Listener Pattern, GPS hardening, MBB VSR Phase 2, Translation sync — alle bleiben aktiv
+- `entity_base.py:extra_state_attributes` (image_url für Custom Lovelace Cards) — bleibt aktiv, ist additive
+
+### 🩺 Diagnose-Pfad
+
+Wenn dieser Hotfix das Problem nicht löst: bitte HA-Logs unter Settings → System → Logs → Filter `vag_connect` → Trace posten unter neuer Issue. Wahrscheinliche restliche Verdächtigen wären dann Coordinator __init__ (CommandDispatcher) oder Listener Pattern in Platform setup_entry.
+
+### 📋 Verifizierung
+
+- `python -m ruff check custom_components/` → All checks passed
+- `python -m mypy ... (CI flags)` → clean
+- Kein Test-Impact (rein subtractive Änderungen)
+
 ## [1.26.0] - 2026-05-09 🎯 Welle-6 Feature Backlog (#173) — 7 neue Entitäten + Cross-Brand Parity / Welle-6 Feature Backlog (#173) — 7 new entities + Cross-Brand Parity
 
 🎯 **MINOR-Release.** Setzt das Welle-6 Scout-Feature-Backlog (#173) um. **Diese Features waren in den Scout-Reports #129/#130/#132/#133/#143/#144/#145/#146/#147/#165/#167 enthalten aber wurden in v1.19.3 nur EXPECTED_KEYS-silenced statt als Entitäten exposed** — der v1.25.0 Audit hatte das als Pattern-Bruch identifiziert (vergleiche #91 → 5 neue Entitäten in v1.11.0).
