@@ -1028,5 +1028,30 @@ class VWEUClient(CariadBaseClient):
         if parking:
             d.latitude = parking.get("lat")
             d.longitude = parking.get("lon")
+            # v1.25.0 PR-A — Cross-brand parity: parking_address from
+            # Cariad-BFF if present (Skoda mysmob ships
+            # ``formattedAddress`` since v1.20.0). Cariad-BFF
+            # ``parkingposition`` returns
+            # ``{"address": {"city": "...", "country": "...", ...}}``
+            # on most accounts; some firmwares also surface a
+            # composed ``formattedAddress``. Saves the HA
+            # reverse-geocoding round-trip when supplied.
+            addr_block = parking.get("address") if isinstance(parking, dict) else None
+            if isinstance(addr_block, dict):
+                fa = addr_block.get("formattedAddress")
+                if isinstance(fa, str) and fa:
+                    d.parking_address = fa
+                else:
+                    # Compose from parts: street, city, country
+                    parts = [
+                        addr_block.get("street"),
+                        addr_block.get("city"),
+                        addr_block.get("country"),
+                    ]
+                    composed = ", ".join(p for p in parts if isinstance(p, str) and p)
+                    if composed:
+                        d.parking_address = composed
+                if isinstance(addr_block.get("city"), str):
+                    d.parking_city = addr_block["city"]
 
         return d

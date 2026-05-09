@@ -38,6 +38,23 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ## [Unreleased]
 
+### 🏗️ v1.25.0 Sprint C PR-A — `_normalize.py` Foundation + Cross-Brand Parity
+
+- **Neu**: `cariad/_normalize.py` — pure-function module (no HA imports) mit:
+  - `k_to_c` / `c_to_k` — Kelvin↔Celsius (5 sites in vw_eu/seat_cupra/vw_na zentralisiert)
+  - `derive_drivetrain` — `(is_electric, is_hybrid)` aus has_battery/has_combustion (4 sites)
+  - `derive_range_headline` — Range priority chain mit Bug-Fix vs alter `electric or total` truthy chain (0 km wurde fälschlich verworfen)
+  - `first_status_value` — Cariad-BFF doors/windows `[{}][0]` walker (3 sites in vw_eu)
+  - `normalize_software_update_state` — Backport von myskoda PR #565 (`NO_UPDATE_AVAILABLE` enum tolerance) + #207 (`NOT_ACTIVATED`)
+- **Cross-brand parity** (Audit Agent A wins):
+  - Skoda `lights_on` aus `overall.lights` ("ON"/"OFF") — VW EU/Audi hatten das schon, Skoda war Lücke
+  - Skoda `voltage_12v` aus `detail.battery12V.voltage` (myskoda PR ~#480 path) — closes 12V Modem-Starvation Warnung gap
+  - VW EU/Audi `parking_address` aus Cariad-BFF `address.formattedAddress` (oder composed street+city+country) — spart HA reverse-geocoding round-trip
+  - SEAT/CUPRA `parking_address` aus OLA backend (defensive 3-key probe) — selbe motivation
+  - VW EU `parking_city` aus `address.city` direkt
+- **Tests**: `tests/test_v1250_normalize.py` — 40 property tests via hypothesis (NEVER-raise + correctness invariants for k_to_c/c_to_k/derive_drivetrain/derive_range_headline/first_status_value/normalize_software_update_state)
+- **Ruff + mypy CI flags**: All checks passed
+
 ### 📚 Docs / Docs
 
 - **`docs/SPRINT_C_v1.25.0_PLAN.md`** — Detail plan for v1.25.0 MINOR (4 sub-PRs: `_normalize.py` → `BaseAPIClient` extract → `CommandDispatcher` refactor → Charging-Profile/Departure-Timer Write-Side bundle). Includes per-PR risk register, test plan, file-level migration recipes.
