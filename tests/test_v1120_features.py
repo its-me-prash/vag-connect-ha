@@ -296,6 +296,12 @@ def _coord_with_read_only(read_only: bool):
     coord.entry.options = {"read_only_mode": read_only}
     coord.vehicles = {"VINX": {"has_battery": True, "model": "Test"}}
     coord._cariad_client = MagicMock()
+    # v1.25.0 PR-C — platforms now use register_dynamic_spawner which calls
+    # coordinator.async_add_listener(). DataUpdateCoordinator initialises
+    # ``_listeners`` in ``__init__``; bypassed here via ``__new__``. Stub
+    # ``async_add_listener`` so the listener-registration path runs without
+    # AttributeError.
+    coord.async_add_listener = MagicMock(return_value=lambda: None)
     return coord
 
 

@@ -20,7 +20,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .coordinator import VagConnectCoordinator
-from .entity_base import VagConnectEntity
+from .entity_base import VagConnectEntity, register_dynamic_spawner
 
 
 @dataclass(frozen=True)
@@ -101,16 +101,12 @@ async def async_setup_entry(
     entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
+    """Set up number entities. v1.25.0 PR-C: dynamic listener spawn."""
     coordinator: VagConnectCoordinator = entry.runtime_data
     # v1.12.0 (#63) — Read-only Mode: number sliders send commands, skip.
     if coordinator.is_read_only():
         return
-    entities: list[VagConnectNumber] = []
 
-    # v1.13.0 (#56 Phase 3) — per-description command-id mapping for
-    # capability filtering. Number entities all dispatch to a specific
-    # coordinator command; capability-filter pre-creation when backend
-    # explicitly confirms the underlying capability is missing.
     _CMD_ID = {
         "target_soc": "command_set_target_soc",
         "target_temperature": "command_set_climate_temperature",
@@ -118,8 +114,9 @@ async def async_setup_entry(
         "max_charge_current": "command_set_max_charge_current",
     }
 
-    for vin, vehicle in coordinator.vehicles.items():
-        has_battery = vehicle.get("has_battery", False)  # EV + PHEV
+    def _build_for_vin(vin: str, vehicle: dict) -> list:
+        entities: list = []
+        has_battery = vehicle.get("has_battery", False)
         for desc in NUMBER_DESCRIPTIONS:
             if desc.condition == "electric" and not has_battery:
                 continue
@@ -127,8 +124,9 @@ async def async_setup_entry(
             if cmd_id and coordinator.command_capability_supported(vin, cmd_id) is False:
                 continue
             entities.append(VagConnectNumber(coordinator, vin, desc))
+        return entities
 
-    async_add_entities(entities)
+    register_dynamic_spawner(entry, coordinator, async_add_entities, _build_for_vin)
 
 
 class VagConnectNumber(VagConnectEntity, NumberEntity):

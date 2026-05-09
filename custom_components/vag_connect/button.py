@@ -7,7 +7,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .coordinator import VagConnectCoordinator
-from .entity_base import VagConnectEntity
+from .entity_base import VagConnectEntity, register_dynamic_spawner
 
 # v1.13.0 (#56 Phase 3) — capability filtering moved to coordinator's
 # ``command_capability_supported(vin, command_id)`` helper, which uses
@@ -27,32 +27,26 @@ async def async_setup_entry(
     entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
+    """Set up button entities. v1.25.0 PR-C: dynamic listener spawn."""
     coordinator: VagConnectCoordinator = entry.runtime_data
     # v1.12.0 (#63) — Read-only Mode: skip vehicle-command buttons
     # (Flash, Wake) but ALWAYS keep VagRefreshButton — refresh is a
-    # coordinator-level cloud poll, doesn't send any vehicle command,
-    # and is the most useful debug button when read-only is on.
+    # coordinator-level cloud poll, doesn't send any vehicle command.
     read_only = coordinator.is_read_only()
 
-    entities: list[VagConnectEntity] = []
-    for vin in coordinator.vehicles:
-        # Refresh button never gates — it's a coordinator-level operation,
-        # not a vehicle command. Stays even in read-only mode.
+    def _build_for_vin(vin: str, vehicle: dict) -> list:  # noqa: ARG001
+        entities: list = []
+        # Refresh button never gates — coordinator-level operation.
         entities.append(VagRefreshButton(coordinator, vin))
-
         if read_only:
-            # Skip Flash + Wake — both send actual vehicle commands.
-            continue
-
-        # v1.13.0 (#56 Phase 3) — uniform capability filtering via the
-        # coordinator helper. Returns ``False`` only when the backend
-        # explicitly reports the capability missing/limited; ``None``
-        # (unknown) keeps the entity so Phase 2 can catch at runtime.
+            return entities
         if coordinator.command_capability_supported(vin, "command_flash") is not False:
             entities.append(VagFlashButton(coordinator, vin))
         if coordinator.command_capability_supported(vin, "command_wake") is not False:
             entities.append(VagWakeButton(coordinator, vin))
-    async_add_entities(entities)
+        return entities
+
+    register_dynamic_spawner(entry, coordinator, async_add_entities, _build_for_vin)
 
 
 class VagFlashButton(VagConnectEntity, ButtonEntity):

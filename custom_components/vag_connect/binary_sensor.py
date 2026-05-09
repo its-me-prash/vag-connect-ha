@@ -15,7 +15,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .coordinator import VagConnectCoordinator
-from .entity_base import VagConnectEntity
+from .entity_base import VagConnectEntity, register_dynamic_spawner
 
 
 @dataclass(frozen=True)
@@ -218,16 +218,19 @@ async def async_setup_entry(
     entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
+    """Set up binary sensors. v1.25.0 PR-C: dynamic listener spawn —
+    all 4 sub-loops (descriptions / doors / windows / lights) run
+    per-VIN once, idempotently re-run when new vehicles wake up."""
     coordinator: VagConnectCoordinator = entry.runtime_data
-    entities: list[VagConnectBinarySensor] = []
 
-    for vin, vehicle in coordinator.vehicles.items():
-        has_battery = vehicle.get("has_battery", False)  # EV + PHEV
+    def _build_for_vin(vin: str, vehicle: dict) -> list:
+        entities: list = []
+        has_battery = vehicle.get("has_battery", False)
+        # 1) Description-driven binary sensors
         for desc in BINARY_DESCRIPTIONS:
             if desc.condition == "electric" and not has_battery:
                 continue
-            # v1.11.0 (#91) — phantom-entity prevention. See sensor.py
-            # for the same pattern + reasoning.
+            # v1.11.0 (#91) — phantom-entity prevention.
             if (
                 desc.key in _DATA_PRESENT_REQUIRED
                 and vehicle.get(desc.data_key) is None
@@ -235,26 +238,18 @@ async def async_setup_entry(
                 continue
             entities.append(VagConnectBinarySensor(coordinator, vin, desc))
 
-    for vin, vehicle in coordinator.vehicles.items():
-        await _async_setup_door_sensors(coordinator, vin, vehicle, entities)
+        # 2) Per-door sensors
+        for door_id in vehicle.get("doors_individual", {}):
+            entities.append(VagDoorSensor(coordinator, vin, door_id))
+        # 3) Per-window sensors (SEAT/CUPRA OLA today)
+        for window_id in vehicle.get("windows_individual", {}):
+            entities.append(VagWindowSensor(coordinator, vin, window_id))
+        # 4) Per-light sensors (v1.12.0 #91 leftover)
+        for light_id in vehicle.get("lights_individual", {}):
+            entities.append(VagLightSensor(coordinator, vin, light_id))
+        return entities
 
-    # v1.8.9 (Session 3C) — per-window binary sensors. Currently only
-    # populated for SEAT/CUPRA via the corrected OLA status paths;
-    # other brands leave ``windows_individual`` empty so no entities
-    # are created for them.
-    for vin, vehicle in coordinator.vehicles.items():
-        await _async_setup_window_sensors(coordinator, vin, vehicle, entities)
-
-    # v1.12.0 (#91 leftover) — per-light binary sensors. Created
-    # dynamically from ``lights_individual`` populated by the v1.11.0
-    # vw_eu parser when the light element shape is recognised. Same
-    # phantom-protection pattern as doors/windows: dict empty → no
-    # entities. Vehicles whose firmware ships an unknown shape get
-    # only the aggregate ``lights_on`` + ``lights_count``.
-    for vin, vehicle in coordinator.vehicles.items():
-        await _async_setup_light_sensors(coordinator, vin, vehicle, entities)
-
-    async_add_entities(entities)
+    register_dynamic_spawner(entry, coordinator, async_add_entities, _build_for_vin)
 
 
 class VagConnectBinarySensor(VagConnectEntity, BinarySensorEntity):

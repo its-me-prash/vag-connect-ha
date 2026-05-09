@@ -12,7 +12,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .coordinator import VagConnectCoordinator
-from .entity_base import VagConnectEntity
+from .entity_base import VagConnectEntity, register_dynamic_spawner
 
 DEFAULT_TEMP = 21.0
 MIN_TEMP = 16.0
@@ -28,17 +28,20 @@ async def async_setup_entry(
     entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
+    """Set up climate entities. v1.25.0 PR-C: dynamic listener spawn."""
     coordinator: VagConnectCoordinator = entry.runtime_data
     # v1.12.0 (#63) — Read-only Mode: climate sends commands, skip.
     if coordinator.is_read_only():
         return
-    # v1.13.0 (#56 Phase 3) — capability filter; only False (explicit
-    # backend confirmation) hides; None (unknown) keeps the entity.
-    async_add_entities(
-        VagClimate(coordinator, vin)
-        for vin in coordinator.vehicles
-        if coordinator.command_capability_supported(vin, "command_start_climate") is not False
-    )
+
+    def _build_for_vin(vin: str, vehicle: dict) -> list:  # noqa: ARG001
+        # v1.13.0 (#56 Phase 3) — capability filter; only False (explicit
+        # backend confirmation) hides; None (unknown) keeps the entity.
+        if coordinator.command_capability_supported(vin, "command_start_climate") is False:
+            return []
+        return [VagClimate(coordinator, vin)]
+
+    register_dynamic_spawner(entry, coordinator, async_add_entities, _build_for_vin)
 
 
 class VagClimate(VagConnectEntity, ClimateEntity):

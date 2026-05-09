@@ -10,7 +10,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .coordinator import VagConnectCoordinator
-from .entity_base import VagConnectEntity
+from .entity_base import VagConnectEntity, register_dynamic_spawner
 
 # CARIAD charge modes — values as returned by API
 _CHARGE_MODES: dict[str, str] = {
@@ -27,15 +27,15 @@ async def async_setup_entry(
     entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Set up charge-mode selects."""
+    """Set up charge-mode selects. v1.25.0 PR-C: dynamic listener spawn."""
     coordinator: VagConnectCoordinator = entry.runtime_data
-    entities: list[SelectEntity] = []
 
-    for vin, vehicle in coordinator.vehicles.items():
-        if vehicle.get("has_battery"):  # EV + PHEV
-            entities.append(VagChargeModeSelect(coordinator, vin))
+    def _build_for_vin(vin: str, vehicle: dict) -> list:
+        if vehicle.get("has_battery"):
+            return [VagChargeModeSelect(coordinator, vin)]
+        return []
 
-    async_add_entities(entities)
+    register_dynamic_spawner(entry, coordinator, async_add_entities, _build_for_vin)
 
 
 class VagChargeModeSelect(VagConnectEntity, SelectEntity):

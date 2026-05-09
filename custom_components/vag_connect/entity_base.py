@@ -136,3 +136,65 @@ class VagConnectEntity(CoordinatorEntity[VagConnectCoordinator]):
         vehicle = self._vehicle
         image_urls: dict = vehicle.get("image_urls") or {}
         return VehicleImageFetcher.best_url(image_urls) if image_urls else None
+
+
+# v1.25.0 PR-C — Listener-Pattern helper. Adopts the volkswagencarnet
+# PR #943 pattern (open as of audit 2026-05-08): platforms register
+# a coordinator listener so vehicles that wake LATER (was asleep at
+# HA startup) get their entities spawned mid-session, instead of
+# users having to restart HA after the car wakes.
+#
+# Usage in a platform's `async_setup_entry`:
+#
+#     from .entity_base import register_dynamic_spawner
+#
+#     def _build_for_vin(vin, vehicle):
+#         entities = []
+#         for desc in MY_DESCRIPTIONS:
+#             if desc.condition(vehicle):
+#                 entities.append(MyEntity(coordinator, vin, desc))
+#         return entities
+#
+#     register_dynamic_spawner(entry, coordinator, async_add_entities,
+#                              _build_for_vin)
+#
+# Idempotent: each VIN is spawned exactly once. Safe to call without
+# any vehicles in coordinator.vehicles yet (initial setup before first
+# poll).
+def register_dynamic_spawner(
+    entry: Any,
+    coordinator: VagConnectCoordinator,
+    async_add_entities: Any,
+    build_for_vin: Any,
+) -> None:
+    """Register a coordinator listener that spawns entities for new VINs.
+
+    ``build_for_vin(vin: str, vehicle: dict) -> list[Entity]``
+        Called once per VIN that hasn't been spawned yet. Return the
+        list of entities to add for that VIN. Return an empty list if
+        the vehicle isn't yet ready (no data) — listener will retry on
+        next coordinator update.
+
+    The set of "already-spawned" VINs is tracked in a closure so each
+    listener invocation only adds NEW VINs. Initial pass is also
+    performed synchronously here, so platforms that already-have-data
+    spawn immediately instead of waiting for the first refresh.
+    """
+    added: set[str] = set()
+
+    def _spawn() -> None:
+        new_entities: list[Any] = []
+        for vin, vehicle in coordinator.vehicles.items():
+            if vin in added:
+                continue
+            built = build_for_vin(vin, vehicle)
+            if built:
+                new_entities.extend(built)
+                added.add(vin)
+        if new_entities:
+            async_add_entities(new_entities)
+
+    # Initial pass — vehicles already in coordinator data spawn immediately
+    _spawn()
+    # Listener pass — new vehicles or wake-ups spawn on the next poll
+    entry.async_on_unload(coordinator.async_add_listener(_spawn))

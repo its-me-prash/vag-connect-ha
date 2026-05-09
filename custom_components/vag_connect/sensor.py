@@ -33,7 +33,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .coordinator import VagConnectCoordinator
-from .entity_base import VagConnectEntity
+from .entity_base import VagConnectEntity, register_dynamic_spawner
 
 
 @dataclass(frozen=True)
@@ -731,14 +731,19 @@ async def async_setup_entry(
     entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Sensor-Entities einrichten."""
+    """Sensor-Entities einrichten.
+
+    v1.25.0 PR-C: dynamic listener spawn — vehicles asleep at HA startup
+    get their sensors spawned the moment data arrives in a subsequent
+    poll, instead of users having to restart HA.
+    """
     coordinator: VagConnectCoordinator = entry.runtime_data
     # v1.14.0 (#24) — read brand once for trip-stats brand-restriction.
     brand = str(entry.data.get("brand", "")).lower()
     trip_stats_supported = brand in _TRIP_STATS_BRANDS
-    entities: list[VagConnectSensor] = []
 
-    for vin, vehicle in coordinator.vehicles.items():
+    def _build_for_vin(vin: str, vehicle: dict) -> list:
+        entities: list = []
         has_battery    = vehicle.get("has_battery", False)
         has_combustion = vehicle.get("has_combustion", False)
 
@@ -747,23 +752,11 @@ async def async_setup_entry(
                 continue
             if desc.condition == "combustion" and not has_combustion:
                 continue
-            # v1.10.0 (#94 acceptance criteria) — additional data-present
-            # gating for the new range entities. Avoids "unknown"
-            # phantom entities on vehicles that don't publish a
-            # particular range source. Only applied to keys that opted
-            # in via ``_DATA_PRESENT_REQUIRED`` so existing entities
-            # (which may legitimately start as None and populate later)
-            # keep their current creation semantics.
             if (
                 desc.key in _DATA_PRESENT_REQUIRED
                 and vehicle.get(desc.data_key) is None
             ):
                 continue
-            # v1.14.0 (#24) — Trip Stats brand-gate. Skip the four
-            # tripstatistics sensors entirely for non-CARIAD brands so
-            # SEAT/CUPRA/Skoda/Porsche/VW NA users don't see "unknown"
-            # entities forever. Phase 3 capability filter additionally
-            # hides them when the audi/vw subscription is missing.
             if desc.key in _TRIP_STATS_KEYS:
                 if not trip_stats_supported:
                     continue
@@ -773,13 +766,12 @@ async def async_setup_entry(
                 ):
                     continue
             if desc.key in _REPORTER_KEYS:
-                # v1.9.0 — reporter sensors read from coordinator helpers
-                # rather than per-vehicle data fields.
                 entities.append(ReporterSensor(coordinator, vin, desc))
             else:
                 entities.append(VagConnectSensor(coordinator, vin, desc))
+        return entities
 
-    async_add_entities(entities)
+    register_dynamic_spawner(entry, coordinator, async_add_entities, _build_for_vin)
 
 
 # Keys that return 0 instead of None when not charging/driving
