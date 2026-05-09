@@ -38,6 +38,14 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ## [Unreleased]
 
+### 🏗️ v1.25.0 Sprint C PR-D — CommandDispatcher Foundation (Phase 1A)
+
+- **Neuer `_command_dispatcher.py`** Modul mit `CommandDispatcher` Klasse — owns per-VIN per-command-class lock map + wake cooldown timestamps. Coordinator delegiert via `self._dispatcher` statt der bisherigen `if not hasattr(self, "_command_locks")` lazy-init Code-Smells.
+- Coordinator `__init__` instantiiert dispatcher; `_get_command_lock`, `is_command_in_flight`, wake-cooldown reads/writes delegieren durch.
+- **Phase 1A only**: Lock-state + cooldown-state extracted, **command method bodies (~750 LOC) bleiben in `coordinator.py`**. Phase 2 (full method extraction + `CapabilityCache` + `EnrichmentService` extracts) ist deferred zu v1.26.0 als architektureller Refactor-Sprint — pure Architektur-Änderungen ohne user-visible benefit passen nicht zu "MVP-haft fortschreiten".
+- Removes 4 `if not hasattr(self, ...)` lazy-init smells.
+- Foundation lays groundwork — v1.26.0 Phase 2 extraction wird mechanisch (jede Methode ändert nur `self.X` → `self._coordinator.X`).
+
 ### 🔄 v1.25.0 Sprint C PR-C — Listener Pattern (10 Platforms) + GPS Hardening
 
 - **Adoption von volkswagencarnet PR #943 Pattern**: Neuer `register_dynamic_spawner()` Helper in `entity_base.py` der von 10 Platforms verwendet wird (sensor, binary_sensor, switch, lock, climate, button, number, select, time, device_tracker). Vorher: vehicles asleep at HA startup bekamen ihre Entitäten erst nach HA-Restart wenn Auto wach. Jetzt: dynamischer Listener spawnt Entitäten sobald Coordinator-Daten ankommen — kein Restart mehr nötig.
