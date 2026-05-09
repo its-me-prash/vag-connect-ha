@@ -1,0 +1,71 @@
+meta {
+  name: GET position (Carfinder GPS)
+  type: http
+  seq: 10
+}
+
+get {
+  url: {{home_region}}/fs-car/bs/cf/v1/{{brand}}/{{country}}/vehicles/{{vin}}/position
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{vw_access_token}}
+}
+
+headers {
+  Accept: application/json
+  X-App-Name: Volkswagen
+  X-App-Version: 3.51.1
+  User-Agent: Volkswagen/3.51.1-android/14
+}
+
+docs {
+  STUFE 3e — Position (Carfinder)
+
+  Liefert die letzte bekannte Park-Position via GPS. WICHTIGE QUIRK:
+  Wenn das Auto AKTUELL FÄHRT → HTTP 204 (No Content), kein JSON.
+  Das bedeutet "ich kann dir die Position nicht geben weil ich
+  unterwegs bin". Muss in Phase 2 abgefangen werden.
+
+  ERWARTETE ANTWORT (200 OK):
+    {
+      "findCarResponse": {
+        "Position": {
+          "carCoordinate": {
+            "latitude": 47383900,         // ÷ 1_000_000 = 47.3839
+            "longitude": 8501200          // ÷ 1_000_000 = 8.5012  (Zürich)
+          },
+          "timestampCarSentUTC": "2026-05-09T18:30:00Z",
+          "timestampTCU": "2026-05-09T18:30:05Z"
+        },
+        "parkingTimeUTC": "2026-05-09T18:30:00Z"
+      }
+    }
+
+  ALTERNATIVE 204:
+    HTTP 204 No Content
+    → Auto fährt gerade. Kein device_tracker-Update; alten State behalten.
+
+  WICHTIGE TRANSFORMATION:
+    lat = carCoordinate.latitude / 1_000_000
+    lon = carCoordinate.longitude / 1_000_000
+    Beispiel: 47383900 → 47.3839° (5 Nachkommastellen ist GPS-Standard)
+
+  HA ENTITIES (Phase 2 v1.27):
+    device_tracker.car_position
+      lat = transformed
+      lon = transformed
+      attrs.last_seen = timestampCarSentUTC
+      attrs.parking_time = parkingTimeUTC
+
+  PRIVACY-NOTE:
+    GPS geht direkt vom Auto's TCU zum VW-Backend. Wir lesen nur.
+    Kein Third-Party-Leak. Aber für HA-Setup: device_tracker.car
+    sollte nicht öffentlich auf Dashboard wenn fremde gucken.
+
+  REFERENZ:
+    audi_connect_ha:audi_services.py:get_position
+    evcc-io/evcc:vehicle/vw/api.go:Position()
+}

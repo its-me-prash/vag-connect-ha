@@ -1,0 +1,57 @@
+meta {
+  name: GET vehicles list (alle VINs deines Accounts)
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{home_region}}/fs-car/usermanagement/users/v1/{{brand}}/{{country}}/vehicles
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{vw_access_token}}
+}
+
+headers {
+  Accept: application/json
+  X-App-Name: Volkswagen
+  X-App-Version: 3.51.1
+  User-Agent: Volkswagen/3.51.1-android/14
+}
+
+docs {
+  STUFE 2c — Account-Discovery
+
+  Listet alle VINs die mit deinem MBB-Account verknüpft sind. Falls
+  du mehrere Autos hast (Golf 7 GTE + Audi A3 etc.), kommen sie hier.
+
+  ERWARTETE ANTWORT (200 OK):
+    {
+      "userVehicles": {
+        "vehicle": [
+          "WVWZZZAUZFW805377",        // Golf 7 GTE
+          "WAUZZZ8VZGA000000"         // optional: Audi A3 8V
+        ]
+      }
+    }
+
+  PATH-NUANCEN:
+    {brand} = "VW" für Volkswagen, "Audi" für Audi, "Skoda" für Skoda.
+    {country} = ISO-2 wie "DE" / "CH" / "AT".
+
+  FALLS LEER:
+    "userVehicles": {"vehicle": []}
+    → Account hat keine Autos auf MBB-Side. Möglich wenn alle Autos
+    Cariad-only sind (alle Post-2020 ID/MEB) — dann ist MBB-Stack
+    für diesen Account NICHT relevant.
+
+  IN UNSEREM CODE:
+    Schon vorhanden für Cariad-BFF in vw_eu.py / audi.py. MBB-Variante
+    wird parallel laufen wenn Cariad-Liste leer ODER bestimmte VINs
+    auf Cariad 404en.
+
+  REFERENZ:
+    audi_connect_ha:audi_services.py:_get_vehicles
+}

@@ -1,0 +1,82 @@
+meta {
+  name: GET climater (Klima-State + Cabin Temp)
+  type: http
+  seq: 8
+}
+
+get {
+  url: {{home_region}}/fs-car/bs/climatisation/v1/{{brand}}/{{country}}/vehicles/{{vin}}/climater
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{vw_access_token}}
+}
+
+headers {
+  Accept: application/json
+  X-App-Name: Volkswagen
+  X-App-Version: 3.51.1
+  User-Agent: Volkswagen/3.51.1-android/14
+}
+
+docs {
+  STUFE 3c — Climater READ
+
+  Liefert Klimaanlage-Status. Funktioniert für Pre-Cariad PHEV/EV
+  (Golf 7 GTE, e-Golf, A3 e-tron). Reine Verbrenner können den
+  Endpoint auch haben für Standheizung — aber siehe 13_rs_status
+  für die separate Standheizungs-Endpoint.
+
+  ERWARTETE ANTWORT (200 OK):
+    {
+      "climater": {
+        "settings": {
+          "targetTemperature": {"content": 2950, "timestamp": "..."},   // dK (×0.1 K)
+          "heaterSource": {"content": "electric"},                       // electric / auxiliary
+          "climatisationWithoutHVpower": {"content": true},
+          "climaterAirSettings": {
+            "windowHeatingFront": {"content": "off"},
+            "windowHeatingRear": {"content": "off"}
+          }
+        },
+        "status": {
+          "climatisationStatusData": {
+            "climatisationState": {"content": "off"},          // off / heating / cooling / ventilation
+            "climatisationReason": {"content": "invalid"},
+            "remainingClimatisationTime_min": {"content": 0}
+          },
+          "temperatureStatusData": {
+            "outdoorTemperature": {"content": 2925, "timestamp": "..."},  // dK
+            "cabinTemperature": {"content": 2935}                         // dK (manche Autos)
+          },
+          "vehicleParkingClockStatusData": {
+            "vehicleParkingClock": {"timestamp": "..."}
+          },
+          "windowHeatingStatusData": {
+            "windowHeatingStateFront": {"content": "off"},
+            "windowHeatingStateRear": {"content": "off"}
+          }
+        }
+      }
+    }
+
+  TEMPERATUR-DECODER:
+    deci-Kelvin (dK): celsius = dK / 10 - 273.15
+    2950 dK → (2950/10) - 273.15 = 21.85 °C
+    2925 dK → 19.35 °C
+    Auf integer °C runden für UI: round((dK / 10) - 273.15)
+
+  HA ENTITIES (Phase 2 v1.27):
+    sensor.outside_temperature   → outdoorTemperature (decoded)
+    sensor.cabin_temperature     → cabinTemperature (decoded, falls present)
+    sensor.target_temperature    → targetTemperature (decoded)
+    sensor.climate_state         → climatisationState
+    sensor.climate_remaining_time → remainingClimatisationTime_min
+    binary_sensor.window_heat_front → windowHeatingStateFront
+    binary_sensor.window_heat_rear  → windowHeatingStateRear
+
+  REFERENZ:
+    audi_connect_ha:audi_services.py:get_climater
+}

@@ -1,0 +1,72 @@
+meta {
+  name: GET tripdata shortTerm (letzte Fahrten)
+  type: http
+  seq: 9
+}
+
+get {
+  url: {{mal_url}}/api/bs/tripstatistics/v1/{{brand}}/{{country}}/vehicles/{{vin}}/tripdata/shortTerm?type=list&newest
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{vw_access_token}}
+}
+
+headers {
+  Accept: application/json
+  X-App-Name: Volkswagen
+  X-App-Version: 3.51.1
+  User-Agent: Volkswagen/3.51.1-android/14
+}
+
+docs {
+  STUFE 3d — Trip Statistics READ
+
+  Liefert Fahrt-Statistiken. shortTerm = einzelne Fahrten (letzte ~50),
+  longTerm = monatliche Aggregate, cyclic = seit-Reset Kumulativ.
+
+  ALTERNATIVES URL-FORMAT:
+    Mit Datum-Range:
+    .../tripdata/shortTerm?from=2026-05-01T00:00:00Z&to=2026-05-09T23:59:59Z
+
+  ERWARTETE ANTWORT (200 OK):
+    {
+      "tripData": {
+        "tripStatistics": [
+          {
+            "tripID": 12345,
+            "tripType": "shortTerm",
+            "timestamp": "2026-05-09T18:30:00Z",
+            "mileage": 45,                                  // km
+            "startMileage": 62455,
+            "overallMileage": 62500,
+            "averageFuelConsumption": 5.8,                  // L/100km
+            "averageElectricEngineConsumption": 0.0,        // kWh/100km (PHEV/EV)
+            "averageSpeed": 67,                             // km/h
+            "averageAuxiliaryConsumption": 0.0,
+            "traveltime": 40,                               // min
+            "zeroEmissionDistance": 12                      // km, PHEV: rein-elektrisch gefahren
+          },
+          ...
+        ]
+      }
+    }
+
+  GOLF 7 GTE PHEV INSIGHT:
+    zeroEmissionDistance ist GOLD — du siehst pro Fahrt wieviele
+    km rein-elektrisch waren. Über Wochen aufsummiert ergibt sich
+    deine echte EV-Quote, nicht nur die theoretische Reichweite.
+
+  HA ENTITIES (Phase 2 v1.27):
+    sensor.last_trip_distance              → tripStatistics[0].mileage
+    sensor.last_trip_avg_fuel              → averageFuelConsumption
+    sensor.last_trip_avg_electric          → averageElectricEngineConsumption
+    sensor.last_trip_zero_emission_distance → zeroEmissionDistance
+    sensor.last_trip_avg_speed             → averageSpeed
+    sensor.last_trip_duration              → traveltime
+
+  REFERENZ:
+    audi_connect_ha:audi_services.py:get_tripdata
+}

@@ -15,3 +15,6 @@ venv/
 carconnectivity.json
 .netrc
 .coverage
+
+# Bruno local environment files (real credentials — never commit)
+tests/bruno/**/environments/*.local.bru

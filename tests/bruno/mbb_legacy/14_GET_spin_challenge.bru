@@ -1,0 +1,74 @@
+meta {
+  name: GET SPIN challenge (für Lock/Unlock + Standheizung)
+  type: http
+  seq: 14
+}
+
+get {
+  url: {{mal_url}}/api/rolesrights/authorization/v2/vehicles/{{vin}}/services/rlu_v1/operations/LOCK/security-pin-auth-requested
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{vw_access_token}}
+}
+
+headers {
+  Accept: application/json
+}
+
+docs {
+  STUFE 5a — SPIN Challenge anfordern (für 15_lock_action)
+
+  Holt einen Challenge-Token den du mit deiner SPIN hashen musst.
+  Action-Path varies depending on what you want to do:
+
+    rlu_v1/operations/LOCK         → Auto sperren
+    rlu_v1/operations/UNLOCK       → Auto entsperren
+    rheating_v1/operations/P_QSACT → Standheizung Quickstart
+
+  ERWARTETE ANTWORT (200 OK):
+    {
+      "securityPinAuthInfo": {
+        "securityToken": "TOKEN_LEVEL_1_xxx",
+        "securityPinTransmission": {
+          "challenge": "ABCDEF0123456789...",        // hex string
+          "remainingTries": 3
+        }
+      }
+    }
+
+  WAS DU DAMIT MACHST (Pseudocode):
+    challenge = response["securityPinAuthInfo"]["securityPinTransmission"]["challenge"]
+    token1    = response["securityPinAuthInfo"]["securityToken"]
+
+    spin_bytes = bytes(spin, "utf-8")             # "1234" → b"1234"
+    challenge_bytes = bytes.fromhex(challenge)
+    pin_hash = sha512(spin_bytes + challenge_bytes).hexdigest().upper()
+
+    # Dann POST /security-pin-auth-completed mit:
+    {
+      "securityPinAuthentication": {
+        "securityPin": {
+          "challenge": challenge,
+          "securityPinHash": pin_hash
+        },
+        "securityToken": token1
+      }
+    }
+    → Antwort enthält neuen "securityToken" → das ist DEIN x-securityToken
+      für den eigentlichen Mutating-Call (LOCK/UNLOCK/Heater).
+
+  REMAINING TRIES:
+    Wenn < 3 → MIT VORSICHT! 3 falsche SPIN-Versuche → VW-App gesperrt
+    bis du im Auto/per Hotline reset machst. Client-Side enforcement!
+
+  IN UNSEREM CODE (Phase 3 v1.28):
+    cariad/auth/spin.py (zu erstellen):
+      async def get_security_token(client, vin, action_path) -> str
+      mit cache 5min (token gilt audience-bound)
+
+  REFERENZ:
+    audi_connect_ha:audi_services.py:get_security_token
+}

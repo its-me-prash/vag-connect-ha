@@ -1,0 +1,61 @@
+meta {
+  name: NEGATIVE invalid token (Drift-Detection)
+  type: http
+  seq: 99
+}
+
+post {
+  url: {{mbb_oauth_url}}/mbbcoauth/mobile/oauth2/v1/token
+  body: formUrlEncoded
+  auth: none
+}
+
+headers {
+  Content-Type: application/x-www-form-urlencoded
+  Accept: application/json
+  User-Agent: Volkswagen/3.51.1-android/14
+}
+
+body:form-urlencoded {
+  grant_type: id_token
+  token: this_is_intentionally_invalid
+  scope: sc2:fal
+}
+
+docs {
+  NEGATIVE TEST — MBB-Backend Health-Check
+
+  Diese Anfrage SOLL fehlschlagen, aber mit einer SPECIFIC Error-Shape.
+  Wenn die Shape sich ändert → MBB-API hat sich geändert → wir müssen
+  unseren Code überprüfen BEVOR User Bug-Reports schreiben.
+
+  ERWARTETE ANTWORT (HTTP 401):
+    {
+      "error": {
+        "errorCode": "gw.error.authentication",
+        "description": "Malformed request"
+      }
+    }
+
+  ASSERT-MATRIX:
+    HTTP-Status:    MUSS 401 sein (nicht 200, nicht 500)
+    JSON-Field:     error.errorCode == "gw.error.authentication"
+    Server-Header:  www  (klassischer MBB-Apache-Identifier)
+
+  WAS DIESER TEST UNS SAGT:
+    ✅ Backend lebt + parst MBB-Protokoll-Form
+    ❌ 410 Gone           → MBB shutdown started, sofort eskalieren
+    ❌ 404 Not Found      → Endpoint moved, URL-Schema geändert
+    ❌ 503/504            → Backend overloaded, kurzfristig retry
+    ❌ Connection refused → DNS oder TLS-Cert-Problem
+    ❌ JSON-Shape neu     → Error-Parser muss aktualisiert werden
+
+  CI-INTEGRATION (Phase 2 v1.27):
+    scripts/check_bruno_url_drift.py --probe-mbb
+    Daily-Cron oder pre-release-Hook. Schickt diesen Negative-Test +
+    asserts auf Status + Shape. Wenn fail → Slack/Email Alert.
+
+  PRIVACY:
+    Token-Wert ist hardcoded "this_is_intentionally_invalid" — kein Leak.
+    Kein User-Cred, keine Session.
+}
