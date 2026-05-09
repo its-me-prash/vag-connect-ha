@@ -465,6 +465,28 @@ class SkodaClient(CariadBaseClient):
             if bonnet is not None:
                 d.hood_open = bonnet
 
+            # v1.25.0 PR-A — Cross-brand parity: lights aggregate.
+            # Skoda mysmob ships ``overall.lights`` ("OFF"/"ON") which
+            # we previously ignored; VW EU/Audi already expose
+            # ``lights_on``. This closes one gap without needing the
+            # per-light dict (Skoda doesn't expose individual lights).
+            lights_raw = v(overall, "lights")
+            if isinstance(lights_raw, str):
+                up = lights_raw.upper()
+                if up == "ON":
+                    d.lights_on = True
+                elif up == "OFF":
+                    d.lights_on = False
+
+            # v1.25.0 PR-A — Cross-brand parity: 12V starter battery.
+            # Skoda mysmob ``vehicle-status.detail`` ships 12V voltage
+            # (myskoda PR ~#480 onwards). VW EU/Audi already had this
+            # via the ``lvBattery`` job since v1.12.0 (#23). Same
+            # threshold heuristic (< 11.5 V → low warning) handled by
+            # the binary_sensor entity.
+            v12_raw = v(detail, "battery12V", "voltage") or v(detail, "voltage12V")
+            d.voltage_12v = safe_float(v12_raw)
+
         # ── Charging ─────────────────────────────────────────────────────────
         # v1.8.11 (Session 3S): `charging.status.fullyChargedAt` is an
         # absolute ISO timestamp returned by current Kodiaq iV 2026

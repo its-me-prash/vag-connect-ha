@@ -560,6 +560,18 @@ class SeatCupraClient(CariadBaseClient):
         if isinstance(parking, dict):
             d.latitude = v(parking, "lat")
             d.longitude = v(parking, "lon")
+            # v1.25.0 PR-A — Cross-brand parity: parking_address from
+            # OLA backend if present (Skoda has it via mysmob since
+            # v1.20.0). Tries common field names defensively. Saves
+            # an HA reverse-geocoding round-trip when the backend
+            # already supplied it.
+            addr = (
+                v(parking, "address", "formattedAddress")
+                or v(parking, "formattedAddress")
+                or v(parking, "address")
+            )
+            if isinstance(addr, str) and addr:
+                d.parking_address = addr
 
         # ── Maintenance ──────────────────────────────────────────────────────
         if isinstance(maintenance, dict):
