@@ -2344,6 +2344,11 @@ class TestCariadCmd:
         coord._was_available = True
         coord.vehicles = {"VIN1": {}}
         coord.async_request_refresh = AsyncMock()
+        # v1.25.0 PR-D: CommandDispatcher state. __new__ bypasses __init__
+        # which normally creates this; tests need to attach a working
+        # dispatcher so _get_command_lock + wake-cooldown delegations work.
+        from custom_components.vag_connect._command_dispatcher import CommandDispatcher
+        coord._dispatcher = CommandDispatcher(coord)
         return coord
 
     def test_cariad_cmd_no_client_logs_error(self):

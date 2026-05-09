@@ -394,6 +394,13 @@ class VagConnectCoordinator(DataUpdateCoordinator):
         self._was_available: bool = True  # tracks availability for log_when_unavailable
         self._cariad_client: Any = None
 
+        # v1.25.0 PR-D Phase 1A: command dispatcher owns lock-map +
+        # wake-cooldown state. Coordinator delegates lock acquisition
+        # + cooldown checks through the dispatcher. See
+        # ``_command_dispatcher.py`` module docstring for refactor plan.
+        from ._command_dispatcher import CommandDispatcher  # noqa: PLC0415
+        self._dispatcher = CommandDispatcher(self)
+
         # Thread-safe dict for vehicle data
         self.vehicles: dict[str, Any] = {}
         self._vehicles_lock = threading.Lock()
@@ -2185,38 +2192,32 @@ class VagConnectCoordinator(DataUpdateCoordinator):
             return str(data.get(CONF_SPIN) or "")
         return ""
 
+    def _ensure_dispatcher(self) -> Any:  # CommandDispatcher (avoid TYPE_CHECKING import)
+        """Return ``self._dispatcher``, lazily creating one if missing.
+
+        v1.25.0 PR-D: tests that bypass __init__ via __new__() may not
+        have a dispatcher set; this fallback ensures coord-level
+        delegations still work. Production __init__ sets it eagerly.
+        """
+        from ._command_dispatcher import CommandDispatcher  # noqa: PLC0415
+        d = getattr(self, "_dispatcher", None)
+        if d is None:
+            d = CommandDispatcher(self)
+            self._dispatcher = d
+        return d
+
     def _get_command_lock(self, vin: str, command_class: str) -> asyncio.Lock:
         """v1.13.0 (#63 Phase 2) — per-VIN per-command-class asyncio.Lock.
 
-        Lazily-created. Stored in ``self._command_locks: dict[(vin, class),
-        Lock]``. Use with ``async with asyncio.timeout(60): async with
-        lock`` so a stuck command doesn't permanently freeze the entity.
-
-        ``command_class`` is the high-level grouping (e.g. ``"lock"``,
-        ``"climate"``, ``"charging"``) — finer than command_id (which
-        distinguishes start/stop) so the user can still do
-        ``start_climate`` while a previous ``stop_climate`` is in flight.
+        v1.25.0 PR-D: state moved to ``self._dispatcher`` (CommandDispatcher).
+        See ``_command_dispatcher.py`` module docstring for refactor plan.
         """
-        if not hasattr(self, "_command_locks"):
-            self._command_locks: dict[tuple[str, str], asyncio.Lock] = {}
-        key = (vin, command_class)
-        lock = self._command_locks.get(key)
-        if lock is None:
-            lock = asyncio.Lock()
-            self._command_locks[key] = lock
-        return lock
+        return self._ensure_dispatcher().get_command_lock(vin, command_class)  # type: ignore[no-any-return]
 
     def is_command_in_flight(self, vin: str, command_class: str) -> bool:
-        """v1.13.0 (#63 Phase 2) — True if a command for this
-        VIN+command-class is currently locked (= API call running).
-
-        Entity layer can use this to render a ``transitioning``/``busy``
-        UI hint without taking the entity unavailable.
-        """
-        if not hasattr(self, "_command_locks"):
-            return False
-        lock = self._command_locks.get((vin, command_class))
-        return bool(lock and lock.locked())
+        """v1.13.0 (#63 Phase 2) / v1.25.0 PR-D delegated — True if a
+        command for this VIN+command-class is currently locked."""
+        return self._ensure_dispatcher().is_command_in_flight(vin, command_class)  # type: ignore[no-any-return]
 
     def is_read_only(self) -> bool:
         """v1.12.0 (#63) — return True if user enabled Read-only Mode.
@@ -2490,9 +2491,8 @@ class VagConnectCoordinator(DataUpdateCoordinator):
         # automation-bug repeat triggers BEFORE incrementing the daily
         # budget. In-memory only (restart resets — that's fine, restart
         # is intentional).
-        if not hasattr(self, "_wake_last_at"):
-            self._wake_last_at: dict[str, datetime] = {}
-        last_at = self._wake_last_at.get(vin)
+        # v1.25.0 PR-D: state moved to ``self._dispatcher`` (CommandDispatcher).
+        last_at = self._ensure_dispatcher()._wake_last_at.get(vin)
         if last_at is not None and (now - last_at) < _WAKE_COOLDOWN:
             remaining_s = int((_WAKE_COOLDOWN - (now - last_at)).total_seconds())
             _LOGGER.warning(
@@ -2537,7 +2537,8 @@ class VagConnectCoordinator(DataUpdateCoordinator):
         count += 1
         self._wake_counts[vin] = (today, count)
         # v1.13.0 (#63 Phase 3) — record cooldown timestamp.
-        self._wake_last_at[vin] = now
+        # v1.25.0 PR-D: state moved to dispatcher.
+        self._ensure_dispatcher()._wake_last_at[vin] = now
         # Push count into vehicle data so the sensor sees it on next read.
         with self._vehicles_lock:
             current = self.vehicles.get(vin)
