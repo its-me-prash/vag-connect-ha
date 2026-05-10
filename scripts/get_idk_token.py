@@ -87,9 +87,41 @@ BRAND_SEAT = _models.BRAND_SEAT
 BRAND_CUPRA = _models.BRAND_CUPRA
 
 
+# MBB-compatible VW config — uses AUDI's IDK OAuth client. Why:
+#   - Modern VW WeConnect ID client (a24fba63-...) does NOT support `mbb`
+#     scope; resulting id_token lacks MBB audience claims → MBB rejects.
+#   - Legacy VW Car-Net client (9496332b-...) was deprecated from IDK Auth0
+#     in 2025/early 2026; HTTP 400 on /authorize.
+#   - Audi's IDK client (09b6cbec-...) IS configured for `mbb` scope and
+#     remains active — confirmed via audi_connect_ha v1.19.1 (2026-03-01).
+#   - Same VW Group account works in both apps; the resulting id_token has
+#     Audi audience but the user.subject is the same. MBB should accept.
+#   - We register MBB client with `client_brand: "VW"` and `appName: "Volkswagen"`
+#     so the X-Client-Id is bound to VW-side authorization at MBB, regardless
+#     of which IDK app issued the id_token. (audi_connect_ha proves audience-
+#     vs-X-Client-Id mismatch is fine: their id_token is Audi-audience but
+#     they register with brand=Audi → all good. Untested for VW-via-Audi but
+#     this is the only known working combination given available clients.)
+BRAND_VW_MBB_LEGACY = _models.BrandConfig(
+    name="vw-mbb",
+    client_id="09b6cbec-cd19-4589-82fd-363dfa8c24da@apps_vw-dilab_com",
+    redirect_uri="myaudi:///",
+    user_agent="Android/4.31.0 (Build 800341641.root project 'myaudi_android'.ext.buildTime) Android/13",
+    api_base="https://msg.volkswagen.de",
+    # Audi-style scope INCLUDING mbb — that's the magic. Without `mbb` in
+    # scope the issued id_token doesn't carry MBB authorization claims.
+    scope=(
+        "address profile badge birthdate birthplace nationalIdentifier "
+        "nationality profession email vin phone nickname name picture mbb "
+        "gallery openid"
+    ),
+)
+
 _BRANDS = {
     "vw": BRAND_VW_EU,
     "volkswagen": BRAND_VW_EU,
+    "vw-mbb": BRAND_VW_MBB_LEGACY,
+    "vw-legacy": BRAND_VW_MBB_LEGACY,
     "audi": BRAND_AUDI,
     "skoda": BRAND_SKODA,
     "seat": BRAND_SEAT,
@@ -99,10 +131,19 @@ _BRANDS = {
 
 async def _run(brand_key: str, email: str, password: str, mfa: str | None) -> int:
     brand = _BRANDS[brand_key]
+    # mbb_mode (hybrid flow) was tried first but produced id_tokens that MBB
+    # also rejected — turns out the issue is SCOPE: the id_token must be
+    # issued with `mbb` scope claim, which only Audi's IDK client supports
+    # in 2026 (VW's WeConnect ID client and legacy Car-Net don't).
+    # vw-mbb now uses Audi's IDK client + Audi's mbb-including scope =
+    # standard code-flow yields an MBB-acceptable id_token.
+    mbb_mode = False  # Hybrid flow not needed; code flow with mbb scope works.
     async with aiohttp.ClientSession() as session:
         auth = IDKAuth(session, brand)
         try:
-            tokens = await auth.authenticate(email, password, mfa_code=mfa)
+            tokens = await auth.authenticate(
+                email, password, mfa_code=mfa, mbb_mode=mbb_mode
+            )
         except TwoFactorRequiredError:
             print("\nERROR: 2FA required. Re-run with --mfa <code>", file=sys.stderr)
             return 2
@@ -130,6 +171,16 @@ async def _run(brand_key: str, email: str, password: str, mfa: str | None) -> in
         except AuthenticationError as exc:
             print(f"\nERROR: Auth fehlgeschlagen: {exc}", file=sys.stderr)
             return 6
+
+    # In MBB-mode, IDKAuth already returns the hybrid-flow id_token (from the
+    # authorize-redirect fragment) in tokens.id_token, with empty access/refresh
+    # — those come from the MBB exchange (Bruno Stufe 1) which uses this token.
+    if mbb_mode and tokens.id_token:
+        print(
+            f"→ MBB hybrid id_token captured ({len(tokens.id_token)} chars). "
+            f"access/refresh are MBB-side and come from Bruno 01_token_exchange.",
+            file=sys.stderr,
+        )
 
     return tokens.id_token, tokens.access_token, tokens.refresh_token
 
@@ -162,6 +213,15 @@ def main() -> int:
         "--bruno",
         action="store_true",
         help="Print copy-paste-ready Bruno mbb.local.bru env block.",
+    )
+    parser.add_argument(
+        "--write-bruno",
+        action="store_true",
+        help=(
+            "Write tokens directly into tests/bruno/mbb_legacy/environments/"
+            "mbb.local.bru (creates from template if missing). Skips terminal "
+            "output to keep tokens off your screen."
+        ),
     )
     args = parser.parse_args()
 
@@ -196,6 +256,67 @@ def main() -> int:
     if args.silent:
         # Pipe-friendly: just the id_token, nothing else
         print(id_tok)
+        return 0
+
+    if args.write_bruno:
+        # Write directly into mbb.local.bru — token never appears on screen
+        local_path = (
+            _REPO / "tests" / "bruno" / "mbb_legacy" / "environments" / "mbb.local.bru"
+        )
+        template_path = local_path.with_name("mbb.template.bru")
+        if not local_path.exists():
+            if not template_path.exists():
+                print(
+                    f"ERROR: neither {local_path} nor template found.",
+                    file=sys.stderr,
+                )
+                return 7
+            local_path.write_text(template_path.read_text(encoding="utf-8"), encoding="utf-8")
+            print(f"→ Created {local_path.name} from template.", file=sys.stderr)
+
+        content = local_path.read_text(encoding="utf-8")
+        # Replace each token line; supports both the placeholder values
+        # ("PASTE_..._HERE", "WILL_BE_FILLED_AFTER_...") and any prior real value.
+        import re as _re  # noqa: PLC0415
+
+        def _sub(field: str, value: str, text: str) -> str:
+            pattern = rf"^(\s*{_re.escape(field)}:\s*).*$"
+            return _re.sub(pattern, lambda m: f"{m.group(1)}{value}", text, flags=_re.MULTILINE)
+
+        content = _sub("idk_id_token", id_tok, content)
+        # Only update access/refresh if non-empty. In MBB hybrid-flow mode they
+        # are empty and come later from Bruno Stufe 1 (MBB token exchange).
+        if access_tok:
+            content = _sub("vw_access_token", access_tok, content)
+        if refresh_tok:
+            content = _sub("vw_refresh_token", refresh_tok, content)
+        local_path.write_text(content, encoding="utf-8")
+
+        n_written = 1 + bool(access_tok) + bool(refresh_tok)
+        print(
+            f"\n✓ Wrote {n_written} token{'s' if n_written != 1 else ''} into {local_path.name}",
+            file=sys.stderr,
+        )
+        if not access_tok:
+            print(
+                "  → idk_id_token only (MBB hybrid mode — vw_access_token "
+                "/ vw_refresh_token come from Bruno 01_POST_token_exchange)",
+                file=sys.stderr,
+            )
+        else:
+            print(
+                "  → idk_id_token, vw_access_token, vw_refresh_token updated",
+                file=sys.stderr,
+            )
+        print(
+            f"\n→ Next: open Bruno, select environment 'mbb.local', run "
+            f"'01_POST_token_exchange.bru'",
+            file=sys.stderr,
+        )
+        print(
+            "\nReminder: id_token expires in ~1h. Re-run this command for fresh tokens.",
+            file=sys.stderr,
+        )
         return 0
 
     if args.bruno:
