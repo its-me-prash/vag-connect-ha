@@ -1,0 +1,56 @@
+meta {
+  name: GET VSR jobstatus (Wake-Polling)
+  type: http
+  seq: 16
+}
+
+get {
+  url: {{home_region}}/fs-car/bs/vsr/v1/{{brand}}/{{country}}/vehicles/{{vin}}/requests/{{request_id}}/jobstatus
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{vw_access_token}}
+}
+
+headers {
+  Accept: application/json
+  X-App-Name: Volkswagen
+  X-App-Version: 3.51.1
+  User-Agent: Volkswagen/3.51.1-android/14
+}
+
+docs {
+  STUFE 4d — Wake-Job Polling
+
+  Nach 11_POST_vsr_request hast du eine requestId. Polling-Loop bis
+  status ∈ {request_successful, request_fail}, dann fresh /status holen.
+
+  ERWARTETE ANTWORT (200 OK):
+    {
+      "requestStatusResponse": {
+        "vin": "WVWZZZAUZFW805377",
+        "status": "request_in_progress",        // / request_successful / request_fail
+        "requestId": "abc-123-def-456"
+      }
+    }
+
+  POLLING-STRATEGIE:
+    Initial-Sleep 5s, dann alle 3s pollen, max 60s gesamt.
+    Mehr als 60s → Auto schläft tief / 12V leer / out-of-coverage.
+
+  STATUS-DECODER:
+    request_in_progress → weiter polling
+    fetched              → Auto hat Anfrage erhalten, antwortet bald
+    request_successful   → fresh-Daten verfügbar, jetzt /status holen
+    request_fail         → final fail. siehe reasonCode in response
+
+  IN UNSEREM CODE (Phase 1 v1.26.3 optional, Phase 2 v1.27 default):
+    coordinator könnte nach wake() automatisch polling 30s im
+    background, dann fresh data fetchen. Aktuell macht das HA-Coordinator
+    polling-cycle natürlich nach 5min eh.
+
+  REFERENZ:
+    audi_connect_ha:audi_services.py:check_request_status
+}

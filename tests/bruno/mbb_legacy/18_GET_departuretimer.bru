@@ -1,0 +1,88 @@
+meta {
+  name: GET departure timer (Abfahrtszeiten — PHEV/EV)
+  type: http
+  seq: 18
+}
+
+get {
+  url: {{home_region}}/fs-car/bs/departuretimer/v1/{{brand}}/{{country}}/vehicles/{{vin}}/timer
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{vw_access_token}}
+}
+
+headers {
+  Accept: application/json
+  X-App-Name: Volkswagen
+  X-App-Version: 3.51.1
+  User-Agent: Volkswagen/3.51.1-android/14
+}
+
+docs {
+  STUFE 3f — Departure Timer READ (PHEV/EV-Feature)
+
+  Liefert die programmierten Abfahrtszeiten — wann das Auto bis wann
+  vor-klimatisiert / fertig-geladen sein soll. Golf 7 GTE PHEV
+  unterstützt bis zu 3 Timer-Profile.
+
+  ERWARTETE ANTWORT (200 OK):
+    {
+      "timer": {
+        "timersAndProfiles": {
+          "timerProfileList": {
+            "timerProfile": [
+              {
+                "profileID": 1,
+                "profileName": "Werktag-Morgens",
+                "operationCharging": true,
+                "operationClimatisation": true,
+                "targetChargeLevel_pct": 100,
+                "nightRateActive": false,
+                "nightRateTimeStart": "22:00",
+                "nightRateTimeEnd": "06:00",
+                "chargeMaxCurrent": 16
+              }
+            ]
+          },
+          "timerList": {
+            "timer": [
+              {
+                "timerID": 1,
+                "profileID": 1,
+                "timerProgrammedStatus": "programmed",
+                "timerFrequency": "cyclic",       // / single
+                "departureTimeOfDay": "07:30",
+                "departureWeekdayMask": "yyyyynn"  // Mo-Fr ja, Sa/So nein
+              }
+            ]
+          },
+          "timerBasicSetting": {
+            "chargeMinLimit": 30,
+            "targetTemperature": 2950,
+            "heaterSource": "electric"
+          }
+        }
+      }
+    }
+
+  TIMER VS PROFILE:
+    timer  = Wann (Wochentage + Uhrzeit)
+    profile = Was (Klima ja/nein, max-SoC, max-Strom, Nachttarif)
+    timer.profileID referenziert profile.profileID
+
+  GOLF 7 GTE PRAXIS:
+    User Stories:
+      "Mo-Fr 07:30 fertig geladen + 21°C warm"
+      "Sa-So Klima nur wenn Plug connected, lade auf 80% (Battery-Care)"
+
+  HA ENTITIES (Phase 2 v1.27 read-only, Phase 3 v1.28 write):
+    sensor.next_departure_time → frühester nächster Timer
+    binary_sensor.timer_active → mind. 1 Timer programmed
+    Phase 3: number.target_charge_level, switch.timer_climate, etc.
+
+  REFERENZ:
+    audi_connect_ha:audi_services.py:get_timer
+}

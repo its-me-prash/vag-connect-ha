@@ -1,0 +1,9 @@
+{
+  "version": "1",
+  "name": "vag-connect-ha — MBB Legacy (pre-Cariad VW/Audi/Skoda/SEAT)",
+  "type": "collection",
+  "ignore": [
+    "node_modules",
+    ".git"
+  ]
+}

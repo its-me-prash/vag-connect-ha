@@ -1,0 +1,125 @@
+meta {
+  name: GET vehicle status (VSR — alle 32+ Felder)
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{home_region}}/fs-car/bs/vsr/v1/{{brand}}/{{country}}/vehicles/{{vin}}/status
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{vw_access_token}}
+}
+
+headers {
+  Accept: application/json
+  X-App-Name: Volkswagen
+  X-App-Version: 3.51.1
+  User-Agent: Volkswagen/3.51.1-android/14
+}
+
+docs {
+  STUFE 3a — VSR (Vehicle Status Report) READ
+
+  DAS IST DAS HERZ DER PRE-CARIAD INTEGRATION. Liefert ALLES was
+  das Auto im Stand-Status reportet: Tank, Reichweite, Türen,
+  Fenster, Service-Intervalle, AdBlue, etc.
+
+  WICHTIG: VSR liefert STATIC Cache vom letzten Wake/Heartbeat.
+  Für FRISCHE Daten erst 11_POST_vsr_request.bru rufen, dann polling.
+
+  ERWARTETE ANTWORT (200 OK, gekürzt):
+    {
+      "StoredVehicleDataResponse": {
+        "vin": "WVWZZZAUZFW805377",
+        "vehicleData": {
+          "data": [
+            {
+              "id": "0x0101010001",
+              "field": [
+                {"id": "0x0101010001", "value": "2026-05-09T..."}     // Report-TS
+              ]
+            },
+            {"id": "0x0101010002",                                     // Odometer-Section
+              "field": [{"id": "0x0101010002", "value": "62500", "unit": "km"}]},
+            {"id": "0x0203010001",                                     // Service-Section
+              "field": [
+                {"id": "0x0203010001", "value": "12500", "unit": "km"},   // next oil km
+                {"id": "0x0203010003", "value": "300", "unit": "d"},      // next oil days
+                {"id": "0x0203010003", "value": "21000", "unit": "km"},   // next inspection km
+                {"id": "0x0203010004", "value": "510", "unit": "d"}       // next inspection days
+              ]},
+            ...
+            {"id": "0x030103",
+              "field": [
+                {"id": "0x0301030005", "value": "650", "unit": "km"},      // total range
+                {"id": "0x0301030006", "value": "620", "unit": "km"},      // primary engine range
+                {"id": "0x0301030007", "value": "3"},                      // primary engine type (3=gasoline)
+                {"id": "0x0301030008", "value": "30",  "unit": "km"},      // secondary range (electric!)
+                {"id": "0x0301030009", "value": "1"},                      // secondary engine type (1=electric)
+                {"id": "0x030103000A", "value": "65",  "unit": "%"},       // FUEL %
+                {"id": "0x030103000D", "value": "82",  "unit": "%"}        // BATTERY % (PHEV)
+              ]},
+            {"id": "0x030104",                                              // Doors
+              "field": [
+                {"id": "0x0301040001", "value": "2"},     // FL lock (2=locked)
+                {"id": "0x0301040002", "value": "3"},     // FL open (3=closed)
+                ...
+                {"id": "0x030104000D", "value": "2"},     // trunk lock
+                {"id": "0x0301040011", "value": "3"}      // hood (3=closed)
+              ]},
+            {"id": "0x030105",                                              // Windows
+              "field": [
+                {"id": "0x0301050001", "value": "3"},     // window FL closed
+                ...
+              ]}
+          ]
+        }
+      }
+    }
+
+  FIELD-ID DECODER (die wichtigsten 32):
+    0x0101010001 → Report-Timestamp UTC (ISO)
+    0x0101010002 → Odometer total km
+    0x0203010001 → Distance to next oil change (km)
+    0x0203010002 → Days to next oil change
+    0x0203010003 → Distance to next inspection (km)
+    0x0203010004 → Days to next inspection
+    0x0203010005 → Warning: oil change due (bool)
+    0x0203010006 → Warning: inspection due (bool)
+    0x0204040003 → Oil-level dipstick %
+    0x02040C0001 → AdBlue range (km)
+    0x0301010001 → Parking lights status (enum)
+    0x0301020001 → Outside temperature (deci-Kelvin: value/10 - 273)
+    0x0301030005 → TOTAL combined range (km)
+    0x0301030006 → Primary engine range (km)
+    0x0301030007 → Primary engine type (3=gasoline 5=diesel 1=electric)
+    0x0301030008 → Secondary engine range (km)
+    0x0301030009 → Secondary engine type
+    0x030103000A → FUEL LEVEL %
+    0x030103000D → BATTERY % (PHEV/EV ONLY)
+    0x0301040001 → Door lock front-left (2=locked 3=unlocked)
+    0x0301040002 → Door open front-left  (2=closed 3=open)
+    0x0301040003 → Door safety front-left
+    0x0301040004 → Door lock rear-left
+    0x0301040005 → Door open rear-left
+    0x0301040007 → Door lock front-right
+    0x0301040008 → Door open front-right
+    0x030104000A → Door lock rear-right
+    0x030104000B → Door open rear-right
+    0x030104000D → Trunk lock
+    0x030104000E → Trunk open
+    0x0301040011 → Hood open
+    0x0301050001 → Window FL state
+    0x0301050003 → Window RL state
+    0x0301050005 → Window FR state
+    0x0301050007 → Window RR state
+    0x030105000B → Sunroof state
+
+  REFERENZ:
+    audi_connect_ha:audi_services.py:get_stored_vehicle_data
+    robinostlund/volkswagencarnet v4.4.69:vw_const.py (FIELD_IDS)
+}

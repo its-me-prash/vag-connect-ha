@@ -1,0 +1,49 @@
+meta {
+  name: POST MBB vwToken refresh
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{mbb_oauth_url}}/mbbcoauth/mobile/oauth2/v1/token
+  body: formUrlEncoded
+  auth: none
+}
+
+headers {
+  Content-Type: application/x-www-form-urlencoded
+  X-Client-Id: {{x_client_id}}
+  Accept: application/json
+  User-Agent: Volkswagen/3.51.1-android/14
+}
+
+body:form-urlencoded {
+  grant_type: refresh_token
+  refresh_token: {{vw_refresh_token}}
+  scope: sc2:fal
+}
+
+docs {
+  STUFE 1b — Token-Refresh
+
+  Erneuert den vwToken ohne neuen IDK-Login. Selbe Endpoint, anderer
+  grant_type. Wichtige Subtilität:
+
+  - audi_connect_ha sendet das Field als "token" (nicht "refresh_token")
+    siehe audi_services.py:1043-1066
+  - evcc sendet "refresh_token" (Standard OIDC)
+  - Beide funktionieren laut Field-Reports
+
+  Falls "refresh_token" 400 gibt → Field umbenennen zu "token".
+
+  ERWARTETE ANTWORT (200 OK):
+    {
+      "access_token": "eyJ...",      // neu — vw_access_token überschreiben
+      "refresh_token": "eyJ...",     // ggf. neu — vw_refresh_token überschreiben
+      "expires_in": 3600
+    }
+
+  IN UNSEREM CODE:
+    cariad/auth/mbb.py:refresh_mbb_token() (zu erstellen v1.27)
+    Wird aus _command_wake_mbb() bei 401-Response gerufen, dann Retry.
+}

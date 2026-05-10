@@ -38,6 +38,69 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ## [Unreleased]
 
+## [1.27.0] - 2026-05-11 🔬📋 Pre-Cariad PHEV Research + Strategic Roadmap / Pre-Cariad PHEV Research + Strategic Roadmap
+
+🔬 **MINOR-Release.** Diese Version bündelt 6 Stunden tiefgehende Pre-Cariad MBB Forschung, einen kompletten Strategic Roadmap, sowie das Polish-Feature aus Issue #178 (loggers field — `quality_scale` bleibt zurückgehalten bis HA Core stabilisiert).
+
+### 🎯 Hauptfunde (siehe Audit Doc)
+
+1. **Pre-Cariad MBB ist gated by `XID_APP_VW`** Permission — nur offizielle VW App's pre-provisionierte client_id hat das. Public `/mbbcoauth/mobile/register/v1` xclientId's bekommen das nie. **Kein public Bypass existiert.** ✗ Legacy CarNet Password-Grant (msg.volkswagen.de/.../core/auth/v1/) gibt 401 für ALLE Credentials (server-seitig deprecated).
+
+2. **WeConnect-ID Client + scope `openid profile mbb cars vin`** produziert id_token mit `VWGMBB01DELIV1` audience → MBB token exchange erfolgreich (vwToken in VW-Namespace mit `iss: VWGMBB01DELIV1`). Wiederverwertbar für künftige MBB-Arbeit.
+
+3. **Pre-Cariad Cars sind im Cariad-Backend** — Golf 7 GTE PHEV (MJ 2015) liefert 12/12 Cariad selectivestatus jobs erfolgreich. **vag-connect-ha unterstützt diese Autos bereits** out-of-the-box via existing Cariad-BFF Code-Pfad.
+
+### ✨ Neue Files
+
+- **`docs/research/2026-05_pre-cariad-mbb-and-golf-7-gte-audit.md`** (413 Zeilen) — komplettes 8-Sektion Audit der Pre-Cariad MBB Auth-Landscape, IDK Client Inventory, carType-Bug-Dokumentation, ~55-60 Entity-Inventory für Golf 7 GTE
+- **`docs/research/2026-05_strategic-roadmap-v1.27-to-v2.0.md`** (300+ Zeilen) — Full Competitive Landscape Analysis, Open Issues Triage, 5 Strategic Pillars, Detailed Roadmap v1.27.0 → v2.0.0, Risk Matrix, Quick Wins
+- **`ROADMAP.md`** (Top-Level) — Public 300-Wort Distillat des Strategic Roadmap. Wir sind die einzige VAG-HA-Integration mit publicly gepflegter Roadmap.
+- **`tests/bruno/mbb_legacy/`** — Bruno Collection mit 18+1 .bru Files für Pre-Cariad MBB Endpoints (community-resource). Mit gitignored `mbb.local.bru` Pattern für Live-Credentials.
+- **20 Diagnostic Scripts in `scripts/`**: get_idk_token, get_mbb_token, decode_id_token, verify_mbb_endpoints, verify_cariad_for_gte, verify_cariad_full, full_mbb_matrix, try_vw_*, try_carnet_password_grant, hunt_raw_fields, investigate_tank_data, test_active_actions, test_enginetype, extract_all_sensors, show_operations, wake_and_refresh, try_country_codes, try_vw_appids, try_enrollment.
+
+### 🔧 Production Code Changes
+
+- **`cariad/auth/idk.py`**: `IDKAuth.authenticate()` bekommt neuen `mbb_mode: bool = False` Parameter. Wenn aktiviert: nutzt OIDC HYBRID flow (`response_type=code id_token`) und extrahiert id_token aus authorize-redirect URL fragment (statt code-flow id_token aus token endpoint). Hilfs-Funktion `_extract_param_from_url()` für query+fragment parsing. Neuer `last_redirect_url` instance attribute. **100% backward-compatible** — `mbb_mode` defaults to False, alle existing Cariad/Audi/Skoda/SEAT auth flows unchanged.
+
+- **`manifest.json`**: Re-introduced `loggers` field (Issue #178 Quick Win). `quality_scale` bleibt zurückgehalten bis HA Core's Validator stabilisiert (war v1.26.1 root cause).
+
+### 📊 Was wir aus dieser Session gelernt haben
+
+| Kategorie | Lessons |
+|---|---|
+| **Architektur** | Test Cariad-BFF FIRST when investigating any "Pre-Cariad" car. Capabilities endpoint ist source of truth. OIDC Hybrid yields cross-service-signed tokens. |
+| **Process** | Don't speculate about service desk fixes without evidence (mistake retracted). Build diagnostic helper script BEFORE integration code. Bruno for human, Python for automation. |
+| **Codebase** | `mbb_mode` jetzt production-ready für künftige hybrid-flow Anforderungen. Bruno-Sammlung community-valuable. Diagnostic-Scripts reusable für jeden User. |
+
+### 🛣️ Roadmap-Vorschau (siehe Strategic Roadmap)
+
+- **v1.28.0** — Auth Resilience (Email-Code 2FA, Marketing-Consent Detection, HA-Update-Survival). Preempts CarConnectivity #92 + audi_connect_ha #728 + evcc #29760.
+- **v1.29.0** — Push Phase 2 Live (Skoda MQTT + FCM für VW/Audi/CUPRA/SEAT). Issue #161.
+- **v1.30.0** — MBB Phase 2 + Lovelace Card. Issues #160, #33, #163, #162.
+- **v2.0.0** — EU Data Act Compliance + SDV-West Readiness. Q3/Q4 2026.
+
+### 🚫 Was wir NICHT mehr tun
+
+- ❌ Reverse-Engineering Legacy MBB direct-data Endpoints (Audit confirmed walled)
+- ❌ Polish-only Releases (bündeln in feature releases)
+- ❌ Scout-Felder ohne Entity-Intent stehen lassen
+
+### 🆕 Was wir starten
+
+- ✅ Public ROADMAP.md (competitor differentiator)
+- ✅ Quarterly "VAG ecosystem report" in `docs/research/`
+- ✅ "Tester-of-the-month" recognition
+- ✅ 2FA + Marketing-Consent Test-Matrix für jede major release
+- ✅ Optional: CI Smoke gegen Bruno-Sammlung (nightly drift detection)
+
+### 🛡️ Sicherheit
+
+- `.gitignore` Regel `tests/bruno/**/environments/*.local.bru` — verhindert Commit echter VW-Credentials
+- get_mbb_token.py + get_idk_token.py: Password via `getpass`, nie auf Disk, nie in Shell-History
+- Bruno Environment-Variablen marked `vars:secret` für UI-Maskierung
+
+---
+
 ## [1.26.2] - 2026-05-09 🚨🔧 Hotfix-2: Root cause `zip_release` revertet — HACS install path / Hotfix-2: Root cause `zip_release` reverted — HACS install path
 
 🚨 **PATCH-Release (Hotfix-2).** v1.26.1 hatte das Loading-Problem nicht gelöst. Root-Cause-Analyse via Diff `v1.24.2..v1.25.0` (last working → first broken) hat den eigentlichen Killer identifiziert:

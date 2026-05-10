@@ -1,0 +1,72 @@
+meta {
+  name: POST IDK id_token → MBB vwToken exchange
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{mbb_oauth_url}}/mbbcoauth/mobile/oauth2/v1/token
+  body: formUrlEncoded
+  auth: none
+}
+
+headers {
+  Content-Type: application/x-www-form-urlencoded
+  X-Client-Id: {{x_client_id}}
+  Accept: application/json
+  User-Agent: Android/4.31.0 (Build 800341641.root project 'myaudi_android'.ext.buildTime) Android/13
+}
+
+body:form-urlencoded {
+  grant_type: id_token
+  token: {{idk_id_token}}
+  scope: sc2:fal
+}
+
+docs {
+  STUFE 1 — AUTH FUNKTIONIERT?
+  
+  Tauscht den IDK id_token (aus deinem schon-funktionierenden CARIAD-Login)
+  gegen einen MBB-spezifischen vwToken (Bearer + Refresh).
+  
+  REFERENZ:
+    arjenvrh/audi_connect_ha:
+      audi_services.py:1404-1428 (_get_mbb_oauth_token)
+    evcc-io/evcc:
+      vehicle/vag/mbb/endpoint.go:31-50
+  
+  ERWARTETE ANTWORT (200 OK):
+    {
+      "token_type": "bearer",
+      "expires_in": 3600,
+      "id_token": "eyJ...",            // Optional, manche Calls liefern es
+      "access_token": "eyJ...",        // ← das ist vwToken — in vw_access_token speichern
+      "refresh_token": "eyJ..."        // ← in vw_refresh_token speichern
+    }
+  
+  FEHLER-INTERPRETATION:
+    401 + {"error":{"errorCode":"gw.error.authentication"}}
+      → id_token abgelaufen oder nicht akzeptiert.
+      Erst neuen IDK-Login machen (schon-funktionierender Flow), id_token kopieren.
+    400 + "invalid_grant"
+      → x_client_id muss gesetzt sein. Wenn unbekannt: leer lassen,
+      evcc behauptet das geht. Falls 401: registriere zuerst via
+      _registration.bru (kommt Stufe 2).
+    Connection refused / TLS-Error
+      → MBB-Backend down. PROJEKT-STOP, nicht weitermachen.
+  
+  X-Client-Id woher?
+    Option A: aus audi_connect_ha hardcoded copy. Sie nutzen einen
+      registrierten X-Client-Id pro Brand (siehe ihre Konstanten).
+    Option B: lass leer und schau ob's geht (evcc tut das so).
+    Option C: registriere selbst (kommt als nächster .bru-File).
+  
+  SCOPE:
+    sc2:fal ist DER MBB-Scope. Cariad nutzt
+    "openid profile cars vin badge dealers" — komplett andere Welt.
+  
+  TOKEN-LEBENSDAUER:
+    Standard 3600 s. Refresh-Endpoint = derselbe URL mit
+    grant_type=refresh_token + token=<refresh_token>.
+    Siehe 02_POST_token_refresh.bru.
+}

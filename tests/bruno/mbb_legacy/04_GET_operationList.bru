@@ -1,0 +1,77 @@
+meta {
+  name: GET rolesrights operationList (Capability-Gating)
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{mal_url}}/api/rolesrights/operationlist/v3/vehicles/{{vin}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{vw_access_token}}
+}
+
+headers {
+  Accept: application/json
+}
+
+docs {
+  STUFE 2b — Capability Discovery
+
+  Liefert die LISTE der Operationen die DEIN AUTO unterstützt. Pre-
+  Cariad Capability-Filter Phase 3 — bestimmt welche HA-Entities
+  überhaupt erstellt werden.
+
+  REFERENZ:
+    evcc-io/evcc:vehicle/vw/api.go:RolesRights()
+    audi_connect_ha:audi_services.py:_get_operation_list
+
+  ERWARTETE ANTWORT (200 OK, JSON-Sample):
+    {
+      "operationList": {
+        "vin": "WVW...",
+        "userRole": {"role": "PRIMARY_USER"},
+        "status": "ENABLED",
+        "serviceInfo": [
+          {
+            "serviceId": "rclima_v1",
+            "serviceType": "remoteVehicleAccess",
+            "serviceStatus": {"status": "Enabled"},
+            "operation": [
+              {"id": "P_QSACT", "version": 1, "permission": "Granted"}
+            ],
+            "licenseRequired": false,
+            "primaryUserRequired": true,
+            "termsAndConditionsRequired": false
+          },
+          {"serviceId": "rbatterycharge_v1", ...},
+          {"serviceId": "rlu_v1", ...},
+          {"serviceId": "carfinder_v1", ...},
+          {"serviceId": "statusreport_v1", ...},
+          {"serviceId": "rheating_v1", ...}
+        ]
+      }
+    }
+
+  CAPABILITY-MAPPING zu HA-Entities:
+    statusreport_v1   → odometer, fuel, range, doors, windows
+    rbatterycharge_v1 → SoC, charging, plug — PHEV/EV core
+    rclima_v1         → climate switch, target_temperature
+    rheating_v1       → aux heater (Standheizung) — Golf 7 GTE!
+    rlu_v1            → lock/unlock (SPIN)
+    carfinder_v1      → device_tracker
+    timerprogramming_v1 → departure timers
+    trip_statistic_v1 → trip sensors
+
+  STATUS-WERTE:
+    "Enabled"      → Entity wird erstellt
+    "Disabled"     → Entity skip
+    "Insufficient" → User hat Subscription-Lücke, Entity skip + log warning
+
+  WICHTIG:
+    Wenn rbatterycharge_v1 nicht in der Liste → Auto ist KEIN PHEV/EV.
+    Dann battery-Entities NICHT erstellen (verhindert Phantom-Entities).
+}

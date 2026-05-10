@@ -1,0 +1,76 @@
+meta {
+  name: POST climater start (Klimaanlage starten — elektrisch)
+  type: http
+  seq: 13
+}
+
+post {
+  url: {{home_region}}/fs-car/bs/climatisation/v1/{{brand}}/{{country}}/vehicles/{{vin}}/climater/actions
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{vw_access_token}}
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/vnd.vwg.mbb.ClimaterAction_v1_0_0+json
+  X-App-Name: Volkswagen
+  X-App-Version: 3.51.1
+  User-Agent: Volkswagen/3.51.1-android/14
+}
+
+body:json {
+  {
+    "action": {
+      "type": "startClimatisation",
+      "settings": {
+        "heaterSource": "electric",
+        "climatisationWithoutHVpower": true,
+        "targetTemperature": 2950
+      }
+    }
+  }
+}
+
+docs {
+  STUFE 4c — Climater Start (Vorklimatisierung)
+
+  Startet die elektrische Klimatisierung. KEIN SPIN nötig (im Gegensatz
+  zur Standheizung in 14_rs_action_preheater).
+
+  STOP-VARIANTE (eigener Body):
+    {"action": {"type": "stopClimatisation"}}
+
+  TARGET TEMPERATURE:
+    deci-Kelvin (dK). 2950 = 21.85°C, 3000 = 26.85°C.
+    Üblicher Komfort-Range: 2900-3000 dK.
+
+  HEATER SOURCE:
+    "electric"  → reine Elektro-Heizung (PHEV/EV)
+    "auxiliary" → Standheizung (verbraucht Sprit, lauter, KEIN SPIN nötig
+                  via diesem Endpoint — siehe 14 für separaten rs_v1)
+
+  GOLF 7 GTE PHEV:
+    Bei plug-connected wird HV-Battery geschont (zieht aus Stromnetz).
+    Bei plug-disconnected → climatisationWithoutHVpower=true erlaubt
+    Klima auch ohne Stromnetz-Anschluss (zieht aus 12V + minimal HV).
+
+  ERWARTETE ANTWORT (200/202):
+    {
+      "action": {
+        "actionId": 67890,
+        "type": "startClimatisation",
+        "actionState": "queued"
+      }
+    }
+
+  HA ENTITIES (Phase 3 v1.28):
+    switch.climate         → start/stop
+    number.target_temperature → settings.targetTemperature
+
+  REFERENZ:
+    audi_connect_ha:audi_services.py:start_climater
+}

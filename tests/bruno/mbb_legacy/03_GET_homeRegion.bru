@@ -1,0 +1,55 @@
+meta {
+  name: GET homeRegion (per-VIN base URI discovery)
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{mal_url}}/api/cs/vds/v1/vehicles/{{vin}}/homeRegion
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{vw_access_token}}
+}
+
+headers {
+  Accept: application/json
+}
+
+docs {
+  STUFE 2a — Discovery
+
+  Findet die richtige Base-URL für DEINE VIN. EU-Standard liefert
+  https://msg.volkswagen.de zurück; region-importierte Autos liefern
+  alternative Hosts (z.B. fal-3a.prd.eu.dp.vwg-connect.com).
+
+  REFERENZ:
+    audi_connect_ha:audi_services.py:367-398 (_get_home_region)
+    evcc-io/evcc:vehicle/vw/api.go:46
+
+  ERWARTETE ANTWORT (200 OK):
+    {
+      "homeRegion": {
+        "baseUri": {
+          "content": "https://msg.volkswagen.de"        // 99% EU
+          // ODER
+          "content": "https://mal-3a.prd.eu.dp.vwg-connect.com/api"
+        }
+      }
+    }
+
+  WAS IST WAS:
+    Wenn content endet mit /api → es ist eine SETTER-URL (mal-*).
+    READER-URL: setter.replace("mal-", "fal-").replace("/api", "/fs-car")
+    Wenn content == default mal-1a/api → kein Override, msg.volkswagen.de bleibt
+
+  RESULTAT IN home_region SPEICHERN:
+    - 99% Fall: home_region = https://msg.volkswagen.de (kein Update nötig)
+    - Region-Fall: home_region = umgerechnete fal-* URL
+
+  IN UNSEREM CODE:
+    cariad/_home_region.py existiert bereits seit v1.17.6 als Scaffold,
+    war aber nur für Cariad-BFF gedacht. Für MBB Phase 2 wire-in.
+}

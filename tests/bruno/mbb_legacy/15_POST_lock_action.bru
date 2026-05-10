@@ -1,0 +1,73 @@
+meta {
+  name: POST lock/unlock action (SPIN required)
+  type: http
+  seq: 15
+}
+
+post {
+  url: {{mal_url}}/api/bs/rlu/v1/{{brand}}/{{country}}/vehicles/{{vin}}/actions
+  body: xml
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{vw_access_token}}
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/vnd.vwg.mbb.RemoteLockUnlock_v1_0_0+xml
+  X-mbbSecToken: PASTE_x-securityToken_FROM_SPIN_FLOW_HERE
+  X-App-Name: Volkswagen
+  X-App-Version: 3.51.1
+  User-Agent: Volkswagen/3.51.1-android/14
+}
+
+body:xml {
+  <?xml version="1.0" encoding="UTF-8"?>
+  <rluAction>
+    <action>lock</action>
+  </rluAction>
+}
+
+docs {
+  STUFE 5b — Lock/Unlock (REQUIRES SPIN)
+
+  ALTERNATIVE BODY für Unlock:
+    <rluAction><action>unlock</action></rluAction>
+
+  HEADERS — KRITISCH:
+    X-mbbSecToken: <token aus 14_GET_spin_challenge>
+    Manche legacy-Variants nutzen "x-securityToken" statt "X-mbbSecToken".
+    Beide gleichzeitig setzen für max. Kompat.
+
+    Content-Type MUSS application/vnd.vwg.mbb.RemoteLockUnlock_v1_0_0+xml
+    sein — application/xml wird mit 415 abgelehnt.
+
+  ERWARTETE ANTWORT (200/202):
+    {
+      "rluActionResponse": {
+        "requestId": "abc-456-def",
+        "vin": "WVWZZZAUZFW805377",
+        "actionState": "queued"
+      }
+    }
+
+  POLLING:
+    GET {mal_url}/api/bs/rlu/v1/{brand}/{country}/vehicles/{vin}/requests/{requestId}/status
+    bis status ∈ {request_successful, request_fail}
+
+  GOLF 7 GTE QUIRK:
+    Lock-Befehl funktioniert nur wenn ALLE Türen geschlossen + Schlüssel
+    NICHT im Auto. Sonst kommt status=request_fail mit reasonCode=
+    "doors-open" oder "key-detected".
+
+  HA ENTITIES (Phase 3 v1.28):
+    lock.car_lock
+      lock()   → POST <action>lock</action>
+      unlock() → POST <action>unlock</action>
+      state    → aus VSR field 0x0301040001 (FL door lock)
+
+  REFERENZ:
+    audi_connect_ha:audi_services.py:lock + unlock
+}

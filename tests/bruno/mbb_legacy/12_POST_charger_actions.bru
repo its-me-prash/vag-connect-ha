@@ -1,0 +1,70 @@
+meta {
+  name: POST charger actions (Laden Start/Stop)
+  type: http
+  seq: 12
+}
+
+post {
+  url: {{home_region}}/fs-car/bs/batterycharge/v1/{{brand}}/{{country}}/vehicles/{{vin}}/charger/actions
+  body: xml
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{vw_access_token}}
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/vnd.vwg.mbb.ChargerAction_v1_0_0+xml
+  X-App-Name: Volkswagen
+  X-App-Version: 3.51.1
+  User-Agent: Volkswagen/3.51.1-android/14
+}
+
+body:xml {
+  <?xml version="1.0" encoding="UTF-8"?>
+  <action>
+    <type>start</type>
+  </action>
+}
+
+docs {
+  STUFE 4b — Charger Action (Laden Start/Stop)
+
+  Startet/Stoppt den Ladevorgang. KEIN SPIN nötig. Body ist XML,
+  type-Werte: "start" oder "stopCharging".
+
+  ALTERNATIV STOPP-BODY:
+    <action><type>stopCharging</type></action>
+
+  HEADER-WICHTIG:
+    Content-Type MUSS application/vnd.vwg.mbb.ChargerAction_v1_0_0+xml
+    sein. application/xml wird mit 415 Unsupported Media Type abgelehnt.
+
+  ERWARTETE ANTWORT (200/202):
+    {
+      "action": {
+        "actionId": 12345,                     // → in action_id speichern
+        "type": "start",
+        "actionState": "queued"
+      }
+    }
+
+  POLLING:
+    GET /charger/actions/{actionId} bis actionState ∈
+    {succeeded, failed, fetched}
+
+  GOLF 7 GTE PRAXIS:
+    - Plug muss connected sein (sonst POSTPONED)
+    - Wenn chargingMode == timer → start triggert OFF→IMMEDIATE Override
+    - Stop ist immer möglich auch mid-charge (Schoning der HV-Battery)
+
+  HA ENTITIES (Phase 3 v1.28):
+    button.start_charging  → POST type=start
+    button.stop_charging   → POST type=stopCharging
+
+  REFERENZ:
+    audi_connect_ha:audi_services.py:start_charger
+    audi_connect_ha:audi_services.py:stop_charger
+}

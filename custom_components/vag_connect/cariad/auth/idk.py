@@ -70,14 +70,34 @@ def _pkce_pair() -> tuple[str, str]:
 
 
 def _extract_auth_code(location: str, redirect_uri: str) -> str | None:
-    """Extract 'code' query param from a redirect-to-app URL."""
+    """Extract 'code' from a redirect-to-app URL.
+
+    Tries query first (default for response_type=code), then fragment
+    (default for response_type=code+id_token / hybrid). v1.26.3 fix.
+    """
+    return _extract_param_from_url(location, redirect_uri, "code")
+
+
+def _extract_param_from_url(
+    location: str, redirect_uri: str, param: str
+) -> str | None:
+    """Extract a named param from a redirect URL, checking query and fragment.
+
+    For OIDC code-flow the params land in `?query`. For hybrid flow
+    (response_type=code+id_token) they land in `#fragment`. v1.26.3.
+    """
     prefix = redirect_uri.split("://")[0] + "://"
     if not location.startswith(prefix):
         return None
     parsed = urlparse(location)
-    params = parse_qs(parsed.query or parsed.path.lstrip("?"))
-    codes = params.get("code")
-    return codes[0] if codes else None
+    for source in (parsed.query, parsed.path.lstrip("?"), parsed.fragment):
+        if not source:
+            continue
+        params = parse_qs(source)
+        values = params.get(param)
+        if values and values[0]:
+            return values[0]
+    return None
 
 
 def _absolute_url(base: str, path: str) -> str:
@@ -119,8 +139,19 @@ class IDKAuth:
         self._session = session
         self._brand = brand
         self.user_id: str | None = None
+        # MBB-mode (hybrid flow) support: when authenticate(mbb_mode=True) is
+        # called, the final app:// redirect URL is stored here so callers can
+        # extract the cross-service-signed id_token from its query/fragment.
+        # For Cariad-only callers this stays None and behaviour is unchanged.
+        self.last_redirect_url: str | None = None
 
-    async def authenticate(self, email: str, password: str, mfa_code: str | None = None) -> TokenSet:
+    async def authenticate(
+        self,
+        email: str,
+        password: str,
+        mfa_code: str | None = None,
+        mbb_mode: bool = False,
+    ) -> TokenSet:
         """Full login flow → returns access/refresh/id tokens.
 
         IDK migrated to Auth0 Universal Login (/u/login) in 2025.
@@ -130,6 +161,18 @@ class IDKAuth:
           3. Parse form_post HTML response, POST to /login/callback
           4. Follow redirects to app:// URI → extract auth code
           5. Exchange code for tokens (PKCE)
+
+        mbb_mode (NEW v1.26.3 research):
+          When True, requests OIDC HYBRID flow (response_type=code id_token,
+          response_mode=query) instead of plain code flow. The hybrid-issued
+          id_token in the authorize-redirect URL is signed for cross-service
+          use and is the ONLY id_token format the legacy MBB OAuth endpoint
+          (mbboauth-1d.prd.ece.vwg-connect.com) accepts. Mirrors evcc-io/evcc
+          vehicle/vag/vwidentity/oauth2.go (Go reference, MIT). After this
+          call returns, callers should parse id_token from
+          self.last_redirect_url (the original token_set.id_token from the
+          token-endpoint exchange is for app-only audience and MBB rejects it
+          with HTTP 400 'Id token is invalid').
         """
         verifier, challenge = _pkce_pair()
         pkce_state = base64.urlsafe_b64encode(os.urandom(16)).rstrip(b"=").decode()
@@ -139,14 +182,22 @@ class IDKAuth:
         params: dict[str, str] = {
             "client_id": self._brand.client_id,
             "redirect_uri": self._brand.redirect_uri,
-            "response_type": "code",
+            "response_type": "code id_token" if mbb_mode else "code",
             "scope": self._brand.scope,
             "state": pkce_state,
             "nonce": nonce,
-            "prompt": "login",
             "code_challenge": challenge,
             "code_challenge_method": "S256",
         }
+        # Cariad-flow: force re-auth (helpful when user has multiple sessions).
+        # MBB hybrid-flow: drop prompt=login because some IDK templates reject
+        # it in combination with response_type=code+id_token.
+        if not mbb_mode:
+            params["prompt"] = "login"
+        # NOTE: deliberately do NOT set response_mode for MBB hybrid flow.
+        # OIDC default for response_type=code+id_token is fragment, and our
+        # extract code reads BOTH query and fragment. Some IDK Auth0 setups
+        # reject explicit response_mode=query for hybrid as invalid_request.
         async with self._session.get(
             _AUTHORIZE_URL,
             timeout=_AUTH_TIMEOUT, params=params, headers=self._base_headers(),
@@ -167,11 +218,14 @@ class IDKAuth:
         if "/u/login" in login_url:
             # Auth0 Universal Login (new IDK, 2025+)
             return await self._authenticate_auth0(
-                login_url, html, email, password, verifier, mfa_code
+                login_url, html, email, password, verifier, mfa_code,
+                mbb_mode=mbb_mode,
             )
 
         # Legacy signin-service flow (kept as fallback)
-        return await self._authenticate_legacy(html, email, password, verifier)
+        return await self._authenticate_legacy(
+            html, email, password, verifier, mbb_mode=mbb_mode
+        )
 
     async def _authenticate_auth0(
         self,
@@ -181,6 +235,7 @@ class IDKAuth:
         password: str,
         verifier: str,
         mfa_code: str | None = None,
+        mbb_mode: bool = False,
     ) -> TokenSet:
         """Auth0 Universal Login — combined username+password POST.
 
@@ -321,9 +376,36 @@ class IDKAuth:
         _LOGGER.debug("IDK Auth0: final redirect = %s", ref[:80] if ref else "(none)")
 
         if not ref or not ref.startswith(prefix):
+            # Print FULL URL on failure (esp. for /v2/login/ui/error which
+            # carries error_description in query params we need to debug).
             raise AuthenticationError(
-                f"Auth0: no app:// redirect after login. Last: {ref[:80]}"
+                f"Auth0: no app:// redirect after login. Last: {ref}"
             )
+
+        # Save final redirect URL so MBB-mode callers can extract the
+        # cross-service-signed id_token from the query/fragment (v1.26.3).
+        self.last_redirect_url = ref
+
+        # MBB-mode short-circuit: in hybrid flow the id_token is already in
+        # the redirect URL (typically fragment). It's the cross-service-signed
+        # token MBB validates against. We do NOT call _exchange_code because
+        # the token endpoint may reject hybrid-flow codes, and the resulting
+        # id_token would be app-audience (which MBB rejects). The MBB exchange
+        # itself happens out-of-band via mbboauth-1d.prd.ece.vwg-connect.com.
+        if mbb_mode:
+            id_tok = _extract_param_from_url(
+                ref, self._brand.redirect_uri, "id_token"
+            )
+            if not id_tok:
+                raise AuthenticationError(
+                    f"MBB hybrid-flow: no id_token in redirect URL "
+                    f"({len(ref)} chars). Auth0 may have stripped "
+                    f"response_type=id_token for this client. URL: {ref[:200]}"
+                )
+            _LOGGER.debug(
+                "IDK Auth0 MBB hybrid: id_token captured (%d chars)", len(id_tok)
+            )
+            return TokenSet(access_token="", refresh_token="", id_token=id_tok)
 
         auth_code = _extract_auth_code(ref, self._brand.redirect_uri)
         if not auth_code:
@@ -399,6 +481,7 @@ class IDKAuth:
         email: str,
         password: str,
         verifier: str,
+        mbb_mode: bool = False,
     ) -> TokenSet:
         """Legacy signin-service flow — ported 1:1 from audiconnect (arjenvrh, MIT).
 
@@ -534,6 +617,21 @@ class IDKAuth:
                     break
 
         _LOGGER.debug("IDK legacy: final ref=%s", ref[:100])
+
+        # Save final redirect URL so MBB-mode callers can extract the
+        # cross-service-signed id_token from the query/fragment (v1.26.3).
+        self.last_redirect_url = ref
+
+        # MBB-mode short-circuit (same logic as auth0 path; legacy flow
+        # may also return id_token in the URL when response_type includes it).
+        if mbb_mode:
+            id_tok = _extract_param_from_url(
+                ref, self._brand.redirect_uri, "id_token"
+            )
+            if id_tok:
+                return TokenSet(access_token="", refresh_token="", id_token=id_tok)
+            # else fall through to normal code exchange
+
         auth_code = _extract_auth_code(ref, self._brand.redirect_uri)
         if not auth_code:
             raise AuthenticationError(f"Legacy: no code in: {ref[:100]}")

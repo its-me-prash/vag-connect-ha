@@ -1,0 +1,79 @@
+meta {
+  name: POST register client (FIRST — get fresh X-Client-Id)
+  type: http
+  seq: 0
+}
+
+post {
+  url: {{mbb_oauth_url}}/mbbcoauth/mobile/register/v1
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json; charset=utf-8
+  Accept: application/json
+  User-Agent: Android/4.31.0 (Build 800341641.root project 'myaudi_android'.ext.buildTime) Android/13
+}
+
+body:json {
+  {
+    "client_name": "SM-A405FN",
+    "platform": "google",
+    "client_brand": "Audi",
+    "appName": "myAudi",
+    "appVersion": "4.31.0",
+    "appId": "de.myaudi.mobile.assistant"
+  }
+}
+
+docs {
+  STUFE 0 — CLIENT REGISTRATION (BEVOR 01)
+
+  Diagnose v1: 01_POST_token_exchange ergab 400
+  "Id token is invalid." — die hardcoded x_client_id
+  77869e21-... wurde NICHT von MBB akzeptiert.
+
+  audi_connect_ha registriert vor jedem Session-Start einen
+  frischen Client. MBB validiert den X-Client-Id Header gegen
+  die Registration-DB. Ohne vorherige Registrierung → invalid.
+
+  REFERENZ:
+    audi_connect_ha:audi_services.py:1375-1399 (register_client)
+
+  ERWARTETE ANTWORT (200 OK):
+    {
+      "client_id": "abc123-...registered-id-with-uuid-shape...",
+      "expires_in": 31536000,
+      ...
+    }
+
+  WAS DU DAMIT MACHST:
+    1. Run dieses File (kein Auth nötig)
+    2. Aus Response client_id KOPIEREN
+    3. In mbb.local.bru → x_client_id ÜBERSCHREIBEN
+       (überschreibe den hardcoded 77869e21-... Wert)
+    4. Dann nochmal 01_POST_token_exchange ausführen → sollte 200
+
+  FÜR ANDERE BRANDS:
+    Audi:
+      "client_brand": "Audi",
+      "appName":      "myAudi",
+      "appVersion":   "4.31.0",
+      "appId":        "de.myaudi.mobile.assistant"
+    Skoda:
+      "client_brand": "Skoda",
+      "appName":      "MySkoda",
+      "appVersion":   "5.0.0",
+      "appId":        "cz.skodaauto.connect"
+
+  REGISTRATION-LIFETIME:
+    expires_in: 31536000 = 1 Jahr. Einmal registriert, der
+    xclientId bleibt für ein Jahr gültig. Im Production-Code
+    cachen wir das per HA-config-entry für 365 Tage.
+
+  PRIVACY:
+    client_name "SM-A405FN" ist ein generischer Samsung-Galaxy-A40
+    Identifier — das schickt das offizielle App auch. Keine echte
+    Geräte-ID, keine IMEI, keine personenbezogenen Daten.
+}
