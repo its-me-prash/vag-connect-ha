@@ -1191,9 +1191,21 @@ class VWEUClient(CariadBaseClient):
             setattr(d, f"departure_timer_{i}_time", time_str)
 
         # ── Parking position ──────────────────────────────────────────────────
+        # v1.27.1 hotfix: Cariad-BFF ``/vehicle/v1/vehicles/{vin}/parkingposition``
+        # returns ``{"data": {"lat": ..., "lon": ..., "carCapturedTimestamp": ...}}``.
+        # Pre-v1.27.1 parser read ``parking.get("lat")`` directly (no ``data``
+        # unwrap) → always None → device_tracker never spawned because
+        # ``device_tracker._has_gps()`` filter rejects None values silently.
+        # Verified live response shape via ``scripts/verify_cariad_for_gte.py``
+        # against Golf 7 GTE on 2026-05-11.
         if parking:
-            d.latitude = parking.get("lat")
-            d.longitude = parking.get("lon")
+            parking_data = parking.get("data") if isinstance(parking, dict) else None
+            if not isinstance(parking_data, dict):
+                # Some legacy/historic responses or alternate firmwares may
+                # ship lat/lon at top level — keep that as a fallback.
+                parking_data = parking
+            d.latitude = parking_data.get("lat")
+            d.longitude = parking_data.get("lon")
             # v1.25.0 PR-A — Cross-brand parity: parking_address from
             # Cariad-BFF if present (Skoda mysmob ships
             # ``formattedAddress`` since v1.20.0). Cariad-BFF
@@ -1202,7 +1214,7 @@ class VWEUClient(CariadBaseClient):
             # on most accounts; some firmwares also surface a
             # composed ``formattedAddress``. Saves the HA
             # reverse-geocoding round-trip when supplied.
-            addr_block = parking.get("address") if isinstance(parking, dict) else None
+            addr_block = parking_data.get("address") if isinstance(parking_data, dict) else None
             if isinstance(addr_block, dict):
                 fa = addr_block.get("formattedAddress")
                 if isinstance(fa, str) and fa:
