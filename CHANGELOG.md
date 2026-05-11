@@ -38,6 +38,52 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ## [Unreleased]
 
+## [1.27.1] - 2026-05-11 🚨🔧 Hotfix: device_tracker GPS-Daten / Hotfix: device_tracker GPS data
+
+🚨 **PATCH-Release.** v1.27.0 hatte einen Parser-Bug der seit unbestimmter Zeit den device_tracker für Cariad-BFF Brands (VW EU, Audi via Cariad-Pfad) verhindert hat.
+
+### 🐛 Root cause
+
+Cariad-BFF `/vehicle/v1/vehicles/{vin}/parkingposition` returnt:
+```json
+{"data": {"lat": 47.401794, "lon": 8.215701, "carCapturedTimestamp": "..."}}
+```
+
+Der Parser in `cariad/api/vw_eu.py:1195` las direkt `parking.get("lat")` ohne den `data` wrapper auszupacken — Ergebnis war immer `None`. `device_tracker._has_gps()` filtert `None` lat/lon stillschweigend raus → kein Tracker spawned. Bug live entdeckt durch User-Report + verifiziert via `scripts/verify_cariad_for_gte.py` Output.
+
+### 🔧 Fix
+
+`cariad/api/vw_eu.py` parking position parser packt nun `data` wrapper aus:
+```python
+parking_data = parking.get("data") if isinstance(parking, dict) else parking
+d.latitude = parking_data.get("lat")
+d.longitude = parking_data.get("lon")
+```
+
+Mit Fallback auf top-level falls historische/alternative Firmwares ohne `data` wrapper antworten.
+
+Selbe Fix für `parking_data.address` (parking_address + parking_city Sensoren).
+
+### ✅ Was jetzt funktioniert
+
+- `device_tracker.{name}_position` mit live lat/lon (Karte in HA)
+- `sensor.{name}_parking_address` mit `formattedAddress` oder composed street/city/country
+- `sensor.{name}_parking_city`
+- `extra_state_attributes` für Map-Tooltip (parking_address, last_seen, etc.)
+
+### 🧪 Verifikation
+
+Live verifiziert mit Golf 7 GTE (VIN WVWZZZAUZFW...) am 2026-05-11:
+- Cariad parkingposition response: lat 47.401794, lon 8.215701 (Aargau Region)
+- Pre-fix: device_tracker unknown / nicht gespawnt
+- Post-fix: device_tracker.golf_gte_position erscheint mit korrekter Position
+
+### 📋 Affected versions
+
+Parser-Bug existiert wahrscheinlich seit der initialen Cariad-BFF Implementierung. Fix gilt rückwirkend für ALLE Cariad-Brands (VW EU + Audi via Cariad). Skoda mysmob + SEAT/CUPRA OLA + Porsche PPA haben eigene Parser, nicht betroffen.
+
+---
+
 ## [1.27.0] - 2026-05-11 🔬📋 Pre-Cariad PHEV Research + Strategic Roadmap / Pre-Cariad PHEV Research + Strategic Roadmap
 
 🔬 **MINOR-Release.** Diese Version bündelt 6 Stunden tiefgehende Pre-Cariad MBB Forschung, einen kompletten Strategic Roadmap, sowie das Polish-Feature aus Issue #178 (loggers field — `quality_scale` bleibt zurückgehalten bis HA Core stabilisiert).
