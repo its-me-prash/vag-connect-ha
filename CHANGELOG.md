@@ -54,6 +54,20 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
   inaktive Klimatisierung erzeugen keine Phantom-Entität.
   Übersetzungen alle 8 Sprachen.
 
+- **`scripts/verify_my_vin.py` — User-facing pre-flight diagnostic** —
+  neuer Standalone-Script den User vor (oder anstelle von) Integration-
+  Install laufen lassen können um zu sehen WELCHE Sensoren bei IHREM
+  konkreten VIN populieren würden. Loggt sich genau wie die Integration
+  in den Hersteller-API ein, ruft `get_vehicles()` + `get_status(vin)`
+  pro VIN auf, druckt eine privacy-anonymisierte Tabelle:
+  - ✅ Felder die populieren würden
+  - ⚠️ Felder die "Unknown" bleiben würden (Firmware liefert sie nicht)
+
+  Use-Cases: Pre-install-Check, Issue-Triage ("paste den Output"),
+  Pre-Cariad-MBB-Vehicles können prüfen ob VIN überhaupt antwortet.
+  Privacy: VINs gemaskt, GPS auf 1 Dezimalstelle gerundet, Tokens
+  gestrippt — Daten gehen NUR an den Hersteller-API selbst.
+
 ---
 
 ## [2.0.1] - 2026-05-15 🚨🔒 Safety-Fix: `doors_locked` False-Negative Cross-Brand / Safety-Fix: `doors_locked` False-Negative Cross-Brand
