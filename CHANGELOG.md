@@ -36,11 +36,35 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 > — mit jeder geänderten Datei, jeder Zeile, jeder Issue-Referenz und der
 > Methodik dahinter.
 
-## [Unreleased] — v2.0.0 Big-Bang (in progress)
+## [2.0.0] - 2026-05-15 🎯🚀 Big-Bang Release — 19 PRs in einem Schlag / Big-Bang Release — 19 PRs in one shot
 
-> **Note:** Alle [Unreleased] Bullets sammeln sich für die finale v2.0.0
-> Mega-Release. Keine Zwischen-Releases mehr — siehe
-> [Big-Bang Audit & Plan](docs/research/2026-05_big-bang-audit-and-plan.md).
+> **v2.0.0 ist die größte Release in der Geschichte des Projekts.** 19 PRs
+> über 4 Phasen, gebündelt zu **15 [NEW v2.0] Features** quer durch alle
+> 7 Brands. Schließt Issue #33 (Diebstahl-Alarm), Issue #163 (heaterSource),
+> setzt den Architektur-Seam für die Sept-2026 EU Data Act Deadline,
+> und re-introduce't `quality_scale: platinum` nach v1.26.x revert.
+>
+> **TL;DR der 15 NEW v2.0 Features:**
+> 1. Skoda Driving-Score Sensor (MY24+)
+> 2. Cross-brand Aux-Heating Parität (Skoda)
+> 3. Porsche TPMS (4 Reifen + Warning)
+> 4. Long-Term Trip Aggregates (Audi/VW EU)
+> 5. Departure-Timer Read-Only Binary-Sensors
+> 6. Weekly Preheat (`recurring_on` Service-Param)
+> 7. Charging-Station POI Lookup Service
+> 8. Vehicle Alarm Sensors (#33)
+> 9. heaterSource Sensor (#163)
+> 10. Push-Manager Lifecycle-Wiring (3 Brands)
+> 11. EU Data Act Abstraction Shim
+> 12. Auth Resilience One-Click Repair
+> 13. System Health Panel
+> 14. Quality Scale Platinum (re-introduced)
+> 15. DeviceInfo `configuration_url` + `suggested_area`
+>
+> Architektur-Audit: [Big-Bang Audit & Plan](docs/research/2026-05_big-bang-audit-and-plan.md).
+>
+> **Migration**: keine. Alle Änderungen sind additive — bestehende
+> Automationen + Lovelace-Cards funktionieren unverändert weiter.
 
 ### Added
 
