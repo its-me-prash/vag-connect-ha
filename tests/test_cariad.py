@@ -1707,19 +1707,39 @@ class TestSeatCupraGetStatus:
         with pytest.raises(SpinError):
             asyncio.get_event_loop().run_until_complete(client.command_unlock("VIN_SEAT"))
 
-    def test_seat_command_flash_requires_position(self):
-        """v1.8.0 / #53: SEAT/CUPRA honk-and-flash needs userPosition.
-        Calling without lat/lng must raise APIError; with lat/lng must succeed."""
+    def test_seat_command_flash_resilient_to_missing_position(self):
+        """v2.0.0 (#53 Gerhard CUPRA Born): command_flash now tries body
+        WITHOUT userPosition first; only enforces position on backend 400.
+
+        - bare body call succeeds → no error (unblocks pre-GPS users)
+        - bare body call succeeds with position present too (no regression)
+        - bare body call → 400 + no position cached → APIError with guidance
+        """
         from custom_components.vag_connect.cariad.exceptions import APIError
+
+        # Case 1: backend accepts bare body → no error even without position
         client = self._client("seat")
+        asyncio.get_event_loop().run_until_complete(client.command_flash("VIN_SEAT"))
 
-        with pytest.raises(APIError):
-            asyncio.get_event_loop().run_until_complete(client.command_flash("VIN_SEAT"))
-
-        # With position present, command goes through
+        # Case 2: backend accepts bare body → still no error with position
+        client = self._client("seat")
         asyncio.get_event_loop().run_until_complete(
             client.command_flash("VIN_SEAT", latitude=48.137, longitude=11.576)
         )
+
+        # Case 3: backend returns 400 + no position → APIError raised
+        client = self._client("seat")
+        # Force the bare body call to return 400 by patching session.request's resp
+        resp_400 = AsyncMock()
+        resp_400.status = 400
+        resp_400.headers = {"Content-Type": "application/json"}
+        resp_400.json = AsyncMock(return_value={"error": "needs userPosition"})
+        resp_400.text = AsyncMock(return_value='{"error":"needs userPosition"}')
+        resp_400.__aenter__ = AsyncMock(return_value=resp_400)
+        resp_400.__aexit__ = AsyncMock(return_value=False)
+        client._session.request = MagicMock(return_value=resp_400)
+        with pytest.raises(APIError):
+            asyncio.get_event_loop().run_until_complete(client.command_flash("VIN_SEAT"))
 
     def test_get_vehicles_with_user_id(self):
         client = self._client("cupra", json_data={"vehicles": [
