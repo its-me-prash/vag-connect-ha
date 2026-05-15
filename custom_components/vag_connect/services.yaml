@@ -348,3 +348,70 @@ send_destination:
       required: false
       selector:
         text:
+
+# v2.0.0 (Big-Bang) — POI charging-station lookup via Cariad-BFF.
+# Returns up to ``max_results`` station dicts within ``radius_m`` metres.
+# Service uses response-variable (HA 2024.4+) so callers receive the
+# list directly. Backed by ``GET /charging-stations/v1/locations``.
+find_charging_stations:
+  name: Ladestationen suchen (POI Lookup)
+  description: >-
+    Sucht Ladestationen rund um den angegebenen Standort über die
+    Cariad-BFF POI-API (nur Audi + VW EU). Rückgabe per
+    ``response_variable`` als Liste mit Stations-Details (id, name,
+    address, location, operator, maxPowerInKW, connectorTypes,
+    availability). Beispiel:
+    ```yaml
+    action: vag_connect.find_charging_stations
+    data:
+      vin: WAUZZZ...
+      latitude: 47.3769
+      longitude: 8.5417
+      radius_m: 5000
+      max_results: 25
+    response_variable: result
+    ```
+  fields:
+    vin:
+      name: VIN
+      description: VIN aus dem Konto. Bestimmt welche Cariad-BFF-Session den Lookup ausführt.
+      required: true
+      selector:
+        text:
+    latitude:
+      name: Breitengrad
+      required: true
+      selector:
+        number:
+          min: -90
+          max: 90
+          step: 0.0001
+    longitude:
+      name: Längengrad
+      required: true
+      selector:
+        number:
+          min: -180
+          max: 180
+          step: 0.0001
+    radius_m:
+      name: Suchradius (Meter)
+      description: Optional. Standard 5000 m (5 km). Max 100 km.
+      required: false
+      default: 5000
+      selector:
+        number:
+          min: 100
+          max: 100000
+          step: 100
+          unit_of_measurement: m
+    max_results:
+      name: Max. Ergebnisse
+      description: Optional. Standard 25 — bis zu 100 möglich.
+      required: false
+      default: 25
+      selector:
+        number:
+          min: 1
+          max: 100
+          step: 1

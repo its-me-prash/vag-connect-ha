@@ -1,0 +1,35 @@
+meta {
+  name: GET charging-stations (POI lookup, v2.0.0)
+  type: http
+  seq: 23
+}
+
+get {
+  url: {{base_url}}/charging-stations/v1/locations?latitude=47.3769&longitude=8.5417&radiusInMeters=5000&maxResults=25
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+headers {
+  Accept: application/json
+}
+
+docs {
+  v2.0.0 (Big-Bang) — POI lookup for nearby charging stations.
+
+  Returns up to ``maxResults`` station dicts within ``radiusInMeters``
+  metres of (latitude, longitude). Each station carries the typical
+  fields: id, name, address, location, operator, maxPowerInKW,
+  connectorTypes, availability.
+
+  Surfaced via the new HA service ``vag_connect.find_charging_stations``
+  (response-variable enabled, HA 2024.4+). Cariad-BFF only — Audi + VW
+  EU — other brands' clients raise AttributeError → ServiceValidationError.
+
+  Implementation: VWEUClient.find_charging_stations() at
+  custom_components/vag_connect/cariad/api/vw_eu.py.
+}

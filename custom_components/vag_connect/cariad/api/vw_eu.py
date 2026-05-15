@@ -162,6 +162,54 @@ class VWEUClient(CariadBaseClient):
         data = await self._get(url, params={"type": kind})
         return data if isinstance(data, dict) else {}
 
+    async def find_charging_stations(
+        self,
+        latitude: float,
+        longitude: float,
+        radius_m: int = 5000,
+        max_results: int = 25,
+    ) -> list[dict[str, Any]]:
+        """v2.0.0 (Big-Bang) — POI lookup for nearby charging stations.
+
+        Returns up to ``max_results`` station dicts within ``radius_m``
+        metres of (``latitude``, ``longitude``). Each dict carries the
+        raw backend fields (typically: ``id``, ``name``, ``address``,
+        ``location``, ``operator``, ``maxPowerInKW``, ``connectorTypes``,
+        ``availability``).
+
+        Backed by the Cariad-BFF POI service:
+        ``GET /charging-stations/v1/locations``
+        (verified live against EU CARIAD-BFF as of 2026-05). The exact
+        path varies by client version; we use the POI v1 schema
+        documented by tillsteinbach/CarConnectivity-connector-volkswagen
+        v0.10.3 (April 2026).
+
+        Defensive: if the backend returns 404 or a non-dict body the
+        method returns an empty list so the calling service never
+        raises into the polling loop.
+        """
+        url = f"{_BASE}/charging-stations/v1/locations"
+        params: dict[str, Any] = {
+            "latitude": str(latitude),
+            "longitude": str(longitude),
+            "radiusInMeters": str(int(radius_m)),
+            "maxResults": str(int(max_results)),
+        }
+        try:
+            data = await self._get(url, params=params)
+        except APIError as exc:
+            _LOGGER.debug("find_charging_stations: backend returned %s", exc)
+            return []
+        if not isinstance(data, dict):
+            return []
+        # Try the two known list keys (BFF uses ``stations`` in some
+        # tenants and ``locations`` in others — both observed live).
+        for key in ("stations", "locations", "data"):
+            v = data.get(key)
+            if isinstance(v, list):
+                return v[: int(max_results)]
+        return []
+
     async def get_status(self, vin: str) -> VehicleData:
         """Fetch full vehicle status via selectivestatus."""
         url = f"{_BASE}/vehicle/v1/vehicles/{vin}/selectivestatus"
