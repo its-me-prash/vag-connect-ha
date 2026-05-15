@@ -38,6 +38,48 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ## [Unreleased]
 
+## [1.27.2] - 2026-05-11 ⚡🔌 Scout-Felder Power-Patch + Plug-Diagnose / Scout-Felder Power-Patch + Plug Diagnostics
+
+⚡ **PATCH-Release.** Schweizer-Taschenmesser-Power-Update — 3 Scout-Issues (#180, #181, #182) komplett geschlossen + 2 zusätzliche Plug-Diagnose-Sensoren.
+
+### ✨ Neue Entities (3)
+
+**`sensor.{name}_charging_settings_pending`** (Diagnostic, default disabled)
+Zählt offene `putChargingSettings` Requests am Cariad-Gateway. Normalerweise 0. Wenn >0 → eine Setting-Änderung ist queued aber noch nicht ans Auto durchgereicht. Schließt **Scout #181 (Audi: `charging.chargingSettings.requests`)**.
+
+**`sensor.{name}_plug_led_color`** (Diagnostic, default enabled)
+Visual Feedback: `none` / `red` (Fehler) / `green` (idle/done) / `blue` (charging). Drivable für Automationen wie "alert if LED turns red".
+
+**`binary_sensor.{name}_external_power_available`** (Diagnostic)
+True wenn die Wallbox/EVSE aktiv Power zum Stecker liefert. False = Plug connected aber Power-Source nicht verfügbar (RCD-Trip / Phasen-Verlust / Smart-Charging-Pause). Wichtig für EV-Power-Monitoring-Automationen.
+
+### 🎯 Scout Issues Closed
+
+| Issue | Field | Status |
+|---|---|---|
+| **#180** (VW) | `charging.chargingStatus.value.chargeRate_kmph` | ✅ Bereits seit v1.10.0 als `sensor.charging_rate_kmh` (UnitOfSpeed.KILOMETERS_PER_HOUR mit auto km/h ↔ mph). Verifiziert v1.27.2. |
+| **#181** (Audi) | `charging.chargingStatus.value.chargeRate_kmph` | ✅ Selbe Implementation, brand-agnostic. |
+| **#181** (Audi) | `charging.chargingSettings.requests` | ✅ NEU als `charging_settings_pending` in v1.27.2. |
+| **#182** (VW) | `charging.chargingStatus.value.chargeRate_kmph` | ✅ Implemented. |
+
+### 📋 Scout-Pipeline-Policy (neu in v1.27.2)
+
+Ab jetzt: **jedes Scout-Issue wird im nächsten Minor entweder als Entity geshippt oder closed-as-not-promoted** (mit Begründung). Kein Drift mehr. Dokumentiert in [Strategic Roadmap](docs/research/2026-05_strategic-roadmap-v1.27-to-v2.0.md) Section 8.
+
+### 🔧 Code Changes
+
+- `cariad/models.py`: 3 neue Felder (`charging_settings_pending`, `plug_led_color`, `external_power_available`)
+- `cariad/api/vw_eu.py`: 3 neue Parser-Lines nach `charging_rate_kmh`
+- `sensor.py`: 2 neue VagSensorDescription
+- `binary_sensor.py`: 1 neue VagBinarySensorDescription
+- `strings.json`: 3 neue Translation-Keys
+
+### 🧪 Verification
+
+Sensor-Definitionen verified compile-clean. Live-Test bei nächstem Cariad-Polling-Cycle.
+
+---
+
 ## [1.27.1] - 2026-05-11 🚨🔧 Hotfix: device_tracker GPS-Daten / Hotfix: device_tracker GPS data
 
 🚨 **PATCH-Release.** v1.27.0 hatte einen Parser-Bug der seit unbestimmter Zeit den device_tracker für Cariad-BFF Brands (VW EU, Audi via Cariad-Pfad) verhindert hat.

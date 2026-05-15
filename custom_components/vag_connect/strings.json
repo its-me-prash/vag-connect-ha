@@ -135,6 +135,12 @@
       "charge_complete_eta": {
         "name": "Charging Done By"
       },
+      "charging_settings_pending": {
+        "name": "Charging Settings Pending"
+      },
+      "plug_led_color": {
+        "name": "Plug LED Color"
+      },
       "charging_type": {
         "name": "Charge Type"
       },
@@ -289,6 +295,9 @@
       },
       "is_charging": {
         "name": "Currently Charging"
+      },
+      "external_power_available": {
+        "name": "External Power Available"
       },
       "climatisation_active": {
         "name": "Climate Control Active"

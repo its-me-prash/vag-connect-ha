@@ -184,6 +184,30 @@ SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
         icon="mdi:clock-end",
         condition="electric",
     ),
+    # v1.27.2 — Cariad scout #181 (Audi): pending charging-settings change
+    # requests count. Diagnostic — typically 0 (idle), >0 means a
+    # putChargingSettings POST is queued at the gateway.
+    VagSensorDescription(
+        key="charging_settings_pending",
+        translation_key="charging_settings_pending",
+        data_key="charging_settings_pending",
+        state_class=SensorStateClass.MEASUREMENT,
+        icon="mdi:tray-arrow-up",
+        condition="electric",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+    ),
+    # v1.27.2 — Visual feedback color of the charge-port LED.
+    # none / red (error) / green (idle/done) / blue (charging) — drivable by
+    # automations like "notify me when LED turns red".
+    VagSensorDescription(
+        key="plug_led_color",
+        translation_key="plug_led_color",
+        data_key="plug_led_color",
+        icon="mdi:led-on",
+        condition="electric",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
     VagSensorDescription(
         key="charging_type",
         translation_key="charging_type",
