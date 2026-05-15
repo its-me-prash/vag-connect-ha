@@ -68,6 +68,20 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
   User die Integration entfernen + neu hinzufügen. Schließt audi_connect_ha
   #728 / CarConnectivity #92 / evcc #29760 cross-integration pain pattern.
 
+- **Skoda Driving-Score Sensor [NEW v2.0]** — neuer Effizienz-Score 0-100
+  (`driving_score`) + Class-Bucket (`driving_score_class`, z.B. `EXCELLENT`,
+  `GOOD`, `AVERAGE`) für Skoda MY24+ Fahrzeuge. Datenquelle: mysmob
+  `GET /api/v2/vehicle-status/{vin}/driving-score`, parallel im
+  `asyncio.gather` Polling-Cycle integriert. Brand-restricted via
+  `_DATA_PRESENT_REQUIRED` — non-Skoda Fahrzeuge sehen keine Phantom-
+  Entitäten. Übersetzungen für alle 8 Sprachen (DE/EN/CS/ES/FR/NL/PL/SV).
+
+- **Cross-brand Aux-Heating Parität (Skoda)** — `command_start_aux_heating`
+  + `command_stop_aux_heating` Methoden auf SkodaClient ergänzt
+  (vorher nur SEAT/CUPRA). Verbindet die bereits seit v1.x existierenden
+  HA Services + `VagAuxHeatingSwitch` Entity transparent für Skoda PHEV/
+  Diesel-Modelle mit Standheizung (Octavia, Superb, Kodiaq iV).
+
 ### Fixed
 
 - **#53 CUPRA Born — defensive `command_flash` + OLA parking parser fix.**

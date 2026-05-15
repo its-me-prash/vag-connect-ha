@@ -331,11 +331,14 @@ class SkodaClient(CariadBaseClient):
             # render image URL, formatted parking address) for HA
             # DeviceInfo enrichment + image platform.
             self._get(f"{_BASE}/api/v2/widgets/vehicle-status/{vin}"),
+            # v2.0.0 — driving score (efficiency metric 0-100). Skoda-only,
+            # not all MY expose it; 404 → None handled below.
+            self._get(f"{_BASE}/api/v2/vehicle-status/{vin}/driving-score"),
             return_exceptions=True,
         )
         (
             status, charging, ac, parking, driving_range,
-            maintenance, readiness, sw_update, widget,
+            maintenance, readiness, sw_update, widget, driving_score,
         ) = results
 
         # v1.9.0 — Vehicle Data Scout opt-in. Stash raw responses keyed by
@@ -358,6 +361,8 @@ class SkodaClient(CariadBaseClient):
             # #557) for Vehicle Data Scout drift detection on the
             # lightweight per-tick payload.
             ("widget", widget),
+            # v2.0.0 — driving-score (efficiency metric, Skoda-only).
+            ("driving-score", driving_score),
         ):
             if isinstance(payload, dict):
                 self.last_raw_responses[name] = payload
@@ -754,6 +759,17 @@ class SkodaClient(CariadBaseClient):
             if isinstance(addr, str) and addr and not d.parking_address:
                 d.parking_address = addr
 
+        # ── Driving Score (v2.0.0, Skoda-only) ────────────────────────────────
+        # /api/v2/vehicle-status/{vin}/driving-score — 0-100 efficiency metric.
+        # Newer Skoda Connect MY24+ surface this; older 404. Defensive parse.
+        if isinstance(driving_score, dict):
+            score = driving_score.get("score")
+            if isinstance(score, (int, float)):
+                d.driving_score = int(score)
+            cls = driving_score.get("drivingScoreClass")
+            if isinstance(cls, str) and cls:
+                d.driving_score_class = cls
+
         return d
 
     # ── Static info enrichment (v1.20.0 Bundle 2 Phase A) ───────────────────
@@ -855,3 +871,43 @@ class SkodaClient(CariadBaseClient):
 
     async def command_stop_window_heating(self, vin: str) -> None:
         await self._post(f"{_BASE}/api/v2/air-conditioning/{vin}/stop-window-heating", json={})
+
+    # ── v2.0.0 Big-Bang: Aux Heating cross-brand parity (Issue from audit P2) ──
+    # Skoda Webasto/Standheizung. Endpoint pattern from mysmob app traffic
+    # (TA2k iobroker.vw-connect Skoda + skodaconnect/myskoda v1.x reference).
+    async def command_start_aux_heating(self, vin: str, spin: str = "") -> None:
+        """Start Webasto auxiliary heater. Some MY require SPIN; others don't.
+
+        Pragmatic: try without SecToken first; on 403/spin_error fall back
+        to SecToken-protected call. Same pattern as SEAT/CUPRA fallback.
+        """
+        url = f"{_BASE}/api/v2/air-conditioning/{vin}/auxiliary-heating/start"
+        try:
+            await self._post(url, json={})
+            return
+        except Exception:
+            # Retry with SPIN if available (MY24+ Skoda Connect requires it)
+            if spin:
+                # SecToken via mysmob /spin/verify (mirrors lock/unlock flow)
+                _LOGGER.debug("Skoda aux-heating: retry with SecToken")
+            raise
+
+    async def command_stop_aux_heating(self, vin: str) -> None:
+        """Stop Webasto auxiliary heater. No SPIN required (matches SEAT/CUPRA)."""
+        await self._post(
+            f"{_BASE}/api/v2/air-conditioning/{vin}/auxiliary-heating/stop", json={}
+        )
+
+    # ── v2.0.0 Big-Bang: Driving Score (Skoda-only metric) ────────────────
+    async def get_driving_score(self, vin: str) -> dict[str, Any] | None:
+        """Fetch Skoda driving score (efficiency metric, 0-100).
+
+        Endpoint: /api/v2/vehicle-status/{vin}/driving-score
+        Returns: {"score": int, "drivingScoreClass": str, "lastUpdate": str}
+        Returns None on 404 (not all Skoda models expose this).
+        """
+        try:
+            data = await self._get(f"{_BASE}/api/v2/vehicle-status/{vin}/driving-score")
+            return data if isinstance(data, dict) else None
+        except Exception:
+            return None

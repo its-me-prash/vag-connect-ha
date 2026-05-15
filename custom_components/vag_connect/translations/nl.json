@@ -231,6 +231,12 @@
       "battery_care_target_soc_pct": {
         "name": "Batterij-Zorg — Doel-SoC"
       },
+      "driving_score": {
+        "name": "Rijscore"
+      },
+      "driving_score_class": {
+        "name": "Rijscore-Klasse"
+      },
       "departure_timer_1_time": {
         "name": "Vertrektimer 1"
       },

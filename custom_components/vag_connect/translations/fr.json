@@ -231,6 +231,12 @@
       "battery_care_target_soc_pct": {
         "name": "Soin Batterie — SoC Cible"
       },
+      "driving_score": {
+        "name": "Score de Conduite"
+      },
+      "driving_score_class": {
+        "name": "Classe du Score"
+      },
       "departure_timer_1_time": {
         "name": "Minuterie de départ 1"
       },

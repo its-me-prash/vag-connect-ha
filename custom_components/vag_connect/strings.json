@@ -246,6 +246,12 @@
       "battery_care_target_soc_pct": {
         "name": "Battery Care — Target SoC"
       },
+      "driving_score": {
+        "name": "Driving Score"
+      },
+      "driving_score_class": {
+        "name": "Driving Score Class"
+      },
       "departure_timer_1_time": {
         "name": "Departure Timer 1"
       },

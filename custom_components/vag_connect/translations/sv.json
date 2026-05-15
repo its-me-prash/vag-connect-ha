@@ -231,6 +231,12 @@
       "battery_care_target_soc_pct": {
         "name": "Batteri-Vård — Mål-SoC"
       },
+      "driving_score": {
+        "name": "Körpoäng"
+      },
+      "driving_score_class": {
+        "name": "Körpoäng-Klass"
+      },
       "departure_timer_1_time": {
         "name": "Avgångstimer 1"
       },
