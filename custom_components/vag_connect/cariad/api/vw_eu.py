@@ -774,6 +774,22 @@ class VWEUClient(CariadBaseClient):
         d.charging_power_kw = v(raw, "charging", "chargingStatus", "value", "chargePower_kW")
         d.charging_rate_kmh = v(raw, "charging", "chargingStatus", "value", "chargeRate_kmph")
 
+        # v1.27.2 — scout #181 (Audi): pending charging-settings change requests.
+        # Surfaced as a count diagnostic so users can verify their
+        # putChargingSettings POSTs actually queued. Empty list = idle.
+        pending = v(raw, "charging", "chargingSettings", "requests")
+        if isinstance(pending, list):
+            d.charging_settings_pending = len(pending)
+
+        # v1.27.2 — Plug visual feedback (LED color on the charge port) +
+        # external-power availability. Both come straight from plugStatus.
+        # Helpful for "is the wallbox actually delivering power right now?"
+        # diagnostics, especially for users with intermittent EVSE issues.
+        d.plug_led_color = v(raw, "charging", "plugStatus", "value", "ledColor")
+        ext_power = v(raw, "charging", "plugStatus", "value", "externalPower")
+        if isinstance(ext_power, str):
+            d.external_power_available = ext_power.lower() == "available"
+
         # v1.26.0 Welle-6 Feature Backlog (#173) — Battery-Care for VW EU/Audi.
         # Skoda + CUPRA/SEAT have these via own paths since v1.17.5; VW EU/Audi
         # finally exposed via Cariad-BFF (paths from scout reports

@@ -62,6 +62,19 @@ BINARY_DESCRIPTIONS: tuple[VagBinarySensorDescription, ...] = (
         icon="mdi:battery-charging",
         condition="electric",
     ),
+    # v1.27.2 — External power availability from plugStatus.externalPower.
+    # True when the wallbox/EVSE is actively delivering power to the
+    # connector. False = plug connected but power source unavailable
+    # (RCD trip / phase loss / smart-charging pause). Diagnostic-only.
+    VagBinarySensorDescription(
+        key="external_power_available",
+        translation_key="external_power_available",
+        data_key="external_power_available",
+        device_class=BinarySensorDeviceClass.POWER,
+        icon="mdi:transmission-tower-export",
+        condition="electric",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
     VagBinarySensorDescription(
         key="climatisation_active",
         translation_key="climatisation_active",

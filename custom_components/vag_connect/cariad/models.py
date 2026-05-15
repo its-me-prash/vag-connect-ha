@@ -228,6 +228,12 @@ class VehicleData:
     charging_station_kw: float | None = None
     charging_station_operator: str | None = None
     charge_mode: str | None = None  # MANUAL | TIMER | PREFERRED_CHARGING_TIMES | IMMEDIATE_DISCHARGING
+    # v1.27.2 — Cariad scout #181 (Audi): pending charging-settings change
+    # requests count. Useful diagnostic for "did my putChargingSettings POST
+    # actually queue?" Plus visual feedback signals from plugStatus.
+    charging_settings_pending: int | None = None
+    plug_led_color: str | None = None  # none / red / green / blue
+    external_power_available: bool | None = None  # plugStatus.externalPower
 
     # Climate
     climatisation_state: str | None = None
