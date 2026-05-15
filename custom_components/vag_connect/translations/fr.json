@@ -379,6 +379,15 @@
       },
       "tire_pressure_warning": {
         "name": "Alerte Pression Pneus"
+      },
+      "departure_timer_1_enabled": {
+        "name": "Minuterie de Départ 1 Activée"
+      },
+      "departure_timer_2_enabled": {
+        "name": "Minuterie de Départ 2 Activée"
+      },
+      "departure_timer_3_enabled": {
+        "name": "Minuterie de Départ 3 Activée"
       }
     },
     "switch": {

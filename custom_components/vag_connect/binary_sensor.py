@@ -242,6 +242,34 @@ _NEW_BINARY: tuple[VagBinarySensorDescription, ...] = (
         icon="mdi:car-tire-alert",
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
+    # v2.0.0 (Big-Bang) — read-only ``enabled`` binary_sensors for the
+    # 3 departure timers. The existing ``departure_timer_X_switch``
+    # entities are write-able and conflate read+write, which makes them
+    # awkward as conditions in template automations. These pure-read
+    # binary_sensors expose the same field with PRESENCE semantics so
+    # automations can ``binary_sensor.<vin>_departure_timer_1_enabled``
+    # without accidentally toggling the timer in a template loop.
+    VagBinarySensorDescription(
+        key="departure_timer_1_enabled",
+        translation_key="departure_timer_1_enabled",
+        data_key="departure_timer_1_enabled",
+        icon="mdi:clock-outline",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    VagBinarySensorDescription(
+        key="departure_timer_2_enabled",
+        translation_key="departure_timer_2_enabled",
+        data_key="departure_timer_2_enabled",
+        icon="mdi:clock-outline",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    VagBinarySensorDescription(
+        key="departure_timer_3_enabled",
+        translation_key="departure_timer_3_enabled",
+        data_key="departure_timer_3_enabled",
+        icon="mdi:clock-outline",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
 )
 BINARY_DESCRIPTIONS = BINARY_DESCRIPTIONS + _NEW_BINARY
 

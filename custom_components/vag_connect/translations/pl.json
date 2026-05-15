@@ -379,6 +379,15 @@
       },
       "tire_pressure_warning": {
         "name": "Ostrzeżenie Ciśnienia Opon"
+      },
+      "departure_timer_1_enabled": {
+        "name": "Timer Odjazdu 1 Aktywny"
+      },
+      "departure_timer_2_enabled": {
+        "name": "Timer Odjazdu 2 Aktywny"
+      },
+      "departure_timer_3_enabled": {
+        "name": "Timer Odjazdu 3 Aktywny"
       }
     },
     "switch": {

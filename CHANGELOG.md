@@ -102,6 +102,14 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
   bestehendem `_TRIP_STATS_BRANDS` + `_TRIP_STATS_KEYS`. Übersetzungen
   alle 8 Sprachen.
 
+- **Departure-Timer „Enabled" Read-Only Binary-Sensors [NEW v2.0]** —
+  drei neue `binary_sensor.<vin>_departure_timer_X_enabled` Entitäten
+  (X=1/2/3). Bisher war der Aktivierungszustand nur via dem schreib-
+  baren `switch.<vin>_departure_timer_X_switch` lesbar — was Templates
+  und Automatisierungen unangenehm macht weil Switches Side-Effects
+  haben. Die neuen reinen Read-Sensoren entkoppeln Read von Write.
+  Übersetzungen alle 8 Sprachen.
+
 ### Fixed
 
 - **#53 CUPRA Born — defensive `command_flash` + OLA parking parser fix.**

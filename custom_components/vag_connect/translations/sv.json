@@ -379,6 +379,15 @@
       },
       "tire_pressure_warning": {
         "name": "Däcktryck Varning"
+      },
+      "departure_timer_1_enabled": {
+        "name": "Avgångstimer 1 Aktiv"
+      },
+      "departure_timer_2_enabled": {
+        "name": "Avgångstimer 2 Aktiv"
+      },
+      "departure_timer_3_enabled": {
+        "name": "Avgångstimer 3 Aktiv"
       }
     },
     "switch": {
