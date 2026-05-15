@@ -122,13 +122,14 @@ class VagConnectEntity(CoordinatorEntity[VagConnectCoordinator]):
         brand = self.coordinator.entry.data.get("brand", "vag")
         name = _device_name(vehicle, brand)
 
-        # v1.26.1 hotfix: revert configuration_url + suggested_area
-        # additions from v1.25.0 PR-EFG. User-report 2026-05-09:
-        # integration "Nicht geladen" after v1.25.x update. Root cause
-        # likely either DeviceInfo TypedDict-strict-validation in newer
-        # HA core OR quality_scale="platinum" runtime check (also
-        # reverted via manifest.json). configuration_url + suggested_area
-        # come back in v1.27.0 once we've isolated the actual culprit.
+        # v2.0.0 (Big-Bang): Re-introduce ``configuration_url`` (brand-aware
+        # "Open in App" button on device page) + ``suggested_area="Garage"``
+        # (auto-Area on first setup). These were reverted in v1.26.1 along
+        # with manifest ``quality_scale: platinum`` after a user reported
+        # "Nicht geladen". v1.26.2 root-cause analysis confirmed the actual
+        # culprit was ``hacs.json`` ``zip_release: true``, NOT these
+        # DeviceInfo fields. Verified safe under HA 2026.x core via CI
+        # Hassfest + HACS Validation since v1.27.0.
         return DeviceInfo(
             identifiers={(DOMAIN, self._vin)},
             name=name,
@@ -141,6 +142,8 @@ class VagConnectEntity(CoordinatorEntity[VagConnectCoordinator]):
                 else None
             ),
             sw_version=vehicle.get("firmware_version"),
+            configuration_url=self._BRAND_PORTAL.get(brand.lower()),
+            suggested_area="Garage",
         )
 
     @property
