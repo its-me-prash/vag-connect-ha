@@ -302,6 +302,9 @@
       },
       "last_alarm_at": {
         "name": "Última Alarma"
+      },
+      "heater_source": {
+        "name": "Fuente de Calefacción"
       }
     },
     "binary_sensor": {

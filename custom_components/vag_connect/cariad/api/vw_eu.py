@@ -1135,6 +1135,16 @@ class VWEUClient(CariadBaseClient):
         if isinstance(wh_enabled, bool):
             d.window_heating_enabled = wh_enabled
 
+        # v2.0.0 (Big-Bang) — heaterSource (issue #163, best-effort).
+        # ID.x heat-pump cars publish ``heaterSource`` ("electric"/"fuel"
+        # in the wild). Read-only sensor exposure since #163 has no
+        # confirmed tester for write semantics yet. Field stays None for
+        # vehicles that don't ship it → _DATA_PRESENT_REQUIRED skips the
+        # sensor for them.
+        heater_src = v(raw, "climatisation", "climatisationSettings", "value", "heaterSource")
+        if isinstance(heater_src, str) and heater_src:
+            d.heater_source = heater_src
+
         # v1.26.0 (#173) — capabilities_count diagnostic. From scout #144
         # (54 items observed). Useful for power-users debugging "why is
         # entity X missing for me?". Read from selectivestatus envelope.

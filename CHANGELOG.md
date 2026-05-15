@@ -128,6 +128,17 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
   Anti-Diebstahl-Telemetrie erzeugen keine Phantom-Entitäten.
   Übersetzungen alle 8 Sprachen.
 
+- **Heater-Source Sensor [NEW v2.0] — schließt Issue #163 (best-effort)** —
+  neuer `sensor.<vin>_heater_source` Read-Only-Sensor (Diagnostik-
+  Kategorie) für ID.x Heat-Pump-Modelle. Liest aus
+  `climatisation.climatisationSettings.value.heaterSource` (Werte:
+  `electric` / `fuel`). Read-Only-Shape gewählt weil kein bestätigter
+  Tester für Write-Semantik vorhanden ist; falls später ein Tester
+  Write-Support bestätigt wird ein Folge-PR den Sensor zu einem
+  `select.<vin>_heater_source` upgraden. Brand-restricted via
+  `_DATA_PRESENT_REQUIRED` — Fahrzeuge ohne Heat-Pump leaven None →
+  keine Phantom-Entität. Übersetzungen alle 8 Sprachen.
+
 - **Weekly Preheat — `recurring_on` für `set_departure_timer` Service [NEW v2.0]** —
   der bestehende Service `vag_connect.set_departure_timer` akzeptiert
   jetzt eine optionale `recurring_on` Liste mit Wochentagen (z.B.

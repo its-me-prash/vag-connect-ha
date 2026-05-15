@@ -302,6 +302,9 @@
       },
       "last_alarm_at": {
         "name": "Laatste Alarm"
+      },
+      "heater_source": {
+        "name": "Verwarmingsbron"
       }
     },
     "binary_sensor": {
