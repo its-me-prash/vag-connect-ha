@@ -30,6 +30,50 @@
 
 ---
 
+---
+
+## ✨ v2.0.0 Big-Bang Highlights — also available in English
+
+> The detailed v2.0.0 highlights table + "What makes us unique" USP section
+> are maintained in English on the German + English READMEs. They are
+> provided here as the canonical source so non-DE/EN readers can still
+> see all v2.0 features with `**[NEW v2.0]**` markers without waiting on
+> 6 parallel translations.
+
+### Latest highlights — v2.0.0 Big-Bang
+
+| Feature | Status |
+|---|---|
+| **Skoda Driving-Score Sensor** | **[NEW v2.0]** Efficiency score 0-100 + class bucket for Skoda MY24+ |
+| **Cross-brand Aux-Heating parity (Skoda)** | **[NEW v2.0]** SkodaClient now inherits the Webasto switch from SEAT/CUPRA |
+| **Porsche TPMS sensors** | **[NEW v2.0]** 4 tire-pressure sensors + warning binary_sensor (PPA TIRE_PRESSURE) |
+| **Long-Term Trip Aggregates** | **[NEW v2.0]** Lifetime distance / avg fuel / avg electric (Audi + VW EU) |
+| **Departure-Timer Read-Only Binary-Sensors** | **[NEW v2.0]** 3 pure-read enabled-sensors |
+| **Weekly Preheat (`recurring_on`)** | **[NEW v2.0]** Service param for weekday lists (Audi + VW EU + VW NA) |
+| **Charging-Station POI Lookup** | **[NEW v2.0]** `vag_connect.find_charging_stations` service |
+| **Vehicle Alarm sensors** | **[NEW v2.0]** closes issue #33 |
+| **heaterSource sensor** | **[NEW v2.0]** closes issue #163 |
+| **Push Manager Lifecycle Wiring** | **[NEW v2.0]** Skoda MQTT + CUPRA/SEAT FCM + Audi/VW Cariad FCM (opt-in) |
+| **EU Data Act Abstraction Shim** | **[NEW v2.0]** Architectural seam for the 2026-09-12 EUDA Art. 3 deadline |
+| **Auth Resilience One-Click Repair** | **[NEW v2.0]** Repair button for 4 auth reasons triggers reauth flow |
+| **System Health Panel** | **[NEW v2.0]** Drop-in `system_health.py` |
+| **Quality Scale Platinum** | **[NEW v2.0]** Re-introduced after v1.26.x revert |
+| **DeviceInfo `configuration_url` + `suggested_area`** | **[NEW v2.0]** Brand-aware "Open in App" button |
+
+### What makes us unique
+
+- **Native coverage of all 7 VAG brands** in a single integration
+- **Direct manufacturer-API access** without middleware / Docker / 3rd service
+- **Vehicle Data Scout** — automatic JSON-field drift detection with Repair notification + 1-click GitHub issue
+- **Capability-Filter Phase 3** — phantom entities suppressed before spawn
+- **Per-VIN wakeup cap + cooldown** — protects 12V battery
+- **Auth Resilience One-Click Repair** — reauth flow from Repairs panel
+- **System Health Panel** — at-a-glance push channel status, API quota, last poll
+- **Bruno-CI Stage 2** — strict URL-drift check
+- **Token persistence across HA updates** — no re-login after HACS updates since v1.19.2
+- **Diagnostics anonymisation by default** — VINs, GPS, tokens stripped before export
+
+
 Chtěl jsem plně ovládat své Audi v Home Assistant. Tak jsem to postavil.
 
 **VAG Connect** je samostatná integrace Home Assistant pro všechny značky VAG. Bez externích závislostí, bez Dockeru, bez externích služeb.
@@ -220,37 +264,6 @@ Restartujte Home Assistant.
 
 ---
 
-## Plán / Roadmap
-
-> 📍 **Single Source of Truth:** [`docs/ROADMAP.md`](docs/ROADMAP.md) — kompletní P0/P1/P2/P3 priorizace se všemi ~20 otevřenými issues kategorizovanými.
-
-### Poslední releases / Recent releases (2026-04-29 + 2026-04-30 + 2026-05-01)
-
-| Verze | Obsah | Datum |
-|---|---|---|
-| v1.8.6–v1.8.12 | Foundation-Sprint: defenzivní stabilita, Capability-Filter Fáze 2, Multi-Brand Connection-State, všechny brand parsery na ověřených live API cestách | 2026-04-29 |
-| v1.9.0 | 🛰️ Vehicle Data Scout + Error Reporter + Reporter Pipeline | 2026-04-29 |
-| v1.9.1 | Audi/VW Lock + Wake hotfix (#92) + Capability-Filter Fáze 2 + Scout cesty #90/#91 | 2026-04-29 |
-| v1.10.0–v1.10.2 | PHEV-Range-Triple (#94), Defensive Coding Fáze 2 (#58), CUPRA Born 2026 firmware (#53 Gerhard) | 2026-04-29/30 |
-| v1.11.0–v1.11.1 | Closure Issue #91 (Light/Service/Number), Golf GTE Fuel-Range fix (#96), Optimistické UI (3B-Part-3) | 2026-04-30 |
-| v1.12.0 | 🔋💡⚡🧯🔒 5-v-1 Sprint: 12V (#23) + Per-Light + Zapisovatelné Number + Smart-Wake (#55) + Read-only Fáze 1 (#63) | 2026-04-30 |
-| v1.12.1 | Scout cesty #105/#106 + Gerhardova Born fixture (#53 se souhlasem) + #47 FAQ | 2026-04-30 |
-| v1.12.2 | 🌟 **První komunitní Scout-Report** (Skoda #107 od tritanium73) | 2026-05-01 |
-| **v1.12.3** | Scout cesty #111+#113+#114 sbalené s wildcard strategií (`fuelStatus.rangeStatus.value.*` etc.) | **2026-05-01** |
-
-### Příští sessions / Next sessions
-
-| Verze | Rozsah | Issues |
-|---|---|---|
-| **v1.13.0** ⭐ MINOR | Anonymized Diagnostics-Export + Capability-Filter Fáze 3 + Read-only Fáze 2/3 | #62, #56 Fáze 3, #63 Fáze 2/3 |
-| **v1.14.0** MINOR | Trip Statistics z Audi `tripstatistics/v1` | #24, #35 |
-| **v1.15.0+** MINOR | PPC Climate (#29, #51), Theft/Alarm Binary (#33), Climate-Timer UI (#26) | various |
-| **v1.18.0** MINOR | Push CUPRA/SEAT (Firebase FCM) + Push Skoda (mysmob MQTT) | #57, #27 |
-| **v2.0.0** 🎉 MAJOR | HACS Default + Live-Tests všech značek + EU Data Act ready (deadline září 2026) | #13, #59 |
-
-> Pořadí je **striktně P0 → P1 → P2**. Bug-fixy mají vždy přednost před funkcemi.
-
----
 
 ## Licence
 

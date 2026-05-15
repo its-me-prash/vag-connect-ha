@@ -15,6 +15,7 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-blue.svg" alt="Lizenz"></a>
   <a href="https://www.home-assistant.io"><img src="https://img.shields.io/badge/Home%20Assistant-2024.4%2B-blue" alt="Home Assistant"></a>
   <a href="https://github.com/its-me-prash/vag-connect-ha/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/its-me-prash/vag-connect-ha/ci.yml?branch=main&label=CI" alt="CI"></a>
+  <a href="https://www.home-assistant.io/docs/quality_scale/"><img src="https://img.shields.io/badge/quality_scale-platinum-d4af37" alt="Quality Scale Platinum"></a>
 </p>
 
 <p align="center">
@@ -33,15 +34,52 @@
 
 Verbindet Home Assistant **direkt** mit deinem Fahrzeug-Cloud-Account (myAudi, We Connect ID, MyŠkoda, MyCupra, MySeat, My Porsche, MyVW). **Keine Middleware, kein Docker, kein extra Dienst** — Anmeldung mit deinen App-Zugangsdaten, fertig.
 
-- **80+ Entitäten** über **10 HA Plattformen** (Sensoren, Schalter, Klima, Lock, etc.)
-- **14 Services** (Lock, Climate, Charging, Departure-Timer, etc.)
+- **100+ Entitäten** über **11 HA Plattformen** (Sensor, Binary-Sensor, Device-Tracker, Switch, Button, Climate, Number, Lock, Image, Select, Time)
+- **20+ Services** (Lock, Climate, Charging, Departure-Timer mit Weekly-Preheat, Charging-Station-Lookup, etc.)
 - **Vehicle-Bild als Device-Picture** + Custom-Lovelace-Card-Support
 - **GPS-Position auf der HA-Map** als TrackerEntity
 - **Multi-Vehicle-Support** pro Account
 - **Read-only Modus** für sichere Anwendung in Automationen
-- **HACS-Quality-Scale: Platinum** ⭐
+- **Quality-Scale: Platinum** ⭐
 
-> ✅ **Aktiv gepflegter Multi-Brand-Nachfolger** für [`mitch-dc/volkswagen_we_connect_id`](https://github.com/mitch-dc/volkswagen_we_connect_id) (archiviert 10/2025) und [`skodaconnect/homeassistant-skodaconnect`](https://github.com/skodaconnect/homeassistant-skodaconnect) (deprecated 03/2025).
+---
+
+## ⭐ Was uns einzigartig macht
+
+| Feature | Status |
+|---|---|
+| **Native Coverage aller 7 VAG-Marken in einer einzigen Integration** | Kein anderes Projekt deckt Audi + VW EU + Škoda + SEAT + CUPRA + Porsche + VW NA gleichzeitig ab |
+| **Direkter Hersteller-API-Zugriff** ohne Middleware / Docker / Drittservice | Login mit deinen App-Credentials, alles läuft im HA-Container |
+| **Vehicle Data Scout** — automatische Drift-Erkennung neuer JSON-Felder mit Repair-Notification + 1-Klick-GitHub-Issue | Live seit v1.9.0 |
+| **Capability-Filter Phase 3** — Phantom-Entitäten werden vor Spawn unterdrückt wenn Backend "Capability fehlt" zurückgibt | Pro VIN, pro Command, drei Phasen tief |
+| **Per-VIN Wakeup-Cap + Cooldown** — Smart Auto-Wake mit max 3 Wakes/Tag pro VIN, 5min Cooldown zwischen Calls | Verbessert Akku-Langlebigkeit |
+| **Auth-Resilience One-Click Repair** — Reauth-Flow direkt aus dem Repairs-Panel | invalid credentials / 2FA / T&C / marketing-consent |
+| **System Health Panel** — at-a-glance Push-Channel-Status, API-Quota, Last-Poll | HA Settings → System → Repairs |
+| **Bruno-CI Stufe-2** — strict URL-drift-check, jede neue Endpoint-URL braucht .bru-Coverage | Verhindert silent breakage bei Refactors |
+| **Token-Persistence über HA-Updates** | Kein Re-Login nach HACS-Updates seit v1.19.2 |
+| **Diagnostics-Anonymisierung by default** — VINs, GPS, Tokens werden vor Export gestrippt | Privacy-by-default |
+
+---
+
+## ✨ Aktuelle Highlights — v2.0.0 Big-Bang
+
+| Feature | Status |
+|---|---|
+| **Skoda Driving-Score Sensor** | **[NEW v2.0]** Effizienz-Score 0-100 + Class-Bucket für Skoda MY24+ |
+| **Cross-brand Aux-Heating Parität (Skoda)** | **[NEW v2.0]** SkodaClient erbt jetzt Standheizung-Switch von SEAT/CUPRA |
+| **Porsche TPMS Sensors** | **[NEW v2.0]** 4 Reifen-Druck-Sensoren + Warning binary_sensor (PPA TIRE_PRESSURE) |
+| **Long-Term Trip Aggregates** | **[NEW v2.0]** Lifetime Distance / Avg Fuel / Avg Electric (Audi + VW EU) |
+| **Departure-Timer Read-Only Binary-Sensors** | **[NEW v2.0]** 3 pure-read enabled-Sensoren — entkoppelt Read von Write |
+| **Weekly Preheat (`recurring_on`)** | **[NEW v2.0]** Service-Param für Wochentag-Listen (Audi + VW EU + VW NA) |
+| **Charging-Station POI Lookup** | **[NEW v2.0]** `vag_connect.find_charging_stations` Service mit `response_variable:` |
+| **Vehicle Alarm / Diebstahl-Sensoren** | **[NEW v2.0]** schließt Issue #33 — alarm_active + siren_active + last_alarm_at |
+| **heaterSource Sensor** | **[NEW v2.0]** schließt Issue #163 — read-only Heat-Pump-Quelle für ID.x |
+| **Push-Manager Lifecycle-Wiring** | **[NEW v2.0]** Skoda MQTT + CUPRA/SEAT FCM + Audi/VW Cariad FCM (opt-in) |
+| **EU Data Act Abstraction Shim** | **[NEW v2.0]** Architektonischer Seam für 2026-09-12 EUDA Art.3 Deadline |
+| **Auth Resilience One-Click Repair** | **[NEW v2.0]** Repair-Button für 4 auth-reasons triggert Reauth-Flow |
+| **System Health Panel** | **[NEW v2.0]** Drop-in `system_health.py` mit Brands / Polls / Quota / Push |
+| **Quality Scale Platinum** | **[NEW v2.0]** Re-introduced nach v1.26.x revert — verifiziert via CI Hassfest |
+| **DeviceInfo `configuration_url` + `suggested_area`** | **[NEW v2.0]** Brand-aware "Open in App" Button + Auto-Area "Garage" |
 
 ---
 
@@ -49,13 +87,13 @@ Verbindet Home Assistant **direkt** mit deinem Fahrzeug-Cloud-Account (myAudi, W
 
 | Marke | Backend | Status | Besonderheit |
 |---|---|---|---|
-| **Audi** (myAudi) | Cariad-BFF + MBB Legacy | ✅ Stable | PPC/PPE Klima, ICE Engine Start (#28) |
-| **Volkswagen EU** (We Connect ID) | Cariad-BFF + MBB Legacy | ✅ Stable | PHEV Range-Triple, Tank-Level via MBB für Golf 7 GTE |
-| **Škoda** (MyŠkoda mysmob) | Skoda mysmob | ✅ Stable | Charging-Profiles, OTA, Workshop-Attrs, Multi-Angle Renders |
-| **SEAT** (MySEAT OLA) | OLA | ✅ Stable | OLA viewPoint Renders (4-7 Ansichten) |
-| **CUPRA** (MyCupra OLA) | OLA | ✅ Stable | OLA viewPoint Renders, Born MY26 firmware shapes |
-| **Porsche** (My Porsche) | PPA + Auth0 | ✅ Stable | Eigene HTTP-Hardening (retry/quota/storm-protection) |
-| **VW US/CA** (myVW NA) | VW NA Cloud | 🟡 Beta | Charge ETA, Climate, Lock, Doors |
+| **Audi** (myAudi) | Cariad-BFF + MBB Legacy | ✅ Stable | PPC/PPE Klima, ICE Engine Start, Long-Term Trip Aggregates **[NEW v2.0]** |
+| **Volkswagen EU** (We Connect ID) | Cariad-BFF + MBB Legacy | ✅ Stable | PHEV Range-Triple, Tank-Level via MBB für Golf 7 GTE, Charging-Station Lookup **[NEW v2.0]** |
+| **Škoda** (MyŠkoda mysmob) | Skoda mysmob | ✅ Stable | Driving-Score **[NEW v2.0]**, Aux-Heating **[NEW v2.0]**, Charging-Profiles, OTA, Multi-Angle Renders |
+| **SEAT** (MySEAT OLA) | OLA | ✅ Stable | OLA viewPoint Renders (4-7 Ansichten), Battery-Care |
+| **CUPRA** (MyCupra OLA) | OLA | ✅ Stable | OLA viewPoint Renders, Born MY26 firmware shapes, defensive `command_flash` **[NEW v2.0]** |
+| **Porsche** (My Porsche) | PPA + Auth0 | ✅ Stable | TPMS Sensors **[NEW v2.0]**, eigene HTTP-Hardening (retry/quota/storm-protection) |
+| **VW US/CA** (myVW NA) | VW NA Cloud | 🟡 Beta | Charge ETA, Climate, Lock, Doors, Weekly Preheat **[NEW v2.0]** |
 
 ---
 
@@ -101,7 +139,7 @@ rm -rf vag-connect-ha
 - **Polling-Intervall** (5-60 min) — Default 10 min. Niedriger = aktueller, frisst aber API-Quota schneller.
 - **Read-only Modus** — wenn aktiv: nur Status-Sensoren, keine Schalter/Buttons die Befehle senden würden.
 - **Reverse-Geocoding** (opt-in) — sendet GPS an OpenStreetMap für Adress-Auflösung.
-- **Push-Toggles** (Skoda MQTT / CUPRA-SEAT FCM / Audi-VW FCM) — Foundation gelegt, Live-Activation pending Tester.
+- **Push-Toggles** (Skoda MQTT / CUPRA-SEAT FCM / Audi-VW FCM) — Lifecycle-Wiring **[NEW v2.0]**, Live-Activation pending Tester.
 
 ---
 
@@ -109,11 +147,11 @@ rm -rf vag-connect-ha
 
 ### Standard Entitäten pro Vehicle (alle Brands)
 
-**Sensoren**: Battery SoC, Range (electric/combustion/total), Fuel Level, Odometer, Outside Temp, Battery Temp, 12V Voltage, Service Days, Oil Service Days, Charging Power/Rate/Type, Last Trip Stats, Charging History, Plug State, Lights Count, Equipment Count, Software Version, Quota Remaining, Connection State, Last Seen.
+**Sensoren**: Battery SoC, Range (electric/combustion/total), Fuel Level, Odometer, Outside Temp, Battery Temp, 12V Voltage, Service Days, Oil Service Days, Charging Power/Rate/Type, Last Trip Stats, **Lifetime Trip Stats [NEW v2.0]**, Charging History, Plug State, Lights Count, Equipment Count, Software Version, Quota Remaining, Connection State, Last Seen, **Driving Score (Skoda) [NEW v2.0]**, **TPMS 4 Corners (Porsche) [NEW v2.0]**, **Last Alarm Timestamp [NEW v2.0]**, **Heater Source (ID.x) [NEW v2.0]**.
 
-**Binary Sensors**: Doors Locked, Doors Open (per door), Windows Open (per window), Trunk/Hood/Sunroof, Plug Connected, Charging, OTA Update Available, 12V Low Warning, Lights On (per light), Vehicle Online.
+**Binary Sensors**: Doors Locked, Doors Open (per door), Windows Open (per window), Trunk/Hood/Sunroof, Plug Connected, Charging, OTA Update Available, 12V Low Warning, Lights On (per light), Vehicle Online, **Departure-Timer Enabled (3) [NEW v2.0]**, **Alarm Active + Siren Active [NEW v2.0]**, **TPMS Warning (Porsche) [NEW v2.0]**.
 
-**Steuerung**: Lock/Unlock, Climate Start/Stop, Charging Start/Stop, Window Heating, Window Heating Combined, Cabin Ventilation (CUPRA/SEAT), Aux Heating (Webasto, CUPRA/SEAT), Departure Timer (1-3 mit `time` platform), Set Target SoC, Set Target Temp, Set Max Charge Current, Set Charge Mode, Honk-and-Flash, Wake Vehicle, Refresh.
+**Steuerung**: Lock/Unlock, Climate Start/Stop, Charging Start/Stop, Window Heating, Window Heating Combined, Cabin Ventilation (CUPRA/SEAT), Aux Heating (Webasto, **Skoda + CUPRA/SEAT [NEW v2.0]**), Departure Timer (1-3 mit `time` platform + **Weekly Preheat [NEW v2.0]**), Set Target SoC, Set Target Temp, Set Max Charge Current, Set Charge Mode, Honk-and-Flash, Wake Vehicle, Refresh, **Find Charging Stations [NEW v2.0]**.
 
 **Image Platform**: 1-7 Vehicle-Renders pro VIN (Audi/VW: GraphQL MediaService; CUPRA/SEAT: OLA viewPoints; Skoda: Widget + Multi-Angle Composites).
 
@@ -150,12 +188,17 @@ show_state: false
 show_name: false
 ```
 
-### Vehicle-Info Card (Custom)
+### Charging-Station-Lookup [NEW v2.0]
 
 ```yaml
-type: custom:vehicle-info-card
-entity: sensor.audi_a4_b9_battery_level
-image: '[[ states.image.audi_a4_b9_render_side_lg.state ]]'
+action: vag_connect.find_charging_stations
+data:
+  vin: WAUZZZ...
+  latitude: 47.3769
+  longitude: 8.5417
+  radius_m: 5000
+  max_results: 25
+response_variable: result
 ```
 
 Mehr Beispiele in [`docs/FAQ.md#lovelace-examples`](docs/FAQ.md).
@@ -188,28 +231,13 @@ Details in [`PRIVACY.md`](PRIVACY.md) und [`SECURITY.md`](SECURITY.md).
 
 ---
 
-## 🛣️ Roadmap
-
-**Aktueller Stand:** v1.25.0 (Sprint C — Cross-Brand Parity + UX/UI + MBB VSR Phase 2 für Golf 7 GTE Tank).
-
-**Pending Tester** (siehe [`docs/EXTERNAL_BLOCKED_ROADMAP.md`](docs/EXTERNAL_BLOCKED_ROADMAP.md)):
-- [#160 MBB Phase 2 write-side](https://github.com/its-me-prash/vag-connect-ha/issues/160) — Audi A4 B9 / Q5 2021 / Golf 7 / Passat B8 Owner
-- [#161 Push Phase 2](https://github.com/its-me-prash/vag-connect-ha/issues/161) — Skoda Connect+ / MyCupra/MySeat / Audi+VW Cariad-modern Owner
-- [#163 heaterSource](https://github.com/its-me-prash/vag-connect-ha/issues/163) — ID.4/7 / e-tron Heat-pump Owner
-
-**Geplant für v1.26.0**: `device_action` + `device_trigger` (GUI-Automationen für Vehicles), `system_health.py`, `logbook.py`, CommandDispatcher Phase 2 refactor, weitere Translation-Coverage.
-
-Vollständige Roadmap: [`docs/ROADMAP.md`](docs/ROADMAP.md).
-
----
-
 ## 🤝 Contributing
 
 PRs willkommen — siehe [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
 **Vehicle Data Scout** (live seit v1.9.0): Wenn deine Integration unbekannte JSON-Felder erkennt, erstellt sie automatisch eine HA Repair-Notification mit pre-filled GitHub-Issue-Link. **1-Klick Bug-Report ohne dass du Code anschauen musst.**
 
-Live-Tester gesucht für die external-blocked Tracks oben — Comment unter dem entsprechenden Issue mit `Brand + Modell + Jahr + Subscription-Status`.
+Live-Tester gesucht für die external-blocked Tracks — Comment unter dem entsprechenden Issue mit `Brand + Modell + Jahr + Subscription-Status`.
 
 ---
 

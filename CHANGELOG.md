@@ -103,6 +103,22 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
   noch eine Inner-Method ist und keine PR durch alle Brand-Clients
   zieht. Cross-Reference: COVESA VSS, W3C VISSv2, EU-Reg. 2023/2854 Art. 3+5.
 
+- **README-Restrukturierung — alle 8 Sprachen synchron + Roadmap raus +
+  USP-Sektion + v2.0-Highlights mit `[NEW v2.0]` Marker**.
+  Komplette READMEs (DE + EN) neu geschrieben mit:
+  - "✨ v2.0.0 Big-Bang Highlights" Tabelle (15 NEW v2.0 Features)
+  - "⭐ Was uns einzigartig macht" / "What makes us unique" USP-Sektion
+    ohne Konkurrenz-Naming, nur "wir sind einzigartig bei diesen Features"
+  - Brand-Support-Tabelle mit per-Brand `[NEW v2.0]` Markierungen
+  - `quality_scale: platinum` Badge ergänzt
+  - Roadmap-Sektion **entfernt** (war Wartungs-Burden, ROADMAP.md bleibt
+    eigenes Dokument für Tiefen-Detail)
+  Die 6 weiteren Sprach-READMEs (FR/ES/NL/PL/CS/SV) erhalten denselben
+  v2.0-Highlights-Insert + USP-Sektion (auf Englisch geliefert mit
+  expliziter Note "auch auf Englisch verfügbar") + Roadmap-Sektion
+  entfernt + Platinum-Badge ergänzt. Mid-term: native Lokalisierung
+  der Highlights-Tabelle in alle 6 Sprachen via Community-PRs.
+
 - **Push-Manager Lifecycle-Wiring (Skoda MQTT, CUPRA/SEAT FCM, Audi/VW Cariad FCM) [NEW v2.0]** —
   schließt PR #14-16 in einem gemeinsamen Architektur-PR. Coordinator
   hat jetzt 3 neue Slots (`_skoda_push`, `_cupra_seat_push`,
