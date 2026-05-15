@@ -44,14 +44,28 @@ if hasattr(sys.stdout, "reconfigure"):
 _REPO_ROOT = Path(__file__).resolve().parent.parent
 
 # Python-side: f-string URL extraction with named-base regex.
-# Two regexes — one for {_BASE}/{base_url}/{baseurl} (no prefix needed),
-# one for {_ENGINE_BASE} (re-attach engine path so it matches the
-# Bruno URL pattern under the unified base host).
+# Three regexes:
+#   1) {_BASE}/{base_url}/{baseurl} — direct constant references
+#   2) {_ENGINE_BASE} — re-attach engine path so it matches Bruno
+#      URL pattern under the unified base host
+#   3) v2.1.0 — {self._base_for_vin(vin)} — HomeRegion-aware per-VIN
+#      base URL, evaluated to the same family of hosts as {_BASE} but
+#      potentially region-specific. From the drift-check perspective
+#      the path-suffix is what matters; the resolved host varies per
+#      VIN at runtime.
 _PY_URL_RE = re.compile(
-    r'f["\']\{(?:_BASE|base_url|baseurl)\}([^"\']+)["\']'
+    # v2.1.0 — extend with ``base`` local-var (HomeRegion-aware
+    # per-VIN base, set via ``base = self._base_for_vin(vin)``).
+    # Same path-suffix as ``_BASE`` from the drift-check perspective.
+    r'f["\']\{(?:_BASE|base_url|baseurl|base)\}([^"\']+)["\']'
 )
 _PY_ENGINE_URL_RE = re.compile(
     r'f["\']\{_ENGINE_BASE\}([^"\']+)["\']'
+)
+# v2.1.0 — extract path-suffix from f"{self._base_for_vin(...)}/..."
+# usages. Same suffix as {_BASE}/... — they share Bruno coverage.
+_PY_BASE_FOR_VIN_RE = re.compile(
+    r'f["\']\{self\._base_for_vin\([^)]*\)\}([^"\']+)["\']'
 )
 # The literal value of _ENGINE_BASE in audi.py:32.
 _ENGINE_BASE_PREFIX = "/vehicle/v1/engine"
@@ -179,6 +193,12 @@ def _extract_python_urls(py_paths: list[str]) -> set[str]:
         # _ENGINE_BASE prefix re-attachment.
         for m in _PY_ENGINE_URL_RE.finditer(text):
             raw.add(_normalise(_ENGINE_BASE_PREFIX + m.group(1)))
+        # v2.1.0 — HomeRegion-aware {self._base_for_vin(vin)}/... captures.
+        for m in _PY_BASE_FOR_VIN_RE.finditer(text):
+            url = _normalise(m.group(1))
+            if _is_skipped_template(url):
+                continue
+            raw.add(url)
     return _expand_action_placeholders(raw)
 
 

@@ -49,6 +49,26 @@ class VWEUClient(CariadBaseClient):
 
     def __init__(self, session: Any, email: str, password: str, spin: str = "") -> None:
         super().__init__(session, BRAND_VW_EU, email, password, spin)
+        # v2.1.0 (HomeRegion full wire-in) — per-VIN base URL cache.
+        # Hydrated by ``get_vehicles`` after garage discovery; consumed
+        # by ``_base_for_vin``. Empty dict → ``_base_for_vin`` falls
+        # back to the default ``_BASE`` (EU/standard accounts, 99% of
+        # users). Non-empty entries override per-VIN for non-EU /
+        # imported / region-routed vehicles (closes the long-standing
+        # plumbing gap for issue #75 + EXTERNAL_BLOCKED Track 3).
+        self._vehicle_bases: dict[str, str] = {}
+
+    def _base_for_vin(self, vin: str) -> str:
+        """v2.1.0 — return per-VIN base URL or default ``_BASE``.
+
+        Sync helper because the cache is pre-populated by ``get_vehicles``.
+        Pre-v2.1.0 the integration hardcoded ``_BASE`` for every URL,
+        which 403'd vehicles imported from non-EU regions or US-spec
+        VW EU models. Now: any VIN whose ``mal-1a`` discovery returned
+        a non-default ``baseUri.content`` routes through that base
+        instead. Cache TTL is 7 days (set in ``HomeRegionCache``).
+        """
+        return self._vehicle_bases.get(vin, _BASE)
 
     async def get_vehicles(self) -> list[str]:
         """Return list of VINs from the CARIAD garage."""
@@ -107,10 +127,53 @@ class VWEUClient(CariadBaseClient):
             {k: m["model"] for k, m in self._vehicle_metadata.items()},
         )
 
+        # v2.1.0 — HomeRegion full wire-in. Resolve per-VIN base URLs
+        # in parallel, populate the cache that ``_base_for_vin`` reads.
+        # Each call is best-effort — ``resolve_home_region`` returns
+        # ``DEFAULT_BASE`` on any failure so the integration never
+        # blocks on an optional discovery hop. Closes EXTERNAL_BLOCKED
+        # Track 3 + Issue #75 plumbing.
+        await self._resolve_home_regions(vins)
+
         # Fetch render images via shared base method (best-effort)
         await self.fetch_images()
 
         return vins
+
+    async def _resolve_home_regions(self, vins: list[str]) -> None:
+        """v2.1.0 — populate ``self._vehicle_bases`` from discovery.
+
+        Reuses the existing ``HomeRegionCache`` instance lazily created
+        by ``command_wake`` if it ran first; otherwise creates one. The
+        7-day cache TTL means subsequent ``get_vehicles`` calls during
+        the same HA session are essentially free (one dict lookup per
+        VIN). Best-effort everywhere — failure is logged at DEBUG and
+        the affected VIN falls through to ``_BASE``.
+        """
+        from .._home_region import HomeRegionCache, resolve_home_region  # noqa: PLC0415
+        if not hasattr(self, "_home_region_cache"):
+            self._home_region_cache = HomeRegionCache()
+        import asyncio  # noqa: PLC0415
+
+        async def _one(vin: str) -> tuple[str, str]:
+            try:
+                base = await resolve_home_region(
+                    self, vin, cache=self._home_region_cache,
+                )
+            except Exception:  # noqa: BLE001
+                base = _BASE
+            return vin, base
+
+        results = await asyncio.gather(
+            *[_one(v) for v in vins],
+            return_exceptions=True,
+        )
+        for r in results:
+            if isinstance(r, BaseException):
+                continue
+            vin, base = r
+            if base != _BASE:
+                self._vehicle_bases[vin] = base
 
     async def get_capabilities(self, vin: str) -> dict[str, Any]:
         """Return CARIAD BFF capabilities document for *vin*.
@@ -122,7 +185,7 @@ class VWEUClient(CariadBaseClient):
         Failure raises ``APIError`` — caller should swallow it because
         capabilities are best-effort metadata, never load-bearing.
         """
-        data = await self._get(f"{_BASE}/vehicle/v1/vehicles/{vin}/capabilities")
+        data = await self._get(f"{self._base_for_vin(vin)}/vehicle/v1/vehicles/{vin}/capabilities")
         return data if isinstance(data, dict) else {}
 
     async def get_trip_statistics(
@@ -158,7 +221,7 @@ class VWEUClient(CariadBaseClient):
         capability-filter Phase 3 (#56, v1.13.0) gates this from the
         platform side via ``cap_id_for(brand, "command_trip_stats")``.
         """
-        url = f"{_BASE}/vehicle/v1/vehicles/{vin}/tripstatistics"
+        url = f"{self._base_for_vin(vin)}/vehicle/v1/vehicles/{vin}/tripstatistics"
         data = await self._get(url, params={"type": kind})
         return data if isinstance(data, dict) else {}
 
@@ -212,13 +275,15 @@ class VWEUClient(CariadBaseClient):
 
     async def get_status(self, vin: str) -> VehicleData:
         """Fetch full vehicle status via selectivestatus."""
-        url = f"{_BASE}/vehicle/v1/vehicles/{vin}/selectivestatus"
+        # v2.1.0 — per-VIN base URL via HomeRegion lookup.
+        base = self._base_for_vin(vin)
+        url = f"{base}/vehicle/v1/vehicles/{vin}/selectivestatus"
         raw: dict[str, Any] = await self._get(url, params={"jobs": _SELECTIVE_STATUS_JOBS})
 
         # Parking position (separate endpoint)
         parking: dict[str, Any] = {}
         try:
-            parking = await self._get(f"{_BASE}/vehicle/v1/vehicles/{vin}/parkingposition")
+            parking = await self._get(f"{base}/vehicle/v1/vehicles/{vin}/parkingposition")
         except Exception:  # noqa: BLE001
             pass
 
@@ -406,7 +471,7 @@ class VWEUClient(CariadBaseClient):
     ) -> None:
         """Honk and flash."""
         await self._post(
-            f"{_BASE}/vehicle/v1/vehicles/{vin}/vehicleLights/flash",
+            f"{self._base_for_vin(vin)}/vehicle/v1/vehicles/{vin}/vehicleLights/flash",
             json={"action": "flash"},
         )
 
@@ -644,20 +709,22 @@ class VWEUClient(CariadBaseClient):
         Other 4xx/5xx errors propagate as-is — this only handles the
         version-mismatch case.
         """
+        # v2.1.0 — per-VIN base URL via HomeRegion lookup.
+        base = self._base_for_vin(vin)
         if self._supports_v2_paths(vin):
             return await self._post(
-                f"{_BASE}/vehicle/v2/vehicles/{vin}/{path_suffix}", **kwargs,
+                f"{base}/vehicle/v2/vehicles/{vin}/{path_suffix}", **kwargs,
             )
         try:
             return await self._post(
-                f"{_BASE}/vehicle/v1/vehicles/{vin}/{path_suffix}", **kwargs,
+                f"{base}/vehicle/v1/vehicles/{vin}/{path_suffix}", **kwargs,
             )
         except APIError as err:
             if getattr(err, "status", 0) != 404:
                 raise
             # v1 said the resource doesn't exist — try v2 once
             result = await self._post(
-                f"{_BASE}/vehicle/v2/vehicles/{vin}/{path_suffix}", **kwargs,
+                f"{base}/vehicle/v2/vehicles/{vin}/{path_suffix}", **kwargs,
             )
             self._mark_v2_active(vin)
             return result
@@ -758,14 +825,14 @@ class VWEUClient(CariadBaseClient):
     async def command_start_window_heating(self, vin: str) -> None:
         """Start window heating (front windscreen + rear window)."""
         await self._post(
-            f"{_BASE}/vehicle/v1/vehicles/{vin}/climatisation/windowheating/start-stop",
+            f"{self._base_for_vin(vin)}/vehicle/v1/vehicles/{vin}/climatisation/windowheating/start-stop",
             json={"action": "start"},
         )
 
     async def command_stop_window_heating(self, vin: str) -> None:
         """Stop window heating."""
         await self._post(
-            f"{_BASE}/vehicle/v1/vehicles/{vin}/climatisation/windowheating/start-stop",
+            f"{self._base_for_vin(vin)}/vehicle/v1/vehicles/{vin}/climatisation/windowheating/start-stop",
             json={"action": "stop"},
         )
 
@@ -805,7 +872,7 @@ class VWEUClient(CariadBaseClient):
                 payload["recurringOn"] = cleaned
                 payload["type"] = "RECURRING"
         await self._post(
-            f"{_BASE}/vehicle/v1/vehicles/{vin}/climatisation/timers",
+            f"{self._base_for_vin(vin)}/vehicle/v1/vehicles/{vin}/climatisation/timers",
             json=payload,
         )
 

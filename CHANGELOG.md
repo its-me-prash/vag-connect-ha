@@ -79,6 +79,23 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
   Pure YAML, kein Python-Code im Repo. Erfüllt EXTERNAL_BLOCKED Recipe
   A.14 + `docs/research/browser-mod-integration-2026-05-03.md §F`.
 
+### Changed
+
+- **HomeRegion Full Wire-In** (closes EXTERNAL_BLOCKED Track 3 +
+  Plumbing für Issue #75) — Audi/VW EU API-Client (vw_eu.py, von
+  Audi vererbt) routet jetzt alle 12 per-VIN URL-Bauers über
+  `self._base_for_vin(vin)` statt hardcoded `_BASE`. `get_vehicles`
+  populiert die Per-VIN-Cache (`self._vehicle_bases`) parallel via
+  `mal-1a.prd.ece.vwg-connect.com/api/cs/vds/v1/vehicles/{vin}/homeRegion`
+  beim Garage-Discovery. Cache-TTL 7 Tage. Best-effort: Discovery-
+  Fehler fallen zurück auf default `_BASE` — der EU-Standard-Pfad
+  (99% der User) bleibt unverändert. Vehicles aus Non-EU-Regionen,
+  US-spec VW EU Imports oder andere region-routed Cars sehen jetzt
+  ihre korrekte Backend-URL statt 403/404. Bruno-CI-Drift-Script
+  (`scripts/check_bruno_url_drift.py`) erweitert um die neue
+  `{self._base_for_vin(vin)}/...` und `{base}/...` Patterns.
+  88/88 strict pass.
+
 ---
 
 ## [2.0.1] - 2026-05-15 🚨🔒 Safety-Fix: `doors_locked` False-Negative Cross-Brand / Safety-Fix: `doors_locked` False-Negative Cross-Brand
