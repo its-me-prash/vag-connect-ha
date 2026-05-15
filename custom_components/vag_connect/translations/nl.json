@@ -290,6 +290,15 @@
       },
       "tire_pressure_rear_right_bar": {
         "name": "Bandenspanning Achter Rechts"
+      },
+      "lifetime_distance_km": {
+        "name": "Totale Afstand"
+      },
+      "lifetime_avg_fuel_consumption_l_100km": {
+        "name": "Gemiddeld Brandstofverbruik (Totaal)"
+      },
+      "lifetime_avg_electric_consumption_kwh_100km": {
+        "name": "Gemiddeld Stroomverbruik (Totaal)"
       }
     },
     "binary_sensor": {

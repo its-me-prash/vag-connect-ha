@@ -290,6 +290,15 @@
       },
       "tire_pressure_rear_right_bar": {
         "name": "Tlak Pneumatik Zadní Pravá"
+      },
+      "lifetime_distance_km": {
+        "name": "Celková Vzdálenost"
+      },
+      "lifetime_avg_fuel_consumption_l_100km": {
+        "name": "Průměrná Spotřeba Paliva (Celkem)"
+      },
+      "lifetime_avg_electric_consumption_kwh_100km": {
+        "name": "Průměrná Spotřeba Energie (Celkem)"
       }
     },
     "binary_sensor": {
