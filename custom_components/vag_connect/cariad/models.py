@@ -529,6 +529,16 @@ class VehicleData:
     siren_active: bool | None = None       # siren == "ACTIVE"
     last_alarm_at: Any | None = None       # ISO timestamp of last alarm
 
+    # v2.0.0 (Big-Bang) — Heat-source mode (issue #163, best-effort).
+    # ID.x heat-pump models surface ``climatisationSettings.value.heaterSource``
+    # ("electric" / "fuel") indicating which heat source the car will use
+    # for pre-conditioning. Issue #163 wanted a tester to confirm whether
+    # the field is read-only (surface as sensor) or writable (surface as
+    # select). Without a confirmed tester we ship the safe READ-ONLY shape;
+    # if a tester later confirms write support a follow-up PR can promote
+    # to a select. Field stays None for non-heat-pump cars.
+    heater_source: str | None = None
+
     # v1.14.0 (#24) — Trip Statistics from CARIAD-BFF
     # ``GET /vehicle/v1/vehicles/{vin}/tripstatistics?type={shortTerm|longTerm}``.
     # Both endpoints return ``{tripDataList: {tripData: [...]}}``; we sort

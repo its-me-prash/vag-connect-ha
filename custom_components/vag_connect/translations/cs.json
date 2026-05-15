@@ -302,6 +302,9 @@
       },
       "last_alarm_at": {
         "name": "Poslední Alarm"
+      },
+      "heater_source": {
+        "name": "Zdroj Topení"
       }
     },
     "binary_sensor": {

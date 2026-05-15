@@ -681,6 +681,20 @@ SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
         icon="mdi:shield-alert",
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
+    # v2.0.0 (Big-Bang) — heaterSource read-only sensor (issue #163).
+    # ID.x heat-pump cars publish "electric"/"fuel" in
+    # climatisationSettings.value.heaterSource. Brand-restricted via
+    # _DATA_PRESENT_REQUIRED — non-heat-pump cars leave the field None
+    # → no phantom entity is spawned. Diagnostic category since the
+    # value is a niche enum used mostly for power-user automations.
+    VagSensorDescription(
+        key="heater_source",
+        translation_key="heater_source",
+        data_key="heater_source",
+        icon="mdi:radiator",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        condition="electric",
+    ),
 
     # ── v1.9.0 Vehicle Data Scout + Error Reporter ────────────────────────────
     # Two diagnostic sensors that surface drift / runtime errors detected
@@ -901,6 +915,8 @@ _DATA_PRESENT_REQUIRED: frozenset[str] = frozenset({
     "tire_pressure_rear_right_bar",
     # v2.0.0 (Big-Bang) — Vehicle alarm timestamp (issue #33).
     "last_alarm_at",
+    # v2.0.0 (Big-Bang) — heaterSource (issue #163, ID.x heat-pump only).
+    "heater_source",
 })
 
 # v1.14.0 (#24) — Trip Statistics is brand-restricted at the API level
