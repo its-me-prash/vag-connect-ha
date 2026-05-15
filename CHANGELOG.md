@@ -44,6 +44,12 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ### Added
 
+- **`quality_scale: platinum`** in manifest.json — `quality_scale.yaml`
+  enthält 47 done + 2 exempt rules across all 4 tiers (Bronze/Silver/Gold/
+  Platinum). Reverted in v1.26.1 als Sicherheitsmaßnahme; v1.26.2 RCA
+  bestätigte hacs.json zip_release als Wurzelfehler. Hassfest validiert
+  in CI ohne Probleme — wir sind offiziell Platinum-tier.
+
 - **DeviceInfo `configuration_url` + `suggested_area="Garage"`** —
   Brand-aware "Open in App" Button am Device-Detail-Page (deep-link zu
   myAudi / myVolkswagen / myskoda / myseat / mycupra / myporsche /

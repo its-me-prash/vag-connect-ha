@@ -13,6 +13,7 @@
   "loggers": [
     "custom_components.vag_connect"
   ],
+  "quality_scale": "platinum",
   "requirements": [],
   "version": "1.27.2"
 }
