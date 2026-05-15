@@ -379,6 +379,15 @@
       },
       "tire_pressure_warning": {
         "name": "Bandenspanning-Waarschuwing"
+      },
+      "departure_timer_1_enabled": {
+        "name": "Vertrektimer 1 Actief"
+      },
+      "departure_timer_2_enabled": {
+        "name": "Vertrektimer 2 Actief"
+      },
+      "departure_timer_3_enabled": {
+        "name": "Vertrektimer 3 Actief"
       }
     },
     "switch": {

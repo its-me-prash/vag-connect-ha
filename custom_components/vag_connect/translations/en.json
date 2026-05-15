@@ -379,6 +379,15 @@
       },
       "tire_pressure_warning": {
         "name": "Tire Pressure Warning"
+      },
+      "departure_timer_1_enabled": {
+        "name": "Departure Timer 1 Enabled"
+      },
+      "departure_timer_2_enabled": {
+        "name": "Departure Timer 2 Enabled"
+      },
+      "departure_timer_3_enabled": {
+        "name": "Departure Timer 3 Enabled"
       }
     },
     "switch": {

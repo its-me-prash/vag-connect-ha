@@ -379,6 +379,15 @@
       },
       "tire_pressure_warning": {
         "name": "Varování Tlaku Pneumatik"
+      },
+      "departure_timer_1_enabled": {
+        "name": "Časovač Odjezdu 1 Aktivní"
+      },
+      "departure_timer_2_enabled": {
+        "name": "Časovač Odjezdu 2 Aktivní"
+      },
+      "departure_timer_3_enabled": {
+        "name": "Časovač Odjezdu 3 Aktivní"
       }
     },
     "switch": {

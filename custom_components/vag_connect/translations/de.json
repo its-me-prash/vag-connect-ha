@@ -379,6 +379,15 @@
       },
       "tire_pressure_warning": {
         "name": "Reifendruck-Warnung"
+      },
+      "departure_timer_1_enabled": {
+        "name": "Abfahrtstimer 1 aktiv"
+      },
+      "departure_timer_2_enabled": {
+        "name": "Abfahrtstimer 2 aktiv"
+      },
+      "departure_timer_3_enabled": {
+        "name": "Abfahrtstimer 3 aktiv"
       }
     },
     "switch": {

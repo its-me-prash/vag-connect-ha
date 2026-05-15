@@ -379,6 +379,15 @@
       },
       "tire_pressure_warning": {
         "name": "Aviso de Presión de Neumáticos"
+      },
+      "departure_timer_1_enabled": {
+        "name": "Temporizador 1 Activo"
+      },
+      "departure_timer_2_enabled": {
+        "name": "Temporizador 2 Activo"
+      },
+      "departure_timer_3_enabled": {
+        "name": "Temporizador 3 Activo"
       }
     },
     "switch": {
