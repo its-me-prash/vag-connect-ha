@@ -92,6 +92,16 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
   non-Porsche und pre-TPMS Modelle erzeugen keine Phantom-Entitäten.
   Übersetzungen alle 8 Sprachen (DE/EN/CS/ES/FR/NL/PL/SV).
 
+- **Weekly Preheat — `recurring_on` für `set_departure_timer` Service [NEW v2.0]** —
+  der bestehende Service `vag_connect.set_departure_timer` akzeptiert
+  jetzt eine optionale `recurring_on` Liste mit Wochentagen (z.B.
+  `["MONDAY","TUESDAY","WEDNESDAY","THURSDAY","FRIDAY"]`). Damit
+  schaltet der Timer auf wiederkehrend und feuert an jedem genannten
+  Tag. Implementiert für Audi/VW EU (`vw_eu.command_set_departure_timer`)
+  und VW NA (`vw_na.command_set_departure_timer`); Porsche erhält den
+  Param transparent ohne Effekt (PPA hat kein Weekday-Field). UI:
+  Multi-Select-Selector in `services.yaml` für Devtools-Komfort.
+
 - **Long-Term Trip Aggregates [NEW v2.0]** (Audi + VW EU) — drei neue
   Lifetime-Sensoren auf Basis der `/tripstatistics?type=longTerm`
   Antwort, die der Coordinator schon seit v1.14.0 in `lifetime_*`

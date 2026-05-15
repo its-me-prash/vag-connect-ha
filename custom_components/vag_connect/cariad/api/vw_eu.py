@@ -727,6 +727,7 @@ class VWEUClient(CariadBaseClient):
         timer_id: int,
         enabled: bool,
         departure_time: str | None,
+        recurring_on: list[str] | None = None,
     ) -> None:
         """Set a departure timer (1–3).
 
@@ -735,10 +736,26 @@ class VWEUClient(CariadBaseClient):
             timer_id:       1, 2 or 3
             enabled:        True to enable, False to disable
             departure_time: "HH:MM" format, e.g. "07:30" (None = keep existing)
+            recurring_on:   v2.0.0 (Big-Bang) — optional list of weekday
+                            strings (``MONDAY``, ``TUESDAY``, …, ``SUNDAY``)
+                            for weekly preheat. When provided, the timer
+                            switches to ``recurring`` mode and fires on
+                            each listed day; when None the existing
+                            recurrence pattern (or one-off) is preserved.
+                            Backed by CARIAD-BFF
+                            ``/climatisation/timers`` ``recurringOn`` field.
         """
         payload: dict[str, Any] = {"id": timer_id, "enabled": enabled}
         if departure_time:
             payload["departureTime"] = {"time": departure_time}
+        if recurring_on:
+            # Validate + uppercase: API only accepts the canonical list.
+            valid = {"MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY",
+                     "FRIDAY", "SATURDAY", "SUNDAY"}
+            cleaned = [d.upper() for d in recurring_on if d.upper() in valid]
+            if cleaned:
+                payload["recurringOn"] = cleaned
+                payload["type"] = "RECURRING"
         await self._post(
             f"{_BASE}/vehicle/v1/vehicles/{vin}/climatisation/timers",
             json=payload,

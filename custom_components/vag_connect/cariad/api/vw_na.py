@@ -256,12 +256,27 @@ class VWNAClient:
         )
 
     async def command_set_departure_timer(
-        self, vin: str, timer_id: int, enabled: bool, departure_time: str | None
+        self,
+        vin: str,
+        timer_id: int,
+        enabled: bool,
+        departure_time: str | None,
+        recurring_on: list[str] | None = None,
     ) -> None:
+        # v2.0.0 (Big-Bang) — VW NA's MyVW Cloud accepts the same
+        # ``recurringOn`` field shape as the EU CARIAD-BFF backend
+        # (verified against MyVW 2.x app traffic).
         uuid = self._vin_to_uuid.get(vin, vin)
         payload: dict[str, Any] = {"id": timer_id, "enabled": enabled}
         if departure_time:
             payload["departureTime"] = {"time": departure_time}
+        if recurring_on:
+            valid = {"MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY",
+                     "FRIDAY", "SATURDAY", "SUNDAY"}
+            cleaned = [d.upper() for d in recurring_on if d.upper() in valid]
+            if cleaned:
+                payload["recurringOn"] = cleaned
+                payload["type"] = "RECURRING"
         await self._post(
             f"{self._base}/ev/v1/vehicle/{uuid}/climatisation/timers",
             json=payload,

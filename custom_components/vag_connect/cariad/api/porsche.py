@@ -249,8 +249,17 @@ class PorscheClient:
         await self._command(vin, "REMOTE_HEATING_STOP")
 
     async def command_set_departure_timer(
-        self, vin: str, timer_id: int, enabled: bool, departure_time: str | None
+        self,
+        vin: str,
+        timer_id: int,
+        enabled: bool,
+        departure_time: str | None,
+        recurring_on: list[str] | None = None,  # noqa: ARG002
     ) -> None:
+        # v2.0.0 (Big-Bang) — accepts ``recurring_on`` to keep the
+        # cross-brand interface uniform; PPA's DEPARTURES_EDIT command
+        # doesn't expose a weekday list field today, so the parameter
+        # is silently ignored for Porsche.
         payload: dict[str, Any] = {"timerId": timer_id, "enabled": enabled}
         if departure_time:
             payload["departureTime"] = departure_time

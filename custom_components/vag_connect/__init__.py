@@ -197,11 +197,16 @@ def _register_services(hass: HomeAssistant) -> None:
         )
 
     async def _handle_set_departure_timer(call: ServiceCall) -> None:
+        # v2.0.0 (Big-Bang) — accept optional ``recurring_on`` weekday
+        # list (e.g. ``["MONDAY","TUESDAY","FRIDAY"]``). Forwarded to
+        # the brand client; ignored by clients that don't support
+        # weekly preheat (e.g. Porsche).
         await _coord_writeable(call.data["vin"]).async_set_departure_timer(
             call.data["vin"],
             int(call.data["timer_id"]),
             bool(call.data["enabled"]),
             call.data.get("departure_time"),
+            call.data.get("recurring_on"),
         )
 
     async def _handle_engine_start(call: ServiceCall) -> None:
@@ -314,6 +319,13 @@ def _register_services(hass: HomeAssistant) -> None:
                 vol.Required("timer_id"):       vol.All(vol.Coerce(int), vol.In([1, 2, 3])),
                 vol.Required("enabled"):        cv.boolean,
                 vol.Optional("departure_time"): cv.string,
+                # v2.0.0 (Big-Bang) — weekly preheat schedule. Each
+                # element must be one of the ISO weekday names
+                # (UPPER-case canonical, the client also accepts
+                # mixed-case inputs).
+                vol.Optional("recurring_on"):   vol.All(
+                    cv.ensure_list, [cv.string]
+                ),
             })),
         # v1.14.0 (#28) — Audi-only ICE Remote Engine Start/Stop.
         ("engine_start",                   _handle_engine_start,        SERVICE_VIN_SCHEMA),
