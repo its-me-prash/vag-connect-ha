@@ -360,17 +360,9 @@ find_charging_stations:
     Cariad-BFF POI-API (nur Audi + VW EU). Rückgabe per
     ``response_variable`` als Liste mit Stations-Details (id, name,
     address, location, operator, maxPowerInKW, connectorTypes,
-    availability). Beispiel:
-    ```yaml
-    action: vag_connect.find_charging_stations
-    data:
-      vin: WAUZZZ...
-      latitude: 47.3769
-      longitude: 8.5417
-      radius_m: 5000
-      max_results: 25
-    response_variable: result
-    ```
+    availability). Beispiel: ``action: vag_connect.find_charging_stations``
+    mit ``data: {vin: WAUZZZ..., latitude: 47.3769, longitude: 8.5417,
+    radius_m: 5000, max_results: 25}`` und ``response_variable: result``.
   fields:
     vin:
       name: VIN
@@ -380,20 +372,16 @@ find_charging_stations:
         text:
     latitude:
       name: Breitengrad
+      description: Breitengrad in Dezimalgraden (-90 bis 90).
       required: true
       selector:
-        number:
-          min: -90
-          max: 90
-          step: 0.0001
+        text:
     longitude:
       name: Längengrad
+      description: Längengrad in Dezimalgraden (-180 bis 180).
       required: true
       selector:
-        number:
-          min: -180
-          max: 180
-          step: 0.0001
+        text:
     radius_m:
       name: Suchradius (Meter)
       description: Optional. Standard 5000 m (5 km). Max 100 km.

@@ -378,7 +378,12 @@ def _register_services(hass: HomeAssistant) -> None:
             vol.Optional("radius_m"):  vol.All(vol.Coerce(int), vol.Range(100, 100_000)),
             vol.Optional("max_results"): vol.All(vol.Coerce(int), vol.Range(1, 100)),
         }),
-        supports_response=SupportsResponse.ONLY,
+        # OPTIONAL (not ONLY) — Hassfest requires services with
+        # ``response: only`` to declare a target entity, but our
+        # service is account-level (VIN in data, not a target). With
+        # OPTIONAL the response variable still works for callers but
+        # Hassfest is happy.
+        supports_response=SupportsResponse.OPTIONAL,
     )
 
 
