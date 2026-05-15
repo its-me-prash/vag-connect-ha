@@ -186,7 +186,12 @@ class SeatCupraClient(CariadBaseClient):
             d.has_battery = d.battery_soc is not None
 
             access = v(mycar, "access") or {}
-            d.doors_locked = v(access, "accessStatus", "value", "doorLockStatus") == "LOCKED"
+            # v2.0.1 (#131 follow-up) — defensive parsing, see vw_eu.py
+            # for the full rationale. Per-door + top-level fallbacks
+            # below (lines ~265 + ~331) further refine the value.
+            access_lock = v(access, "accessStatus", "value", "doorLockStatus")
+            if isinstance(access_lock, str):
+                d.doors_locked = access_lock.upper() == "LOCKED"
 
         # ── Ranges ───────────────────────────────────────────────────────────
         if isinstance(ranges, dict):
@@ -327,7 +332,14 @@ class SeatCupraClient(CariadBaseClient):
             #   status.lights        : "off" / "on" (vehicle lights state)
             #   status.hood.locked   : "false"/"true" string
             top_locked = v(status, "locked")
-            if isinstance(top_locked, bool) and not d.doors_locked:
+            if isinstance(top_locked, bool):
+                # v2.0.1 (#131 follow-up): always honour an explicit
+                # top-level boolean. Pre-v2.0.1 used ``and not
+                # d.doors_locked`` which shadowed the top-level signal
+                # whenever the access-block already set False — but
+                # access-block-False during a parser miss meant we'd
+                # incorrectly skip the more authoritative top-level
+                # signal. Now: explicit bool always wins.
                 d.doors_locked = top_locked
             top_hood_locked = v(status, "hood", "locked")
             if isinstance(top_hood_locked, str) and d.hood_open is None:
@@ -449,7 +461,11 @@ class SeatCupraClient(CariadBaseClient):
                 or v(chg, "chargePowerInKw")  # Legacy
                 or v(chg, "chargePower_kW")   # Legacy
             )
-            d.charging_rate_kmh = v(chg, "chargeRateInKmPerHour") or v(chg, "chargeRate_kmph")
+            d.charging_rate_kmh = (
+                v(chg, "chargeRateInKmPerHour")  # Rainer #109 shape A
+                or v(chg, "chargeRate_kmph")     # Legacy CARIAD path
+                or v(chg, "rateInKmph")          # v2.0.1 Scout #192 — Cupra Born MY26 ships this on the OLA charging endpoint
+            )
             remaining = (
                 v(chg, "remainingTimeInMinutes")  # Rainer #109 shape B — verified
                 or v(chg, "remainingTime")        # Rainer #109 shape A — verified
@@ -492,10 +508,18 @@ class SeatCupraClient(CariadBaseClient):
                 or v(plug, "lockState")           # Rainer #109 shape
                 or v(plug, "plugLockState")        # Legacy CARIAD
             )
-            d.connector_locked = (
-                isinstance(plug_lock_raw, str)
-                and plug_lock_raw.lower() == "locked"
-            ) or v(plug, "externalPower") == "READY"
+            ext_power = v(plug, "externalPower")
+            # v2.0.1 (#131 follow-up) — only assign when at least one of
+            # the two source fields is present. Pre-v2.0.1 always
+            # assigned False when both were missing, masking a real
+            # "still locked, can't unplug yet" state during parser miss.
+            if isinstance(plug_lock_raw, str) or isinstance(ext_power, str):
+                d.connector_locked = (
+                    isinstance(plug_lock_raw, str)
+                    and plug_lock_raw.lower() == "locked"
+                ) or (
+                    isinstance(ext_power, str) and ext_power.upper() == "READY"
+                )
 
         # ── Charging info (settings) ─────────────────────────────────────────
         # OLA `/v2/vehicles/{vin}/charging/settings` field variance.
