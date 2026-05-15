@@ -44,6 +44,13 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ### Added
 
+- **DeviceInfo `configuration_url` + `suggested_area="Garage"`** —
+  Brand-aware "Open in App" Button am Device-Detail-Page (deep-link zu
+  myAudi / myVolkswagen / myskoda / myseat / mycupra / myporsche /
+  myvw je nach Brand). Auto-Area "Garage" beim ersten Setup. Reverted
+  in v1.26.1, root cause war NICHT diese Fields (sondern `hacs.json`
+  `zip_release`). Verified safe via CI Hassfest seit v1.27.0.
+
 - **System Health Panel** (`system_health.py`) — Settings → System → Repairs zeigt
   jetzt at-a-glance: Integration-Version, configured brands, last poll per entry,
   API quota remaining, Push-Channel-Status, Cariad-BFF reachability. Drop-in
