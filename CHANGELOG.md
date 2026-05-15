@@ -68,6 +68,17 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
   Privacy: VINs gemaskt, GPS auf 1 Dezimalstelle gerundet, Tokens
   gestrippt — Daten gehen NUR an den Hersteller-API selbst.
 
+- **`docs/recipes/browser-mod.md` — Cookbook für browser_mod ↔ VAG Connect** —
+  5 fertige YAML-Recipes für die wichtigsten Frontend-Use-Cases:
+  1. 12V-Battery-Low Fullscreen-Popup (12V drops < 11.5V → tablet warning)
+  2. NFC-Tag triggert Quick-Command-Sheet (Lock/Unlock/Climate/Wake/Flash)
+  3. Send-Destination Confirm-Dialog (ha-form mit Edit + Submit)
+  4. Charging-Done Toast (alle registrierten Browser)
+  5. Vehicle-Render Picture-Card mit Popup-Detail (Map + Battery + Glance)
+
+  Pure YAML, kein Python-Code im Repo. Erfüllt EXTERNAL_BLOCKED Recipe
+  A.14 + `docs/research/browser-mod-integration-2026-05-03.md §F`.
+
 ---
 
 ## [2.0.1] - 2026-05-15 🚨🔒 Safety-Fix: `doors_locked` False-Negative Cross-Brand / Safety-Fix: `doors_locked` False-Negative Cross-Brand
