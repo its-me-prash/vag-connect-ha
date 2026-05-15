@@ -1,0 +1,35 @@
+meta {
+  name: GET driving score
+  type: http
+  seq: 29
+}
+
+get {
+  url: {{base_url}}/api/v2/vehicle-status/{{vin}}/driving-score
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+headers {
+  Accept: application/json
+}
+
+docs {
+  Returns the per-VIN driving-score block with the integer ``score``
+  (0-100, efficiency metric) and ``drivingScoreClass`` enum
+  (e.g. EXCELLENT, GOOD, AVERAGE). Skoda MY24+ only — older firmwares
+  return 404 / empty payload.
+
+  v2.0.0 (Big-Bang) — surfaced via two new HA sensors
+  ``driving_score`` (MEASUREMENT) + ``driving_score_class`` (DIAGNOSTIC).
+  Brand-restricted via _DATA_PRESENT_REQUIRED in sensor.py so non-Skoda
+  vehicles never see a phantom "unknown" entity.
+
+  Implementation: SkodaClient.get_driving_score() called inside
+  asyncio.gather() in get_status() at
+  custom_components/vag_connect/cariad/api/skoda.py.
+}

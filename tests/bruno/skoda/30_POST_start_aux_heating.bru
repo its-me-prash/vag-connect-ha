@@ -1,0 +1,41 @@
+meta {
+  name: POST start auxiliary heating
+  type: http
+  seq: 30
+}
+
+post {
+  url: {{base_url}}/api/v2/air-conditioning/{{vin}}/auxiliary-heating/start
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "spin": "{{spin}}"
+  }
+}
+
+docs {
+  Starts auxiliary (parking / Standheizung) heating on Skoda PHEV /
+  Diesel models that ship a Standheizung — Octavia iV, Superb iV,
+  Kodiaq iV. Mirrors the SEAT/CUPRA equivalent and reuses the
+  cross-brand HA service ``vag_connect.start_aux_heating`` and
+  ``VagAuxHeatingSwitch`` entity (switch.py).
+
+  Requires the user S-PIN (4-digit) — pass via {{spin}} env var when
+  testing manually. The integration prompts for the S-PIN once on
+  first command and caches it via Bundle 4 (#39) S-PIN flow.
+
+  Implementation: SkodaClient.command_start_aux_heating() in
+  custom_components/vag_connect/cariad/api/skoda.py.
+}
