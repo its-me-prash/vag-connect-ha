@@ -120,30 +120,49 @@ class VWNAClient:
             d.battery_soc = v(bat, "stateOfChargePercent")
             d.has_battery = d.battery_soc is not None
 
-            # Doors
+            # Doors — v2.0.1 (#131 follow-up): defensive parsing.
+            # Only assign safety-critical booleans when the source is
+            # an actual string; otherwise leave the dataclass default
+            # ``None`` so the entity stays "unknown" instead of falsely
+            # reporting "Unlocked"/"Closed" for an actually-locked car.
             door_status = v(vehicle_raw, "doorStatus") or {}
-            d.doors_locked = v(door_status, "overallStatus") == "LOCKED"
-            d.doors_open   = any(
-                v(door_status, k) == "OPEN"
-                for k in ("frontLeftDoor", "frontRightDoor", "rearLeftDoor", "rearRightDoor")
-            )
-            d.trunk_open = v(door_status, "trunk") == "OPEN"
-            d.hood_open  = v(door_status, "hood") == "OPEN"
+            overall_lock = v(door_status, "overallStatus")
+            if isinstance(overall_lock, str):
+                d.doors_locked = overall_lock.upper() == "LOCKED"
+            door_keys = ("frontLeftDoor", "frontRightDoor", "rearLeftDoor", "rearRightDoor")
+            door_states = [v(door_status, k) for k in door_keys]
+            if any(isinstance(s, str) for s in door_states):
+                d.doors_open = any(
+                    isinstance(s, str) and s.upper() == "OPEN" for s in door_states
+                )
+            trunk = v(door_status, "trunk")
+            if isinstance(trunk, str):
+                d.trunk_open = trunk.upper() == "OPEN"
+            hood = v(door_status, "hood")
+            if isinstance(hood, str):
+                d.hood_open = hood.upper() == "OPEN"
 
-            # Windows
+            # Windows — v2.0.1 (#131 follow-up): same defensive shape.
             win = v(vehicle_raw, "windowStatus") or {}
-            d.windows_open = any(
-                v(win, k) == "OPEN"
-                for k in ("frontLeftWindow", "frontRightWindow", "rearLeftWindow", "rearRightWindow")
+            window_keys = (
+                "frontLeftWindow", "frontRightWindow",
+                "rearLeftWindow", "rearRightWindow",
             )
+            window_states = [v(win, k) for k in window_keys]
+            if any(isinstance(s, str) for s in window_states):
+                d.windows_open = any(
+                    isinstance(s, str) and s.upper() == "OPEN" for s in window_states
+                )
 
             # GPS
             pos = v(vehicle_raw, "vehicleLocation") or {}
             d.latitude  = v(pos, "latitude")
             d.longitude = v(pos, "longitude")
 
-            # Connection
-            d.is_online = v(vehicle_raw, "connectionStatus", "connectionState") == "CONNECTED"
+            # Connection — v2.0.1 (#131 follow-up): defensive parsing.
+            conn_state = v(vehicle_raw, "connectionStatus", "connectionState")
+            if isinstance(conn_state, str):
+                d.is_online = conn_state.upper() == "CONNECTED"
 
             # Drivetrain type
             engine = v(vehicle_raw, "vehicleType", "engine") or ""
@@ -157,11 +176,14 @@ class VWNAClient:
         # ── Charging ──────────────────────────────────────────────────────────
         if isinstance(charge, dict):
             d.charging_state    = v(charge, "chargingStatus", "chargingState")
-            d.is_charging       = d.charging_state == "CHARGING"
+            # v2.0.1 (#131 follow-up) — defensive parsing.
+            if isinstance(d.charging_state, str):
+                d.is_charging = d.charging_state.upper() == "CHARGING"
             d.charging_power_kw = v(charge, "chargingStatus", "chargePower_kW")
             plug = v(charge, "plugStatus", "plugConnectionState")
-            d.plug_connected    = plug == "CONNECTED"
-            d.plug_state        = plug
+            if isinstance(plug, str):
+                d.plug_connected = plug.upper() == "CONNECTED"
+                d.plug_state = plug
             d.target_soc        = v(charge, "chargingSettings", "targetSOC_pct")
             # v1.24.2 (audit): safe_int + safe_float defensive coerce
             remaining_min = safe_int(v(charge, "chargingStatus", "remainingChargingTimeToComplete_min"))

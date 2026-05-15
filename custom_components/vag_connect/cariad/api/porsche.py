@@ -126,21 +126,38 @@ class PorscheClient:
             # Charging
             ch = m.get("CHARGING_SUMMARY", {})
             d.charging_state    = v(ch, "status")
-            d.is_charging       = d.charging_state in ("CHARGING", "CHARGING_AC", "CHARGING_DC")
+            # v2.0.1 (#131 follow-up) — defensive parsing.
+            if isinstance(d.charging_state, str):
+                d.is_charging = d.charging_state.upper() in (
+                    "CHARGING", "CHARGING_AC", "CHARGING_DC"
+                )
             d.charging_power_kw = v(ch, "chargingPower")
-            d.plug_connected    = v(ch, "plugState") == "CONNECTED"
-            d.plug_state        = v(ch, "plugState")
+            plug_state = v(ch, "plugState")
+            if isinstance(plug_state, str):
+                d.plug_connected = plug_state.upper() == "CONNECTED"
+                d.plug_state = plug_state
             d.target_soc        = v(ch, "targetSoc")
 
-            # Lock
+            # Lock — v2.0.1 (#131 follow-up): defensive parsing.
+            # Only assign when the source is an actual string; otherwise
+            # leave the dataclass default ``None`` so the entity stays
+            # "unknown" instead of falsely reporting "Unlocked".
             lock = v(m, "LOCK_STATE_VEHICLE", "lockState")
-            d.doors_locked = lock == "LOCKED"
+            if isinstance(lock, str):
+                d.doors_locked = lock.upper() == "LOCKED"
 
-            # Doors
-            d.doors_open = any(
-                v(m, f"OPEN_STATE_DOOR_{pos}", "openState") == "OPEN"
+            # Doors — v2.0.1: only assign when at least one door
+            # actually publishes its openState. PPA sometimes returns
+            # the LOCK_STATE_VEHICLE block but skips the per-door blocks
+            # for a few minutes after wake (observed against Taycan).
+            door_states = [
+                v(m, f"OPEN_STATE_DOOR_{pos}", "openState")
                 for pos in ("FRONT_LEFT", "FRONT_RIGHT", "REAR_LEFT", "REAR_RIGHT")
-            )
+            ]
+            if any(isinstance(s, str) for s in door_states):
+                d.doors_open = any(
+                    isinstance(s, str) and s.upper() == "OPEN" for s in door_states
+                )
             d.hood_open   = v(m, "OPEN_STATE_LID_FRONT",  "openState") == "OPEN"
             d.trunk_open  = v(m, "OPEN_STATE_LID_REAR",   "openState") == "OPEN"
             d.sunroof_open = v(m, "OPEN_STATE_SUNROOF",   "openState") == "OPEN"

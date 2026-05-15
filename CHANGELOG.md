@@ -36,6 +36,34 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 > — mit jeder geänderten Datei, jeder Zeile, jeder Issue-Referenz und der
 > Methodik dahinter.
 
+## [2.0.1] - 2026-05-15 🚨🔒 Safety-Fix: `doors_locked` False-Negative Cross-Brand / Safety-Fix: `doors_locked` False-Negative Cross-Brand
+
+### Fixed
+
+- **Critical Safety-Fix: `doors_locked` zeigte fälschlich "Unlocked" für tatsächlich verriegelte Autos** (User-Bericht via #131 Follow-up).
+
+  **Root cause** war ein **Doppel-Bug**:
+  1. **Dataclass-Default** `doors_locked: bool = False` in `cariad/models.py` — bei jedem Parser-Miss (Backend-Hiccup, `.error` Envelope, fehlendes Feld, unbekannter Firmware-Wert) blieb das Feld auf `False` statt korrekt `None`.
+  2. **4 von 5 Brand-Parser** verwendeten `field = X == "LOCKED"` Pattern — wenn `X` `None` war, wurde `doors_locked` AKTIV auf `False` gesetzt (statt unverändert zu lassen). Skoda war seit v1.20.2 bereits defensiv.
+
+  **Fix:**
+  - 14 sicherheitsrelevante Booleans in `models.py` umgestellt von `bool = False` auf `bool | None = None`: `doors_locked`, `doors_open`, `windows_open`, `connector_locked`, `is_charging`, `plug_connected`, `auto_unlock_charge`, `climatisation_active`, `is_driving`, `is_online`, `warning_active`, `warning_oil`, `warning_engine`, `warning_tyre`, `warning_brakes`.
+  - 4 Brand-Parser auf defensive `isinstance(str)` + `.upper()` umgestellt: **`vw_eu.py`** (auch Audi via Vererbung), **`porsche.py`**, **`seat_cupra.py`**, **`vw_na.py`**.
+  - **VW EU/Audi**: `overallStatus == "SAFE"` jetzt explizit detected → setzt `doors_open=False, windows_open=False`. Vorher fielen "SAFE" Cars auf Default-False (zufällig richtig); jetzt explizit + nachvollziehbar.
+  - **Skoda**: bereits korrekt am Parser-Level — profitiert automatisch vom Default-Fix.
+  - Existing LOCK-Class Invert in `binary_sensor.py:390-394` und `lock.py:53` funktionieren transparent mit `None` (zeigen "Unknown" statt falsch "Unlocked").
+
+  **User-Impact:**
+  - Vor v2.0.1: Backend-Hiccup → HA zeigt "Unlocked" obwohl Auto verriegelt → User glaubt sicher, Auto ist offen
+  - Ab v2.0.1: Backend-Hiccup → HA zeigt "Unknown" → User sieht klar dass aktuell keine Daten verfügbar
+  - Auch betroffen waren `windows_open`, `connector_locked`, `warning_*` — alle false-negatives die echte Gefahren maskieren konnten
+
+### Added
+
+- **CUPRA Born MY26 `charging.rateInKmph` Parser-Fallback (closes Scout #192)** — neuer dritter Fallback in `seat_cupra.py:464` für die Lade-Rate (`chargeRateInKmPerHour` → `chargeRate_kmph` → `rateInKmph`). Born MY26 Firmware shippt das Feld auf `charging.rateInKmph` direkt am OLA Endpoint.
+
+---
+
 ## [2.0.0] - 2026-05-15 🎯🚀 Big-Bang Release — 19 PRs in einem Schlag / Big-Bang Release — 19 PRs in one shot
 
 > **v2.0.0 ist die größte Release in der Geschichte des Projekts.** 19 PRs

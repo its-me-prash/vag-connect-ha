@@ -504,7 +504,9 @@ class SkodaClient(CariadBaseClient):
             c = charging.get("status", {})
             d.battery_soc = v(c, "battery", "stateOfChargeInPercent")
             d.charging_state = v(c, "state")
-            d.is_charging = d.charging_state == "CHARGING"
+            # v2.0.1 (#131 follow-up) — defensive parsing.
+            if isinstance(d.charging_state, str):
+                d.is_charging = d.charging_state.upper() == "CHARGING"
             d.charging_power_kw = v(c, "chargePowerInKw")
             d.charging_rate_kmh = v(c, "chargingRateInKilometersPerHour")
             d.charging_type = v(c, "chargeType")
@@ -594,10 +596,13 @@ class SkodaClient(CariadBaseClient):
                     d.outside_temp = ot_val
 
             plug_conn = v(ac, "chargerConnectionState")
-            if plug_conn:
-                d.plug_connected = plug_conn == "CONNECTED"
+            if isinstance(plug_conn, str):
+                d.plug_connected = plug_conn.upper() == "CONNECTED"
                 d.plug_state = plug_conn
-            d.connector_locked = v(ac, "chargerLockState") == "LOCKED"
+            # v2.0.1 (#131 follow-up) — defensive parsing.
+            charger_lock = v(ac, "chargerLockState")
+            if isinstance(charger_lock, str):
+                d.connector_locked = charger_lock.upper() == "LOCKED"
 
         # ── Parking position (v3 with formatted address) ─────────────────────
         if isinstance(parking, dict):

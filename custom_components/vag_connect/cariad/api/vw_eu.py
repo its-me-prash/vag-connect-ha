@@ -835,7 +835,10 @@ class VWEUClient(CariadBaseClient):
 
         # ── Charging ──────────────────────────────────────────────────────────
         d.charging_state = v(raw, "charging", "chargingStatus", "value", "chargingState")
-        d.is_charging = d.charging_state == "CHARGING"
+        # v2.0.1 (#131 follow-up) — defensive: keep is_charging None
+        # when charging_state is missing (preserves "unknown" semantics).
+        if isinstance(d.charging_state, str):
+            d.is_charging = d.charging_state.upper() == "CHARGING"
         d.charging_power_kw = v(raw, "charging", "chargingStatus", "value", "chargePower_kW")
         d.charging_rate_kmh = v(raw, "charging", "chargingStatus", "value", "chargeRate_kmph")
 
@@ -907,8 +910,13 @@ class VWEUClient(CariadBaseClient):
 
         plug_state = v(raw, "charging", "plugStatus", "value", "plugConnectionState")
         d.plug_state = plug_state
-        d.plug_connected = plug_state == "CONNECTED"
-        d.connector_locked = v(raw, "charging", "plugStatus", "value", "plugLockState") == "LOCKED"
+        # v2.0.1 (#131 follow-up) — defensive parsing.
+        if isinstance(plug_state, str):
+            d.plug_connected = plug_state.upper() == "CONNECTED"
+        # v2.0.1 (#131 follow-up) — defensive parsing.
+        plug_lock = v(raw, "charging", "plugStatus", "value", "plugLockState")
+        if isinstance(plug_lock, str):
+            d.connector_locked = plug_lock.upper() == "LOCKED"
 
         d.target_soc = v(raw, "charging", "chargingSettings", "value", "targetSOC_pct")
         d.charge_mode = v(raw, "charging", "chargingStatus", "value", "chargeMode")
@@ -1145,10 +1153,21 @@ class VWEUClient(CariadBaseClient):
             d.last_alarm_at = last_alarm
 
         # ── Access / doors / windows ──────────────────────────────────────────
-        d.doors_locked = v(raw, "access", "accessStatus", "value", "doorLockStatus") == "LOCKED"
+        # v2.0.1 (#131 user-reported follow-up) — defensive parsing.
+        # Previously: ``d.doors_locked = X == "LOCKED"`` always assigned
+        # True or False, even when X was None (missing field, .error
+        # envelope, backend hiccup). Combined with the old
+        # ``doors_locked: bool = False`` dataclass default that made HA
+        # falsely show "Unlocked" for actually-locked cars during any
+        # parser-miss scenario. New shape: only assign when the source
+        # field is an actual string; otherwise leave the dataclass
+        # default ``None`` so the entity stays "unknown" instead of
+        # showing wrong state. Same fix applied to ``doors_open`` and
+        # ``windows_open`` below.
+        lock_raw = v(raw, "access", "accessStatus", "value", "doorLockStatus")
+        if isinstance(lock_raw, str):
+            d.doors_locked = lock_raw.upper() == "LOCKED"
         overall = v(raw, "access", "accessStatus", "value", "overallStatus")
-        d.doors_open = False
-        d.windows_open = False
         if overall == "UNSAFE":
             doors: list[dict[str, Any]] = v(raw, "access", "accessStatus", "value", "doors") or []
             d.doors_open = any(
@@ -1168,6 +1187,15 @@ class VWEUClient(CariadBaseClient):
                 for door in doors
                 if door.get("name") and door.get("status")
             }
+        elif overall == "SAFE":
+            # v2.0.1 (#131 follow-up) — explicit SAFE detection. Backend
+            # publishes "SAFE" when the car is locked + all openings shut.
+            # Pre-v2.0.1 the parser only handled "UNSAFE" and left both
+            # fields at the (now removed) ``False`` dataclass default.
+            # Now we explicitly set False when SAFE, leave None otherwise
+            # (truly unknown state — backend hiccup, error envelope).
+            d.doors_open = False
+            d.windows_open = False
 
         # ── Climatisation ─────────────────────────────────────────────────────
         d.climatisation_state = v(raw, "climatisation", "climatisationStatus", "value", "climatisationState")

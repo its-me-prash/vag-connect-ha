@@ -159,13 +159,19 @@ class VehicleData:
     # e.g. {"MYAPN8NB": "https://mediaservice.audi.com/media/fast/v3_...", ...}
     image_urls: dict = None  # type: ignore[assignment]
     # Vehicle media names from GraphQL (vehicle.media.shortName/longName)
-    # Warning lights
-    warning_active: bool = False
+    # Warning lights — v2.0.1 (#131 follow-up): switched from
+    # ``bool = False`` to ``bool | None = None`` so that a parser miss
+    # (Backend-Hiccup, .error envelope, missing field, unknown firmware
+    # value) leaves the entity ``unknown`` rather than falsely "no
+    # warning". The previous default-False masked real warnings during
+    # the Cariad-BFF nightly maintenance windows (see #190 for an
+    # example backend-hiccup that flipped 17 fields to .error envelope).
+    warning_active: bool | None = None
     warning_count: int = 0
-    warning_oil: bool = False
-    warning_engine: bool = False
-    warning_tyre: bool = False
-    warning_brakes: bool = False
+    warning_oil: bool | None = None
+    warning_engine: bool | None = None
+    warning_tyre: bool | None = None
+    warning_brakes: bool | None = None
 
     media_short_name: str | None = None  # e.g. "Q4 e-tron"
     media_long_name: str | None = None   # e.g. "Audi Q4 50 e-tron quattro"
@@ -211,9 +217,18 @@ class VehicleData:
 
     # Charging
     charging_state: str | None = None
-    is_charging: bool = False
+    # v2.0.1 (#131 follow-up) — switched ``is_charging`` /
+    # ``plug_connected`` / ``auto_unlock_charge`` / ``connector_locked``
+    # from ``bool = False`` to ``bool | None = None``. Same false-
+    # negative reasoning as ``doors_locked`` above: parser-miss on a
+    # backend-hiccup must NOT default to "not charging" / "plug
+    # disconnected" / "connector unlocked" — that hides real state.
+    # ``connector_locked`` is the most safety-relevant of these (LOCK
+    # device class) — user can't pull a still-locked plug, so a
+    # wrong-False masks a real "you can't unplug yet" state.
+    is_charging: bool | None = None
     plug_state: str | None = None
-    plug_connected: bool = False
+    plug_connected: bool | None = None
     charging_power_kw: float | None = None
     charging_rate_kmh: float | None = None
     charge_complete_eta: Any | None = None
@@ -221,8 +236,8 @@ class VehicleData:
     target_soc: int | None = None
     max_charge_current: float | None = None
     min_soc: int | None = None  # Minimum SoC for departure timer (PHEV)
-    auto_unlock_charge: bool = False
-    connector_locked: bool = False
+    auto_unlock_charge: bool | None = None
+    connector_locked: bool | None = None
     charging_station_name: str | None = None
     charging_station_address: str | None = None
     charging_station_kw: float | None = None
@@ -237,14 +252,26 @@ class VehicleData:
 
     # Climate
     climatisation_state: str | None = None
-    climatisation_active: bool = False
+    # v2.0.1 (#131 follow-up) — same false-negative reasoning as the
+    # Access block: parser-miss must NOT default to "climate off".
+    climatisation_active: bool | None = None
     target_temperature: float | None = None
     outside_temp: float | None = None
 
     # Access
-    doors_locked: bool = False
-    doors_open: bool = False
-    windows_open: bool = False
+    # v2.0.1 (#131 user-reported follow-up): switched from
+    # ``bool = False`` to ``bool | None = None`` to fix a critical
+    # safety false-negative: when the parser couldn't extract the lock
+    # state from the response (Backend-Hiccup .error envelope, missing
+    # field, unknown firmware value) the dataclass default was False,
+    # so the binary_sensor + lock entity displayed "Unlocked" for an
+    # actually-locked car. Cars now correctly show "Unknown" instead.
+    # The lock entity (lock.py:is_locked) and the binary_sensor (with
+    # LOCK device_class invert) both already handle ``None`` as
+    # "unknown" — no entity-side change needed.
+    doors_locked: bool | None = None
+    doors_open: bool | None = None
+    windows_open: bool | None = None
     doors_individual: dict[str, bool] = field(default_factory=dict)
     # v1.8.9 (Session 3C) — per-window state, mirrors ``doors_individual``.
     # Keys: frontLeft / frontRight / rearLeft / rearRight. Value True ==
@@ -262,8 +289,12 @@ class VehicleData:
     # Status
     vehicle_state: str | None = None
     connection_state: str | None = None
-    is_driving: bool = False
-    is_online: bool = False
+    # v2.0.1 (#131 follow-up) — same false-negative reasoning. Parser
+    # miss must NOT default to "vehicle parked + offline". Conditional
+    # automations like "wake car when leaving driveway" relied on
+    # ``is_online`` being honest about its uncertainty.
+    is_driving: bool | None = None
+    is_online: bool | None = None
     last_updated_at: Any | None = None
     # v1.8.11 (Session 3S) — when the *vehicle* last reported data to the
     # backend, derived from ``carCapturedTimestamp`` on the status response
