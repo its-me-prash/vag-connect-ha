@@ -299,6 +299,9 @@
       },
       "lifetime_avg_electric_consumption_kwh_100km": {
         "name": "Průměrná Spotřeba Energie (Celkem)"
+      },
+      "last_alarm_at": {
+        "name": "Poslední Alarm"
       }
     },
     "binary_sensor": {
@@ -388,6 +391,12 @@
       },
       "departure_timer_3_enabled": {
         "name": "Časovač Odjezdu 3 Aktivní"
+      },
+      "alarm_active": {
+        "name": "Alarm Aktivní"
+      },
+      "siren_active": {
+        "name": "Siréna Aktivní"
       }
     },
     "switch": {

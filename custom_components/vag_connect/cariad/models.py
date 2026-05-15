@@ -518,6 +518,17 @@ class VehicleData:
     tire_pressure_rear_right_bar: float | None = None
     tire_pressure_warning: bool | None = None
 
+    # v2.0.0 (Big-Bang) — Vehicle alarm (issue #33).
+    # Cariad-BFF ``access.accessStatus.value`` may carry vehicleAlarm /
+    # siren fields when the car's anti-theft system has triggered. Surfaced
+    # as two binary_sensors (PROBLEM device class) plus a TIMESTAMP
+    # sensor for the most recent alarm event. Brand-restricted via
+    # _DATA_PRESENT_REQUIRED so cars without this telemetry don't see
+    # phantom entities.
+    alarm_active: bool | None = None       # vehicleAlarm == "ALARM"
+    siren_active: bool | None = None       # siren == "ACTIVE"
+    last_alarm_at: Any | None = None       # ISO timestamp of last alarm
+
     # v1.14.0 (#24) — Trip Statistics from CARIAD-BFF
     # ``GET /vehicle/v1/vehicles/{vin}/tripstatistics?type={shortTerm|longTerm}``.
     # Both endpoints return ``{tripDataList: {tripData: [...]}}``; we sort

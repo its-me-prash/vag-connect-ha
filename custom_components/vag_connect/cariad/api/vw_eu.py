@@ -1078,6 +1078,24 @@ class VWEUClient(CariadBaseClient):
         if d.voltage_12v is not None:
             d.warning_12v_low = d.voltage_12v < 11.5
 
+        # ── v2.0.0 (Big-Bang) — Vehicle alarm (issue #33) ─────────────────────
+        # Cariad-BFF surfaces alarm telemetry under access.accessStatus.value.
+        # Defensive: only populate when the field is explicitly present so
+        # _DATA_PRESENT_REQUIRED in binary_sensor.py / sensor.py keeps
+        # phantom entities away from cars that never publish these fields.
+        alarm_raw = v(raw, "access", "accessStatus", "value", "vehicleAlarm")
+        if isinstance(alarm_raw, str):
+            d.alarm_active = alarm_raw.upper() == "ALARM"
+        siren_raw = v(raw, "access", "accessStatus", "value", "siren")
+        if isinstance(siren_raw, str):
+            d.siren_active = siren_raw.upper() == "ACTIVE"
+        last_alarm = (
+            v(raw, "access", "accessStatus", "value", "lastAlarmAt")
+            or v(raw, "access", "accessStatus", "value", "lastAlarmTimestamp")
+        )
+        if last_alarm:
+            d.last_alarm_at = last_alarm
+
         # ── Access / doors / windows ──────────────────────────────────────────
         d.doors_locked = v(raw, "access", "accessStatus", "value", "doorLockStatus") == "LOCKED"
         overall = v(raw, "access", "accessStatus", "value", "overallStatus")
