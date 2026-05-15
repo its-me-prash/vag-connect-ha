@@ -92,6 +92,17 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
   non-Porsche und pre-TPMS Modelle erzeugen keine Phantom-Entitäten.
   Übersetzungen alle 8 Sprachen (DE/EN/CS/ES/FR/NL/PL/SV).
 
+- **EU Data Act (EUDA) Abstraction Shim [NEW v2.0]** — neuer Modul
+  `custom_components/vag_connect/euda.py` mit `EUDADataSource` ABC plus
+  zwei Adapter-Schalen (`LegacyEUDAAdapter` für die heutigen Brand-
+  Clients, `VSSEUDAAdapter` für die kommenden COVESA VSS / W3C VISSv2
+  Endpoints). Interface-only — beide `get_signal` Methoden raisen
+  `NotImplementedError` bis ein OEM seinen EUDA-konformen Endpoint
+  veröffentlicht. Schaft den architektonischen Seam **vor** der
+  Sept-2026 EUDA Art.3 Deadline, sodass die Aktivierung später nur
+  noch eine Inner-Method ist und keine PR durch alle Brand-Clients
+  zieht. Cross-Reference: COVESA VSS, W3C VISSv2, EU-Reg. 2023/2854 Art. 3+5.
+
 - **Push-Manager Lifecycle-Wiring (Skoda MQTT, CUPRA/SEAT FCM, Audi/VW Cariad FCM) [NEW v2.0]** —
   schließt PR #14-16 in einem gemeinsamen Architektur-PR. Coordinator
   hat jetzt 3 neue Slots (`_skoda_push`, `_cupra_seat_push`,
