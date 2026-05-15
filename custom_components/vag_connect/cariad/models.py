@@ -504,6 +504,20 @@ class VehicleData:
     driving_score: int | None = None
     driving_score_class: str | None = None
 
+    # v2.0.0 (Big-Bang) — Porsche TPMS (Tire Pressure Monitoring System).
+    # Populated by PorscheClient from
+    # ``GET /app/connect/v1/vehicles/{vin}/measurements?fields=TIRE_PRESSURE``
+    # (PPA endpoint, requires ConnectPlus subscription on most models).
+    # Per-tire pressure in bar (kPa/100). Warning flag derived from
+    # the per-tire ``warning`` boolean union. Other brands' status
+    # endpoints don't expose per-tire data — fields stay None and
+    # _DATA_PRESENT_REQUIRED prevents phantom entities.
+    tire_pressure_front_left_bar: float | None = None
+    tire_pressure_front_right_bar: float | None = None
+    tire_pressure_rear_left_bar: float | None = None
+    tire_pressure_rear_right_bar: float | None = None
+    tire_pressure_warning: bool | None = None
+
     # v1.14.0 (#24) — Trip Statistics from CARIAD-BFF
     # ``GET /vehicle/v1/vehicles/{vin}/tripstatistics?type={shortTerm|longTerm}``.
     # Both endpoints return ``{tripDataList: {tripData: [...]}}``; we sort

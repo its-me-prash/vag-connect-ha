@@ -625,6 +625,50 @@ SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
         icon="mdi:gauge",
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
+    # v2.0.0 (Big-Bang) — Porsche TPMS (4 corners). PPA only — Cariad/OLA/
+    # mysmob status endpoints don't expose per-tire pressure today.
+    # Brand-restricted via _DATA_PRESENT_REQUIRED — non-Porsche vehicles
+    # (and pre-TPMS Porsche models) leave fields None → no phantom entity.
+    VagSensorDescription(
+        key="tire_pressure_front_left_bar",
+        translation_key="tire_pressure_front_left_bar",
+        data_key="tire_pressure_front_left_bar",
+        native_unit_of_measurement="bar",
+        device_class=SensorDeviceClass.PRESSURE,
+        state_class=SensorStateClass.MEASUREMENT,
+        icon="mdi:tire",
+        suggested_display_precision=2,
+    ),
+    VagSensorDescription(
+        key="tire_pressure_front_right_bar",
+        translation_key="tire_pressure_front_right_bar",
+        data_key="tire_pressure_front_right_bar",
+        native_unit_of_measurement="bar",
+        device_class=SensorDeviceClass.PRESSURE,
+        state_class=SensorStateClass.MEASUREMENT,
+        icon="mdi:tire",
+        suggested_display_precision=2,
+    ),
+    VagSensorDescription(
+        key="tire_pressure_rear_left_bar",
+        translation_key="tire_pressure_rear_left_bar",
+        data_key="tire_pressure_rear_left_bar",
+        native_unit_of_measurement="bar",
+        device_class=SensorDeviceClass.PRESSURE,
+        state_class=SensorStateClass.MEASUREMENT,
+        icon="mdi:tire",
+        suggested_display_precision=2,
+    ),
+    VagSensorDescription(
+        key="tire_pressure_rear_right_bar",
+        translation_key="tire_pressure_rear_right_bar",
+        data_key="tire_pressure_rear_right_bar",
+        native_unit_of_measurement="bar",
+        device_class=SensorDeviceClass.PRESSURE,
+        state_class=SensorStateClass.MEASUREMENT,
+        icon="mdi:tire",
+        suggested_display_precision=2,
+    ),
 
     # ── v1.9.0 Vehicle Data Scout + Error Reporter ────────────────────────────
     # Two diagnostic sensors that surface drift / runtime errors detected
@@ -801,6 +845,12 @@ _DATA_PRESENT_REQUIRED: frozenset[str] = frozenset({
     # Other brands leave both fields None; gate prevents phantom entities.
     "driving_score",
     "driving_score_class",
+    # v2.0.0 (Big-Bang) — Porsche-only TPMS (PPA TIRE_PRESSURE measurement).
+    # Non-Porsche vehicles leave the fields None → no phantom entity.
+    "tire_pressure_front_left_bar",
+    "tire_pressure_front_right_bar",
+    "tire_pressure_rear_left_bar",
+    "tire_pressure_rear_right_bar",
 })
 
 # v1.14.0 (#24) — Trip Statistics is brand-restricted at the API level

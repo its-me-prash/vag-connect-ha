@@ -278,6 +278,18 @@
       },
       "capabilities_count": {
         "name": "Capabilities Count"
+      },
+      "tire_pressure_front_left_bar": {
+        "name": "Tire Pressure Front Left"
+      },
+      "tire_pressure_front_right_bar": {
+        "name": "Tire Pressure Front Right"
+      },
+      "tire_pressure_rear_left_bar": {
+        "name": "Tire Pressure Rear Left"
+      },
+      "tire_pressure_rear_right_bar": {
+        "name": "Tire Pressure Rear Right"
       }
     },
     "binary_sensor": {
@@ -355,6 +367,9 @@
       },
       "window_heating_enabled": {
         "name": "Window Heating Enabled"
+      },
+      "tire_pressure_warning": {
+        "name": "Tire Pressure Warning"
       }
     },
     "switch": {

@@ -94,6 +94,9 @@ class PorscheClient:
                     "OPEN_STATE_DOOR_REAR_RIGHT", "OPEN_STATE_LID_FRONT",
                     "OPEN_STATE_LID_REAR", "OPEN_STATE_SUNROOF",
                     "MAIN_SERVICE_RANGE", "OIL_SERVICE_RANGE",
+                    # v2.0.0 (Big-Bang) — TPMS, parsed below into the
+                    # tire_pressure_* fields on VehicleData.
+                    "TIRE_PRESSURE",
                 ])
             }),
             return_exceptions=True,
@@ -155,6 +158,35 @@ class PorscheClient:
             # Service
             d.service_km    = v(m, "MAIN_SERVICE_RANGE", "distance")
             d.oil_service_km = v(m, "OIL_SERVICE_RANGE", "distance")
+
+            # ── v2.0.0 (Big-Bang) — TPMS ─────────────────────────────────
+            # PPA returns ``TIRE_PRESSURE`` as a dict with per-corner
+            # entries: ``frontLeft``/``frontRight``/``rearLeft``/``rearRight``,
+            # each carrying ``currentPressure`` (kPa or bar depending on
+            # vehicle locale — observed in the wild as kPa float, e.g.
+            # 235.0 → 2.35 bar) and ``warning`` (bool). Defensive: only
+            # populate if the dict actually has corner entries — older
+            # PPA variants ship an empty dict for non-TPMS-equipped cars.
+            tp = m.get("TIRE_PRESSURE", {})
+            if isinstance(tp, dict) and tp:
+                def _bar(corner: str) -> float | None:
+                    raw = v(tp, corner, "currentPressure")
+                    if raw is None:
+                        return None
+                    try:
+                        n = float(raw)
+                    except (TypeError, ValueError):
+                        return None
+                    # kPa heuristic: anything > 10 is kPa, divide by 100
+                    return round(n / 100.0, 2) if n > 10 else round(n, 2)
+                d.tire_pressure_front_left_bar  = _bar("frontLeft")
+                d.tire_pressure_front_right_bar = _bar("frontRight")
+                d.tire_pressure_rear_left_bar   = _bar("rearLeft")
+                d.tire_pressure_rear_right_bar  = _bar("rearRight")
+                d.tire_pressure_warning = any(
+                    bool(v(tp, c, "warning"))
+                    for c in ("frontLeft", "frontRight", "rearLeft", "rearRight")
+                )
 
         return d
 

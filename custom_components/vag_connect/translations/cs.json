@@ -278,6 +278,18 @@
       },
       "capabilities_count": {
         "name": "Capabilities Count"
+      },
+      "tire_pressure_front_left_bar": {
+        "name": "Tlak Pneumatik Přední Levá"
+      },
+      "tire_pressure_front_right_bar": {
+        "name": "Tlak Pneumatik Přední Pravá"
+      },
+      "tire_pressure_rear_left_bar": {
+        "name": "Tlak Pneumatik Zadní Levá"
+      },
+      "tire_pressure_rear_right_bar": {
+        "name": "Tlak Pneumatik Zadní Pravá"
       }
     },
     "binary_sensor": {
@@ -355,6 +367,9 @@
       },
       "window_heating_enabled": {
         "name": "Window Heating Enabled"
+      },
+      "tire_pressure_warning": {
+        "name": "Varování Tlaku Pneumatik"
       }
     },
     "switch": {
