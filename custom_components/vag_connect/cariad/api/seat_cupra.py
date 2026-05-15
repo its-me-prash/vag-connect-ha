@@ -564,7 +564,8 @@ class SeatCupraClient(CariadBaseClient):
         # → command_flash always failed our pre-validation. Now unwraps `data`
         # transparently with fallback to top-level for backwards compat.
         if isinstance(parking, dict):
-            parking_data = parking.get("data") if isinstance(parking.get("data"), dict) else parking
+            _maybe_data = parking.get("data")
+            parking_data: dict[str, Any] = _maybe_data if isinstance(_maybe_data, dict) else parking
             d.latitude = v(parking_data, "lat")
             d.longitude = v(parking_data, "lon")
             # v1.25.0 PR-A — Cross-brand parity: parking_address from
@@ -830,7 +831,7 @@ class SeatCupraClient(CariadBaseClient):
             await self._post(url, json={"mode": "flash"})
             return
         except APIError as exc:
-            if exc.status_code != 400:
+            if exc.status != 400:
                 raise
             # 400 from backend → likely the userPosition validation.
             # Retry with position if cached; otherwise raise an actionable
