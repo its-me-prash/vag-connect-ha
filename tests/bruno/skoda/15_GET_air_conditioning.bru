@@ -34,4 +34,9 @@ docs {
   climatisation_active=False. v1.10.1 added safe_float for
   targetTemperature.temperatureValue (some EU firmwares ship
   "21,5" with a comma).
+
+  v2.1.0 — also drives ``sensor.<vin>_climate_ready_at`` (TIMESTAMP)
+  via the new ``estimatedDateTimeToReachTargetTemperature`` field
+  (closes Scout reports #186 + #188). Field is only populated during
+  active climate runs; sensor stays "unknown" when climatisation is OFF.
 }

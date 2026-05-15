@@ -257,6 +257,13 @@ class VehicleData:
     climatisation_active: bool | None = None
     target_temperature: float | None = None
     outside_temp: float | None = None
+    # v2.1.0 — Skoda climate-ready-at (closes Scout #186 + #188).
+    # ISO-8601 timestamp when the cabin is expected to reach
+    # ``target_temperature``. Only populated during active climate
+    # run; remains None when climatisation is OFF. Skoda-only field
+    # today — other brands' status endpoints don't expose it.
+    # Brand-restricted via _DATA_PRESENT_REQUIRED in sensor.py.
+    climate_ready_at: Any | None = None
 
     # Access
     # v2.0.1 (#131 user-reported follow-up): switched from

@@ -311,6 +311,9 @@
       },
       "heater_source": {
         "name": "Heater Source"
+      },
+      "climate_ready_at": {
+        "name": "Climate Ready At"
       }
     },
     "binary_sensor": {

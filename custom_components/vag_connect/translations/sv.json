@@ -305,6 +305,9 @@
       },
       "heater_source": {
         "name": "Värmekälla"
+      },
+      "climate_ready_at": {
+        "name": "Klimat Klart kl."
       }
     },
     "binary_sensor": {

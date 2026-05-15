@@ -36,6 +36,26 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 > — mit jeder geänderten Datei, jeder Zeile, jeder Issue-Referenz und der
 > Methodik dahinter.
 
+## [Unreleased] — v2.1.0 (in progress)
+
+> Sammelt Bullets für die nächste MINOR-Release. Fokus: post-v2.0
+> User-Wins die im Big-Bang Scope-Cut waren oder durch Scout-Reports
+> nachgereicht wurden.
+
+### Added
+
+- **Skoda Climate-Ready-At Sensor** (closes Scout #186 + #188) — neuer
+  `sensor.<vin>_climate_ready_at` (TIMESTAMP device class) für Skoda
+  MY24+ Fahrzeuge mit aktiver Vorklimatisierung. Liest aus
+  `air-conditioning.estimatedDateTimeToReachTargetTemperature`. Sehr
+  nützlich für "Vorklimatisierung 5min vor Abfahrt" Automatisierungen
+  via Template `{{ as_datetime(states('sensor.x')) - 5|minutes }}`.
+  Brand-restricted via `_DATA_PRESENT_REQUIRED` — non-Skoda und
+  inaktive Klimatisierung erzeugen keine Phantom-Entität.
+  Übersetzungen alle 8 Sprachen.
+
+---
+
 ## [2.0.1] - 2026-05-15 🚨🔒 Safety-Fix: `doors_locked` False-Negative Cross-Brand / Safety-Fix: `doors_locked` False-Negative Cross-Brand
 
 ### Fixed
