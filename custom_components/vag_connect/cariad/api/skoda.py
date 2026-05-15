@@ -565,6 +565,19 @@ class SkodaClient(CariadBaseClient):
             wh = v(ac, "windowHeatingState") or {}
             d.window_heating_front = v(wh, "front") == "ON"
             d.window_heating_back = v(wh, "rear") == "ON"
+
+            # v2.1.0 — climate-ready-at (closes scout #186 + #188).
+            # Skoda mysmob air-conditioning endpoint shippt
+            # ``estimatedDateTimeToReachTargetTemperature`` als ISO-8601
+            # Zeitstempel wenn die Klimatisierung aktiv läuft. Sehr
+            # nützlich für "Vorklimatisierung 5min vor Abfahrt"
+            # Automatisierungen — User kann jetzt ``binary_sensor``
+            # triggern wenn ``sensor.<vin>_climate_ready_at`` minus
+            # 5min erreicht. Field ist nur während Climate-Run gesetzt;
+            # bleibt None während OFF.
+            climate_ready = v(ac, "estimatedDateTimeToReachTargetTemperature")
+            if isinstance(climate_ready, str) and climate_ready:
+                d.climate_ready_at = climate_ready
             # v1.26.0 Welle-6 (#173, scouts #143) — Skoda climate settings.
             # airConditioningAtUnlock as climate_at_unlock cross-brand alias.
             au_clim = v(ac, "airConditioningAtUnlock")

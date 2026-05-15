@@ -305,6 +305,9 @@
       },
       "heater_source": {
         "name": "Verwarmingsbron"
+      },
+      "climate_ready_at": {
+        "name": "Klimaat Klaar Om"
       }
     },
     "binary_sensor": {

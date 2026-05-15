@@ -305,6 +305,9 @@
       },
       "heater_source": {
         "name": "Heizquelle"
+      },
+      "climate_ready_at": {
+        "name": "Klima fertig um"
       }
     },
     "binary_sensor": {

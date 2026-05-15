@@ -305,6 +305,9 @@
       },
       "heater_source": {
         "name": "Zdroj Topení"
+      },
+      "climate_ready_at": {
+        "name": "Klima Připravená Do"
       }
     },
     "binary_sensor": {

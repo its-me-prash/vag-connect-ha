@@ -695,6 +695,21 @@ SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
         entity_category=EntityCategory.DIAGNOSTIC,
         condition="electric",
     ),
+    # v2.1.0 — Skoda climate-ready-at (closes Scout #186 + #188).
+    # ISO-8601 timestamp when the cabin is expected to reach the
+    # target temperature. Only populated during active climate run.
+    # Brand-restricted via _DATA_PRESENT_REQUIRED — Skoda-only today.
+    # Device class TIMESTAMP renders as relative time in HA UI
+    # ("in 8 minutes") and is automation-friendly with template
+    # ``{{ as_datetime(states('sensor.x')) - 5|minutes }}`` for
+    # "5min before climate ready" triggers.
+    VagSensorDescription(
+        key="climate_ready_at",
+        translation_key="climate_ready_at",
+        data_key="climate_ready_at",
+        device_class=SensorDeviceClass.TIMESTAMP,
+        icon="mdi:clock-end",
+    ),
 
     # ── v1.9.0 Vehicle Data Scout + Error Reporter ────────────────────────────
     # Two diagnostic sensors that surface drift / runtime errors detected
@@ -917,6 +932,10 @@ _DATA_PRESENT_REQUIRED: frozenset[str] = frozenset({
     "last_alarm_at",
     # v2.0.0 (Big-Bang) — heaterSource (issue #163, ID.x heat-pump only).
     "heater_source",
+    # v2.1.0 — Skoda climate-ready-at (Scout #186/#188). Field is
+    # only populated during active climate run; gating prevents a
+    # phantom "unknown" entity for non-Skoda + idle climates.
+    "climate_ready_at",
 })
 
 # v1.14.0 (#24) — Trip Statistics is brand-restricted at the API level
