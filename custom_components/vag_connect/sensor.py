@@ -776,6 +776,42 @@ SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
         entity_category=EntityCategory.DIAGNOSTIC,
         state_class=SensorStateClass.MEASUREMENT,
     ),
+    # v2.0.0 (Big-Bang) — Long-Term Trip Aggregates [NEW v2.0].
+    # Coordinator already merges ``longTerm`` (since-last-reset) data
+    # into ``lifetime_*`` fields on VehicleData; v2.0.0 finally promotes
+    # them to first-class entities. Brand-restricted via the existing
+    # _TRIP_STATS_BRANDS / _TRIP_STATS_KEYS gating below (Audi + VW EU
+    # only — CARIAD-BFF /tripstatistics endpoint).
+    VagSensorDescription(
+        key="lifetime_distance_km",
+        translation_key="lifetime_distance_km",
+        data_key="lifetime_distance_km",
+        native_unit_of_measurement=UnitOfLength.KILOMETERS,
+        device_class=SensorDeviceClass.DISTANCE,
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        icon="mdi:counter",
+        suggested_display_precision=0,
+    ),
+    VagSensorDescription(
+        key="lifetime_avg_fuel_consumption_l_100km",
+        translation_key="lifetime_avg_fuel_consumption_l_100km",
+        data_key="lifetime_avg_fuel_consumption_l_100km",
+        native_unit_of_measurement="L/100 km",
+        state_class=SensorStateClass.MEASUREMENT,
+        icon="mdi:gas-station",
+        suggested_display_precision=1,
+        condition="combustion",
+    ),
+    VagSensorDescription(
+        key="lifetime_avg_electric_consumption_kwh_100km",
+        translation_key="lifetime_avg_electric_consumption_kwh_100km",
+        data_key="lifetime_avg_electric_consumption_kwh_100km",
+        native_unit_of_measurement="kWh/100 km",
+        state_class=SensorStateClass.MEASUREMENT,
+        icon="mdi:lightning-bolt",
+        suggested_display_precision=1,
+        condition="electric",
+    ),
 )
 
 # Sensor keys that read from coordinator helpers instead of the per-vehicle
@@ -863,6 +899,11 @@ _TRIP_STATS_KEYS: frozenset[str] = frozenset({
     "last_trip_avg_speed_kmh",
     "last_trip_avg_fuel_consumption_l_100km",
     "last_trip_avg_electric_consumption_kwh_100km",
+    # v2.0.0 (Big-Bang) — long-term aggregates from /tripstatistics?type=longTerm
+    # (CARIAD-BFF only). Same brand gate as the per-trip keys above.
+    "lifetime_distance_km",
+    "lifetime_avg_fuel_consumption_l_100km",
+    "lifetime_avg_electric_consumption_kwh_100km",
 })
 _TRIP_STATS_BRANDS: frozenset[str] = frozenset({"audi", "volkswagen"})
 

@@ -290,6 +290,15 @@
       },
       "tire_pressure_rear_right_bar": {
         "name": "Däcktryck Bak Höger"
+      },
+      "lifetime_distance_km": {
+        "name": "Total Distans"
+      },
+      "lifetime_avg_fuel_consumption_l_100km": {
+        "name": "Genomsnittlig Bränsleförbrukning (Totalt)"
+      },
+      "lifetime_avg_electric_consumption_kwh_100km": {
+        "name": "Genomsnittlig Elförbrukning (Totalt)"
       }
     },
     "binary_sensor": {

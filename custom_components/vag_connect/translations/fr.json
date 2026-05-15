@@ -290,6 +290,15 @@
       },
       "tire_pressure_rear_right_bar": {
         "name": "Pression Pneu Arrière Droit"
+      },
+      "lifetime_distance_km": {
+        "name": "Distance Totale"
+      },
+      "lifetime_avg_fuel_consumption_l_100km": {
+        "name": "Consommation Moyenne de Carburant (Total)"
+      },
+      "lifetime_avg_electric_consumption_kwh_100km": {
+        "name": "Consommation Électrique Moyenne (Total)"
       }
     },
     "binary_sensor": {

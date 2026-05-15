@@ -92,6 +92,16 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
   non-Porsche und pre-TPMS Modelle erzeugen keine Phantom-Entitäten.
   Übersetzungen alle 8 Sprachen (DE/EN/CS/ES/FR/NL/PL/SV).
 
+- **Long-Term Trip Aggregates [NEW v2.0]** (Audi + VW EU) — drei neue
+  Lifetime-Sensoren auf Basis der `/tripstatistics?type=longTerm`
+  Antwort, die der Coordinator schon seit v1.14.0 in `lifetime_*`
+  Felder mergt aber bisher NIE als Entitäten exposed wurden:
+  `lifetime_distance_km` (TOTAL_INCREASING), `lifetime_avg_fuel_
+  consumption_l_100km` (combustion-gated), `lifetime_avg_electric_
+  consumption_kwh_100km` (electric-gated). Brand-Gating via
+  bestehendem `_TRIP_STATS_BRANDS` + `_TRIP_STATS_KEYS`. Übersetzungen
+  alle 8 Sprachen.
+
 ### Fixed
 
 - **#53 CUPRA Born — defensive `command_flash` + OLA parking parser fix.**
