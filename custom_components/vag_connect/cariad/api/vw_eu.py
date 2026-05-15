@@ -57,6 +57,12 @@ class VWEUClient(CariadBaseClient):
         # imported / region-routed vehicles (closes the long-standing
         # plumbing gap for issue #75 + EXTERNAL_BLOCKED Track 3).
         self._vehicle_bases: dict[str, str] = {}
+        # v2.1.0 — eager-init the HomeRegion cache so mypy strict
+        # doesn't complain about ``hasattr``/redefine patterns. The
+        # cache is shared across ``_resolve_home_regions`` (called by
+        # ``get_vehicles``) and ``command_wake``'s MBB fallback.
+        from .._home_region import HomeRegionCache  # noqa: PLC0415
+        self._home_region_cache: HomeRegionCache = HomeRegionCache()
 
     def _base_for_vin(self, vin: str) -> str:
         """v2.1.0 — return per-VIN base URL or default ``_BASE``.
@@ -150,9 +156,7 @@ class VWEUClient(CariadBaseClient):
         VIN). Best-effort everywhere — failure is logged at DEBUG and
         the affected VIN falls through to ``_BASE``.
         """
-        from .._home_region import HomeRegionCache, resolve_home_region  # noqa: PLC0415
-        if not hasattr(self, "_home_region_cache"):
-            self._home_region_cache = HomeRegionCache()
+        from .._home_region import resolve_home_region  # noqa: PLC0415
         import asyncio  # noqa: PLC0415
 
         async def _one(vin: str) -> tuple[str, str]:
@@ -506,14 +510,12 @@ class VWEUClient(CariadBaseClient):
             MBBBackendCache,
             is_cariad_wrapper_404,
         )
-        from .._home_region import HomeRegionCache  # noqa: PLC0415
 
-        # Lazy-init per-client caches (one MBBBackendCache + one
-        # HomeRegionCache per VWEUClient instance)
+        # v2.1.0 — ``_home_region_cache`` is now eager-init in __init__
+        # (mypy strict). MBBBackendCache stays lazy because it's only
+        # touched after the first wrapper-404 detection.
         if not hasattr(self, "_mbb_backend_cache"):
             self._mbb_backend_cache: MBBBackendCache = MBBBackendCache()
-        if not hasattr(self, "_home_region_cache"):
-            self._home_region_cache: HomeRegionCache = HomeRegionCache()
 
         # Step 1: cached backend?
         cached_backend = self._mbb_backend_cache.get(vin)
@@ -614,14 +616,13 @@ class VWEUClient(CariadBaseClient):
             build_mbb_vsr_status_url,
             parse_mbb_vsr_field,
         )
-        from .._home_region import HomeRegionCache, resolve_home_region  # noqa: PLC0415
+        from .._home_region import resolve_home_region  # noqa: PLC0415
         from .._util import safe_int  # noqa: PLC0415
 
-        # Lazy-init caches (same pattern as command_wake)
+        # v2.1.0 — ``_home_region_cache`` is now eager-init in __init__
+        # (mypy strict). MBBBackendCache stays lazy.
         if not hasattr(self, "_mbb_backend_cache"):
             self._mbb_backend_cache = MBBBackendCache()
-        if not hasattr(self, "_home_region_cache"):
-            self._home_region_cache = HomeRegionCache()
 
         # Only proceed if we KNOW the VIN is MBB-backed. Don't speculatively
         # probe MBB on every Cariad-BFF poll — too noisy for non-Golf 7
