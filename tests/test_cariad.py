@@ -2471,7 +2471,9 @@ class TestRegisterServices:
         }
         hass.services.has_service = MagicMock(return_value=False)
         registered = {}
-        def _register(domain, name, handler, schema=None):
+        def _register(domain, name, handler, schema=None, supports_response=None):
+            # v2.0.0: ``find_charging_stations`` registers with
+            # ``supports_response`` so the mock has to accept the kwarg.
             registered[(domain, name)] = handler
         hass.services.async_register = MagicMock(side_effect=_register)
 

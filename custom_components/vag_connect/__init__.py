@@ -17,7 +17,7 @@ import voluptuous as vol
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
-from homeassistant.core import HomeAssistant, ServiceCall
+from homeassistant.core import HomeAssistant, ServiceCall, ServiceResponse, SupportsResponse
 from homeassistant.exceptions import (
     ConfigEntryAuthFailed,
     ConfigEntryNotReady,
@@ -364,6 +364,48 @@ def _register_services(hass: HomeAssistant) -> None:
     ]:
         hass.services.async_register(DOMAIN, name, handler, schema)
 
+    # ── v2.0.0 (Big-Bang) — find_charging_stations (response-capable) ──
+    # Returns a list of POI station dicts to the caller via HA's
+    # ``response_variable:`` field. Cariad-BFF only (Audi + VW EU).
+    async def _handle_find_charging_stations(call: ServiceCall) -> ServiceResponse:
+        coord = _coord_writeable(call.data["vin"])
+        try:
+            stations = await coord.async_find_charging_stations(
+                latitude=float(call.data["latitude"]),
+                longitude=float(call.data["longitude"]),
+                radius_m=int(call.data.get("radius_m", 5000)),
+                max_results=int(call.data.get("max_results", 25)),
+            )
+        except AttributeError as exc:
+            raise ServiceValidationError(str(exc)) from exc
+        # mypy: ServiceResponse is JSON-serialisable. Cast the list of
+        # dicts so the ``ServiceResponse`` Mapping type-check passes —
+        # the runtime value is unchanged.
+        response: ServiceResponse = {
+            "stations": list(stations),
+            "count": len(stations),
+        }
+        return response
+
+    hass.services.async_register(
+        DOMAIN,
+        "find_charging_stations",
+        _handle_find_charging_stations,
+        vol.Schema({
+            vol.Required("vin"):       cv.string,
+            vol.Required("latitude"):  vol.All(vol.Coerce(float), vol.Range(-90, 90)),
+            vol.Required("longitude"): vol.All(vol.Coerce(float), vol.Range(-180, 180)),
+            vol.Optional("radius_m"):  vol.All(vol.Coerce(int), vol.Range(100, 100_000)),
+            vol.Optional("max_results"): vol.All(vol.Coerce(int), vol.Range(1, 100)),
+        }),
+        # OPTIONAL (not ONLY) — Hassfest requires services with
+        # ``response: only`` to declare a target entity, but our
+        # service is account-level (VIN in data, not a target). With
+        # OPTIONAL the response variable still works for callers but
+        # Hassfest is happy.
+        supports_response=SupportsResponse.OPTIONAL,
+    )
+
 
 async def async_remove_entry(hass: HomeAssistant, entry: VagConnectConfigEntry) -> None:
     """Clean up persisted IDK tokens when the user removes the integration.
@@ -407,6 +449,8 @@ async def async_unload_entry(hass: HomeAssistant, entry: VagConnectConfigEntry) 
             "start_ventilation", "stop_ventilation",
             "start_aux_heating", "stop_aux_heating",
             "send_destination",
+            # v2.0.0 (Big-Bang)
+            "find_charging_stations",
         ]:
             if hass.services.has_service(DOMAIN, svc):
                 hass.services.async_remove(DOMAIN, svc)

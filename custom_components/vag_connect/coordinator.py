@@ -2212,6 +2212,37 @@ class VagConnectCoordinator(DataUpdateCoordinator):
     async def async_set_climatisation_temperature(self, vin: str, temp_c: float) -> None:
         await self._cariad_cmd(vin, "command_set_climate_temperature", temp_c=temp_c)
 
+    async def async_find_charging_stations(
+        self,
+        latitude: float,
+        longitude: float,
+        radius_m: int = 5000,
+        max_results: int = 25,
+    ) -> list[dict[str, Any]]:
+        """v2.0.0 (Big-Bang) — POI lookup for nearby charging stations.
+
+        Returns a list of station dicts (raw backend fields). Currently
+        wired for CARIAD-BFF brands (VW EU + Audi); other brands raise
+        ``AttributeError`` which Phase-2 bookkeeping classifies as
+        ``MISSING_CAPABILITY`` so users get a clean error message in
+        the service-call response.
+        """
+        client = self._cariad_client
+        if not hasattr(client, "find_charging_stations"):
+            raise AttributeError(
+                "find_charging_stations not supported for this brand "
+                "(CARIAD-BFF only — Audi + VW EU)"
+            )
+        # ``client`` is typed Any (brand-polymorphic), so cast through
+        # an explicit local for mypy's --warn-return-any.
+        result: list[dict[str, Any]] = await client.find_charging_stations(
+            latitude=latitude,
+            longitude=longitude,
+            radius_m=radius_m,
+            max_results=max_results,
+        )
+        return result
+
     async def async_set_departure_timer(
         self,
         vin: str,

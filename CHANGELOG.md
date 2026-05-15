@@ -149,6 +149,15 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
   Param transparent ohne Effekt (PPA hat kein Weekday-Field). UI:
   Multi-Select-Selector in `services.yaml` für Devtools-Komfort.
 
+- **Charging-Station POI Lookup Service [NEW v2.0]** — neuer Service
+  `vag_connect.find_charging_stations` (mit `response_variable:` Support
+  ab HA 2024.4+) liefert eine Liste umliegender Ladestationen
+  (id/name/address/operator/maxPowerInKW/connectorTypes/availability)
+  über die Cariad-BFF POI API
+  (`GET /charging-stations/v1/locations`). Audi + VW EU only — andere
+  Brands liefern eine `ServiceValidationError` mit klarer Begründung.
+  Default 5 km Suchradius / 25 Ergebnisse, max 100 km / 100 Ergebnisse.
+
 - **Long-Term Trip Aggregates [NEW v2.0]** (Audi + VW EU) — drei neue
   Lifetime-Sensoren auf Basis der `/tripstatistics?type=longTerm`
   Antwort, die der Coordinator schon seit v1.14.0 in `lifetime_*`
