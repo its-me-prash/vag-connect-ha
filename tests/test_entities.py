@@ -1394,8 +1394,11 @@ class TestDepartureTimerAction:
         asyncio.get_event_loop().run_until_complete(
             coord.async_set_departure_timer("VIN1", 1, True, "07:30")
         )
+        # v2.0.0 — coordinator now forwards optional ``recurring_on``
+        # (defaults to None, ignored by clients without weekday support).
         coord._cariad_client.command_set_departure_timer.assert_awaited_once_with(
-            "VIN1", timer_id=1, enabled=True, departure_time="07:30"
+            "VIN1", timer_id=1, enabled=True, departure_time="07:30",
+            recurring_on=None,
         )
         coord.async_request_refresh.assert_awaited()
 
@@ -1406,5 +1409,21 @@ class TestDepartureTimerAction:
             coord.async_set_departure_timer("VIN1", 2, False, None)
         )
         coord._cariad_client.command_set_departure_timer.assert_awaited_once_with(
-            "VIN1", timer_id=2, enabled=False, departure_time=None
+            "VIN1", timer_id=2, enabled=False, departure_time=None,
+            recurring_on=None,
+        )
+
+    def test_set_departure_timer_with_weekly_preheat(self):
+        """v2.0.0 (Big-Bang) — recurring_on weekday list flows through."""
+        import asyncio
+        coord = self._make_coord()
+        asyncio.get_event_loop().run_until_complete(
+            coord.async_set_departure_timer(
+                "VIN1", 3, True, "06:30",
+                recurring_on=["MONDAY", "TUESDAY", "WEDNESDAY"],
+            )
+        )
+        coord._cariad_client.command_set_departure_timer.assert_awaited_once_with(
+            "VIN1", timer_id=3, enabled=True, departure_time="06:30",
+            recurring_on=["MONDAY", "TUESDAY", "WEDNESDAY"],
         )

@@ -191,6 +191,28 @@ set_departure_timer:
       required: false
       selector:
         text:
+    recurring_on:
+      name: Wochentage (Weekly Preheat)
+      description: >-
+        v2.0.0 [NEW v2.0] Optional. Liste der Wochentage für wöchentliches
+        Vorklimatisieren (z.B. ["MONDAY","TUESDAY","WEDNESDAY","THURSDAY",
+        "FRIDAY"]). Wenn gesetzt, schaltet der Timer auf wiederkehrend
+        und feuert an jedem genannten Tag. Akzeptiert MONDAY–SUNDAY in
+        beliebiger Schreibweise. Wird von Porsche ignoriert (PPA hat keinen
+        Weekday-Field). VW NA + Audi/VW EU + (perspektivisch) Skoda
+        unterstützen das Feld.
+      required: false
+      selector:
+        select:
+          multiple: true
+          options:
+            - MONDAY
+            - TUESDAY
+            - WEDNESDAY
+            - THURSDAY
+            - FRIDAY
+            - SATURDAY
+            - SUNDAY
 
 # v1.14.0 (#28) — Audi-only ICE Remote Engine Start/Stop.
 engine_start:

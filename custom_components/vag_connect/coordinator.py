@@ -2100,14 +2100,23 @@ class VagConnectCoordinator(DataUpdateCoordinator):
         timer_id: int,
         enabled: bool,
         departure_time: str | None,
+        recurring_on: list[str] | None = None,
     ) -> None:
-        """Set a departure timer via CARIAD API."""
+        """Set a departure timer via CARIAD API.
+
+        v2.0.0 (Big-Bang) — accepts optional ``recurring_on`` list of
+        weekday strings (``MONDAY``, ``TUESDAY``, …) so users can wire
+        weekly preheat schedules via the ``vag_connect.set_departure_timer``
+        service. Forwarded as-is to the brand client; clients that don't
+        support per-weekday schedules ignore the param.
+        """
         await self._cariad_cmd(
             vin,
             "command_set_departure_timer",
             timer_id=timer_id,
             enabled=enabled,
             departure_time=departure_time,
+            recurring_on=recurring_on,
         )
 
     async def async_engine_start(self, vin: str) -> None:
