@@ -119,6 +119,19 @@ async def async_setup_entry(hass: HomeAssistant, entry: VagConnectConfigEntry) -
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     entry.async_on_unload(entry.add_update_listener(_async_update_listener))
 
+    # v2.0.0 (Big-Bang) — wire brand-specific push managers (opt-in
+    # via OptionsFlow toggles). Idempotent: managers are scaffolding
+    # today, so this stands up the lifecycle without making real
+    # broker / FCM connections. Activation flips on at the moment a
+    # tester confirms FCM keys / MQTT broker auth — coordinator
+    # changes already in place, so it's a single inner-method swap.
+    try:
+        await coordinator.async_start_push_managers()
+    except Exception:  # noqa: BLE001
+        _LOGGER.exception(
+            "VAG Connect: push manager startup failed — falling back to polling"
+        )
+
     if not hass.services.has_service(DOMAIN, "lock"):
         _register_services(hass)
 

@@ -92,6 +92,20 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
   non-Porsche und pre-TPMS Modelle erzeugen keine Phantom-Entitäten.
   Übersetzungen alle 8 Sprachen (DE/EN/CS/ES/FR/NL/PL/SV).
 
+- **Push-Manager Lifecycle-Wiring (Skoda MQTT, CUPRA/SEAT FCM, Audi/VW Cariad FCM) [NEW v2.0]** —
+  schließt PR #14-16 in einem gemeinsamen Architektur-PR. Coordinator
+  hat jetzt 3 neue Slots (`_skoda_push`, `_cupra_seat_push`,
+  `_audi_vw_push`) plus `async_start_push_managers()` /
+  `async_stop_push_managers()` Helpers. Aktivierung pro Brand via die
+  bereits vorhandenen OptionsFlow-Toggles (`enable_push_mqtt`,
+  `enable_push_fcm`, `enable_push_audi_vw`). System-Health-Panel zeigt
+  pro Push-Channel den `state` (stopped / starting / connected /
+  reconnecting / disabled / unavailable). Die unterliegenden
+  `_connect_and_listen` sind weiterhin Scaffolding (lazy-imported
+  aiomqtt + firebase-messaging) — sobald ein Tester die FCM-Keys /
+  MQTT-Broker-Auth bestätigt geht das ohne Coordinator-Refactor live.
+  Schließt #14-#16 aus der v2.0.0 Big-Bang Audit.
+
 - **Vehicle Alarm / Diebstahl-Sensoren [NEW v2.0] — schließt Issue #33** —
   drei neue Entitäten exposed direkt aus `access.accessStatus.value` (Cariad-BFF):
   - `binary_sensor.<vin>_alarm_active` (PROBLEM device_class) — Auto-Alarm
