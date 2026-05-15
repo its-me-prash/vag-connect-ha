@@ -23,6 +23,9 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
 from .const import (
     CONF_BRAND,
+    CONF_ENABLE_PUSH_AUDI_VW,
+    CONF_ENABLE_PUSH_FCM,
+    CONF_ENABLE_PUSH_MQTT,
     CONF_ENABLE_REVERSE_GEOCODING,
     CONF_FORCE_PPE_CLIMATE,
     CONF_PASSWORD,
@@ -393,6 +396,17 @@ class VagConnectCoordinator(DataUpdateCoordinator):
         self._started = False
         self._was_available: bool = True  # tracks availability for log_when_unavailable
         self._cariad_client: Any = None
+
+        # v2.0.0 (Big-Bang) — Push manager lifecycle slots.
+        # Wired by ``async_start_push_manager`` after the first
+        # successful poll once the OAuth user_id + VIN list are known.
+        # Each is None when the brand doesn't match, the OptionsFlow
+        # toggle is OFF, or the lifecycle has been torn down.
+        # ``state`` attribute on each manager is consumed by
+        # system_health.py for at-a-glance push-channel diagnostics.
+        self._skoda_push: Any = None
+        self._cupra_seat_push: Any = None
+        self._audi_vw_push: Any = None
 
         # v1.25.0 PR-D Phase 1A: command dispatcher owns lock-map +
         # wake-cooldown state. Coordinator delegates lock acquisition
@@ -833,8 +847,112 @@ class VagConnectCoordinator(DataUpdateCoordinator):
     async def async_shutdown(self) -> None:
         """Stop polling loop and release resources."""
         self._started = False
+        # v2.0.0 (Big-Bang) — stop push managers before dropping client.
+        await self.async_stop_push_managers()
         self._cariad_client = None
         _LOGGER.debug("VAG Connect: shutdown complete")
+
+    # ── v2.0.0 (Big-Bang) — Push-manager lifecycle ────────────────────────
+    # Wired in __init__ to None; instantiated lazily after the first
+    # successful poll once we know the user_id + VIN list. Three brand-
+    # specific classes share the same ``PushManager`` interface so the
+    # lifecycle hooks below stay brand-agnostic. Each manager carries the
+    # ``state`` attribute consumed by system_health.py.
+
+    async def async_start_push_managers(self) -> None:
+        """Spawn the brand-appropriate push manager(s) if opted in.
+
+        Called from the platform's ``async_setup_entry`` after the first
+        coordinator refresh. Idempotent — subsequent calls return
+        immediately if a manager is already running.
+
+        Opt-in is per-brand via OptionsFlow toggles:
+        - Skoda → ``CONF_ENABLE_PUSH_MQTT``
+        - CUPRA/SEAT → ``CONF_ENABLE_PUSH_FCM``
+        - Audi/VW EU → ``CONF_ENABLE_PUSH_AUDI_VW``
+
+        All three push manager implementations are currently SCAFFOLDING
+        (stub ``_connect_and_listen``) — wiring the lifecycle now means
+        the moment a tester confirms FCM keys / MQTT broker auth the
+        live activation lands behind a single inner-method change with
+        zero coordinator-side refactor.
+        """
+        options = dict(getattr(self.entry, "options", {}) or {})
+        brand = self.entry.data.get(CONF_BRAND, "")
+        client = self._cariad_client
+        if client is None:
+            return
+        # User-id is captured by the brand client after the first auth
+        # cycle; bail quietly if not yet available (next refresh re-tries).
+        user_id = getattr(client, "user_id", None) or getattr(client, "_user_id", None)
+        vins = list(getattr(self, "vehicles", {}).keys())
+        if not user_id or not vins:
+            return
+
+        async def _on_push_event(event: Any) -> None:
+            """Coordinator-side push callback — refresh the affected VIN."""
+            _LOGGER.debug(
+                "VAG push: event vin=***%s type=%s — requesting refresh",
+                (event.vin or "??????")[-6:],
+                event.event_type,
+            )
+            try:
+                await self.async_request_refresh()
+            except Exception:  # noqa: BLE001
+                _LOGGER.exception("VAG push: refresh after event failed")
+
+        token_provider = getattr(client, "async_get_access_token", None)
+        if token_provider is None:
+            async def token_provider() -> str:  # type: ignore[no-redef]
+                tokens = getattr(client, "_tokens", None)
+                return getattr(tokens, "access_token", "") or ""
+
+        if brand == "skoda" and options.get(CONF_ENABLE_PUSH_MQTT) and self._skoda_push is None:
+            from .cariad.push.skoda_mqtt import SkodaPushManager  # noqa: PLC0415
+            self._skoda_push = SkodaPushManager(
+                _on_push_event,
+                user_id=user_id,
+                access_token_provider=token_provider,
+                vins=vins,
+            )
+            await self._skoda_push.start()
+
+        if brand in ("cupra", "seat") and options.get(CONF_ENABLE_PUSH_FCM) and self._cupra_seat_push is None:
+            from .cariad.push.cupra_seat_fcm import CupraSeatPushManager  # noqa: PLC0415
+            self._cupra_seat_push = CupraSeatPushManager(
+                _on_push_event,
+                user_id=user_id,
+                access_token_provider=token_provider,
+                vins=vins,
+                brand=brand,
+            )
+            await self._cupra_seat_push.start()
+
+        if brand in ("audi", "volkswagen") and options.get(CONF_ENABLE_PUSH_AUDI_VW) and self._audi_vw_push is None:
+            from .cariad.push.audi_vw_fcm import AudiVWPushManager  # noqa: PLC0415
+            self._audi_vw_push = AudiVWPushManager(
+                _on_push_event,
+                user_id=user_id,
+                access_token_provider=token_provider,
+                vins=vins,
+                brand=brand,
+            )
+            await self._audi_vw_push.start()
+
+    async def async_stop_push_managers(self) -> None:
+        """Stop any running push managers. Idempotent.
+
+        Called from ``async_shutdown`` so unload-or-reload is clean.
+        """
+        for attr in ("_skoda_push", "_cupra_seat_push", "_audi_vw_push"):
+            mgr = getattr(self, attr, None)
+            if mgr is None:
+                continue
+            try:
+                await mgr.stop()
+            except Exception:  # noqa: BLE001
+                _LOGGER.debug("VAG push: stop %s raised — ignoring", attr)
+            setattr(self, attr, None)
 
     # ── Vehicle Data Scout + Error Reporter (v1.9.0) ───────────────────────
 
