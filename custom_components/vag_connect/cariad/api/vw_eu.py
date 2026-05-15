@@ -73,8 +73,13 @@ class VWEUClient(CariadBaseClient):
         VW EU models. Now: any VIN whose ``mal-1a`` discovery returned
         a non-default ``baseUri.content`` routes through that base
         instead. Cache TTL is 7 days (set in ``HomeRegionCache``).
+
+        Defensive ``getattr`` access — tests that bypass ``__init__``
+        via ``VWEUClient.__new__`` won't have ``_vehicle_bases`` set,
+        and the fallback to ``_BASE`` is exactly what we want anyway.
         """
-        return self._vehicle_bases.get(vin, _BASE)
+        bases: dict[str, str] = getattr(self, "_vehicle_bases", {})
+        return bases.get(vin, _BASE)
 
     async def get_vehicles(self) -> list[str]:
         """Return list of VINs from the CARIAD garage."""
