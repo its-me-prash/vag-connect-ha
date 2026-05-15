@@ -299,6 +299,9 @@
       },
       "lifetime_avg_electric_consumption_kwh_100km": {
         "name": "Genomsnittlig Elförbrukning (Totalt)"
+      },
+      "last_alarm_at": {
+        "name": "Senaste Larm"
       }
     },
     "binary_sensor": {
@@ -388,6 +391,12 @@
       },
       "departure_timer_3_enabled": {
         "name": "Avgångstimer 3 Aktiv"
+      },
+      "alarm_active": {
+        "name": "Larm Aktivt"
+      },
+      "siren_active": {
+        "name": "Siren Aktiv"
       }
     },
     "switch": {

@@ -92,6 +92,17 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
   non-Porsche und pre-TPMS Modelle erzeugen keine Phantom-Entitäten.
   Übersetzungen alle 8 Sprachen (DE/EN/CS/ES/FR/NL/PL/SV).
 
+- **Vehicle Alarm / Diebstahl-Sensoren [NEW v2.0] — schließt Issue #33** —
+  drei neue Entitäten exposed direkt aus `access.accessStatus.value` (Cariad-BFF):
+  - `binary_sensor.<vin>_alarm_active` (PROBLEM device_class) — Auto-Alarm
+    aktuell aktiv (`vehicleAlarm == "ALARM"`)
+  - `binary_sensor.<vin>_siren_active` (SOUND device_class) — Sirene
+    schreit gerade (`siren == "ACTIVE"`), Diagnostik-Kategorie
+  - `sensor.<vin>_last_alarm_at` (TIMESTAMP) — letzter Alarm-Zeitstempel
+  Brand-restricted via `_DATA_PRESENT_REQUIRED` — Fahrzeuge ohne
+  Anti-Diebstahl-Telemetrie erzeugen keine Phantom-Entitäten.
+  Übersetzungen alle 8 Sprachen.
+
 - **Weekly Preheat — `recurring_on` für `set_departure_timer` Service [NEW v2.0]** —
   der bestehende Service `vag_connect.set_departure_timer` akzeptiert
   jetzt eine optionale `recurring_on` Liste mit Wochentagen (z.B.

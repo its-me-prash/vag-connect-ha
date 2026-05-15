@@ -669,6 +669,18 @@ SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
         icon="mdi:tire",
         suggested_display_precision=2,
     ),
+    # v2.0.0 (Big-Bang) — Vehicle alarm timestamp (issue #33).
+    # Records when the alarm last triggered. Brand-restricted via
+    # _DATA_PRESENT_REQUIRED — only populated when Cariad-BFF actually
+    # publishes the field (cars without alarm telemetry stay None).
+    VagSensorDescription(
+        key="last_alarm_at",
+        translation_key="last_alarm_at",
+        data_key="last_alarm_at",
+        device_class=SensorDeviceClass.TIMESTAMP,
+        icon="mdi:shield-alert",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
 
     # ── v1.9.0 Vehicle Data Scout + Error Reporter ────────────────────────────
     # Two diagnostic sensors that surface drift / runtime errors detected
@@ -887,6 +899,8 @@ _DATA_PRESENT_REQUIRED: frozenset[str] = frozenset({
     "tire_pressure_front_right_bar",
     "tire_pressure_rear_left_bar",
     "tire_pressure_rear_right_bar",
+    # v2.0.0 (Big-Bang) — Vehicle alarm timestamp (issue #33).
+    "last_alarm_at",
 })
 
 # v1.14.0 (#24) — Trip Statistics is brand-restricted at the API level

@@ -242,6 +242,27 @@ _NEW_BINARY: tuple[VagBinarySensorDescription, ...] = (
         icon="mdi:car-tire-alert",
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
+    # v2.0.0 (Big-Bang) — Vehicle alarm (issue #33).
+    # Two PROBLEM-class binary_sensors:
+    # - ``alarm_active``: car-level alarm state (ALARM vs NO_ALARM)
+    # - ``siren_active``: siren currently sounding
+    # Brand-restricted via _DATA_PRESENT_REQUIRED — only populated when
+    # the Cariad-BFF actually publishes the fields.
+    VagBinarySensorDescription(
+        key="alarm_active",
+        translation_key="alarm_active",
+        data_key="alarm_active",
+        device_class=BinarySensorDeviceClass.PROBLEM,
+        icon="mdi:shield-alert",
+    ),
+    VagBinarySensorDescription(
+        key="siren_active",
+        translation_key="siren_active",
+        data_key="siren_active",
+        device_class=BinarySensorDeviceClass.SOUND,
+        icon="mdi:bullhorn-variant",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
     # v2.0.0 (Big-Bang) — read-only ``enabled`` binary_sensors for the
     # 3 departure timers. The existing ``departure_timer_X_switch``
     # entities are write-able and conflate read+write, which makes them
@@ -294,6 +315,11 @@ _DATA_PRESENT_REQUIRED: frozenset[str] = frozenset({
     # v2.0.0 (Big-Bang) — Porsche-only TPMS warning (PPA TIRE_PRESSURE
     # measurement). Non-Porsche vehicles leave the field None → no phantom.
     "tire_pressure_warning",
+    # v2.0.0 (Big-Bang) — Vehicle alarm (issue #33). Cariad-BFF only
+    # publishes alarm fields on enrolled vehicles with anti-theft
+    # configured. Cars without it leave both fields None → no phantom.
+    "alarm_active",
+    "siren_active",
 })
 
 

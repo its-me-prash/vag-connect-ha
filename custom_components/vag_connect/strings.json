@@ -305,6 +305,9 @@
       },
       "lifetime_avg_electric_consumption_kwh_100km": {
         "name": "Lifetime Average Electric Consumption"
+      },
+      "last_alarm_at": {
+        "name": "Last Alarm"
       }
     },
     "binary_sensor": {
@@ -397,6 +400,12 @@
       },
       "departure_timer_3_enabled": {
         "name": "Departure Timer 3 Enabled"
+      },
+      "alarm_active": {
+        "name": "Alarm Active"
+      },
+      "siren_active": {
+        "name": "Siren Active"
       }
     },
     "switch": {

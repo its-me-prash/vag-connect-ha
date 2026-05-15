@@ -299,6 +299,9 @@
       },
       "lifetime_avg_electric_consumption_kwh_100km": {
         "name": "Durchschnitts-Stromverbrauch (Lebensdauer)"
+      },
+      "last_alarm_at": {
+        "name": "Letzter Alarm"
       }
     },
     "binary_sensor": {
@@ -388,6 +391,12 @@
       },
       "departure_timer_3_enabled": {
         "name": "Abfahrtstimer 3 aktiv"
+      },
+      "alarm_active": {
+        "name": "Alarm aktiv"
+      },
+      "siren_active": {
+        "name": "Sirene aktiv"
       }
     },
     "switch": {
