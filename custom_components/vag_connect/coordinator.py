@@ -2115,12 +2115,15 @@ class VagConnectCoordinator(DataUpdateCoordinator):
                 "find_charging_stations not supported for this brand "
                 "(CARIAD-BFF only — Audi + VW EU)"
             )
-        return await client.find_charging_stations(
+        # ``client`` is typed Any (brand-polymorphic), so cast through
+        # an explicit local for mypy's --warn-return-any.
+        result: list[dict[str, Any]] = await client.find_charging_stations(
             latitude=latitude,
             longitude=longitude,
             radius_m=radius_m,
             max_results=max_results,
         )
+        return result
 
     async def async_set_departure_timer(
         self,

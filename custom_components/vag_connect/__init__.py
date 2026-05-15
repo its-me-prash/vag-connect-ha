@@ -365,7 +365,14 @@ def _register_services(hass: HomeAssistant) -> None:
             )
         except AttributeError as exc:
             raise ServiceValidationError(str(exc)) from exc
-        return {"stations": stations, "count": len(stations)}
+        # mypy: ServiceResponse is JSON-serialisable. Cast the list of
+        # dicts so the ``ServiceResponse`` Mapping type-check passes —
+        # the runtime value is unchanged.
+        response: ServiceResponse = {
+            "stations": list(stations),
+            "count": len(stations),
+        }
+        return response
 
     hass.services.async_register(
         DOMAIN,
