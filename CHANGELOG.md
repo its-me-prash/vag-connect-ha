@@ -36,7 +36,25 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 > — mit jeder geänderten Datei, jeder Zeile, jeder Issue-Referenz und der
 > Methodik dahinter.
 
-## [Unreleased]
+## [Unreleased] — v2.0.0 Big-Bang (in progress)
+
+> **Note:** Alle [Unreleased] Bullets sammeln sich für die finale v2.0.0
+> Mega-Release. Keine Zwischen-Releases mehr — siehe
+> [Big-Bang Audit & Plan](docs/research/2026-05_big-bang-audit-and-plan.md).
+
+### Fixed
+
+- **#53 CUPRA Born — defensive `command_flash` + OLA parking parser fix.**
+  - `command_flash` versucht jetzt zuerst Body ohne `userPosition` (manche
+    Firmware-Varianten akzeptieren das); fällt auf position-required nur
+    zurück wenn Backend explizit 400 wirft. Unblocked User deren Auto noch
+    keine GPS-Position cached hat (frischer Install / Privacy-Mode).
+  - OLA `parkingposition` Parser packt jetzt `data` envelope aus (mirror
+    von v1.27.1 Cariad-Fix). Ohne diesen Fix lief `parking.get("lat")`
+    silent auf None bei OLA-Backends die das envelope nutzen → keine GPS
+    → command_flash failed unsere pre-validation.
+  - Bessere Error-Message in command_flash mit konkreten Schritten zur
+    Behebung.
 
 ## [1.27.2] - 2026-05-11 ⚡🔌 Scout-Felder Power-Patch + Plug-Diagnose / Scout-Felder Power-Patch + Plug Diagnostics
 

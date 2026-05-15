@@ -557,18 +557,25 @@ class SeatCupraClient(CariadBaseClient):
             d.window_heating_back = v(cs, "windowHeatingStateRear") == "ON"
 
         # ── Parking ──────────────────────────────────────────────────────────
+        # v2.0.0 (#53 follow-up to v1.27.1): defensive `data` envelope unwrap.
+        # Cariad-BFF returns `{"data": {"lat": ..., "lon": ...}}`; OLA backend
+        # may follow the same convention (some OLA versions wrap, some don't).
+        # Without unwrap, `parking.get("lat")` returned None silently → no GPS
+        # → command_flash always failed our pre-validation. Now unwraps `data`
+        # transparently with fallback to top-level for backwards compat.
         if isinstance(parking, dict):
-            d.latitude = v(parking, "lat")
-            d.longitude = v(parking, "lon")
+            parking_data = parking.get("data") if isinstance(parking.get("data"), dict) else parking
+            d.latitude = v(parking_data, "lat")
+            d.longitude = v(parking_data, "lon")
             # v1.25.0 PR-A — Cross-brand parity: parking_address from
             # OLA backend if present (Skoda has it via mysmob since
             # v1.20.0). Tries common field names defensively. Saves
             # an HA reverse-geocoding round-trip when the backend
             # already supplied it.
             addr = (
-                v(parking, "address", "formattedAddress")
-                or v(parking, "formattedAddress")
-                or v(parking, "address")
+                v(parking_data, "address", "formattedAddress")
+                or v(parking_data, "formattedAddress")
+                or v(parking_data, "address")
             )
             if isinstance(addr, str) and addr:
                 d.parking_address = addr
@@ -812,21 +819,41 @@ class SeatCupraClient(CariadBaseClient):
         Status: **WORKING** for OLA endpoint, **INFERENCE** for
         semantic mapping to the official apps.
         """
-        if latitude is None or longitude is None:
-            raise APIError(
-                400,
-                f"{_BASE}/v1/vehicles/{vin}/honk-and-flash",
-                "Vehicle position is required for honk-and-flash on SEAT/CUPRA. "
-                "Wait for the next status poll, then retry.",
-            )
-        body = {
-            "mode": "flash",
-            "userPosition": {
-                "latitude": int(latitude * 10000) / 10000,
-                "longitude": int(longitude * 10000) / 10000,
-            },
-        }
-        await self._post(f"{_BASE}/v1/vehicles/{vin}/honk-and-flash", json=body)
+        # v2.0.0 (#53 Gerhard CUPRA Born): try the call WITHOUT userPosition
+        # first. Some firmware variants accept the bare body with just
+        # ``mode``; only fall back to enforcing position if backend returns 400.
+        # This unblocks users whose vehicle has never reported a recent GPS
+        # position (first-install before first status poll, privacy-mode
+        # suppressed GPS, etc.).
+        url = f"{_BASE}/v1/vehicles/{vin}/honk-and-flash"
+        try:
+            await self._post(url, json={"mode": "flash"})
+            return
+        except APIError as exc:
+            if exc.status_code != 400:
+                raise
+            # 400 from backend → likely the userPosition validation.
+            # Retry with position if cached; otherwise raise an actionable
+            # error explaining what to check.
+            if latitude is None or longitude is None:
+                raise APIError(
+                    400,
+                    url,
+                    "honk-and-flash failed: backend rejected the bare body "
+                    "(needs userPosition) AND no GPS position is cached for "
+                    "this vehicle. Press the wake button first to force a "
+                    "status poll, wait ~30s, then retry. If GPS stays empty, "
+                    "check whether privacy-mode is enabled in the car's "
+                    "head-unit settings.",
+                ) from exc
+            body = {
+                "mode": "flash",
+                "userPosition": {
+                    "latitude": int(latitude * 10000) / 10000,
+                    "longitude": int(longitude * 10000) / 10000,
+                },
+            }
+            await self._post(url, json=body)
 
     async def command_wake(self, vin: str) -> None:
         await self._post(f"{_BASE}/v1/vehicles/{vin}/vehicle-wakeup/request", json={})
