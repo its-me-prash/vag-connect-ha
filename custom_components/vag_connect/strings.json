@@ -252,6 +252,18 @@
       "driving_score_class": {
         "name": "Driving Score Class"
       },
+      "tire_pressure_front_left_bar": {
+        "name": "Tire Pressure Front Left"
+      },
+      "tire_pressure_front_right_bar": {
+        "name": "Tire Pressure Front Right"
+      },
+      "tire_pressure_rear_left_bar": {
+        "name": "Tire Pressure Rear Left"
+      },
+      "tire_pressure_rear_right_bar": {
+        "name": "Tire Pressure Rear Right"
+      },
       "departure_timer_1_time": {
         "name": "Departure Timer 1"
       },
@@ -364,6 +376,9 @@
       },
       "window_heating_enabled": {
         "name": "Window Heating Enabled"
+      },
+      "tire_pressure_warning": {
+        "name": "Tire Pressure Warning"
       }
     },
     "switch": {

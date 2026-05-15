@@ -82,6 +82,16 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
   HA Services + `VagAuxHeatingSwitch` Entity transparent für Skoda PHEV/
   Diesel-Modelle mit Standheizung (Octavia, Superb, Kodiaq iV).
 
+- **Porsche TPMS Sensors [NEW v2.0]** — vier Reifen-Druck-Sensoren
+  (`tire_pressure_front_left_bar` … `tire_pressure_rear_right_bar` in bar
+  mit `device_class=PRESSURE`) plus aggregierter `tire_pressure_warning`
+  binary_sensor (PROBLEM device_class). Datenquelle: PPA
+  `GET /app/connect/v1/vehicles/{vin}/measurements?fields=TIRE_PRESSURE`
+  (Porsche ConnectPlus Subscription erforderlich). kPa↔bar Auto-Convert
+  ist eingebaut. Brand-restricted via `_DATA_PRESENT_REQUIRED` —
+  non-Porsche und pre-TPMS Modelle erzeugen keine Phantom-Entitäten.
+  Übersetzungen alle 8 Sprachen (DE/EN/CS/ES/FR/NL/PL/SV).
+
 ### Fixed
 
 - **#53 CUPRA Born — defensive `command_flash` + OLA parking parser fix.**

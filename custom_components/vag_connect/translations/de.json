@@ -278,6 +278,18 @@
       },
       "capabilities_count": {
         "name": "Fähigkeiten-Anzahl"
+      },
+      "tire_pressure_front_left_bar": {
+        "name": "Reifendruck Vorne Links"
+      },
+      "tire_pressure_front_right_bar": {
+        "name": "Reifendruck Vorne Rechts"
+      },
+      "tire_pressure_rear_left_bar": {
+        "name": "Reifendruck Hinten Links"
+      },
+      "tire_pressure_rear_right_bar": {
+        "name": "Reifendruck Hinten Rechts"
       }
     },
     "binary_sensor": {
@@ -355,6 +367,9 @@
       },
       "window_heating_enabled": {
         "name": "Scheibenheizung aktiviert"
+      },
+      "tire_pressure_warning": {
+        "name": "Reifendruck-Warnung"
       }
     },
     "switch": {

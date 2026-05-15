@@ -278,6 +278,18 @@
       },
       "capabilities_count": {
         "name": "Capabilities Count"
+      },
+      "tire_pressure_front_left_bar": {
+        "name": "Ciśnienie Opony Przód Lewy"
+      },
+      "tire_pressure_front_right_bar": {
+        "name": "Ciśnienie Opony Przód Prawy"
+      },
+      "tire_pressure_rear_left_bar": {
+        "name": "Ciśnienie Opony Tył Lewy"
+      },
+      "tire_pressure_rear_right_bar": {
+        "name": "Ciśnienie Opony Tył Prawy"
       }
     },
     "binary_sensor": {
@@ -355,6 +367,9 @@
       },
       "window_heating_enabled": {
         "name": "Window Heating Enabled"
+      },
+      "tire_pressure_warning": {
+        "name": "Ostrzeżenie Ciśnienia Opon"
       }
     },
     "switch": {

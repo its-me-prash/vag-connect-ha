@@ -230,6 +230,18 @@ _NEW_BINARY: tuple[VagBinarySensorDescription, ...] = (
         icon="mdi:car-defrost-front",
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
+    # v2.0.0 (Big-Bang) — Porsche TPMS warning aggregate (any corner
+    # raising ``warning: true`` in the TIRE_PRESSURE measurement).
+    # Brand-restricted via _DATA_PRESENT_REQUIRED below — non-Porsche
+    # vehicles leave the field None → no phantom entity is created.
+    VagBinarySensorDescription(
+        key="tire_pressure_warning",
+        translation_key="tire_pressure_warning",
+        data_key="tire_pressure_warning",
+        device_class=BinarySensorDeviceClass.PROBLEM,
+        icon="mdi:car-tire-alert",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
 )
 BINARY_DESCRIPTIONS = BINARY_DESCRIPTIONS + _NEW_BINARY
 
@@ -251,6 +263,9 @@ _DATA_PRESENT_REQUIRED: frozenset[str] = frozenset({
     "auto_unlock_when_charged",
     "climate_at_unlock",
     "window_heating_enabled",
+    # v2.0.0 (Big-Bang) — Porsche-only TPMS warning (PPA TIRE_PRESSURE
+    # measurement). Non-Porsche vehicles leave the field None → no phantom.
+    "tire_pressure_warning",
 })
 
 

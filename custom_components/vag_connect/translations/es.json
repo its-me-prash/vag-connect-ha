@@ -278,6 +278,18 @@
       },
       "capabilities_count": {
         "name": "Capabilities Count"
+      },
+      "tire_pressure_front_left_bar": {
+        "name": "Presión Neumático Delantero Izquierdo"
+      },
+      "tire_pressure_front_right_bar": {
+        "name": "Presión Neumático Delantero Derecho"
+      },
+      "tire_pressure_rear_left_bar": {
+        "name": "Presión Neumático Trasero Izquierdo"
+      },
+      "tire_pressure_rear_right_bar": {
+        "name": "Presión Neumático Trasero Derecho"
       }
     },
     "binary_sensor": {
@@ -355,6 +367,9 @@
       },
       "window_heating_enabled": {
         "name": "Window Heating Enabled"
+      },
+      "tire_pressure_warning": {
+        "name": "Aviso de Presión de Neumáticos"
       }
     },
     "switch": {
