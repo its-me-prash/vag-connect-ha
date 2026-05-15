@@ -495,6 +495,15 @@ class VehicleData:
     ota_update_available: bool | None = None
     ota_release_notes_url: str | None = None
 
+    # v2.0.0 (Big-Bang) — Skoda driving-score (efficiency metric 0-100).
+    # Endpoint ``GET /api/v2/vehicle-status/{vin}/driving-score`` on mysmob
+    # (MY24+). ``driving_score`` is the integer 0-100; ``driving_score_class``
+    # is the human-readable bucket (e.g. ``EXCELLENT``, ``GOOD``, ``AVERAGE``).
+    # Other brands leave both as ``None`` — sensor.py uses _DATA_PRESENT_REQUIRED
+    # so non-Skoda vehicles never see a phantom ``unknown`` entity.
+    driving_score: int | None = None
+    driving_score_class: str | None = None
+
     # v1.14.0 (#24) — Trip Statistics from CARIAD-BFF
     # ``GET /vehicle/v1/vehicles/{vin}/tripstatistics?type={shortTerm|longTerm}``.
     # Both endpoints return ``{tripDataList: {tripData: [...]}}``; we sort

@@ -231,6 +231,12 @@
       "battery_care_target_soc_pct": {
         "name": "Péče o Baterii — Cílový SoC"
       },
+      "driving_score": {
+        "name": "Skóre Jízdy"
+      },
+      "driving_score_class": {
+        "name": "Třída Skóre Jízdy"
+      },
       "departure_timer_1_time": {
         "name": "Časovač odjezdu 1"
       },

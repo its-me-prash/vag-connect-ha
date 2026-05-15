@@ -240,6 +240,12 @@
       "battery_care_target_soc_pct": {
         "name": "Batterie-Schutz — Ziel-SoC"
       },
+      "driving_score": {
+        "name": "Fahrwertung"
+      },
+      "driving_score_class": {
+        "name": "Fahrwertungs-Klasse"
+      },
       "departure_timer_1_time": {
         "name": "Abfahrtstimer 1"
       },

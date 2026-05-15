@@ -231,6 +231,12 @@
       "battery_care_target_soc_pct": {
         "name": "Ochrona Baterii — Docelowy SoC"
       },
+      "driving_score": {
+        "name": "Wynik Jazdy"
+      },
+      "driving_score_class": {
+        "name": "Klasa Wyniku Jazdy"
+      },
       "departure_timer_1_time": {
         "name": "Timer odjazdu 1"
       },

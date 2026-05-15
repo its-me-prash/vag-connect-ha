@@ -1,0 +1,35 @@
+meta {
+  name: POST stop auxiliary heating
+  type: http
+  seq: 31
+}
+
+post {
+  url: {{base_url}}/api/v2/air-conditioning/{{vin}}/auxiliary-heating/stop
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {}
+}
+
+docs {
+  Stops auxiliary heating. Empty JSON body (no S-PIN — only START
+  requires the S-PIN, STOP is unauthenticated relative to spin).
+
+  Backs the cross-brand HA service ``vag_connect.stop_aux_heating``
+  + the OFF action of ``VagAuxHeatingSwitch`` (switch.py).
+
+  Implementation: SkodaClient.command_stop_aux_heating() in
+  custom_components/vag_connect/cariad/api/skoda.py.
+}

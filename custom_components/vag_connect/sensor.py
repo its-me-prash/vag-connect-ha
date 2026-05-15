@@ -606,6 +606,25 @@ SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
         suggested_display_precision=0,
         condition="electric",
     ),
+    # v2.0.0 (Big-Bang) — Skoda driving-score (efficiency metric 0-100).
+    # mysmob ``GET /api/v2/vehicle-status/{vin}/driving-score`` (MY24+).
+    # Brand-restricted via _DATA_PRESENT_REQUIRED — non-Skoda vehicles
+    # leave both fields None, so no phantom entity is created.
+    VagSensorDescription(
+        key="driving_score",
+        translation_key="driving_score",
+        data_key="driving_score",
+        state_class=SensorStateClass.MEASUREMENT,
+        icon="mdi:medal-outline",
+        suggested_display_precision=0,
+    ),
+    VagSensorDescription(
+        key="driving_score_class",
+        translation_key="driving_score_class",
+        data_key="driving_score_class",
+        icon="mdi:gauge",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
 
     # ── v1.9.0 Vehicle Data Scout + Error Reporter ────────────────────────────
     # Two diagnostic sensors that surface drift / runtime errors detected
@@ -778,6 +797,10 @@ _DATA_PRESENT_REQUIRED: frozenset[str] = frozenset({
     "next_charging_timer_id",
     "next_charging_timer_target_soc_reachable",
     "capabilities_count",
+    # v2.0.0 (Big-Bang) — Skoda-only driving-score (mysmob, MY24+).
+    # Other brands leave both fields None; gate prevents phantom entities.
+    "driving_score",
+    "driving_score_class",
 })
 
 # v1.14.0 (#24) — Trip Statistics is brand-restricted at the API level
