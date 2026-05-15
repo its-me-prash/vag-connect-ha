@@ -36,11 +36,15 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 > — mit jeder geänderten Datei, jeder Zeile, jeder Issue-Referenz und der
 > Methodik dahinter.
 
-## [Unreleased] — v2.1.0 (in progress)
+## [2.1.0] - 2026-05-15 ✨🌍 Post-Big-Bang Wins — Skoda Climate-Ready + HomeRegion + User-Tools / Post-Big-Bang Wins — Skoda Climate-Ready + HomeRegion + User-Tools
 
-> Sammelt Bullets für die nächste MINOR-Release. Fokus: post-v2.0
-> User-Wins die im Big-Bang Scope-Cut waren oder durch Scout-Reports
-> nachgereicht wurden.
+> v2.1.0 sammelt 4 post-v2.0 Wins die im Big-Bang Scope-Cut waren oder
+> durch Scout-Reports nachgereicht wurden. Fokus: ein neuer Skoda-Sensor
+> (#186/#188), ein langjährig pendendes Plumbing-Refactor (HomeRegion +
+> Issue #75), ein User-facing Diagnostik-Script + Browser-Mod-Cookbook.
+>
+> **Migration**: keine. Alle Änderungen additiv — bestehende
+> Automationen + Lovelace-Cards funktionieren unverändert weiter.
 
 ### Added
 
