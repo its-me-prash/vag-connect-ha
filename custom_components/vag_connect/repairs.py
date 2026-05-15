@@ -11,16 +11,37 @@ v1.19.4 (Bundle 1):
 - Brand-aware deeplinks für T&C-Repair (Skoda → skodaid.vwgroup.io,
   VW EU → vwid.vwgroup.io, Audi → my.audi.com, SEAT/CUPRA → seat-cupra.cloud)
 - Quota-Warning Repair-Issue (extension von v1.19.1 quota sensor)
+v2.0.0 (Big-Bang):
+- Reasons that the user can ACT on (invalid_credentials, two_factor_required,
+  terms_and_conditions, marketing_consent) now ship as ``is_fixable=True``.
+  Clicking "Repair" in HA UI triggers the matching config-flow step so the
+  user fixes the credentials in one click instead of removing + re-adding
+  the integration.
 """
+
+from typing import Any
 
 import logging
 
+from homeassistant import data_entry_flow
+from homeassistant.components.repairs import RepairsFlow
 from homeassistant.core import HomeAssistant
 import homeassistant.helpers.issue_registry as ir
 
 from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
+
+# v2.0.0 — reasons whose remediation maps to a config-flow step. When one
+# of these issues is created, HA shows a "Repair" button; clicking it kicks
+# off the linked flow ("reauth" for credentials, "reconfigure" for setting
+# changes). Everything else stays informational (is_fixable=False).
+_FIXABLE_REASONS: dict[str, str] = {
+    "invalid_credentials":   "reauth",
+    "two_factor_required":   "reauth",
+    "terms_and_conditions":  "reauth",
+    "marketing_consent":     "reauth",
+}
 
 # v1.19.4 Bundle 1 — Brand-aware deeplinks für T&C-Repair-Issue.
 # Wenn IDK-Backend "terms-and-conditions" / "terms_of_use" body sendet,
@@ -91,17 +112,25 @@ def raise_issue_auth_required(
         reason, (ir.IssueSeverity.ERROR, "auth_failed")
     )
 
+    # v2.0.0 — fixable reasons get is_fixable=True so HA UI shows a
+    # "Repair" button that delegates to async_create_fix_flow below.
+    is_fixable = reason in _FIXABLE_REASONS
+
     ir.async_create_issue(
         hass,
         DOMAIN,
         f"{entry_id}_{reason}",
-        is_fixable=False,
+        is_fixable=is_fixable,
         is_persistent=False,
         severity=severity,
         translation_key=translation_key,
         learn_more_url=_learn_url_for_reason(brand, reason),
+        data={"entry_id": entry_id, "reason": reason},
     )
-    _LOGGER.warning("VAG Connect Repair-Issue erstellt: %s (brand=%s)", reason, brand)
+    _LOGGER.warning(
+        "VAG Connect Repair-Issue erstellt: %s (brand=%s, fixable=%s)",
+        reason, brand, is_fixable,
+    )
 
 
 def clear_auth_issues(hass: HomeAssistant, entry_id: str) -> None:
@@ -193,3 +222,48 @@ def clear_quota_issue(hass: HomeAssistant, entry_id: str) -> None:
     sich erholt hat (z.B. midnight reset).
     """
     ir.async_delete_issue(hass, DOMAIN, f"{entry_id}_quota_low")
+
+
+# ─── v2.0.0 Repair-Flow Handler ──────────────────────────────────────────
+class _AuthRepairFlow(RepairsFlow):
+    """v2.0.0 — Generic repair flow for auth-related issues.
+
+    Delegates to the matching config-flow step (reauth or reconfigure) so
+    the user fixes credentials without removing the integration.
+    """
+
+    def __init__(self, entry_id: str, reason: str) -> None:
+        self._entry_id = entry_id
+        self._reason = reason
+
+    async def async_step_init(
+        self, user_input: dict[str, Any] | None = None
+    ) -> data_entry_flow.FlowResult:
+        return await self.async_step_confirm()
+
+    async def async_step_confirm(
+        self, user_input: dict[str, Any] | None = None
+    ) -> data_entry_flow.FlowResult:
+        if user_input is None:
+            return self.async_show_form(
+                step_id="confirm",
+                description_placeholders={"reason": self._reason},
+            )
+        # User confirmed — kick off the matching config_flow step
+        flow_step = _FIXABLE_REASONS.get(self._reason, "reauth")
+        await self.hass.config_entries.flow.async_init(
+            DOMAIN,
+            context={"source": flow_step, "entry_id": self._entry_id},
+        )
+        return self.async_create_entry(title="", data={})
+
+
+async def async_create_fix_flow(
+    hass: HomeAssistant,
+    issue_id: str,
+    data: dict[str, Any] | None,
+) -> RepairsFlow:
+    """v2.0.0 — HA RepairsFlow factory. Called when user clicks 'Repair'."""
+    entry_id = (data or {}).get("entry_id", "")
+    reason = (data or {}).get("reason", "auth_failed")
+    return _AuthRepairFlow(entry_id, reason)

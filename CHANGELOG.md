@@ -42,6 +42,14 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 > Mega-Release. Keine Zwischen-Releases mehr — siehe
 > [Big-Bang Audit & Plan](docs/research/2026-05_big-bang-audit-and-plan.md).
 
+### Added
+
+- **Auth Resilience: One-click Repair für invalid credentials / 2FA / T&C / marketing-consent.**
+  Repair-Issues für diese 4 reasons sind jetzt `is_fixable=True` — Klick auf
+  "Repair" Button in HA UI öffnet direkt den Reauth-Config-Flow. Vorher musste
+  User die Integration entfernen + neu hinzufügen. Schließt audi_connect_ha
+  #728 / CarConnectivity #92 / evcc #29760 cross-integration pain pattern.
+
 ### Fixed
 
 - **#53 CUPRA Born — defensive `command_flash` + OLA parking parser fix.**
