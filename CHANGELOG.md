@@ -44,6 +44,11 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ### Added
 
+- **System Health Panel** (`system_health.py`) — Settings → System → Repairs zeigt
+  jetzt at-a-glance: Integration-Version, configured brands, last poll per entry,
+  API quota remaining, Push-Channel-Status, Cariad-BFF reachability. Drop-in
+  Module, von HA automatisch geladen. Parity mit audi_connect_ha v2.0.1-beta.8.
+
 - **Auth Resilience: One-click Repair für invalid credentials / 2FA / T&C / marketing-consent.**
   Repair-Issues für diese 4 reasons sind jetzt `is_fixable=True` — Klick auf
   "Repair" Button in HA UI öffnet direkt den Reauth-Config-Flow. Vorher musste
