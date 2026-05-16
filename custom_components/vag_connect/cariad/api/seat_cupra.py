@@ -270,6 +270,51 @@ class SeatCupraClient(CariadBaseClient):
                             earliest, exc,
                         )
 
+            # v2.2.0 PR #18/20 (Scout #232 — matthias0304 2026-05-16) —
+            # CUPRA PHEV companion to Skoda Scout #220. OLA mycar
+            # ``engines.secondary`` is a 3-key block on PHEV variants
+            # (Formentor PHEV, Leon e-Hybrid) mirroring the Skoda
+            # ``driving-range.secondaryEngineRange`` shape. We reuse the
+            # existing cross-brand ``secondary_engine_*`` fields from
+            # PR #6 so phantom-protection gates + sensor descriptions
+            # carry over automatically — zero new entities, zero new
+            # translations needed.
+            #
+            # Observed shape (per matthias0304 scout + pycupra precedent):
+            #   engines.secondary.{range, fuelLevel_pct, fuelType}
+            #
+            # Field-name variants tried defensively because OLA has
+            # historically shipped multiple spellings before settling.
+            engines = v(mycar, "engines")
+            if isinstance(engines, dict):
+                secondary = v(engines, "secondary")
+                if isinstance(secondary, dict):
+                    # Range — Skoda uses ``distanceInKm``, OLA observed
+                    # variants: ``range``, ``rangeInKm``, ``distanceInKm``.
+                    sec_range = (
+                        secondary.get("range")
+                        or secondary.get("rangeInKm")
+                        or secondary.get("distanceInKm")
+                    )
+                    if isinstance(sec_range, (int, float)):
+                        d.secondary_engine_range_km = int(sec_range)
+                    # Engine type — Skoda uses ``engineType``, OLA observed
+                    # ``fuelType`` (per pycupra Formentor PHEV dump).
+                    sec_type = (
+                        secondary.get("fuelType")
+                        or secondary.get("engineType")
+                    )
+                    if isinstance(sec_type, str) and sec_type:
+                        d.secondary_engine_type = sec_type
+                    # Fuel level % — Skoda uses ``currentFuelLevelInPercent``,
+                    # OLA observed ``fuelLevel_pct``.
+                    sec_fuel = (
+                        secondary.get("fuelLevel_pct")
+                        or secondary.get("currentFuelLevelInPercent")
+                    )
+                    if isinstance(sec_fuel, (int, float)):
+                        d.secondary_engine_fuel_level_pct = int(sec_fuel)
+
         # ── Ranges ───────────────────────────────────────────────────────────
         if isinstance(ranges, dict):
             electric = v(ranges, "electricRange")

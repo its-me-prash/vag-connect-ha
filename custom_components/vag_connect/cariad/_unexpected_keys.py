@@ -347,6 +347,17 @@ EXPECTED_KEYS: dict[str, dict[str, set[str]]] = {
             # future primary children without per-field whack-a-mole.
             "engines.primary",
             "engines.primary.*",
+            # v2.2.0 PR #18/20 (#232 matthias0304 CUPRA Scout-Report
+            # 2026-05-16) — ``engines.secondary`` 3-key block shipped on
+            # CUPRA PHEV variants (Formentor PHEV, Leon e-Hybrid). Mirrors
+            # the Skoda Scout #220 ``driving-range.secondaryEngineRange``
+            # pattern. Wired in seat_cupra.py parser to populate the
+            # existing cross-brand ``secondary_engine_{range_km,type,
+            # fuel_level_pct}`` fields. Wildcard registration covers
+            # all current + future secondary children without per-field
+            # whack-a-mole — same pattern as engines.primary.
+            "engines.secondary",
+            "engines.secondary.*",
             # v1.17.5 (#53 Gerhard Born v1.17.4 test 2026-05-04) —
             # ``services`` block on mycar has been registered as parent
             # since v1.10.2; Born now exposes the per-service entitlement

@@ -52,6 +52,25 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ### Added
 
+- **CUPRA Scout #232 — `mycar.engines.secondary` wiring (matthias0304 2026-05-16)** —
+  CUPRA PHEV companion zu Skoda Scout #220 (PR #6). OLA `mycar.engines.
+  secondary` 3-key block auf Formentor PHEV / Leon e-Hybrid mirrors die
+  Skoda `driving-range.secondaryEngineRange` shape. **Cross-brand field
+  reuse**: dieser PR mappt die neue CUPRA data in die existing
+  `secondary_engine_*` dataclass fields aus PR #6 — **zero neue entities,
+  zero neue translations, zero neue phantom-gates**, nur expanded brand
+  coverage auf den gleichen Sensoren. Defensiver multi-variant lookup
+  für 3 Key-Schreibweisen pro Feld (`range`/`rangeInKm`/`distanceInKm`
+  für km, `fuelType`/`engineType` für engine, `fuelLevel_pct`/
+  `currentFuelLevelInPercent` für %) — falls OLA Schema rotiert auf
+  Skoda-style keys oder umgekehrt, parser zieht beides. EV-only CUPRAs
+  (Born) → kein `engines.secondary` → fields bleiben None → kein
+  phantom. EXPECTED_KEYS in `_unexpected_keys.py` erweitert um
+  Wildcard `engines.secondary.*`. 13 Tests inkl. defensives Behavior +
+  cross-brand-reuse regression-shield. Closes #232.
+  *"Recycling? Brilliant. Same fields, more brands, less code."
+  — Sheldon Cooper.*
+
 - **CUPRA-standalone Brand-Adapter Scaffold (Phase 4 PR #17/20, BETA — Tester pending)** —
   Phase 4 closer. Dritter scaffold neben Lambo (PR #15) + Bentley (PR #16),
   aber mit **unterschiedlicher inheritance story**: Lambo/Bentley
