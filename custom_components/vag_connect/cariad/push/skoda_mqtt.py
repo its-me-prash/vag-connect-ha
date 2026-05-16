@@ -74,7 +74,6 @@ from __future__ import annotations
 
 import asyncio
 import logging
-import random
 from typing import Any
 
 from .base import PushManager, PushManagerState, PushEventCallback
@@ -92,11 +91,9 @@ _BROKER_PORT = 8883
 _FCM_PROJECT_ID = "678067506455"
 _FCM_PACKAGE = "cz.skodaauto.myskoda"
 
-# Reconnect backoff bounds. evcc + myskoda agree on these constants.
-_INITIAL_BACKOFF_S = 5.0
-_MAX_BACKOFF_S = 600.0
-_BACKOFF_MULTIPLIER = 2.0
-_FAST_RETRY_THRESHOLD = 10  # First N retries skip the backoff cap
+# v2.2.0 Phase 5a PR #18/20: backoff constants moved to ``base.py``
+# (``PUSH_INITIAL_BACKOFF_S`` etc.). Shared across all push managers
+# so a single tuning change propagates to all brands.
 
 
 class SkodaPushManager(PushManager):
@@ -143,8 +140,8 @@ class SkodaPushManager(PushManager):
         self._vins = list(vins)
         self._loop_task: asyncio.Task | None = None
         self._stop_event: asyncio.Event = asyncio.Event()
-        self._backoff_seconds: float = _INITIAL_BACKOFF_S
-        self._consecutive_fast_retries: int = 0
+        # v2.2.0 Phase 5a PR #18/20: backoff state moved to PushManager
+        # base ``__init__`` (set by ``super().__init__(on_event)`` above).
 
     async def start(self) -> None:
         """Spawn the MQTT receive loop. Idempotent.
@@ -311,34 +308,5 @@ class SkodaPushManager(PushManager):
         # Normal exit — no reconnect needed.
         self._state = PushManagerState.STOPPED
 
-    def _advance_backoff(self) -> None:
-        """Bump backoff with jitter, capped per myskoda PR #566.
-
-        First ``_FAST_RETRY_THRESHOLD`` retries grow linearly without
-        the cap; afterwards the exponential cap kicks in. Jitter
-        prevents reconnect-storm thundering on broker outages.
-        """
-        self._consecutive_fast_retries += 1
-        if self._consecutive_fast_retries <= _FAST_RETRY_THRESHOLD:
-            self._backoff_seconds = min(
-                self._backoff_seconds * _BACKOFF_MULTIPLIER,
-                _MAX_BACKOFF_S,
-            )
-        else:
-            self._backoff_seconds = _MAX_BACKOFF_S
-        # Jitter: ±10% of current backoff
-        jitter = self._backoff_seconds * 0.1 * (2 * random.random() - 1)
-        self._backoff_seconds = max(
-            _INITIAL_BACKOFF_S,
-            self._backoff_seconds + jitter,
-        )
-
-    def _reset_backoff(self) -> None:
-        """Reset backoff after a successful connection.
-
-        Called from ``_connect_and_listen`` once the connection is
-        established + first message received. Foundation stub doesn't
-        call this yet (live activation will).
-        """
-        self._backoff_seconds = _INITIAL_BACKOFF_S
-        self._consecutive_fast_retries = 0
+    # v2.2.0 Phase 5a PR #18/20: ``_advance_backoff`` + ``_reset_backoff``
+    # moved to ``PushManager`` base class. Inherited via ``super``.
