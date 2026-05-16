@@ -10,11 +10,32 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+from datetime import datetime, timedelta, timezone
 from enum import StrEnum
 import logging
 from typing import Any, Awaitable, Callable
 
 _LOGGER = logging.getLogger(__name__)
+
+# v2.2.0 Phase 3 PR #12/20 — circuit-breaker tuning.
+#
+# After ``CIRCUIT_BREAKER_MAX_STRIKES`` consecutive failed-start
+# attempts the manager trips into the ``TRIPPED`` state, where:
+# - subsequent ``start()`` calls return immediately without retrying
+# - state-property surfaces the trip for diagnostics + Repair-Issue
+# - operator can manually reset via ``reset_circuit_breaker()``
+# - auto-recovery happens after ``CIRCUIT_BREAKER_AUTO_RESET_SEC``
+#
+# Three strikes chosen empirically: a single transient failure is
+# common (DNS hiccup, broker rolling restart) and shouldn't trip;
+# three in a row almost always means a structural issue (creds rotated,
+# deps removed, IDP migrated) that won't self-heal in the retry loop.
+#
+# Auto-reset at 1h matches the typical token-rotation window — by
+# the time we auto-retry, refresh-token state should have moved on
+# from whatever was failing.
+CIRCUIT_BREAKER_MAX_STRIKES: int = 3
+CIRCUIT_BREAKER_AUTO_RESET_SEC: int = 3600  # 1 hour
 
 
 class PushManagerState(StrEnum):
@@ -26,6 +47,13 @@ class PushManagerState(StrEnum):
     RECONNECTING = "reconnecting"
     DISABLED = "disabled"      # opt-out via option, no work attempted
     UNAVAILABLE = "unavailable"  # deps missing or broker unreachable
+    # v2.2.0 Phase 3 PR #12/20 — Circuit-breaker trip state.
+    # Reached after CIRCUIT_BREAKER_MAX_STRIKES consecutive failed
+    # start attempts. Distinct from UNAVAILABLE (transient) and
+    # DISABLED (user opt-out) — TRIPPED means "we tried hard and
+    # the failure mode looks structural, so stop spinning the loop
+    # until either auto-reset (1h) or manual reset_circuit_breaker()".
+    TRIPPED = "tripped"
 
 
 @dataclass(frozen=True)
@@ -81,11 +109,125 @@ class PushManager(ABC):
     def __init__(self, on_event: PushEventCallback) -> None:
         self._on_event = on_event
         self._state: PushManagerState = PushManagerState.STOPPED
+        # v2.2.0 Phase 3 PR #12/20 — circuit-breaker state.
+        # Subclasses call ``_record_failure()`` / ``_record_success()``
+        # around their connect attempts; this class handles the
+        # strike-counting + trip + auto-reset arithmetic.
+        self._strike_count: int = 0
+        self._tripped_at: datetime | None = None
 
     @property
     def state(self) -> PushManagerState:
-        """Current lifecycle state for diagnostics."""
+        """Current lifecycle state for diagnostics.
+
+        v2.2.0 PR #12: this getter is now circuit-breaker-aware.
+        When auto-reset elapses past the trip timestamp, transitions
+        TRIPPED → STOPPED so the next ``start()`` call is permitted.
+        Lazy transition (only on read) avoids needing a background
+        timer just to flip a state value.
+        """
+        if (
+            self._state == PushManagerState.TRIPPED
+            and self._tripped_at is not None
+        ):
+            elapsed = datetime.now(tz=timezone.utc) - self._tripped_at
+            if elapsed >= timedelta(seconds=CIRCUIT_BREAKER_AUTO_RESET_SEC):
+                _LOGGER.info(
+                    "Push manager %s: circuit-breaker auto-reset after "
+                    "%ds — moving TRIPPED → STOPPED for retry eligibility",
+                    self.__class__.__name__,
+                    int(elapsed.total_seconds()),
+                )
+                self._strike_count = 0
+                self._tripped_at = None
+                self._state = PushManagerState.STOPPED
         return self._state
+
+    @property
+    def strike_count(self) -> int:
+        """Current consecutive-failure count (0 if last attempt succeeded)."""
+        return self._strike_count
+
+    @property
+    def is_tripped(self) -> bool:
+        """Convenience property — True when circuit-breaker has tripped.
+
+        Reads ``state`` (not ``_state``) so the auto-reset transition
+        is honoured.
+        """
+        return self.state == PushManagerState.TRIPPED
+
+    def _record_failure(self, reason: str = "") -> None:
+        """Subclass hook: a connect / re-connect attempt failed.
+
+        Increments the strike count. On the 3rd consecutive strike
+        flips state to TRIPPED. Subclass is responsible for stopping
+        its own retry loop when ``is_tripped`` returns True.
+
+        ``reason`` is logged at warning level for diagnostics —
+        keep it short and free of secrets.
+        """
+        self._strike_count += 1
+        _LOGGER.warning(
+            "Push manager %s: strike %d/%d (%s)",
+            self.__class__.__name__,
+            self._strike_count,
+            CIRCUIT_BREAKER_MAX_STRIKES,
+            reason or "no-reason-given",
+        )
+        if self._strike_count >= CIRCUIT_BREAKER_MAX_STRIKES:
+            self._tripped_at = datetime.now(tz=timezone.utc)
+            self._state = PushManagerState.TRIPPED
+            _LOGGER.error(
+                "Push manager %s: circuit-breaker TRIPPED after %d "
+                "consecutive failures — pausing reconnect attempts for "
+                "%ds (or until manual reset_circuit_breaker())",
+                self.__class__.__name__,
+                self._strike_count,
+                CIRCUIT_BREAKER_AUTO_RESET_SEC,
+            )
+
+    def _record_success(self) -> None:
+        """Subclass hook: a connect attempt succeeded.
+
+        Resets the strike counter and clears any trip state. Safe to
+        call from anywhere — idempotent when the breaker isn't tripped.
+        """
+        if self._strike_count > 0 or self._tripped_at is not None:
+            _LOGGER.debug(
+                "Push manager %s: resetting circuit-breaker after success "
+                "(was strike %d, tripped_at=%s)",
+                self.__class__.__name__,
+                self._strike_count,
+                self._tripped_at.isoformat() if self._tripped_at else None,
+            )
+        self._strike_count = 0
+        self._tripped_at = None
+
+    def reset_circuit_breaker(self) -> None:
+        """Manual reset — re-enable the manager after a tripped breaker.
+
+        Use case: operator fixed the root cause (rotated creds, restored
+        broker, re-installed deps) and wants to retry NOW instead of
+        waiting for the 1h auto-reset window. The next ``start()`` call
+        will proceed normally.
+
+        Doesn't re-start the manager — caller must invoke ``start()``
+        explicitly after reset.
+        """
+        if self._tripped_at is None and self._strike_count == 0:
+            return
+        _LOGGER.info(
+            "Push manager %s: manual circuit-breaker reset (was strike "
+            "%d, tripped_at=%s)",
+            self.__class__.__name__,
+            self._strike_count,
+            self._tripped_at.isoformat() if self._tripped_at else None,
+        )
+        self._strike_count = 0
+        self._tripped_at = None
+        if self._state == PushManagerState.TRIPPED:
+            self._state = PushManagerState.STOPPED
 
     @abstractmethod
     async def start(self) -> None:
