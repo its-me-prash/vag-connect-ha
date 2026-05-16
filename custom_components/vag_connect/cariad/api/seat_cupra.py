@@ -238,9 +238,14 @@ class SeatCupraClient(CariadBaseClient):
                     # failure leave at None (don't false-alarm a user
                     # with perpetual entitlements just because our
                     # datetime parse choked on an unusual format).
+                    #
+                    # NB: uses the module-level ``datetime`` / ``timezone``
+                    # imports (line 11). Inline ``from datetime import``
+                    # shadows the module-level name as a function-local
+                    # for the WHOLE ``get_status`` scope (Python lexer
+                    # rule), causing UnboundLocalError on any prior
+                    # reference inside the function.
                     try:
-                        from datetime import datetime, timezone  # noqa: PLC0415
-
                         # Normalise trailing ``Z`` to ``+00:00`` for
                         # ``fromisoformat`` (Python 3.11+ accepts ``Z``
                         # natively but we keep this for older HA users).
