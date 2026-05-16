@@ -52,6 +52,26 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ### Added
 
+- **SEAT/CUPRA Connect-Subscription Expiry Sensor (Phase 2 PR #8/20)** —
+  Long-standing User-Request: zeigt jetzt **wann das Connect-Abonnement
+  ausläuft** bevor Lock/Unlock + Climate-Start stop working. Neue
+  `sensor.subscription_expiry_at` mit `device_class=TIMESTAMP` rendert
+  als "in 47 Tagen" / Kalenderdatum in HA UI. Parser drillt durch
+  `mycar.services.*` (per-entitlement map) und probiert drei bekannte
+  Expiry-Key-Schreibweisen (`expirationDate` / `validUntil` / `expiresAt`
+  — pycupra commit 0f3b1c7 dokumentiert die Rotation). Aggregiert
+  **EARLIEST present expiry** über alle Services → User sieht
+  "first to expire" (most-restrictive Cap auf Remote-Access).
+  Defensiv: malformed Timestamps (int / leerer String / non-string)
+  silent geskippt; non-dict service entries (legacy "ACTIVATED"
+  string shape) gerendet; field stays None wenn kein Service eine
+  Expiry hat → phantom-protected (Sensor wird nie erstellt). Brand-
+  restricted: andere Brands' mycar-Endpoints exposen `services.*`
+  nicht im OLA-Shape, deshalb stays None auf VW/Audi/Skoda. 17 Tests
+  inkl. defensives Behavior + 8-Sprachen-Coverage.
+  *"You have failed me for the last time, Admiral... ation Subscription."
+  — Sheldon Cooper.*
+
 - **Email-2FA vs TOTP discrimination in IDK auth (Phase 2 PR #7/20, #183 follow-on)** —
   Pre-v2.2.0 raised generischer `TwoFactorRequiredError` ob das IDP einen
   Authenticator-App-TOTP-Code oder einen E-Mail-OTP-Code wollte. Die Repairs-UI

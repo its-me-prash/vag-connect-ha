@@ -193,6 +193,46 @@ class SeatCupraClient(CariadBaseClient):
             if isinstance(access_lock, str):
                 d.doors_locked = access_lock.upper() == "LOCKED"
 
+            # v2.2.0 Phase 2 PR #8/20 — Connect-subscription expiry.
+            # ``mycar.services`` is a per-entitlement map (charging,
+            # climatisation, windowHeating, etc.). Each entry MAY carry
+            # an expiry timestamp under one of several key-name variants
+            # (the OLA team has shipped 3 different spellings in 18 months
+            # — pycupra commit 0f3b1c7 documents the rotation). We pick
+            # the EARLIEST present expiry across all services so the user
+            # sees "first to expire" (most-restrictive cap).
+            #
+            # Defensive: any malformed timestamp (non-ISO string, int,
+            # None) is skipped silently. If no service has an expiry,
+            # field stays None → phantom-protected sensor never created.
+            services = v(mycar, "services")
+            if isinstance(services, dict):
+                earliest: str | None = None
+                for svc_name, svc_data in services.items():
+                    if not isinstance(svc_data, dict):
+                        continue
+                    # Try the 3 known key-name variants in priority order
+                    raw_expiry = (
+                        svc_data.get("expirationDate")
+                        or svc_data.get("validUntil")
+                        or svc_data.get("expiresAt")
+                    )
+                    if not isinstance(raw_expiry, str) or not raw_expiry:
+                        continue
+                    # ISO 8601 strings sort lexicographically when
+                    # they share the same format width (e.g. all
+                    # "YYYY-MM-DDTHH:MM:SSZ" or all with offsets).
+                    # earliest = min, so first iteration sets baseline.
+                    if earliest is None or raw_expiry < earliest:
+                        earliest = raw_expiry
+                        _LOGGER.debug(
+                            "subscription expiry candidate: service=%s "
+                            "raw=%s (current earliest=%s)",
+                            svc_name, raw_expiry, earliest,
+                        )
+                if earliest is not None:
+                    d.subscription_expiry_at = earliest
+
         # ── Ranges ───────────────────────────────────────────────────────────
         if isinstance(ranges, dict):
             electric = v(ranges, "electricRange")

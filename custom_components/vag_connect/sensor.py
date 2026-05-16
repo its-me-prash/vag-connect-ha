@@ -823,6 +823,19 @@ SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
         entity_category=EntityCategory.DIAGNOSTIC,
         condition="electric",
     ),
+    # v2.2.0 Phase 2 PR #8/20 — SEAT/CUPRA Connect-subscription expiry.
+    # Surfaces "first to expire" date across all entitled services so
+    # users can plan renewal. ISO 8601 → device_class=TIMESTAMP renders
+    # as "in 47 days" / calendar date in HA UI. Brand-restricted via
+    # _DATA_PRESENT_REQUIRED — other brands stay None → no phantom.
+    VagSensorDescription(
+        key="subscription_expiry_at",
+        translation_key="subscription_expiry_at",
+        data_key="subscription_expiry_at",
+        device_class=SensorDeviceClass.TIMESTAMP,
+        icon="mdi:calendar-clock",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
     VagSensorDescription(
         key="next_charging_timer_target_soc_reachable",
         translation_key="next_charging_timer_target_soc_reachable",
@@ -941,6 +954,10 @@ _DATA_PRESENT_REQUIRED: frozenset[str] = frozenset({
     # ICE-only and EV-only vehicles → no phantom entity.
     "secondary_engine_type",
     "secondary_engine_fuel_level_pct",
+    # v2.2.0 Phase 2 PR #8/20 — SEAT/CUPRA OLA-only subscription expiry.
+    # Other brands' mycar endpoints don't expose ``services.*.expirationDate``
+    # in the OLA shape, so field stays None → no phantom entity.
+    "subscription_expiry_at",
     "next_charging_timer_id",
     "next_charging_timer_target_soc_reachable",
     "capabilities_count",
