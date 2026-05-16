@@ -52,6 +52,25 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ### Added
 
+- **Audi/VW FCM Circuit-Breaker Wiring (Phase 3 PR #14/20 — Phase 3 closer)** —
+  Schließt die cross-brand circuit-breaker coverage. Skoda MQTT (#12) +
+  CUPRA/SEAT FCM (#13) + Audi/VW FCM (this PR) haben jetzt alle die
+  **identical 5-hook wiring**:
+  (1) `start()` short-circuits bei TRIPPED;
+  (2) deps-check failure → strike;
+  (3) connect-exception → strike;
+  (4) post-backoff trip check → exit loop;
+  (5) success → reset.
+  **3-way parity test** als regression-shield: alle 3 Brands müssen
+  identical `_record_failure` + `_record_success` counts haben, alle
+  müssen den TRIPPED short-circuit und den recovery-hint im log-message
+  haben. Jede zukünftige drift (extra hook, missing hook, divergierende
+  reason-strings) bricht den test. Phase 3 = ✅ COMPLETE — alle Push-
+  Manager haben jetzt identische fail-safe Semantik bevor wir in Phase 4
+  Live-Activation versuchen. 14 Tests.
+  *"Live activation can wait. The safety net must come first."
+  — paraphrased Sheldon Cooper.*
+
 - **CUPRA/SEAT FCM Circuit-Breaker Wiring (Phase 3 PR #13/20)** —
   Wired die circuit-breaker hooks (PR #12 foundation) in den CUPRA/SEAT
   FCM push manager an 5 Hook-Sites:
