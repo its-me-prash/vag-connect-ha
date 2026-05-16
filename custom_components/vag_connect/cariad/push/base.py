@@ -13,9 +13,27 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from enum import StrEnum
 import logging
+import random
 from typing import Any, Awaitable, Callable
 
 _LOGGER = logging.getLogger(__name__)
+
+# v2.2.0 Phase 5a PR #18/20 — extracted from per-brand duplication.
+#
+# Reconnect-backoff bounds shared across all push managers. evcc +
+# myskoda + pycupra all agree on these constants empirically — they
+# match the behaviour of the official VAG apps which retry every
+# 5s for the first 10 attempts then back off exponentially to 10min
+# cap. Centralised here so a single tuning change propagates to all
+# brand managers without per-file edits.
+#
+# Subclasses MAY override by setting class-level overrides BEFORE
+# ``super().__init__()``. The defaults are sane for production VAG
+# brokers; only override for unit tests that need accelerated retries.
+PUSH_INITIAL_BACKOFF_S: float = 5.0
+PUSH_MAX_BACKOFF_S: float = 600.0
+PUSH_BACKOFF_MULTIPLIER: float = 2.0
+PUSH_FAST_RETRY_THRESHOLD: int = 10  # First N retries skip cap
 
 # v2.2.0 Phase 3 PR #12/20 — circuit-breaker tuning.
 #
@@ -115,6 +133,12 @@ class PushManager(ABC):
         # strike-counting + trip + auto-reset arithmetic.
         self._strike_count: int = 0
         self._tripped_at: datetime | None = None
+        # v2.2.0 Phase 5a PR #18/20 — backoff state extracted from
+        # per-brand duplication. Identical bounds across all push
+        # managers; centralised here so a single tuning change
+        # propagates to all brands without per-file edits.
+        self._backoff_seconds: float = PUSH_INITIAL_BACKOFF_S
+        self._consecutive_fast_retries: int = 0
 
     @property
     def state(self) -> PushManagerState:
@@ -244,6 +268,44 @@ class PushManager(ABC):
         Idempotent. Waits for the task to finish (with timeout) so
         the caller can rely on resource release upon return.
         """
+
+    def _advance_backoff(self) -> None:
+        """Bump reconnect-backoff with jitter, capped per myskoda PR #566.
+
+        v2.2.0 Phase 5a PR #18/20: extracted from per-brand duplication.
+        First ``PUSH_FAST_RETRY_THRESHOLD`` retries grow linearly without
+        the hard cap; afterwards the exponential cap kicks in. Jitter
+        prevents reconnect-storm thundering on broker outages.
+
+        Called by subclasses from their ``_run_loop`` after a connection
+        failure + a successful ``_record_failure()`` strike record.
+        """
+        self._consecutive_fast_retries += 1
+        if self._consecutive_fast_retries <= PUSH_FAST_RETRY_THRESHOLD:
+            self._backoff_seconds = min(
+                self._backoff_seconds * PUSH_BACKOFF_MULTIPLIER,
+                PUSH_MAX_BACKOFF_S,
+            )
+        else:
+            self._backoff_seconds = PUSH_MAX_BACKOFF_S
+        # Jitter: ±10% of current backoff
+        jitter = self._backoff_seconds * 0.1 * (2 * random.random() - 1)
+        self._backoff_seconds = max(
+            PUSH_INITIAL_BACKOFF_S,
+            self._backoff_seconds + jitter,
+        )
+
+    def _reset_backoff(self) -> None:
+        """Reset backoff after a successful connection.
+
+        v2.2.0 Phase 5a PR #18/20: extracted from per-brand duplication.
+        Called from ``_connect_and_listen`` once the connection is
+        established + first message received. Stub managers (pre-live-
+        activation) don't call this yet — they'll start invoking it
+        when the real network path lights up.
+        """
+        self._backoff_seconds = PUSH_INITIAL_BACKOFF_S
+        self._consecutive_fast_retries = 0
 
     async def emit(self, event: PushUpdateEvent) -> None:
         """Forward an event to the coordinator callback.

@@ -170,8 +170,9 @@ class TestBackoff:
     def test_backoff_constants_match_other_managers(self):
         """Same backoff bounds as v1.18.0 Skoda + v1.19.0 CUPRA/SEAT
         for behavioural consistency across all 3 push managers."""
-        from custom_components.vag_connect.cariad.push.audi_vw_fcm import (
-            _INITIAL_BACKOFF_S, _MAX_BACKOFF_S,
+        from custom_components.vag_connect.cariad.push.base import (
+            PUSH_INITIAL_BACKOFF_S as _INITIAL_BACKOFF_S,
+            PUSH_MAX_BACKOFF_S as _MAX_BACKOFF_S,
         )
         assert _INITIAL_BACKOFF_S == 5.0
         assert _MAX_BACKOFF_S == 600.0
@@ -183,14 +184,14 @@ class TestBackoff:
         assert m._backoff_seconds > initial
 
     def test_advance_capped(self):
-        from custom_components.vag_connect.cariad.push.audi_vw_fcm import _MAX_BACKOFF_S
+        from custom_components.vag_connect.cariad.push.base import PUSH_MAX_BACKOFF_S as _MAX_BACKOFF_S
         m = self._new_manager()
         for _ in range(50):
             m._advance_backoff()
         assert m._backoff_seconds <= _MAX_BACKOFF_S * 1.15
 
     def test_reset_to_initial(self):
-        from custom_components.vag_connect.cariad.push.audi_vw_fcm import _INITIAL_BACKOFF_S
+        from custom_components.vag_connect.cariad.push.base import PUSH_INITIAL_BACKOFF_S as _INITIAL_BACKOFF_S
         m = self._new_manager()
         m._advance_backoff()
         m._reset_backoff()

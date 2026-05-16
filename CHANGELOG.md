@@ -52,6 +52,25 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ### Added
 
+- **Push-Bus Internal Abstraction Refactor (Phase 5a PR #18/20)** —
+  Internal-only refactor — kein user-facing behaviour change. Extrahiert
+  die duplizierten `_advance_backoff` + `_reset_backoff` methods +
+  backoff constants aus den 3 brand push managers in die `PushManager`
+  base class. Single source of truth: `PUSH_INITIAL_BACKOFF_S`,
+  `PUSH_MAX_BACKOFF_S`, `PUSH_BACKOFF_MULTIPLIER`,
+  `PUSH_FAST_RETRY_THRESHOLD` jetzt module-level in `base.py`.
+  ~80 Zeilen Duplikation entfernt (3× je: 4 constants + 2 methods +
+  random import + 2 init-state vars). **Future push managers (Phase 4
+  brand scaffolds when activated) inherit the pattern automatisch
+  via `super().__init__()`** — kein per-brand re-implementation
+  nötig. **Behaviour unchanged**: same jitter-formula, same caps,
+  same threshold. 18 Tests verifizieren: constants in base + per-brand
+  duplikate weg + inherited methods produzieren correct behavior +
+  alle 3 brand managers haben PushManager._advance_backoff (identity
+  check, nicht subclass override).
+  *"DRY — Don't Repeat Yourself. Also: Don't Repeat Yourself."
+  — Sheldon Cooper.*
+
 - **CUPRA Scout #232 — `mycar.engines.secondary` wiring (matthias0304 2026-05-16)** —
   CUPRA PHEV companion zu Skoda Scout #220 (PR #6). OLA `mycar.engines.
   secondary` 3-key block auf Formentor PHEV / Leon e-Hybrid mirrors die

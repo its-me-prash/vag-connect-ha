@@ -88,7 +88,6 @@ from __future__ import annotations
 
 import asyncio
 import logging
-import random
 from typing import Any
 
 from .base import PushManager, PushManagerState, PushEventCallback
@@ -106,12 +105,8 @@ _CARIAD_FCM_API_KEY = "<pending-tester>"
 # we use elsewhere (verified mal-1a.prd.ece.vwg-connect.com pattern).
 _CARIAD_NOTIFICATION_BASE = "https://mal-1a.prd.ece.vwg-connect.com"
 
-# Reconnect backoff bounds — same constants as v1.18.0 Skoda MQTT
-# + v1.19.0 CUPRA/SEAT FCM for consistency.
-_INITIAL_BACKOFF_S = 5.0
-_MAX_BACKOFF_S = 600.0
-_BACKOFF_MULTIPLIER = 2.0
-_FAST_RETRY_THRESHOLD = 10
+# v2.2.0 Phase 5a PR #18/20: backoff constants moved to ``base.py``
+# (``PUSH_INITIAL_BACKOFF_S`` etc.). Shared across all push managers.
 
 
 class AudiVWPushManager(PushManager):
@@ -167,8 +162,8 @@ class AudiVWPushManager(PushManager):
         self._brand = brand
         self._loop_task: asyncio.Task | None = None
         self._stop_event: asyncio.Event = asyncio.Event()
-        self._backoff_seconds: float = _INITIAL_BACKOFF_S
-        self._consecutive_fast_retries: int = 0
+        # v2.2.0 Phase 5a PR #18/20: backoff state moved to PushManager
+        # base ``__init__`` (set by ``super().__init__(on_event)`` above).
 
     async def start(self) -> None:
         """Spawn the FCM receive loop. Idempotent.
@@ -322,23 +317,5 @@ class AudiVWPushManager(PushManager):
             raise
         self._state = PushManagerState.STOPPED
 
-    def _advance_backoff(self) -> None:
-        """Bump backoff with jitter, capped. Mirrors v1.18.0/v1.19.0."""
-        self._consecutive_fast_retries += 1
-        if self._consecutive_fast_retries <= _FAST_RETRY_THRESHOLD:
-            self._backoff_seconds = min(
-                self._backoff_seconds * _BACKOFF_MULTIPLIER,
-                _MAX_BACKOFF_S,
-            )
-        else:
-            self._backoff_seconds = _MAX_BACKOFF_S
-        jitter = self._backoff_seconds * 0.1 * (2 * random.random() - 1)
-        self._backoff_seconds = max(
-            _INITIAL_BACKOFF_S,
-            self._backoff_seconds + jitter,
-        )
-
-    def _reset_backoff(self) -> None:
-        """Reset after successful connect."""
-        self._backoff_seconds = _INITIAL_BACKOFF_S
-        self._consecutive_fast_retries = 0
+    # v2.2.0 Phase 5a PR #18/20: ``_advance_backoff`` + ``_reset_backoff``
+    # moved to ``PushManager`` base class. Inherited via ``super``.
