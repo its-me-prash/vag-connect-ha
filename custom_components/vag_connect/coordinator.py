@@ -1312,7 +1312,10 @@ class VagConnectCoordinator(DataUpdateCoordinator):
 
         # v2.2.0 — MY-quirk check FIRST. If a known-broken firmware
         # suppresses this command, no point asking the backend.
-        vehicle = self.vehicles.get(vin) or {}
+        # Defensive ``getattr`` because some unit-tests construct the
+        # coordinator via ``__new__`` without populating ``vehicles``.
+        vehicles_map = getattr(self, "vehicles", None) or {}
+        vehicle = vehicles_map.get(vin) or {}
         if is_command_suppressed(
             brand,
             vehicle.get("model"),

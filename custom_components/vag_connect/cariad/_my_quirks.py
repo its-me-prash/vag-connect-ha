@@ -55,7 +55,7 @@ matching VIN without entity-ID renames or user-visible churn.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 import logging
 
 _LOGGER = logging.getLogger(__name__)
