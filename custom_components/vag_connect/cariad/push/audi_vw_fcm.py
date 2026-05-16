@@ -171,8 +171,25 @@ class AudiVWPushManager(PushManager):
         self._consecutive_fast_retries: int = 0
 
     async def start(self) -> None:
-        """Spawn the FCM receive loop. Idempotent."""
+        """Spawn the FCM receive loop. Idempotent.
+
+        v2.2.0 PR #14/20: respects the circuit-breaker (PR #12 base).
+        If the breaker is tripped (3 consecutive start failures), this
+        returns immediately without retrying. Caller can poll ``state``
+        for the TRIPPED signal and surface it via Repair-Issue.
+        """
         if self._state in (PushManagerState.CONNECTED, PushManagerState.STARTING):
+            return
+        # v2.2.0 PR #14/20 — short-circuit if breaker tripped.
+        # Reading ``self.state`` (not ``self._state``) honours the
+        # auto-reset transition in the property-getter (1h cooldown).
+        if self.state == PushManagerState.TRIPPED:
+            _LOGGER.warning(
+                "Audi/VW push (brand=%s): circuit-breaker TRIPPED — "
+                "declining start. Wait for auto-reset (1h) or call "
+                "reset_circuit_breaker().",
+                self._brand,
+            )
             return
         if not self._vins:
             _LOGGER.info(
@@ -191,6 +208,10 @@ class AudiVWPushManager(PushManager):
                 err,
             )
             self._state = PushManagerState.UNAVAILABLE
+            # v2.2.0 PR #14/20: missing-deps strike. After 3 attempts
+            # the breaker trips so we stop spamming the log every
+            # coordinator-start cycle.
+            self._record_failure(f"missing-dep: {err}")
             return
         self._loop_task = asyncio.create_task(
             self._run_loop(),
@@ -241,6 +262,10 @@ class AudiVWPushManager(PushManager):
                     self._backoff_seconds,
                 )
                 self._state = PushManagerState.RECONNECTING
+                # v2.2.0 PR #14/20 — record this strike. After 3
+                # consecutive failures the breaker trips and we
+                # exit the outer loop (check below after backoff).
+                self._record_failure(f"connect-loop: {type(err).__name__}")
                 try:
                     await asyncio.wait_for(
                         self._stop_event.wait(),
@@ -250,6 +275,18 @@ class AudiVWPushManager(PushManager):
                 except asyncio.TimeoutError:
                     pass
                 self._advance_backoff()
+                # v2.2.0 PR #14/20 — exit if breaker tripped during
+                # the strike-counting above. Reading ``self.state``
+                # honours the auto-reset transition.
+                if self.state == PushManagerState.TRIPPED:
+                    _LOGGER.error(
+                        "Audi/VW push (brand=%s): circuit-breaker "
+                        "tripped — exiting reconnect loop. Next start() "
+                        "call will short-circuit until auto-reset (1h) "
+                        "or manual reset_circuit_breaker().",
+                        self._brand,
+                    )
+                    break
 
     async def _connect_and_listen(self) -> None:
         """One FCM register + Cariad subscribe + receive cycle.
@@ -270,6 +307,9 @@ class AudiVWPushManager(PushManager):
         """
         token = await self._access_token_provider()  # noqa: F841 — used in real impl
         self._state = PushManagerState.CONNECTED
+        # v2.2.0 PR #14/20 — successful connect resets the breaker.
+        # Idempotent: no-op when strike_count is already 0.
+        self._record_success()
         _LOGGER.info(
             "Audi/VW push: foundation stub — live activation pending. "
             "Brand=%s, would register FCM for VINs: %s",
