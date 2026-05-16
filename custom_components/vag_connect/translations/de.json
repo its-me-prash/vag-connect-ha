@@ -289,6 +289,12 @@
       "departure_timer_enabled_count": {
         "name": "Abfahrtstimer aktiviert"
       },
+      "fuel_tank_capacity_liters": {
+        "name": "Tankvolumen"
+      },
+      "primary_engine_type": {
+        "name": "Motortyp (primär)"
+      },
       "steering_wheel_position": {
         "name": "Lenkradposition"
       },

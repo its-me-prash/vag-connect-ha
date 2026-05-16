@@ -592,6 +592,25 @@ class VehicleData:
     # dailyPowerBudgetAvailable`.
     daily_power_budget_available: bool | None = None
 
+    # v2.2.0 Phase 7 PR #3 — SEAT/CUPRA `engines.primary` block.
+    # Silenced via wildcard `engines.primary.*` since v1.16.1 (#122
+    # r1150gs SEAT scout 2026-05-02 — "3 keys observed") but never
+    # parsed. Companion to PR #6/#18 `secondary_engine_*` fields
+    # which were wired for the PHEV secondary-engine block.
+    #
+    # `primary_engine_type`: enum string PETROL / DIESEL / ELECTRIC /
+    # HYBRID. Useful for type-aware automations and cross-brand
+    # diagnostics. Distinct from the existing `is_electric`/
+    # `is_hybrid`/`has_combustion` derived booleans — this is the
+    # backend's authoritative classification of the *primary* engine.
+    primary_engine_type: str | None = None
+
+    # `fuel_tank_capacity_liters`: absolute tank size in liters. With
+    # the existing `fuel_level` (percent), users can derive
+    # remaining-litres via simple template. Saves them looking up
+    # the vehicle spec PDF.
+    fuel_tank_capacity_liters: int | None = None
+
     # v2.2.0 Phase 2 PR #8/20 — Connect-subscription expiry timestamp.
     # SEAT/CUPRA OLA ``mycar.services`` block exposes a per-service
     # entitlement map. Each entry typically carries either an

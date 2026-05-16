@@ -289,6 +289,12 @@
       "departure_timer_enabled_count": {
         "name": "Aktivované odjezdové časovače"
       },
+      "fuel_tank_capacity_liters": {
+        "name": "Objem nádrže"
+      },
+      "primary_engine_type": {
+        "name": "Typ primárního motoru"
+      },
       "steering_wheel_position": {
         "name": "Pozice volantu"
       },

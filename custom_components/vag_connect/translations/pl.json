@@ -289,6 +289,12 @@
       "departure_timer_enabled_count": {
         "name": "Aktywne timery odjazdu"
       },
+      "fuel_tank_capacity_liters": {
+        "name": "Pojemność baku"
+      },
+      "primary_engine_type": {
+        "name": "Typ silnika głównego"
+      },
       "steering_wheel_position": {
         "name": "Położenie kierownicy"
       },

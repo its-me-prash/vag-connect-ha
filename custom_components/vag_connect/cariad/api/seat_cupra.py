@@ -315,6 +315,31 @@ class SeatCupraClient(CariadBaseClient):
                     if isinstance(sec_fuel, (int, float)):
                         d.secondary_engine_fuel_level_pct = int(sec_fuel)
 
+                # v2.2.0 Phase 7 PR #3 — parse the engines.primary block.
+                # Silenced via wildcard since v1.16.1 but never read.
+                # 3 known keys per r1150gs scout #122 + pycupra references:
+                # `fuelType`, `tankCapacity`, `range` (last one redundant
+                # with the separate `ranges` block — skip).
+                #
+                # Same defensive multi-variant lookup as the secondary
+                # block (Scout #232 / PR #18) — OLA has historically
+                # shipped alternative spellings for the same semantic.
+                primary = v(engines, "primary")
+                if isinstance(primary, dict):
+                    primary_type = (
+                        primary.get("fuelType")
+                        or primary.get("engineType")
+                    )
+                    if isinstance(primary_type, str) and primary_type:
+                        d.primary_engine_type = primary_type
+                    tank_cap = (
+                        primary.get("tankCapacity")
+                        or primary.get("tankCapacityInLiters")
+                        or primary.get("tankSize")
+                    )
+                    if isinstance(tank_cap, (int, float)) and tank_cap > 0:
+                        d.fuel_tank_capacity_liters = int(tank_cap)
+
         # ── Ranges ───────────────────────────────────────────────────────────
         if isinstance(ranges, dict):
             electric = v(ranges, "electricRange")
