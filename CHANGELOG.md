@@ -52,6 +52,27 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ### Added
 
+- **CUPRA-standalone Brand-Adapter Scaffold (Phase 4 PR #17/20, BETA — Tester pending)** —
+  Phase 4 closer. Dritter scaffold neben Lambo (PR #15) + Bentley (PR #16),
+  aber mit **unterschiedlicher inheritance story**: Lambo/Bentley
+  inheriten von `VWEUClient` (Cariad-BFF backend), CUPRA-standalone
+  inheritet von `SeatCupraClient` (OLA backend, same parser surface).
+  Reserviert brand-id `cupra_standalone` für den anstehenden
+  `cupra-api.vwgroup.io` cut-over (per pycupra commit 0f3b1c7 + 2026-Q1/
+  Q2 community reports — CUPRA Connect migriert auf brand-isolated
+  backend, expected fully cut over by 2026-H2). **OAuth flow unchanged**:
+  gleicher `client_id` / `redirect_uri` / `client_secret` wie legacy
+  BRAND_CUPRA — nur der post-auth API base host differs.
+  **Existing CUPRA users see ZERO behaviour change** — der legacy
+  shared SEAT/CUPRA OLA path bleibt der canonical CUPRA backend bis
+  Tester den cut-over validiert. **3-way luxury parity test**: alle
+  3 Phase-4 scaffolds (Lambo + Bentley + CUPRA-standalone) müssen
+  beta-gated bleiben — jeder slip-through bricht den test. Phase 4 =
+  ✅ COMPLETE.
+  *"In our profession, precision matters. Especially when reserving
+  brand-IDs for backend cut-overs that haven't fully cut over yet."
+  — Leonard Hofstadter.*
+
 - **Bentley Brand-Adapter Scaffold (Phase 4 PR #16/20, BETA — Tester pending)** —
   Sister-PR zu PR #15 (Lamborghini Unica). **Identisches Pattern**,
   identische beta-gate enforcement, identische VWEUClient inheritance
