@@ -36,6 +36,41 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 > — mit jeder geänderten Datei, jeder Zeile, jeder Issue-Referenz und der
 > Methodik dahinter.
 
+## [Unreleased] — v2.2.0 "Legen — wait for it — dary" (in progress)
+
+> Codename: **"Legen — wait for it — dary"** (HIMYM-themed Mega-Release).
+> Bundles ~19 PRs across 6 phases inspired by deep cross-platform competitive
+> intelligence crawl (2026-05-16). Three brand-new luxury adapters (Lambo,
+> Bentley, CUPRA standalone), MQTT/FCM live activation with 3-strike
+> circuit-breaker, Pydantic v2 dual-write migration, 8 new 2026 Cariad
+> endpoints, and the universal Consent-Screen wall-detector that closes
+> the #1 cause of broken installs across the entire VAG-HA ecosystem
+> in 2026. Failsafe-first: every risky feature is opt-in, every parser
+> change has a fallback, ConfigEntry stays v1-compatible for clean
+> rollback. v3.0.0 reserved for genuine breaking changes (ConfigEntry
+> restructure, EU Data Act activation, Pydantic dataclass-removal).
+
+### Fixed
+
+- **Universal Consent-Screen Wall Detection (Auth0 + Legacy paths)** —
+  Pre-v2.2.0 the IDK redirect-loop only detected `terms-and-conditions`
+  + `consent/marketing` on the legacy signin-service path, and ZERO
+  consent markers on the modern Auth0 Universal Login path. Result:
+  the #1 cause of broken installs across all 2026 VAG-HA integrations
+  (pycupra #83, Audi PR #731, evcc #29760, myskoda #976) surfaced as a
+  generic `AuthenticationError("no app:// redirect")` with zero
+  actionable hint.
+
+  v2.2.0 makes the matcher universal: both paths now check the redirect
+  URL for 6 consent markers — `consent/marketing`, `/u/consent`,
+  `cupraid.vwgroup.io`, `skoda-id.vwgroup.io`, `skodaid.vwgroup.io`,
+  `terms-and-conditions` — and raise the dedicated
+  `MarketingConsentError` / `TermsAndConditionsError` so the existing
+  Repair-flow (since v2.0.0) surfaces an actionable deep-link to the
+  brand portal. *Bazinga* — the wall is now visible.
+
+---
+
 ## [2.1.0] - 2026-05-15 ✨🌍 Post-Big-Bang Wins — Skoda Climate-Ready + HomeRegion + User-Tools / Post-Big-Bang Wins — Skoda Climate-Ready + HomeRegion + User-Tools
 
 > v2.1.0 sammelt 4 post-v2.0 Wins die im Big-Bang Scope-Cut waren oder
