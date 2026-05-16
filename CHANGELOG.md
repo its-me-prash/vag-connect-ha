@@ -69,6 +69,24 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
   `datetime → ISO 8601`, `timedelta → float seconds`, `set → sorted list`,
   `bytes → utf-8 oder hex`, `dataclass → dict (recursive)`. **Never raises.**
 
+- **MY/Platform Quirk-Suppression Layer (`cariad/_my_quirks.py`)** —
+  zweite Filter-Schicht orthogonal zu `_capabilities.py` Phase 3. Während
+  Phase 3 Capabilities filtert die das Backend **nicht** als verfügbar
+  meldet, fängt diese neue Schicht den umgekehrten Fall: das Backend
+  meldet die Capability als verfügbar, aber die konkrete Firmware/MY-
+  Kombination crashed silent beim tatsächlichen Call. Seed-Tabelle:
+  **CUPRA Born MY24-MY25 → suppress `command_unlock`** (pycupra #79 —
+  POST `/api/v2/access/{vin}/unlock` gibt 400 mit leerem Body zurück),
+  **Audi PPE e-tron (Q6/A6, MY24+) → suppress `command_engine_start` +
+  `command_engine_stop`** (audi_connect_ha #711 + PPE-Platform-Inferenz:
+  pure-electric Plattform kann keinen Remote-Engine-Start). Wired in
+  `coordinator.command_capability_supported()` **vor** der Backend-Cap-
+  Lookup. Pure function, O(N) check, defensiv: fehlendes model / year
+  → keine Suppression (no false-hides). Neue Quirks shippen heißt:
+  einen `MYQuirk(...)` Eintrag mit Source-Attribution hinzufügen —
+  next-coordinator-update versteckt die Entity ohne Renames.
+  *"Have you met... your car's actual capabilities?" — Ted Mosby.*
+
 ### Fixed
 
 - **Universal Consent-Screen Wall Detection (Auth0 + Legacy paths)** —
