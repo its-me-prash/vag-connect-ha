@@ -1406,6 +1406,18 @@ class VWEUClient(CariadBaseClient):
 
         # ── Readiness / online ─────────────────────────────────────────────────
         d.is_online = v(raw, "readiness", "readinessStatus", "value", "connectionState", "isOnline") is True
+        # v2.2.0 Phase 7 PR #2 — telematics modem daily power budget.
+        # When False the modem is rationing wake-ups to preserve 12V —
+        # long poll intervals are the user-visible symptom. Surfaced
+        # as binary_sensor so users can build "if power-budget
+        # exhausted → warn" automations. Defensive: only assign when
+        # backend returns a real bool (not None / missing).
+        power_budget = v(
+            raw, "readiness", "readinessStatus", "value",
+            "connectionState", "dailyPowerBudgetAvailable",
+        )
+        if isinstance(power_budget, bool):
+            d.daily_power_budget_available = power_budget
 
         # ── Vehicle health / service ──────────────────────────────────────────
         # ── Warning lights ────────────────────────────────────────────────────
@@ -1493,6 +1505,15 @@ class VWEUClient(CariadBaseClient):
             time_str = timer.get("departureTime", {}).get("time") if timer.get("departureTime") else None
             setattr(d, f"departure_timer_{i}_enabled", enabled)
             setattr(d, f"departure_timer_{i}_time", time_str)
+        # v2.2.0 Phase 7 PR #2 — aggregate count of enabled timers.
+        # Saves users the templating effort of summing 3 separate
+        # binary states. Defensive: only set when the timers list
+        # is actually present (not just empty) — keeps the
+        # phantom-protection gate honest.
+        if timers:
+            d.departure_timer_enabled_count = sum(
+                1 for t in timers if t.get("enabled") is True
+            )
 
         # ── Parking position ──────────────────────────────────────────────────
         # v1.27.1 hotfix: Cariad-BFF ``/vehicle/v1/vehicles/{vin}/parkingposition``

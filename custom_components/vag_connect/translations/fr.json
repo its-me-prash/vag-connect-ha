@@ -286,6 +286,9 @@
       "battery_temp_max": {
         "name": "Température batterie (Max)"
       },
+      "departure_timer_enabled_count": {
+        "name": "Minuteries de départ activées"
+      },
       "steering_wheel_position": {
         "name": "Position du volant"
       },
@@ -416,6 +419,9 @@
       },
       "ignition_on": {
         "name": "Allumage"
+      },
+      "daily_power_budget_available": {
+        "name": "Budget énergétique journalier disponible"
       },
       "tire_pressure_warning": {
         "name": "Alerte Pression Pneus"

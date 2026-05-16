@@ -92,6 +92,31 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ### Added
 
+- **Phase 7 PR #2 — VW EU/Audi Tier-B Diagnostics** —
+  Zwei CARIAD-BFF Felder die der parser bereits READS für adjacent
+  features (timers list, readiness block) aber nie als aggregate /
+  diagnostic entities exposed:
+  - **`sensor.departure_timer_enabled_count`** (VW EU + Audi):
+    aggregate count (0-3) of currently-enabled departure timers.
+    Saves users die templating-effort von 3 binary states summen.
+    Defensive: nur gesetzt wenn die timers list tatsächlich present
+    ist (nicht just empty) — phantom-gate bleibt honest. Multi-
+    variant truthy-check rejected (only literal `True` counts —
+    string "true" / int 1 zählen nicht).
+  - **`binary_sensor.daily_power_budget_available`** (VW EU + Audi):
+    telematics modem daily power budget. Wenn OFF, der modem rationiert
+    wake-ups um 12V zu schonen → long poll intervals sind das user-
+    visible symptom. Diagnostic für "if power-budget exhausted →
+    warn 12V check" automations. `isinstance(..., bool)` guard
+    rejected non-bool variants (Python's `isinstance(1, bool) is
+    False` ist hier ein feature).
+  Both VW EU + Audi only; other brands' parsers don't populate
+  these aggregates → fields stay None → kein phantom entity.
+  17 Tests inkl. parser-mirror defensives + entity-registration +
+  9-language coverage.
+  *"Three timers and only one is enabled? Yes, that is mathematically
+  one. I do not need to count higher to know this." — Sheldon Cooper.*
+
 - **Phase 7 PR #1 — Quick-Wins-Batch (4 sensors aus scout-audit)** —
   Scout-Audit (cross-reference `_unexpected_keys.py` ↔ tatsächliche
   parser-reads) identifizierte ~12 fields die silenced waren aber nie

@@ -286,6 +286,9 @@
       "battery_temp_max": {
         "name": "Teplota baterie (Max)"
       },
+      "departure_timer_enabled_count": {
+        "name": "Aktivované odjezdové časovače"
+      },
       "steering_wheel_position": {
         "name": "Pozice volantu"
       },
@@ -416,6 +419,9 @@
       },
       "ignition_on": {
         "name": "Zapalování"
+      },
+      "daily_power_budget_available": {
+        "name": "Denní rozpočet energie dostupný"
       },
       "tire_pressure_warning": {
         "name": "Varování Tlaku Pneumatik"
