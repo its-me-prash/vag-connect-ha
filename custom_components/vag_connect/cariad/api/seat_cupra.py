@@ -249,14 +249,20 @@ class SeatCupraClient(CariadBaseClient):
                         # Normalise trailing ``Z`` to ``+00:00`` for
                         # ``fromisoformat`` (Python 3.11+ accepts ``Z``
                         # natively but we keep this for older HA users).
-                        parsed = datetime.fromisoformat(
+                        exp_dt = datetime.fromisoformat(
                             earliest.replace("Z", "+00:00")
                         )
-                        if parsed.tzinfo is None:
-                            parsed = parsed.replace(tzinfo=timezone.utc)
-                        d.subscription_active = (
-                            parsed > datetime.now(tz=timezone.utc)
-                        )
+                        if exp_dt.tzinfo is None:
+                            exp_dt = exp_dt.replace(tzinfo=timezone.utc)
+                        now_utc = datetime.now(tz=timezone.utc)
+                        d.subscription_active = exp_dt > now_utc
+                        # v2.2.0 Phase 2 PR #11/20 — derived integer days
+                        # remaining. Negative when expired (e.g. -3 means
+                        # "expired 3 days ago"). Floor-divide so partial
+                        # days don't inflate the count.
+                        d.subscription_days_remaining = (
+                            exp_dt - now_utc
+                        ).days
                     except (ValueError, TypeError) as exc:
                         _LOGGER.debug(
                             "subscription_active: could not parse expiry "

@@ -280,6 +280,9 @@
       "subscription_expiry_at": {
         "name": "Předplatné vyprší"
       },
+      "subscription_days_remaining": {
+        "name": "Předplatné zbývá dní"
+      },
       "next_charging_timer_id": {
         "name": "Next Charging Timer ID"
       },

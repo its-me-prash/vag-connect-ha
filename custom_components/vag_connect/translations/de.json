@@ -280,6 +280,9 @@
       "subscription_expiry_at": {
         "name": "Abonnement läuft ab"
       },
+      "subscription_days_remaining": {
+        "name": "Abonnement Restlaufzeit"
+      },
       "next_charging_timer_id": {
         "name": "Nächster Lade-Timer ID"
       },

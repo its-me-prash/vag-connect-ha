@@ -467,6 +467,18 @@ class VehicleData:
     # with perpetual entitlements don't get false "expired" alarms.
     subscription_active: bool | None = None
 
+    # v2.2.0 Phase 2 PR #11/20 — Derived integer days until expiry.
+    # Closes the subscription-feature triangle (expiry timestamp +
+    # active bool + days-remaining int). Computed from
+    # ``subscription_expiry_at`` minus current UTC, rounded DOWN to
+    # whole days. Negative values when expired (e.g. -3 means "expired
+    # 3 days ago"). Stays None when ``subscription_expiry_at`` is None
+    # (perpetual entitlement or brand without subscription block).
+    # Use case: threshold-based renewal reminders like
+    # ``automation: if sensor.subscription_days_remaining < 30 → notify``.
+    # Much easier to template against than parsing the timestamp.
+    subscription_days_remaining: int | None = None
+
     # Audi/VW EU charging rate in km/h (parity with Skoda + CUPRA/SEAT
     # which have ``charging_rate_kmh`` since v1.10.0). From
     # ``charging.chargingStatus.value.chargeRate_kmph``. Reused field

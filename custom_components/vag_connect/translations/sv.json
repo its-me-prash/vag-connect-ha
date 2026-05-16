@@ -280,6 +280,9 @@
       "subscription_expiry_at": {
         "name": "Prenumeration löper ut"
       },
+      "subscription_days_remaining": {
+        "name": "Prenumeration dagar kvar"
+      },
       "next_charging_timer_id": {
         "name": "Next Charging Timer ID"
       },
