@@ -242,6 +242,19 @@ _NEW_BINARY: tuple[VagBinarySensorDescription, ...] = (
         icon="mdi:battery-charging",
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
+    # v2.2.0 Phase 2 PR #9/20 — Companion to subscription_expiry_at
+    # (PR #8/20). Simple True/False "is your Connect subscription
+    # currently valid?" — perfect for HA automations like
+    # ``if binary_sensor.subscription_active == off → notify``.
+    # SEAT/CUPRA-only today; tri-state semantics (None preserved for
+    # perpetual entitlements) prevent false-alarms.
+    VagBinarySensorDescription(
+        key="subscription_active",
+        translation_key="subscription_active",
+        data_key="subscription_active",
+        icon="mdi:check-decagram",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
     # v2.0.0 (Big-Bang) — Porsche TPMS warning aggregate (any corner
     # raising ``warning: true`` in the TIRE_PRESSURE measurement).
     # Brand-restricted via _DATA_PRESENT_REQUIRED below — non-Porsche
@@ -327,6 +340,10 @@ _DATA_PRESENT_REQUIRED: frozenset[str] = frozenset({
     # v2.2.0 (scout #220) — Skoda-only AC-without-external-power.
     # Other brands leave field None → no phantom entity.
     "air_conditioning_without_external_power",
+    # v2.2.0 PR #9/20 — SEAT/CUPRA-only subscription_active companion
+    # to PR #8 subscription_expiry_at. Field stays None on other brands
+    # AND on perpetual entitlements → no false-positive entity.
+    "subscription_active",
     # v2.0.0 (Big-Bang) — Porsche-only TPMS warning (PPA TIRE_PRESSURE
     # measurement). Non-Porsche vehicles leave the field None → no phantom.
     "tire_pressure_warning",
