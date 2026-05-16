@@ -21,7 +21,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .cariad._util import mask_vin
+from .cariad._util import json_safe, mask_vin
 from .coordinator import VagConnectCoordinator
 from .entity_base import VagConnectEntity
 
@@ -131,4 +131,9 @@ class VagConnectTracker(VagConnectEntity, TrackerEntity):
                 attrs[key] = val
         # Mask VIN for privacy in any UI that displays attributes
         attrs["vin_masked"] = mask_vin(self._vin)
-        return attrs
+        # v2.2.0 PR #3 — ``last_seen_at`` is a ``datetime`` (set by
+        # ``compute_connection_state``) which historically broke MQTT
+        # statestream + REST API + recorder (Skoda PR #1090 bug-class).
+        # ``json_safe`` recursively converts datetime → ISO 8601 string
+        # so every consumer of the attribute gets a JSON-native value.
+        return json_safe(attrs)

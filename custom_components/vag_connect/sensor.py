@@ -1036,11 +1036,18 @@ class VagConnectSensor(VagConnectEntity, SensorEntity):
         because HA caps state strings at 255 chars and per-trip metadata
         easily exceeds that. Other sensors return ``None`` so we don't
         accidentally inflate recorder rows.
+
+        v2.2.0 PR #3 — all return values wrapped in ``json_safe`` so
+        Phase-2 additions (which may introduce datetime fields, e.g.
+        ``fullyChargedAt``) can't accidentally break MQTT statestream /
+        recorder. Defensive against future regression.
         """
+        from .cariad._util import json_safe  # noqa: PLC0415
+
         if self.entity_description.key == "last_trip_distance_km":
             recent = self._vehicle.get("recent_trips")
             if isinstance(recent, list) and recent:
-                return {"recent_trips": recent[: 5]}
+                return json_safe({"recent_trips": recent[: 5]})
         # v1.15.0 (#35) — Skoda charging-history recent sessions go on
         # the cumulative total sensor. Same audi #113 pattern: list-
         # shaped data lives in attributes to dodge the 255-char state
@@ -1053,7 +1060,7 @@ class VagConnectSensor(VagConnectEntity, SensorEntity):
                 attrs["recent_sessions"] = recent[:5]
             if isinstance(ct, str) and ct:
                 attrs["last_session_current_type"] = ct
-            return attrs or None
+            return json_safe(attrs) if attrs else None
         # v1.16.0 (#25, #31) — Full registered profiles list lives in
         # attributes on the active-profile sensor so users can see all
         # configured locations + their per-location target SoCs at a
@@ -1061,7 +1068,7 @@ class VagConnectSensor(VagConnectEntity, SensorEntity):
         if self.entity_description.key == "active_charging_profile_name":
             profiles = self._vehicle.get("charging_profiles")
             if isinstance(profiles, list) and profiles:
-                return {"profiles": profiles}
+                return json_safe({"profiles": profiles})
         # v1.17.7 (#130 Chr1sDub + #133 christianmhz, 2026-05-04) —
         # Skoda preferred-workshop block surfaced on the
         # ``service_due_in_days`` sensor. Same audi #113 pattern:
@@ -1073,7 +1080,7 @@ class VagConnectSensor(VagConnectEntity, SensorEntity):
         if self.entity_description.key == "service_due_in_days":
             workshop = self._vehicle.get("preferred_workshop")
             if isinstance(workshop, dict) and workshop:
-                return {"preferred_workshop": workshop}
+                return json_safe({"preferred_workshop": workshop})
         # v1.20.0 Bundle 2 Phase A — full equipment list as attrs on
         # the equipment_count sensor (analog v1.14.0 #24 recent_trips
         # pattern). Native_value stays the int count for clean
@@ -1081,7 +1088,7 @@ class VagConnectSensor(VagConnectEntity, SensorEntity):
         if self.entity_description.key == "equipment_count":
             equip = self._vehicle.get("equipment")
             if isinstance(equip, list) and equip:
-                return {"equipment": equip}
+                return json_safe({"equipment": equip})
         return None
 
     @property

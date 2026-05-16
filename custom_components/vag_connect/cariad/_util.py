@@ -230,6 +230,84 @@ def safe_get(
     return node if node is not None else default
 
 
+def json_safe_dict(obj: dict[str, Any]) -> dict[str, Any]:
+    """v2.2.0 — Typed wrapper for ``json_safe`` when input + output are both dicts.
+
+    Exists to satisfy mypy strict ``--warn-return-any`` at call sites
+    that need ``dict[str, Any]`` rather than ``Any``. Most
+    ``extra_state_attributes`` methods declare ``dict[str, Any] | None``
+    return and need this typed shape.
+    """
+    result = json_safe(obj)
+    assert isinstance(result, dict)
+    return result
+
+
+def json_safe(obj: Any) -> Any:
+    """v2.2.0 — Recursively convert ``obj`` to a JSON-serialisable shape.
+
+    Closes the bug-class that hit Skoda PR #1090: ``extra_state_attributes``
+    silently broke MQTT statestream, recorder + REST API when an entity
+    exposed a ``datetime``, ``dataclass`` instance, ``set`` or any other
+    non-JSON-native Python type. HA's frontend renders the attribute as
+    ``unknown`` and the recorder logs a TypeError every poll.
+
+    Conversion rules:
+    - ``datetime`` / ``date`` → ISO 8601 string (UTC-suffixed when tz-aware)
+    - ``timedelta``           → total seconds (float)
+    - ``set`` / ``frozenset`` → sorted ``list``
+    - ``bytes`` / ``bytearray`` → ``utf-8`` string, or hex if decode fails
+    - dataclass instance → recursive ``asdict`` then re-process
+    - ``dict``            → keys coerced to str, values processed
+    - ``list`` / ``tuple`` → recursively processed
+    - Everything else (str/int/float/bool/None) → passed through
+
+    Never raises. On any unexpected error, falls back to ``str(obj)`` so
+    the entity still updates rather than going ``unknown``.
+
+    Usage in entity classes::
+
+        @property
+        def extra_state_attributes(self) -> dict[str, Any] | None:
+            attrs = {"last_seen_at": self._vehicle.get("last_seen_at"), ...}
+            return json_safe_dict(attrs)  # use typed wrapper for mypy
+    """
+    import dataclasses  # noqa: PLC0415 — local to keep _util import-light
+    from datetime import date, timedelta  # noqa: PLC0415
+
+    try:
+        if obj is None or isinstance(obj, (str, int, float, bool)):
+            return obj
+        if isinstance(obj, datetime):
+            # datetime → ISO 8601 with tz-suffix preserved
+            return obj.isoformat()
+        if isinstance(obj, date):
+            return obj.isoformat()
+        if isinstance(obj, timedelta):
+            return obj.total_seconds()
+        if isinstance(obj, (set, frozenset)):
+            return sorted(
+                (json_safe(item) for item in obj),
+                key=lambda x: str(x),
+            )
+        if isinstance(obj, (bytes, bytearray)):
+            try:
+                return bytes(obj).decode("utf-8")
+            except UnicodeDecodeError:
+                return bytes(obj).hex()
+        if dataclasses.is_dataclass(obj) and not isinstance(obj, type):
+            return json_safe(dataclasses.asdict(obj))
+        if isinstance(obj, dict):
+            return {str(k): json_safe(v) for k, v in obj.items()}
+        if isinstance(obj, (list, tuple)):
+            return [json_safe(item) for item in obj]
+        # Unknown type — fallback to repr-string so we never crash
+        return str(obj)
+    except Exception:  # noqa: BLE001 — defensive guarantee
+        _LOGGER.debug("json_safe: fallback for %s", type(obj).__name__, exc_info=True)
+        return str(obj)
+
+
 def mask_vin(vin: str | None) -> str:
     """Return a privacy-safe VIN representation for logs and diagnostics.
 
