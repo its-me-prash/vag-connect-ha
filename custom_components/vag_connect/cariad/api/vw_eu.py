@@ -1342,13 +1342,19 @@ class VWEUClient(CariadBaseClient):
                 try:
                     # Same Z-suffix normalisation as seat_cupra.py to
                     # support ``fromisoformat`` on older HA / Python.
-                    parsed = datetime.fromisoformat(
+                    # NB: variable name ``cap_expiry_dt`` (not ``parsed``)
+                    # because ``parsed`` is reused elsewhere in this
+                    # function as ``int | None`` from ``safe_int`` — mypy
+                    # would infer the wider union otherwise.
+                    cap_expiry_dt = datetime.fromisoformat(
                         cap_earliest.replace("Z", "+00:00")
                     )
-                    if parsed.tzinfo is None:
-                        parsed = parsed.replace(tzinfo=timezone.utc)
+                    if cap_expiry_dt.tzinfo is None:
+                        cap_expiry_dt = cap_expiry_dt.replace(
+                            tzinfo=timezone.utc
+                        )
                     d.subscription_active = (
-                        parsed > datetime.now(tz=timezone.utc)
+                        cap_expiry_dt > datetime.now(tz=timezone.utc)
                     )
                 except (ValueError, TypeError):
                     # Leave subscription_active at None — don't false-
