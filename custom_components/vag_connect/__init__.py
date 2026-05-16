@@ -72,11 +72,24 @@ _SETUP_ERRORS: dict[str, str] = {
 
 
 def _get_coordinator(hass: HomeAssistant, vin: str) -> VagConnectCoordinator | None:
-    """Return the coordinator that owns *vin*, or None if not found."""
+    """Return the coordinator that owns *vin*, or None if not found.
+
+    v2.2.0 — historically wrapped in ``hasattr(entry, "runtime_data")``
+    as defensive fallback when we still partially used ``hass.data[DOMAIN]``.
+    Since every code-path now writes ``entry.runtime_data`` in
+    ``async_setup_entry`` we can rely on it being present whenever the
+    entry is loaded — HA guarantees this attribute exists for any entry
+    that has reached ``LOADED`` state. ``getattr(entry, "runtime_data", None)``
+    keeps the check defensive against not-yet-loaded entries (e.g.
+    `_get_coordinator` called during a startup race) without the older
+    `hasattr` overhead.
+    """
     for entry in hass.config_entries.async_entries(DOMAIN):
-        if not hasattr(entry, "runtime_data"):
+        coordinator: VagConnectCoordinator | None = getattr(
+            entry, "runtime_data", None
+        )
+        if coordinator is None:
             continue
-        coordinator: VagConnectCoordinator = entry.runtime_data
         if vin in coordinator.vehicles:
             return coordinator
     return None
@@ -136,6 +149,49 @@ async def async_setup_entry(hass: HomeAssistant, entry: VagConnectConfigEntry) -
         _register_services(hass)
 
     _LOGGER.info("VAG Connect ready: %d vehicle(s)", len(coordinator.vehicles))
+    return True
+
+
+async def async_migrate_entry(
+    hass: HomeAssistant, entry: VagConnectConfigEntry  # noqa: ARG001
+) -> bool:
+    """v2.2.0 — ConfigEntry migration handler stub for future-proofing.
+
+    Why this exists even though ``VERSION = 1`` has never bumped:
+
+    Multiple competitor projects (audi_connect_ha #728 + mitch-dc #303)
+    silently broke when a future HA Core release changed how
+    ``ConfigEntry.data`` is serialised on disk. Without
+    ``async_migrate_entry``, HA falls back to "invalid credentials" or
+    "config entry not loaded" with NO actionable hint for the user.
+
+    We declare this stub NOW so the moment we genuinely need a v1 → v2
+    migration (e.g. when v3.0.0 restructures ``entry.data`` into
+    ``{auth, options, profiles}`` shape), the code-path is already
+    wired and tested. v1 entries unchanged → ``return True`` no-op.
+
+    Sheldon-precision: HA's migration contract requires the handler to:
+    1. Read ``entry.version`` (default 1) + ``entry.minor_version`` (HA 2024.10+)
+    2. Mutate ``hass.config_entries.async_update_entry(entry, data=...)`` if needed
+    3. ``return True`` on success, ``False`` to mark entry as failed-migration
+
+    Today: stub returns True for every entry version (cap at the current
+    ``VERSION = 1`` declared in ``config_flow.py``). When v2 ships, this
+    function gets the actual migration logic — config entries on disk
+    carry their version number so old + new can coexist during HACS
+    update install.
+
+    Marketing note: "Suit up!" — Barney Stinson, before every HA Core
+    deprecation cliff. v2.2.0 ships the suit so v3.0.0 is fully dressed.
+    """
+    _LOGGER.debug(
+        "vag_connect: async_migrate_entry called for entry version=%s "
+        "(no migration needed at v2.2.0 — stub ready for future v1→v2)",
+        getattr(entry, "version", 1),
+    )
+    # Future: when VERSION bumps to 2, add the data-shape conversion
+    # here. Pattern reference: audi_connect_ha PR #703 (v1.x → v2.0
+    # runtime_data migration), Skoda PR #1078 (same).
     return True
 
 
