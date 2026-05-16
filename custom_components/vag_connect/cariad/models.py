@@ -172,6 +172,48 @@ BRAND_BENTLEY = BrandConfig(
     scope="openid profile badge cars vin",
 )
 
+# v2.2.0 Phase 4 PR #17/20 — CUPRA-standalone brand-adapter scaffold.
+#
+# **BETA — TESTER VALIDATION PENDING.** Pattern matches BRAND_LAMBO
+# (#15) + BRAND_BENTLEY (#16): scaffolding-only, NOT wired into the
+# ``BRANDS`` registry / config-flow / factory yet.
+#
+# **What's distinct from existing BRAND_CUPRA**: the current CUPRA
+# integration goes through the shared SEAT/CUPRA OLA backend
+# (``ola.prod.code.seat.cloud.vwgroup.com``). Per pycupra commit
+# 0f3b1c7 + multiple 2026-Q1/Q2 community reports, SEAT and CUPRA
+# Connect are progressively migrating to brand-isolated backends —
+# pycupra tracks a ``cupra-api.vwgroup.io`` host for the CUPRA-only
+# rollout that's expected to fully cut over by 2026-H2.
+#
+# This scaffold reserves the brand-id ``"cupra_standalone"`` and the
+# placeholder host so tester can:
+#   1. confirm the actual host once their account flips
+#   2. exercise the parser against the cut-over response shapes
+#   3. report back which endpoints stayed identical vs. drifted
+#
+# Once tester confirms host + any endpoint shape deltas, activation
+# is a 1-line factory PR PLUS any necessary parser-divergence
+# fixes (most fields expected to be identical — OLA-flavoured JSON
+# rather than CARIAD-BFF-flavoured).
+#
+# Until then: factory rejects "cupra_standalone", UI hides it,
+# existing "cupra" users see zero behaviour change.
+BRAND_CUPRA_STANDALONE = BrandConfig(
+    name="cupra_standalone",
+    # Same OAuth client as legacy CUPRA — the IDK login flow is
+    # unchanged; only the post-auth API base differs.
+    client_id="3c756d46-f1ba-4d78-9f9a-cff0d5292d51@apps_vw-dilab_com",
+    redirect_uri="cupra://oauth-callback",
+    user_agent="OLACupra/2.15.0 (Android 12; sdk_gphone64_x86_64; Google) Mobile",
+    # PLACEHOLDER — tester must confirm the actual host once the
+    # backend cut-over reaches their account. Until then, attempts
+    # to fetch data WILL fail with DNS error.
+    api_base="https://PLACEHOLDER-cupra-api.vwgroup.io",
+    client_secret="eb8814e641c81a2640ad62eeccec11c98effc9bccd4269ab7af338b50a94b3a2",
+    scope="openid profile address phone email birthdate nickname",
+)
+
 BRANDS: dict[str, BrandConfig] = {
     "volkswagen":    BRAND_VW_EU,
     "audi":          BRAND_AUDI,
