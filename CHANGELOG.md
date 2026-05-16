@@ -62,6 +62,13 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
   wrong type, list-index out of range, None mid-traversal. **Never raises.**
   *"D'oh!" — Homer, never again.*
 
+- **`json_safe(obj)` — recursive JSON-safe converter for `extra_state_attributes`** —
+  neuer Helper in `cariad/_util.py` schließt die Bug-Klasse aus Skoda PR #1090:
+  `extra_state_attributes` mit `datetime` / `dataclass` / `set` / `bytes` brachen
+  silent MQTT statestream + recorder + REST API. Konvertiert:
+  `datetime → ISO 8601`, `timedelta → float seconds`, `set → sorted list`,
+  `bytes → utf-8 oder hex`, `dataclass → dict (recursive)`. **Never raises.**
+
 ### Fixed
 
 - **Universal Consent-Screen Wall Detection (Auth0 + Legacy paths)** —
@@ -80,6 +87,21 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
   `MarketingConsentError` / `TermsAndConditionsError` so the existing
   Repair-flow (since v2.0.0) surfaces an actionable deep-link to the
   brand portal. *Bazinga* — the wall is now visible.
+
+- **`device_tracker.<vin>_position.last_seen_at` MQTT-statestream break** — pre-v2.2.0
+  exposierte `device_tracker.py:extra_state_attributes` das raw `datetime` Object
+  von `compute_connection_state()` direkt. MQTT-Bridge/Recorder/REST-API silent
+  break (HA frontend zeigt `unknown`, recorder loggt TypeError jeden Poll). Fix
+  via `json_safe()` wrap. Cross-references: Skoda PR #1090, myskoda #639.
+  *"Worst. Bug. Ever." — Comic Book Guy*
+
+### Changed
+
+- **`sensor.py:extra_state_attributes` defensive-wrapping** — alle 5 return-paths
+  (`recent_trips`, `recent_charging_sessions`, `charging_profiles`,
+  `preferred_workshop`, `equipment`) wrapped in `json_safe()` als Regression-Schild
+  für Phase-2 Additions (kommende Felder wie `fullyChargedAt` würden sonst die
+  gleiche Bug-Klasse re-introduzieren).
 
 ---
 
