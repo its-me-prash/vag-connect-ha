@@ -52,6 +52,25 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ### Added
 
+- **Lamborghini Brand-Adapter Scaffold (Phase 4 PR #15/20, BETA — Tester pending)** —
+  Phase 4 opener. Shippt das `LamboClient` scaffold + `BRAND_LAMBO` config
+  als **scaffolding only** — die Klasse compiliert, inheritet alle
+  Features von `VWEUClient` (Lamborghini Unica nutzt den gleichen
+  Cariad-BFF backend `emea.bff.cariad.digital` wie VW EU + Audi, per
+  API-Evangelist OpenAPI Catalog 2026-05-03), aber `client_id` +
+  `redirect_uri` sind **PLACEHOLDERS** die ein Tester mit Unica-App
+  Install + mitmproxy validieren muss bevor Activation.
+  **Beta-Gate hart enforced**: `CariadClientFactory.create("lambo", ...)`
+  raised weiterhin ValueError; Config-Flow zeigt Lambo nicht als Brand;
+  `BRANDS` registry enthält Lambo nicht. Tester können `LamboClient`
+  direkt importieren um in einem debug-script den IDK-flow zu
+  exercise und zurückzumelden. Regression-shield: 13 Tests inkl.
+  factory-rejects-lambo + brands-registry-excludes-lambo + alle 7
+  existing brands bleiben factory-resolvable nach BRAND_LAMBO addition.
+  Activation kommt in v2.2.x oder v2.3.x als 1-Zeilen factory PR
+  sobald Tester values bestätigt.
+  *"And that's why you always leave a note." — Marshall Eriksen.*
+
 - **Audi/VW FCM Circuit-Breaker Wiring (Phase 3 PR #14/20 — Phase 3 closer)** —
   Schließt die cross-brand circuit-breaker coverage. Skoda MQTT (#12) +
   CUPRA/SEAT FCM (#13) + Audi/VW FCM (this PR) haben jetzt alle die
