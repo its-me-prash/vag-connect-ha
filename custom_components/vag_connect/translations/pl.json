@@ -277,6 +277,9 @@
       "secondary_engine_fuel_level_pct": {
         "name": "Secondary Engine Fuel Level"
       },
+      "subscription_expiry_at": {
+        "name": "Subskrypcja wygasa"
+      },
       "next_charging_timer_id": {
         "name": "Next Charging Timer ID"
       },

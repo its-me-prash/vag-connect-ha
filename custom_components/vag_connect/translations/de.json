@@ -277,6 +277,9 @@
       "secondary_engine_fuel_level_pct": {
         "name": "Tankfüllstand (sekundär)"
       },
+      "subscription_expiry_at": {
+        "name": "Abonnement läuft ab"
+      },
       "next_charging_timer_id": {
         "name": "Nächster Lade-Timer ID"
       },

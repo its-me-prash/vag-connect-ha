@@ -440,6 +440,21 @@ class VehicleData:
     # automations where the user wants to "warm up only if not plugged in".
     air_conditioning_without_external_power: bool | None = None
 
+    # v2.2.0 Phase 2 PR #8/20 — Connect-subscription expiry timestamp.
+    # SEAT/CUPRA OLA ``mycar.services`` block exposes a per-service
+    # entitlement map. Each entry typically carries either an
+    # ``expirationDate`` / ``validUntil`` / ``expiresAt`` (ISO 8601) when
+    # the subscription has a fixed end date. We aggregate by picking the
+    # EARLIEST end-date across all services that have one (most-restrictive
+    # / first-to-expire). Field is None when:
+    #   - no services block present (brand without OLA mycar endpoint)
+    #   - services block present but no expiry fields (e.g. perpetual)
+    #   - all services are perpetual or trial-extending
+    # ISO 8601 string → ``device_class=timestamp`` sensor that HA renders
+    # as a calendar date + "X days remaining". Closes long-standing user
+    # request "When does my Connect subscription run out?".
+    subscription_expiry_at: str | None = None
+
     # Audi/VW EU charging rate in km/h (parity with Skoda + CUPRA/SEAT
     # which have ``charging_rate_kmh`` since v1.10.0). From
     # ``charging.chargingStatus.value.chargeRate_kmph``. Reused field
