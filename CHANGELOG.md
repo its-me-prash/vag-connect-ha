@@ -52,6 +52,19 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ### Added
 
+- **VW EU / Audi subscription parity (Phase 2 PR #10/20)** —
+  Cross-brand parity zu PR #8 + #9: VW EU + Audi (CARIAD-BFF) parsen
+  jetzt subscription_expiry_at + subscription_active aus dem
+  `userCapabilities.capabilitiesStatus.value[*].expirationDate`
+  array. **Same earliest-wins aggregation** wie SEAT/CUPRA, drei
+  Key-Schreibweisen abgedeckt, same tri-state Semantik. Defensiv:
+  non-dict cap entries, non-string expiry, malformed ISO 8601 alle
+  silent geskippt — kein false-alarm für perpetuelle Capabilities.
+  Skoda + Porsche + VW NA bleiben weiterhin None (kein scout-konformer
+  capabilities-endpoint mit expiry-leaf). Zero neue API-calls — Daten
+  kommen aus dem existierenden capabilities-fetch. Phantom-Gates aus
+  PR #8/#9 decken automatisch die neuen Brands ab. 12 Tests.
+
 - **SEAT/CUPRA `subscription_active` binary_sensor (Phase 2 PR #9/20)** —
   Companion zu PR #8 `subscription_expiry_at`. Computed tri-state
   boolean True/False/None aus dem earliest expiry across services.

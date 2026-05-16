@@ -1309,6 +1309,58 @@ class VWEUClient(CariadBaseClient):
         if isinstance(caps, list):
             d.capabilities_count = len(caps)
 
+            # v2.2.0 Phase 2 PR #10/20 — VW EU/Audi parity to SEAT/CUPRA
+            # PR #8+#9. The CARIAD-BFF capabilities array carries an
+            # ``expirationDate`` per capability for subscription-gated
+            # services (e.g. ``honkAndFlash``, ``parkingPosition``,
+            # ``access``). We mirror the SEAT/CUPRA earliest-wins
+            # aggregation: scan all capabilities, pick the EARLIEST
+            # expiry, surface as both ``subscription_expiry_at``
+            # (timestamp sensor) and ``subscription_active`` (tri-state
+            # binary_sensor). Tri-state semantics preserved — perpetual
+            # capabilities (no expiry leaf) stay None instead of False.
+            #
+            # Defensive: non-dict cap entries, non-string expiry, and
+            # malformed ISO 8601 are silently skipped. If the whole
+            # capabilities array has no expiry leaves anywhere → field
+            # stays None → phantom-protected sensors never created.
+            cap_earliest: str | None = None
+            for cap in caps:
+                if not isinstance(cap, dict):
+                    continue
+                cap_exp = (
+                    cap.get("expirationDate")
+                    or cap.get("validUntil")
+                    or cap.get("expiresAt")
+                )
+                if not isinstance(cap_exp, str) or not cap_exp:
+                    continue
+                if cap_earliest is None or cap_exp < cap_earliest:
+                    cap_earliest = cap_exp
+            if cap_earliest is not None:
+                d.subscription_expiry_at = cap_earliest
+                try:
+                    # Same Z-suffix normalisation as seat_cupra.py to
+                    # support ``fromisoformat`` on older HA / Python.
+                    # NB: variable name ``cap_expiry_dt`` (not ``parsed``)
+                    # because ``parsed`` is reused elsewhere in this
+                    # function as ``int | None`` from ``safe_int`` — mypy
+                    # would infer the wider union otherwise.
+                    cap_expiry_dt = datetime.fromisoformat(
+                        cap_earliest.replace("Z", "+00:00")
+                    )
+                    if cap_expiry_dt.tzinfo is None:
+                        cap_expiry_dt = cap_expiry_dt.replace(
+                            tzinfo=timezone.utc
+                        )
+                    d.subscription_active = (
+                        cap_expiry_dt > datetime.now(tz=timezone.utc)
+                    )
+                except (ValueError, TypeError):
+                    # Leave subscription_active at None — don't false-
+                    # alarm perpetual users on a parse blip.
+                    pass
+
         wh_status = v(raw, "climatisation", "windowHeatingStatus", "value", "windowHeatingStatus") or []
         for wh in wh_status:
             location = wh.get("windowLocation", "")

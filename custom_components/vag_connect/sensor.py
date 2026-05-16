@@ -954,9 +954,11 @@ _DATA_PRESENT_REQUIRED: frozenset[str] = frozenset({
     # ICE-only and EV-only vehicles → no phantom entity.
     "secondary_engine_type",
     "secondary_engine_fuel_level_pct",
-    # v2.2.0 Phase 2 PR #8/20 — SEAT/CUPRA OLA-only subscription expiry.
-    # Other brands' mycar endpoints don't expose ``services.*.expirationDate``
-    # in the OLA shape, so field stays None → no phantom entity.
+    # v2.2.0 Phase 2 PR #8/20 + PR #10/20 — subscription expiry timestamp.
+    # SEAT/CUPRA parses from ``mycar.services.*.expirationDate``; VW EU
+    # + Audi (PR #10) parse from CARIAD-BFF ``userCapabilities.
+    # capabilitiesStatus.value[*].expirationDate``. Skoda + Porsche +
+    # VW NA leave field None → no phantom entity.
     "subscription_expiry_at",
     "next_charging_timer_id",
     "next_charging_timer_target_soc_reachable",
