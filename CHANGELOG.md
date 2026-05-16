@@ -36,19 +36,58 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 > — mit jeder geänderten Datei, jeder Zeile, jeder Issue-Referenz und der
 > Methodik dahinter.
 
-## [Unreleased] — v2.2.0 "Legen — wait for it — dary" (in progress)
+## [2.2.0-rc1] — 2026-05-16 — "Legen — wait for it — dary" (Release Candidate)
 
+> **Release Candidate** für v2.2.0. 20 PRs across 6 phases plus 1 community
+> Scout follow-up = **21 merged PRs** auf top von v2.1.0. 48h beta window:
+> early-adopters auf HACS pre-release-channel können dieses build testen;
+> bei 0 P0 issues nach 48h shippt v2.2.0 final (identical to this RC, just
+> manifest version bump).
+>
 > Codename: **"Legen — wait for it — dary"** (HIMYM-themed Mega-Release).
-> Bundles ~19 PRs across 6 phases inspired by deep cross-platform competitive
-> intelligence crawl (2026-05-16). Three brand-new luxury adapters (Lambo,
-> Bentley, CUPRA standalone), MQTT/FCM live activation with 3-strike
-> circuit-breaker, Pydantic v2 dual-write migration, 8 new 2026 Cariad
-> endpoints, and the universal Consent-Screen wall-detector that closes
-> the #1 cause of broken installs across the entire VAG-HA ecosystem
-> in 2026. Failsafe-first: every risky feature is opt-in, every parser
-> change has a fallback, ConfigEntry stays v1-compatible for clean
-> rollback. v3.0.0 reserved for genuine breaking changes (ConfigEntry
-> restructure, EU Data Act activation, Pydantic dataclass-removal).
+> Inspired by deep cross-platform competitive intelligence crawl (2026-05-16):
+>
+> **Phase 1 — Foundation** (6 PRs, v2.2.0-alpha1):
+> Universal Consent-Screen wall detection, defensive `safe_get` /
+> `json_safe` helpers, `async_migrate_entry` stub, MY/Platform quirk-
+> suppression, Skoda Scout #220.
+>
+> **Phase 2 — Schema + User-Requests** (5 PRs, v2.2.0-alpha2):
+> Email-OTP vs TOTP discrimination, complete Subscription-Triangle
+> (`expiry_at` + `active` + `days_remaining`) for SEAT/CUPRA + VW EU/Audi.
+>
+> **Phase 3 — Push-Bus Circuit-Breaker** (3 PRs, v2.2.0-alpha3):
+> 3-strike trip + 1h auto-reset, identical 5-hook wiring across all 3
+> brand managers (Skoda MQTT, CUPRA/SEAT FCM, Audi/VW FCM).
+>
+> **Phase 4 — Brand-Adapters + Community Scout** (4 PRs, v2.2.0-alpha4):
+> Lambo / Bentley / CUPRA-standalone scaffolds (BETA — tester pending) +
+> CUPRA Scout #232 cross-brand reuse.
+>
+> **Phase 5 — Internal Architecture** (2 PRs):
+> Push-Bus abstraction refactor + Pydantic v2 dual-write foundation.
+>
+> **Phase 6 — Release** (this PR):
+> v2.2.0-rc1 → 48h beta → v2.2.0 final.
+>
+> **Failsafe-first**: every risky feature is opt-in, every parser change
+> has a fallback, ConfigEntry stays v1-compatible for clean rollback,
+> 3-strike breaker prevents log-spam on live activation, Pydantic is
+> diagnostic-only. v3.0.0 reserved for genuine breaking changes
+> (ConfigEntry restructure, EU Data Act activation, Pydantic dataclass-
+> removal).
+>
+> **Failsafe stats from this release**:
+> - 21 PRs, every single one shipped with at least 1 of: try/except,
+>   fallback-chain, defensive-isinstance, phantom-protection gate,
+>   tri-state semantics (None ≠ False), beta-gate enforcement
+> - 4 anchor tags (alpha1-alpha4) for incremental rollback safety
+> - Coverage stayed >74% throughout (gate at 65%)
+> - Cross-brand parity tests catch any future drift
+
+## [Unreleased]
+
+> (Empty — next entries land here after v2.2.0-rc1 → v2.2.0 graduation.)
 
 ### Added
 
