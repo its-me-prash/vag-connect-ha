@@ -85,7 +85,9 @@ def _get_coordinator(hass: HomeAssistant, vin: str) -> VagConnectCoordinator | N
     `hasattr` overhead.
     """
     for entry in hass.config_entries.async_entries(DOMAIN):
-        coordinator = getattr(entry, "runtime_data", None)
+        coordinator: VagConnectCoordinator | None = getattr(
+            entry, "runtime_data", None
+        )
         if coordinator is None:
             continue
         if vin in coordinator.vehicles:
