@@ -141,6 +141,37 @@ BRAND_LAMBO = BrandConfig(
     scope="openid profile badge cars vin",
 )
 
+# v2.2.0 Phase 4 PR #16/20 — Bentley brand-adapter scaffold.
+#
+# **BETA — TESTER VALIDATION PENDING.** Same pattern as ``BRAND_LAMBO``
+# (PR #15) — scaffolding-only, NOT wired into the ``BRANDS`` registry
+# / config-flow / factory yet.
+#
+# Inheritance rationale: Bentley "My Bentley" app is a VAG luxury
+# brand fronted by the same Cariad-BFF backend as VW EU + Audi +
+# Lamborghini (verified via API-Evangelist OpenAPI catalog metadata
+# 2026-05-03 — same ``emea.bff.cariad.digital`` host). So the data-
+# fetch path inherits unchanged from ``VWEUClient`` — only the
+# brand-token + UA differ.
+#
+# Placeholder values below MUST be replaced by a tester with a My
+# Bentley app install (Android/iOS) inspecting the OAuth flow with
+# mitmproxy / Charles. Until then, attempting to use this brand
+# WILL fail at the IDK login step with HTTP 400.
+#
+# Activation in v2.2.x or v2.3.x once tester returns confirmed
+# values — one-liner factory + BRANDS registry addition.
+BRAND_BENTLEY = BrandConfig(
+    name="bentley",
+    client_id="PLACEHOLDER-bentley-tester-please-confirm@apps_vw-dilab_com",
+    redirect_uri="mybentley://oauth-callback",
+    user_agent="MyBentley/1.0.0 Android",
+    api_base="https://emea.bff.cariad.digital",
+    # Scope inherited from VW EU + Audi pattern; tester may need to
+    # adjust if the Bentley app uses a tighter or wider claim set.
+    scope="openid profile badge cars vin",
+)
+
 BRANDS: dict[str, BrandConfig] = {
     "volkswagen":    BRAND_VW_EU,
     "audi":          BRAND_AUDI,

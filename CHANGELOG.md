@@ -52,6 +52,21 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ### Added
 
+- **Bentley Brand-Adapter Scaffold (Phase 4 PR #16/20, BETA — Tester pending)** —
+  Sister-PR zu PR #15 (Lamborghini Unica). **Identisches Pattern**,
+  identische beta-gate enforcement, identische VWEUClient inheritance
+  rationale. My Bentley app läuft auf dem gleichen Cariad-BFF backend
+  (`emea.bff.cariad.digital`) wie VW EU + Audi + Lambo. Scaffold ships
+  als `BentleyClient(VWEUClient)` + `BRAND_BENTLEY` config mit
+  PLACEHOLDER OAuth values. Beta-Gate hart enforced: factory rejected,
+  config-flow versteckt, BRANDS registry excludes. **Cross-luxury
+  parity test**: beide luxury scaffolds (Lambo + Bentley) müssen
+  shape-aligned bleiben (gleicher Cariad-BFF host, beide inherit
+  VWEUClient, beide PLACEHOLDER, beide factory-rejected) — Drift
+  bricht den test. 16 Tests inkl. der parity-Garantie.
+  *"Two roads diverged in a wood, and I took the one beta-gated."
+  — Robert Frost, paraphrased.*
+
 - **Lamborghini Brand-Adapter Scaffold (Phase 4 PR #15/20, BETA — Tester pending)** —
   Phase 4 opener. Shippt das `LamboClient` scaffold + `BRAND_LAMBO` config
   als **scaffolding only** — die Klasse compiliert, inheritet alle
