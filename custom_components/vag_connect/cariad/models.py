@@ -108,6 +108,39 @@ BRAND_PORSCHE = BrandConfig(
     scope="openid profile email offline_access mbb vin cars charging",
 )
 
+# v2.2.0 Phase 4 PR #15/20 — Lamborghini brand-adapter scaffold.
+#
+# **BETA — TESTER VALIDATION PENDING.** This brand-config is NOT wired
+# into the ``BRANDS`` registry / config-flow / factory yet — it ships
+# as scaffolding only so a tester can import the class directly and
+# manually exercise the IDK flow against the Lamborghini Unica app
+# to validate the client_id + redirect_uri.
+#
+# Inheritance rationale: Lamborghini Unica is a VAG luxury brand
+# fronted by the same Cariad-BFF backend as VW EU + Audi (verified
+# via API-Evangelist OpenAPI catalog metadata 2026-05-03 — same
+# ``emea.bff.cariad.digital`` host). So the data-fetch path inherits
+# unchanged from ``VWEUClient`` — only the brand-token + UA differ.
+#
+# Placeholder values below MUST be replaced by a tester with a
+# Lamborghini Unica app install (Android/iOS) inspecting the
+# OAuth flow with mitmproxy / Charles. Until then, attempting to
+# use this brand WILL fail at the IDK login step with HTTP 400.
+#
+# Activation in v2.2.x or v2.3.x once tester returns confirmed
+# values. The wiring into ``BRANDS`` + factory + config-flow is
+# a separate (one-liner) PR once values are known.
+BRAND_LAMBO = BrandConfig(
+    name="lambo",
+    client_id="PLACEHOLDER-lambo-tester-please-confirm@apps_vw-dilab_com",
+    redirect_uri="unica://oauth-callback",
+    user_agent="Unica/1.0.0 Android",
+    api_base="https://emea.bff.cariad.digital",
+    # Scope inherited from VW EU + Audi pattern; tester may need to
+    # adjust if the Lamborghini app uses a tighter or wider claim set.
+    scope="openid profile badge cars vin",
+)
+
 BRANDS: dict[str, BrandConfig] = {
     "volkswagen":    BRAND_VW_EU,
     "audi":          BRAND_AUDI,
