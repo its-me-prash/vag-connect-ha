@@ -103,6 +103,19 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
   für Phase-2 Additions (kommende Felder wie `fullyChargedAt` würden sonst die
   gleiche Bug-Klasse re-introduzieren).
 
+- **`async_migrate_entry` Stub + `_get_coordinator` Defensive Refactor** —
+  pre-empts HA Core deprecation-cliff der competitors brach (audi_connect_ha
+  #728 "Invalid Credentials after every Core update", mitch-dc #303 "Cannot
+  login after HAOS 16.1"). Beide Projekte brachen silent als HA Core
+  ConfigEntry data-serialization änderte. v2.2.0 deklariert
+  `async_migrate_entry` jetzt — heute no-op (return True für jede entry
+  version, VERSION bleibt 1) aber **fully wired** so dass v3.0.0 ConfigEntry-
+  Restructure nur die innere Migration-Logik braucht, nicht den Lifecycle-
+  Hook. Bonus: `_get_coordinator` switched von `hasattr(entry, "runtime_data")`
+  auf `getattr(entry, "runtime_data", None)` — defensive gegen startup-race
+  conditions ohne den hasattr-overhead. *"Suit up!" — Barney, before every
+  HA Core release-train cliff.*
+
 ---
 
 ## [2.1.0] - 2026-05-15 ✨🌍 Post-Big-Bang Wins — Skoda Climate-Ready + HomeRegion + User-Tools / Post-Big-Bang Wins — Skoda Climate-Ready + HomeRegion + User-Tools
