@@ -836,6 +836,38 @@ SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
         icon="mdi:calendar-clock",
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
+    # v2.2.0 Phase 7 PR #1 — quick-wins batch from scout-audit.
+    # Three sensor entities for fields silenced in `_unexpected_keys.py`
+    # but never exposed: 12V SoC, steering-wheel position, HV battery
+    # max temp. All phantom-protected via `_DATA_PRESENT_REQUIRED`.
+    VagSensorDescription(
+        key="primary_engine_soc_pct",
+        translation_key="primary_engine_soc_pct",
+        data_key="primary_engine_soc_pct",
+        native_unit_of_measurement="%",
+        state_class=SensorStateClass.MEASUREMENT,
+        icon="mdi:car-battery",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        suggested_display_precision=0,
+    ),
+    VagSensorDescription(
+        key="steering_wheel_position",
+        translation_key="steering_wheel_position",
+        data_key="steering_wheel_position",
+        icon="mdi:steering",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    VagSensorDescription(
+        key="battery_temp_max",
+        translation_key="battery_temp_max",
+        data_key="battery_temp_max",
+        native_unit_of_measurement="°C",
+        device_class=SensorDeviceClass.TEMPERATURE,
+        state_class=SensorStateClass.MEASUREMENT,
+        icon="mdi:battery-heart-variant",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        suggested_display_precision=1,
+    ),
     # v2.2.0 Phase 2 PR #11/20 — derived integer days until expiry.
     # Closes the subscription-feature triangle (timestamp + active +
     # days). Negative when expired. Automation-friendly: threshold
@@ -978,6 +1010,11 @@ _DATA_PRESENT_REQUIRED: frozenset[str] = frozenset({
     # Computed from the same expiry-aggregation as PR #8/#10, so same
     # brand-coverage matrix (None on Skoda/Porsche/VW NA).
     "subscription_days_remaining",
+    # v2.2.0 Phase 7 PR #1 — scout-audit quick-wins. Each is brand-
+    # restricted at the parser level; other brands stay None.
+    "primary_engine_soc_pct",       # Skoda-only (driving-range)
+    "steering_wheel_position",      # Skoda-only (air-conditioning)
+    "battery_temp_max",             # VW EU + Audi only (CARIAD-BFF)
     "next_charging_timer_id",
     "next_charging_timer_target_soc_reachable",
     "capabilities_count",

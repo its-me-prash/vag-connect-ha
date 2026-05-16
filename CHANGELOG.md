@@ -87,7 +87,39 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ## [Unreleased]
 
-> (Empty — next entries land here after v2.2.0-rc1 → v2.2.0 graduation.)
+> Post-v2.2.0-rc1. Phase 7 sweep — expose silenced-but-unwired scout fields
+> as HA entities. First batch of quick wins; more in subsequent PRs.
+
+### Added
+
+- **Phase 7 PR #1 — Quick-Wins-Batch (4 sensors aus scout-audit)** —
+  Scout-Audit (cross-reference `_unexpected_keys.py` ↔ tatsächliche
+  parser-reads) identifizierte ~12 fields die silenced waren aber nie
+  als entities exposed wurden. Dieser PR shippt die **4 quick wins** —
+  single-value leaves mit clear semantics:
+  - **`binary_sensor.ignition_on`** (Skoda only — `readiness.ignitionOn`):
+    Useful für "lock when ignition off" automations ohne extra sensor query
+  - **`sensor.primary_engine_soc_pct`** (Skoda only — `driving-range.
+    primaryEngineRange.currentSoCInPercent`): On gasoline cars das 12V SoC
+    (per scout #116 MavericklCS) — early-warning "modem can't keep itself
+    awake" Indikator. Distinct vom existing `battery_voltage_v` (CARIAD-
+    BFF only); Skoda mysmob publiziert das auf driving-range, nicht lvBattery.
+  - **`sensor.steering_wheel_position`** (Skoda only — `air-conditioning.
+    steeringWheelPosition`): LHD/RHD-aware automations + diagnostic für
+    Märkte wo der gleiche Wagen beides ship'pt (UK, AU, JP).
+  - **`sensor.battery_temp_max`** (VW EU + Audi — `measurements.
+    temperatureBatteryStatus.value.temperatureHvBatteryMax_K`):
+    Companion zu existing `battery_temp` (HvBatteryMin_K). Beide Celsius
+    nach K→C conversion. Power-users monitoring thermal balance während
+    DC fast-charging wollen BEIDE extremes — der spread ist das diagnostic
+    signal. Defensive same safe_float + None guard.
+  All brand-restricted im parser; phantom-protected via
+  `_DATA_PRESENT_REQUIRED`; andere brands stay None → kein phantom entity.
+  18 Tests (4 field-existence + 4 ignition parser + 1 primary-soc + 3
+  steering-wheel + 4 K→C math + 6 entity-registration + 9 translation
+  coverage).
+  *"Sometimes the best feature is the one that was already paid for —
+  you just have to wire it up." — Lisa Simpson, on the value of audits.*
 
 ### Added
 

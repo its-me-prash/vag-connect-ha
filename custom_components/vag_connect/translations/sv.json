@@ -283,6 +283,15 @@
       "subscription_days_remaining": {
         "name": "Prenumeration dagar kvar"
       },
+      "battery_temp_max": {
+        "name": "Batteritemperatur (Max)"
+      },
+      "steering_wheel_position": {
+        "name": "Ratt-position"
+      },
+      "primary_engine_soc_pct": {
+        "name": "Primary Engine SoC"
+      },
       "next_charging_timer_id": {
         "name": "Next Charging Timer ID"
       },
@@ -404,6 +413,9 @@
       },
       "subscription_active": {
         "name": "Prenumeration aktiv"
+      },
+      "ignition_on": {
+        "name": "Tändning"
       },
       "tire_pressure_warning": {
         "name": "Däcktryck Varning"

@@ -255,6 +255,15 @@ _NEW_BINARY: tuple[VagBinarySensorDescription, ...] = (
         icon="mdi:check-decagram",
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
+    # v2.2.0 Phase 7 PR #1 — Skoda-only ignition state (`readiness.
+    # ignitionOn`). Useful for "lock when ignition off" automations.
+    VagBinarySensorDescription(
+        key="ignition_on",
+        translation_key="ignition_on",
+        data_key="ignition_on",
+        icon="mdi:key-variant",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
     # v2.0.0 (Big-Bang) — Porsche TPMS warning aggregate (any corner
     # raising ``warning: true`` in the TIRE_PRESSURE measurement).
     # Brand-restricted via _DATA_PRESENT_REQUIRED below — non-Porsche
@@ -346,6 +355,9 @@ _DATA_PRESENT_REQUIRED: frozenset[str] = frozenset({
     # Field stays None on Skoda/Porsche/VW NA AND on perpetual
     # entitlements → tri-state semantics prevent false-positives.
     "subscription_active",
+    # v2.2.0 Phase 7 PR #1 — Skoda-only `readiness.ignitionOn`.
+    # Other brands leave field None → no phantom entity.
+    "ignition_on",
     # v2.0.0 (Big-Bang) — Porsche-only TPMS warning (PPA TIRE_PRESSURE
     # measurement). Non-Porsche vehicles leave the field None → no phantom.
     "tire_pressure_warning",

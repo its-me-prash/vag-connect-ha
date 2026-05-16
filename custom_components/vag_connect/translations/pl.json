@@ -283,6 +283,15 @@
       "subscription_days_remaining": {
         "name": "Pozostałe dni subskrypcji"
       },
+      "battery_temp_max": {
+        "name": "Temperatura akumulatora (Maks)"
+      },
+      "steering_wheel_position": {
+        "name": "Położenie kierownicy"
+      },
+      "primary_engine_soc_pct": {
+        "name": "SoC silnika głównego"
+      },
       "next_charging_timer_id": {
         "name": "Next Charging Timer ID"
       },
@@ -404,6 +413,9 @@
       },
       "subscription_active": {
         "name": "Subskrypcja aktywna"
+      },
+      "ignition_on": {
+        "name": "Zapłon"
       },
       "tire_pressure_warning": {
         "name": "Ostrzeżenie Ciśnienia Opon"

@@ -1214,6 +1214,15 @@ class VWEUClient(CariadBaseClient):
         bat_min_k = safe_float(bat_min)
         d.battery_temp = round(bat_min_k - 273.15, 1) if bat_min_k is not None else None
 
+        # v2.2.0 Phase 7 PR #1 — HV battery max-temperature companion
+        # to existing min (above). Both Celsius after K→C conversion.
+        # Power-users monitoring thermal balance during DC fast-charging
+        # want BOTH extremes, not just the min — the spread is the
+        # diagnostic signal. Defensive: same safe_float + None guard.
+        bat_max = v(raw, "measurements", "temperatureBatteryStatus", "value", "temperatureHvBatteryMax_K")
+        bat_max_k = safe_float(bat_max)
+        d.battery_temp_max = round(bat_max_k - 273.15, 1) if bat_max_k is not None else None
+
         # v1.12.0 (#23) — 12V starter battery voltage. The CARIAD BFF
         # ``lvBattery`` job publishes voltage in volts (decimal, e.g.
         # 12.6 = healthy). Threshold for warning is 11.5 V (matches

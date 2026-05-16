@@ -283,6 +283,15 @@
       "subscription_days_remaining": {
         "name": "Předplatné zbývá dní"
       },
+      "battery_temp_max": {
+        "name": "Teplota baterie (Max)"
+      },
+      "steering_wheel_position": {
+        "name": "Pozice volantu"
+      },
+      "primary_engine_soc_pct": {
+        "name": "12V baterie SoC"
+      },
       "next_charging_timer_id": {
         "name": "Next Charging Timer ID"
       },
@@ -404,6 +413,9 @@
       },
       "subscription_active": {
         "name": "Předplatné aktivní"
+      },
+      "ignition_on": {
+        "name": "Zapalování"
       },
       "tire_pressure_warning": {
         "name": "Varování Tlaku Pneumatik"

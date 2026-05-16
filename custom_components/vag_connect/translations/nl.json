@@ -283,6 +283,15 @@
       "subscription_days_remaining": {
         "name": "Abonnement resterende dagen"
       },
+      "battery_temp_max": {
+        "name": "Accutemperatuur (Max)"
+      },
+      "steering_wheel_position": {
+        "name": "Stuurpositie"
+      },
+      "primary_engine_soc_pct": {
+        "name": "Primary Engine SoC"
+      },
       "next_charging_timer_id": {
         "name": "Next Charging Timer ID"
       },
@@ -404,6 +413,9 @@
       },
       "subscription_active": {
         "name": "Abonnement actief"
+      },
+      "ignition_on": {
+        "name": "Contact"
       },
       "tire_pressure_warning": {
         "name": "Bandenspanning-Waarschuwing"
