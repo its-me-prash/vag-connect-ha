@@ -158,6 +158,78 @@ _CONNECTION_ONLINE_THRESHOLD_S = 1800
 _CONNECTION_STANDBY_THRESHOLD_S = 86400
 
 
+def safe_get(
+    data: Any,
+    path: str,
+    default: Any = None,
+) -> Any:
+    """v2.2.0 — Defensive dot-path nested accessor with list-index support.
+
+    Replaces unsafe ``resp['a']['b'][0]['c']`` patterns that crash on
+    MY26 schema rotations (where the backend silently changes a dict to
+    a list, drops a key, or returns an empty/None container).
+
+    Path syntax::
+
+        "a.b.c"          → data["a"]["b"]["c"]
+        "a.b[0]"         → data["a"]["b"][0]
+        "a.b[0].c"       → data["a"]["b"][0]["c"]
+        "doors[2].lock"  → data["doors"][2]["lock"]
+
+    Returns ``default`` for ANY of: missing key, wrong type, list-index
+    out of range, None encountered mid-traversal, list-index applied to
+    non-list. Never raises.
+
+    Use cases (closes VW HA #922, pycupra #76, audi #686 bug-classes):
+    - ``safe_get(access, "doors[0].status[0].value")``
+    - ``safe_get(charging, "rates[0].chargeRate_kmph", default=0)``
+
+    Args:
+        data: Any JSON-shaped object (dict, list, or scalar). Strings
+            and primitives short-circuit immediately to ``default``.
+        path: Dot-separated path. Bracket-numbered indices are parsed
+            inline (``a.b[0].c`` is parsed as ``a → b → [0] → c``).
+        default: Returned on any failure. ``None`` is the sane default
+            because all our consumers already test ``if x is not None``.
+
+    Sheldon-pedantry note: this is intentionally NOT a full JSONPath
+    implementation. We support exactly what our parsers need —
+    dot-path + integer-list-index — and nothing else, so the audit
+    surface stays one screen of code.
+    """
+    if not path:
+        return data
+    # Split "a.b[0].c" → ["a", "b[0]", "c"] then per-segment handle [N]
+    node: Any = data
+    for raw_segment in path.split("."):
+        if node is None:
+            return default
+        # Detect optional list-index suffix: "b[0]" → key="b", idx=0
+        idx: int | None = None
+        key = raw_segment
+        if "[" in raw_segment and raw_segment.endswith("]"):
+            try:
+                bracket_start = raw_segment.index("[")
+                key = raw_segment[:bracket_start]
+                idx_str = raw_segment[bracket_start + 1:-1]
+                idx = int(idx_str)
+            except (ValueError, IndexError):
+                return default
+        # Dict-key step (skip when segment is bare-index like "[0]")
+        if key:
+            if not isinstance(node, dict):
+                return default
+            node = node.get(key)
+            if node is None:
+                return default
+        # List-index step
+        if idx is not None:
+            if not isinstance(node, list) or not (-len(node) <= idx < len(node)):
+                return default
+            node = node[idx]
+    return node if node is not None else default
+
+
 def mask_vin(vin: str | None) -> str:
     """Return a privacy-safe VIN representation for logs and diagnostics.
 

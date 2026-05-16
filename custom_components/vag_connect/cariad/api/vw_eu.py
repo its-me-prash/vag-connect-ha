@@ -1242,23 +1242,31 @@ class VWEUClient(CariadBaseClient):
             d.doors_locked = lock_raw.upper() == "LOCKED"
         overall = v(raw, "access", "accessStatus", "value", "overallStatus")
         if overall == "UNSAFE":
+            # v2.2.0 PR #2 — defensive parsing via ``safe_get``.
+            # Pre-v2.2.0 used ``door.get("status", [{}])[0].get("value")``
+            # which assumes ``status`` is ALWAYS a non-empty list of dicts.
+            # MY26 firmware variants sometimes return ``status: {}`` (dict
+            # instead of list) which crashed with TypeError, or
+            # ``status: []`` which silently returned None.value AttributeError.
+            # ``safe_get(door, "status[0].value")`` returns None on any
+            # of those cases so ``== "open"`` yields False (safe default).
+            from .._util import safe_get  # noqa: PLC0415
             doors: list[dict[str, Any]] = v(raw, "access", "accessStatus", "value", "doors") or []
             d.doors_open = any(
-                door.get("status", [{}])[0].get("value") == "open"
+                safe_get(door, "status[0].value") == "open"
                 for door in doors
-                if door.get("status")
             )
             windows: list[dict[str, Any]] = v(raw, "access", "accessStatus", "value", "windows") or []
             d.windows_open = any(
-                w.get("status", [{}])[0].get("value") == "open"
+                safe_get(w, "status[0].value") == "open"
                 for w in windows
-                if w.get("status")
             )
-            # Per-door breakdown
+            # Per-door breakdown — was using ``door["name"]`` (raw subscript,
+            # crashes if MY26 drops the name field). Now defensive.
             d.doors_individual = {
-                door["name"]: door.get("status", [{}])[0].get("value") == "open"
+                str(name): safe_get(door, "status[0].value") == "open"
                 for door in doors
-                if door.get("name") and door.get("status")
+                if (name := door.get("name")) is not None
             }
         elif overall == "SAFE":
             # v2.0.1 (#131 follow-up) — explicit SAFE detection. Backend
