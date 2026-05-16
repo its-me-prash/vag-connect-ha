@@ -206,6 +206,35 @@ class TwoFactorRequiredError(AuthenticationError):
         )
 
 
+class EmailTwoFactorRequiredError(TwoFactorRequiredError):
+    """v2.2.0 (#183 follow-on) — Email-OTP 2FA challenge.
+
+    Discriminated subclass of ``TwoFactorRequiredError`` for the case
+    where the IDP issued an **email OTP** rather than an authenticator-
+    app TOTP code. Detected via the ``/u/email-challenge`` URL fragment
+    (Auth0 path) or ``email-otp`` / ``email-code`` body markers (Legacy
+    path).
+
+    UX matters: Email-2FA users need to check their **inbox** (and
+    potentially spam) for a 6-digit code from VAG IDP, while TOTP users
+    need their authenticator-app rolling code. Different messages →
+    different mental models.
+
+    Both flows ultimately need a one-time human ack in the brand app
+    before headless API access works, so the Repair-issue surfacing is
+    identical except for the actionable text. ``isinstance(err,
+    TwoFactorRequiredError)`` keeps the existing handler chain working.
+    """
+
+    def __init__(self) -> None:
+        # Skip parent's __init__ — we want the more specific message
+        AuthenticationError.__init__(
+            self,
+            "Email 2FA required. Check your inbox (and spam) for a 6-digit "
+            "code from VAG IDP, then sign in manually in the brand app once.",
+        )
+
+
 class RateLimitError(CariadError):
     """Account temporarily blocked by VAG rate limiter."""
 

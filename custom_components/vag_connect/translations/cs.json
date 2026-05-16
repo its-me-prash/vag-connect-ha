@@ -58,6 +58,7 @@
       "terms_and_conditions": "Je nutné přijmout obchodní podmínky. Přihlaste se v aplikaci.",
       "marketing_consent": "Vyžadován nový souhlas. Aplikace → Profil → Souhlasy.",
       "two_factor_required": "Vyžadováno dvoufázové ověření. Přihlaste se ručně v aplikaci.",
+      "email_two_factor_required": "Vyžadováno e-mailové 2FA. Zkontrolujte schránku (i spam), pak se přihlaste ručně v aplikaci.",
       "too_many_requests": "Účet dočasně zablokován. Počkejte 15 minut.",
       "invalid_credentials": "Nesprávná e-mailová adresa nebo heslo."
     },
@@ -533,6 +534,10 @@
     "two_factor_required": {
       "title": "Vyžadováno dvoufázové ověření — {brand}",
       "description": "1. Otevřete aplikaci **{brand}**\n2. Přihlaste se ručně\n3. Potvrďte kód z e-mailu\n4. Restartujte Home Assistant"
+    },
+    "email_two_factor_required": {
+      "title": "E-mailové 2FA — zkontrolujte schránku ({brand})",
+      "description": "Váš účet {brand} ({username}) vyžaduje **e-mailový ověřovací kód**.\n\n**Jednorázová oprava:**\n1. **Zkontrolujte e-mail** (i spam) — 6místný kód od VAG IDP\n2. Otevřete aplikaci **{brand}**\n3. Přihlaste se ručně a zadejte kód\n4. Restartujte Home Assistant"
     },
     "terms_and_conditions": {
       "title": "Přijmout podmínky — {brand}",

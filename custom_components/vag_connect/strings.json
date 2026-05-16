@@ -58,6 +58,7 @@
       "terms_and_conditions": "Terms and conditions need to be accepted. Sign in to the app once and confirm.",
       "marketing_consent": "New privacy consent required. Open app: Profile → Consents.",
       "two_factor_required": "Two-factor authentication required. Sign in manually in the app and confirm the email code.",
+      "email_two_factor_required": "Email 2FA required. Check your inbox (and spam) for a 6-digit code from VAG IDP, then sign in manually in the brand app once.",
       "too_many_requests": "Account temporarily suspended (too many login attempts). Please wait 15 minutes.",
       "invalid_credentials": "Email address or password incorrect."
     },
@@ -542,6 +543,10 @@
     "two_factor_required": {
       "title": "Two-factor authentication required — {brand}",
       "description": "Your {brand} account ({username}) requires an email verification code.\n\n**One-time fix:**\n1. Open the **{brand} app** on your phone\n2. Sign in manually\n3. Confirm the code sent by email\n4. Restart Home Assistant\n\nAfter this one-time step, the integration stores the login token — you won't need to repeat this."
+    },
+    "email_two_factor_required": {
+      "title": "Email 2FA — check your inbox ({brand})",
+      "description": "Your {brand} account ({username}) requires an **email verification code**.\n\n**One-time fix:**\n1. **Check your email inbox** (and spam folder) for a 6-digit code from VAG IDP\n2. Open the **{brand} app** on your phone\n3. Sign in manually and enter the code\n4. Restart Home Assistant\n\nAfter this one-time step, the integration stores the login token — you won't need to repeat this."
     },
     "terms_and_conditions": {
       "title": "Accept terms and conditions — {brand}",

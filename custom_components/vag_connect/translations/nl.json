@@ -58,6 +58,7 @@
       "terms_and_conditions": "Gebruiksvoorwaarden moeten worden geaccepteerd. Log eenmaal in via de app.",
       "marketing_consent": "Nieuwe privacytoestemming vereist. App → Profiel → Toestemmingen.",
       "two_factor_required": "Tweestapsverificatie vereist. Log handmatig in via de app.",
+      "email_two_factor_required": "E-mail 2FA vereist. Controleer je inbox (en spam) op een 6-cijferige code, log dan handmatig in via de app.",
       "too_many_requests": "Account tijdelijk geblokkeerd. Wacht 15 minuten.",
       "invalid_credentials": "E-mailadres of wachtwoord onjuist."
     },
@@ -533,6 +534,10 @@
     "two_factor_required": {
       "title": "Tweestapsverificatie vereist — {brand}",
       "description": "1. Open de **{brand}-app**\n2. Meld u handmatig aan\n3. Bevestig de e-mailcode\n4. Start Home Assistant opnieuw"
+    },
+    "email_two_factor_required": {
+      "title": "E-mail 2FA — controleer je inbox ({brand})",
+      "description": "Je {brand}-account ({username}) vereist een **e-mailverificatiecode**.\n\n**Eenmalige oplossing:**\n1. **Controleer je e-mail** (en spam) — 6-cijferige code van VAG IDP\n2. Open de **{brand}-app**\n3. Log handmatig in en voer de code in\n4. Herstart Home Assistant"
     },
     "terms_and_conditions": {
       "title": "Gebruiksvoorwaarden accepteren — {brand}",

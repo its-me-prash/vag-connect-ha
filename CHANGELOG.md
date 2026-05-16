@@ -52,6 +52,22 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ### Added
 
+- **Email-2FA vs TOTP discrimination in IDK auth (Phase 2 PR #7/20, #183 follow-on)** —
+  Pre-v2.2.0 raised generischer `TwoFactorRequiredError` ob das IDP einen
+  Authenticator-App-TOTP-Code oder einen E-Mail-OTP-Code wollte. Die Repairs-UI
+  zeigte dann in beiden Fällen "open the app and confirm" Copy — was Email-OTP-
+  User vor ihrer Authenticator-App stehen ließ während der Code im Inbox auf
+  sie wartete. Jetzt diskriminiert:
+  - Auth0-Path: `/u/email-challenge` URL-Marker (vs. generic `/u/mfa`)
+  - Legacy-Path: Body-Marker `email-otp` / `email-code` / `send-email-code`
+    (geprüft VOR generischem `two-factor` / `2fa` substring)
+  - Neue `EmailTwoFactorRequiredError` als Subclass von `TwoFactorRequiredError`
+    — bestehende `except` chains laufen unverändert weiter
+  - Eigener Repair-Issue `email_two_factor_required` mit branded copy in allen
+    8 Sprachen + `strings.json` ("Check your inbox" statt "open the app").
+  *"In the future, you should always check your e-mail first. And by 'in the
+  future', I mean **starting now**." — Marshall Eriksen.*
+
 - **`safe_get(data, "a.b[0].c", default=None)` — defensive dot-path nested accessor** —
   neuer Helper in `cariad/_util.py` ersetzt unsichere `resp['a']['b'][0]['c']`
   Patterns die bei MY26 Schema-Rotationen crashen (backend flippt silent
