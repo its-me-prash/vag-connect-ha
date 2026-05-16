@@ -572,7 +572,9 @@ class TestRepairs:
         hass = MagicMock()
         with patch("homeassistant.helpers.issue_registry.async_delete_issue") as mock_del:
             clear_auth_issues(hass, "entry_123")
-        assert mock_del.call_count == 6  # 6 issue types
+        # v2.2.0 PR #7/20 — added ``email_two_factor_required`` →
+        # 7 issue types total (was 6 pre-Phase-2).
+        assert mock_del.call_count == 7
 
     def test_unknown_reason_uses_auth_failed(self):
         from custom_components.vag_connect.repairs import raise_issue_auth_required
