@@ -596,6 +596,13 @@ class SkodaClient(CariadBaseClient):
             ac_no_ext = v(ac, "airConditioningWithoutExternalPower")
             if isinstance(ac_no_ext, bool):
                 d.air_conditioning_without_external_power = ac_no_ext
+            # v2.2.0 Phase 7 PR #1 — steeringWheelPosition (LEFT/RIGHT).
+            # LHD/RHD-aware automations + diagnostic for markets where
+            # the same car ships both (UK, AU, JP). Defensive: only
+            # set when backend returns a non-empty string.
+            swp = v(ac, "steeringWheelPosition")
+            if isinstance(swp, str) and swp:
+                d.steering_wheel_position = swp
 
             # v1.17.7 (#129 rocksandclouds + #130 Chr1sDub + #133
             # christianmhz — three converging Skoda Scout-Reports
@@ -692,6 +699,14 @@ class SkodaClient(CariadBaseClient):
                 driving_range, "secondaryEngineRange", "currentFuelLevelInPercent"
             )
             d.secondary_engine_fuel_level_pct = safe_int(sec_eng_fuel)
+            # v2.2.0 Phase 7 PR #1 — primaryEngineRange.currentSoCInPercent.
+            # On a gasoline car this is the 12V SoC (per #116 MavericklCS
+            # 2026-05-01 scout) — early-warning sensor for "modem can't
+            # keep itself awake". Defensive: missing key → field stays None.
+            primary_soc = v(
+                driving_range, "primaryEngineRange", "currentSoCInPercent"
+            )
+            d.primary_engine_soc_pct = safe_int(primary_soc)
 
         d.is_electric = d.has_battery and not d.has_combustion
         d.is_hybrid = d.has_battery and d.has_combustion
@@ -740,6 +755,12 @@ class SkodaClient(CariadBaseClient):
             # to avoid setting is_online to a falsy default.
             d.is_online = unreachable is None or unreachable is False
             d.is_driving = v(readiness, "inMotion") is True
+            # v2.2.0 Phase 7 PR #1 — Skoda-only ignition boolean from
+            # the scout-silenced-but-unwired audit. Useful for
+            # "lock when ignition off" automations.
+            ignition = v(readiness, "ignitionOn")
+            if isinstance(ignition, bool):
+                d.ignition_on = ignition
 
         # ── carCapturedTimestamp → connection_state (v1.8.12 refactor) ────
         # v1.8.11 introduced this logic Skoda-only; v1.8.12 extracted the

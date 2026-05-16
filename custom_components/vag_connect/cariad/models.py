@@ -546,6 +546,35 @@ class VehicleData:
     # automations where the user wants to "warm up only if not plugged in".
     air_conditioning_without_external_power: bool | None = None
 
+    # v2.2.0 Phase 7 PR #1 — quick-wins batch from the silenced-but-
+    # unwired scout-audit. Four fields silenced in `_unexpected_keys.py`
+    # but never exposed as entities. All defensive: brand-restricted
+    # parser hooks, phantom-protected via `_DATA_PRESENT_REQUIRED`.
+
+    # Skoda mysmob `readiness.ignitionOn` (bool). Cariad+CUPRA/SEAT
+    # don't expose an equivalent — Skoda-only today. Useful for
+    # "lock car when ignition turns off" automations without an
+    # extra sensor query.
+    ignition_on: bool | None = None
+
+    # Skoda mysmob `driving-range.primaryEngineRange.currentSoCInPercent`
+    # (int 0-100). On a gasoline car this is the 12V SoC — early-
+    # warning sensor for "modem can't keep itself awake". Distinct
+    # from `battery_voltage_v` (CARIAD-BFF only).
+    primary_engine_soc_pct: int | None = None
+
+    # Skoda mysmob `air-conditioning.steeringWheelPosition` (string
+    # enum LEFT/RIGHT). LHD/RHD-aware automations + diagnostic for
+    # markets where the same car ships both (UK, AU, JP).
+    steering_wheel_position: str | None = None
+
+    # VW EU + Audi CARIAD-BFF `measurements.temperatureBatteryStatus.
+    # value.temperatureHvBatteryMax_K`. Companion to existing
+    # `battery_temp` (HvBatteryMin_K). Both Celsius after K→C
+    # conversion. Power-users monitoring thermal balance during
+    # charging want both extremes.
+    battery_temp_max: float | None = None
+
     # v2.2.0 Phase 2 PR #8/20 — Connect-subscription expiry timestamp.
     # SEAT/CUPRA OLA ``mycar.services`` block exposes a per-service
     # entitlement map. Each entry typically carries either an

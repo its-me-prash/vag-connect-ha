@@ -283,6 +283,15 @@
       "subscription_days_remaining": {
         "name": "Abonnement Restlaufzeit"
       },
+      "battery_temp_max": {
+        "name": "HV-Batterie Temperatur (Max)"
+      },
+      "steering_wheel_position": {
+        "name": "Lenkradposition"
+      },
+      "primary_engine_soc_pct": {
+        "name": "12V-Batterie SoC"
+      },
       "next_charging_timer_id": {
         "name": "Nächster Lade-Timer ID"
       },
@@ -404,6 +413,9 @@
       },
       "subscription_active": {
         "name": "Abonnement aktiv"
+      },
+      "ignition_on": {
+        "name": "Zündung"
       },
       "tire_pressure_warning": {
         "name": "Reifendruck-Warnung"
