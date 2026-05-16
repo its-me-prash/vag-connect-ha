@@ -1290,8 +1290,17 @@ class VagConnectCoordinator(DataUpdateCoordinator):
         Pattern matches the existing ``vehicle_supports_capability`` API
         but adds the brand → cap-id lookup so platforms don't need to
         know brand-specific capability vocabulary themselves.
+
+        v2.2.0 PR #5 — additionally consults the MY/Platform quirk
+        table (``cariad/_my_quirks.py``) for known-broken firmware
+        combinations the backend STILL advertises as supported (e.g.
+        CUPRA Born MY24-MY25 unlock — pycupra #79). If quirks
+        suppress the command, returns False BEFORE the backend-cap
+        check so platforms hide the entity even on accounts where
+        the backend lies about capability.
         """
         from .cariad._capabilities import cap_id_for  # noqa: PLC0415
+        from .cariad._my_quirks import is_command_suppressed  # noqa: PLC0415
 
         brand = ""
         try:
@@ -1300,6 +1309,18 @@ class VagConnectCoordinator(DataUpdateCoordinator):
             return None
         if not brand:
             return None
+
+        # v2.2.0 — MY-quirk check FIRST. If a known-broken firmware
+        # suppresses this command, no point asking the backend.
+        vehicle = self.vehicles.get(vin) or {}
+        if is_command_suppressed(
+            brand,
+            vehicle.get("model"),
+            vehicle.get("model_year"),
+            command_id,
+        ):
+            return False
+
         cap_id = cap_id_for(brand, command_id)
         if cap_id is None:
             # No mapping registered → don't filter (Phase 2 fallback)
