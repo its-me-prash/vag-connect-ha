@@ -162,6 +162,12 @@ EXPECTED_KEYS: dict[str, dict[str, set[str]]] = {
             "seatHeatingActivated",
             "seatHeatingActivated.*",
             "windowHeatingEnabled",
+            # v2.2.0 (#220, Daniel Walter Scout-Report 2026-05-16) —
+            # Skoda mysmob now exposes ``airConditioningWithoutExternalPower``
+            # boolean on the air-conditioning endpoint. Indicates whether
+            # climatisation can run from the HV battery alone (without
+            # being plugged into a charger). Wired as binary_sensor.
+            "airConditioningWithoutExternalPower",
         },
         "parking": {
             "parkingPosition", "parkingPosition.gpsCoordinates",
@@ -201,6 +207,16 @@ EXPECTED_KEYS: dict[str, dict[str, set[str]]] = {
             "primaryEngineRange.currentSoCInPercent",
             "primaryEngineRange.currentFuelLevelInPercent",
             "primaryEngineRange.remainingRangeInKm",
+            # v2.2.0 (#220, Daniel Walter Scout-Report 2026-05-16) —
+            # Skoda mysmob ``secondaryEngineRange`` expanded mid-May 2026
+            # from 1-key (``distanceInKm`` only) to 4-key shape mirroring
+            # the ``primaryEngineRange`` layout. New companion fields:
+            # ``engineType`` (PETROL/DIESEL on PHEV), ``currentFuelLevelInPercent``
+            # (secondary tank %), and an implicit container key.
+            # Wildcard registration covers all current + future children
+            # without per-field whack-a-mole — same pattern as primaryEngineRange.
+            "secondaryEngineRange",
+            "secondaryEngineRange.*",
         },
         "maintenance": {
             "maintenanceReport", "maintenanceReport.mileageInKm",

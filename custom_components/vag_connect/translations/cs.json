@@ -270,6 +270,12 @@
       "secondary_engine_range_km": {
         "name": "Secondary Engine Range"
       },
+      "secondary_engine_type": {
+        "name": "Secondary Engine Type"
+      },
+      "secondary_engine_fuel_level_pct": {
+        "name": "Secondary Engine Fuel Level"
+      },
       "next_charging_timer_id": {
         "name": "Next Charging Timer ID"
       },
@@ -385,6 +391,9 @@
       },
       "window_heating_enabled": {
         "name": "Window Heating Enabled"
+      },
+      "air_conditioning_without_external_power": {
+        "name": "AC Without External Power"
       },
       "tire_pressure_warning": {
         "name": "Varování Tlaku Pneumatik"

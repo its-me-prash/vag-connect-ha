@@ -230,6 +230,18 @@ _NEW_BINARY: tuple[VagBinarySensorDescription, ...] = (
         icon="mdi:car-defrost-front",
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
+    # v2.2.0 (Skoda Scout #220 — Daniel Walter 2026-05-16) — Skoda mysmob
+    # `airConditioningWithoutExternalPower` on the air-conditioning endpoint.
+    # Tells you whether climatisation can run from the HV battery alone
+    # (without being plugged in). Skoda-only today; gated below for phantom
+    # protection so other brands don't see a meaningless OFF entity.
+    VagBinarySensorDescription(
+        key="air_conditioning_without_external_power",
+        translation_key="air_conditioning_without_external_power",
+        data_key="air_conditioning_without_external_power",
+        icon="mdi:battery-charging",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
     # v2.0.0 (Big-Bang) — Porsche TPMS warning aggregate (any corner
     # raising ``warning: true`` in the TIRE_PRESSURE measurement).
     # Brand-restricted via _DATA_PRESENT_REQUIRED below — non-Porsche
@@ -312,6 +324,9 @@ _DATA_PRESENT_REQUIRED: frozenset[str] = frozenset({
     "auto_unlock_when_charged",
     "climate_at_unlock",
     "window_heating_enabled",
+    # v2.2.0 (scout #220) — Skoda-only AC-without-external-power.
+    # Other brands leave field None → no phantom entity.
+    "air_conditioning_without_external_power",
     # v2.0.0 (Big-Bang) — Porsche-only TPMS warning (PPA TIRE_PRESSURE
     # measurement). Non-Porsche vehicles leave the field None → no phantom.
     "tire_pressure_warning",

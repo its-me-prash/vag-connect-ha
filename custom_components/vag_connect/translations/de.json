@@ -270,6 +270,12 @@
       "secondary_engine_range_km": {
         "name": "Reichweite Verbrenner (sekundär)"
       },
+      "secondary_engine_type": {
+        "name": "Motortyp (sekundär)"
+      },
+      "secondary_engine_fuel_level_pct": {
+        "name": "Tankfüllstand (sekundär)"
+      },
       "next_charging_timer_id": {
         "name": "Nächster Lade-Timer ID"
       },
@@ -385,6 +391,9 @@
       },
       "window_heating_enabled": {
         "name": "Scheibenheizung aktiviert"
+      },
+      "air_conditioning_without_external_power": {
+        "name": "Klima ohne externe Stromversorgung"
       },
       "tire_pressure_warning": {
         "name": "Reifendruck-Warnung"
