@@ -868,6 +868,17 @@ SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
         entity_category=EntityCategory.DIAGNOSTIC,
         suggested_display_precision=1,
     ),
+    # v2.2.0 Phase 7 PR #2 — VW EU + Audi aggregate count of enabled
+    # departure timers (0-3). Saves users the templating effort of
+    # summing 3 separate binary states. Diagnostic category.
+    VagSensorDescription(
+        key="departure_timer_enabled_count",
+        translation_key="departure_timer_enabled_count",
+        data_key="departure_timer_enabled_count",
+        icon="mdi:counter",
+        state_class=SensorStateClass.MEASUREMENT,
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
     # v2.2.0 Phase 2 PR #11/20 — derived integer days until expiry.
     # Closes the subscription-feature triangle (timestamp + active +
     # days). Negative when expired. Automation-friendly: threshold
@@ -1015,6 +1026,10 @@ _DATA_PRESENT_REQUIRED: frozenset[str] = frozenset({
     "primary_engine_soc_pct",       # Skoda-only (driving-range)
     "steering_wheel_position",      # Skoda-only (air-conditioning)
     "battery_temp_max",             # VW EU + Audi only (CARIAD-BFF)
+    # v2.2.0 Phase 7 PR #2 — VW EU + Audi only (CARIAD-BFF
+    # departureTimers block). Other brands' parsers don't populate
+    # this aggregate → field stays None → no phantom entity.
+    "departure_timer_enabled_count",
     "next_charging_timer_id",
     "next_charging_timer_target_soc_reachable",
     "capabilities_count",

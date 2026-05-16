@@ -575,6 +575,23 @@ class VehicleData:
     # charging want both extremes.
     battery_temp_max: float | None = None
 
+    # v2.2.0 Phase 7 PR #2 — tier-B diagnostics from scout-audit.
+    # Two VW EU + Audi fields that we already PARSE (timers list,
+    # readiness block) but never expose as aggregate / diagnostic.
+
+    # Count of currently-enabled departure timers (0-3). Aggregate of
+    # the per-timer `departure_timer_N_enabled` fields. Saves users
+    # the templating effort of summing 3 binary states. Read from
+    # `departureTimers.departureTimersStatus.value.timers[*].enabled`.
+    departure_timer_enabled_count: int | None = None
+
+    # Telematics modem daily power budget remaining (boolean). When
+    # False, the modem is rationing wake-ups to preserve 12V — long
+    # poll intervals are the user-visible symptom. From
+    # `readiness.readinessStatus.value.connectionState.
+    # dailyPowerBudgetAvailable`.
+    daily_power_budget_available: bool | None = None
+
     # v2.2.0 Phase 2 PR #8/20 — Connect-subscription expiry timestamp.
     # SEAT/CUPRA OLA ``mycar.services`` block exposes a per-service
     # entitlement map. Each entry typically carries either an

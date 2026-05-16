@@ -286,6 +286,9 @@
       "battery_temp_max": {
         "name": "Batteritemperatur (Max)"
       },
+      "departure_timer_enabled_count": {
+        "name": "Aktiva avresetimer"
+      },
       "steering_wheel_position": {
         "name": "Ratt-position"
       },
@@ -416,6 +419,9 @@
       },
       "ignition_on": {
         "name": "Tändning"
+      },
+      "daily_power_budget_available": {
+        "name": "Daglig energibudget tillgänglig"
       },
       "tire_pressure_warning": {
         "name": "Däcktryck Varning"

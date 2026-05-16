@@ -286,6 +286,9 @@
       "battery_temp_max": {
         "name": "HV-Batterie Temperatur (Max)"
       },
+      "departure_timer_enabled_count": {
+        "name": "Abfahrtstimer aktiviert"
+      },
       "steering_wheel_position": {
         "name": "Lenkradposition"
       },
@@ -416,6 +419,9 @@
       },
       "ignition_on": {
         "name": "Zündung"
+      },
+      "daily_power_budget_available": {
+        "name": "Tagesenergiebudget verfügbar"
       },
       "tire_pressure_warning": {
         "name": "Reifendruck-Warnung"

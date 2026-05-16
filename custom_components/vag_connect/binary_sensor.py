@@ -264,6 +264,17 @@ _NEW_BINARY: tuple[VagBinarySensorDescription, ...] = (
         icon="mdi:key-variant",
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
+    # v2.2.0 Phase 7 PR #2 — VW EU + Audi telematics modem daily
+    # power budget. When OFF the modem is rationing wake-ups to
+    # preserve 12V → user sees long poll intervals. Diagnostic
+    # category — power-users monitor this to plan a 12V check.
+    VagBinarySensorDescription(
+        key="daily_power_budget_available",
+        translation_key="daily_power_budget_available",
+        data_key="daily_power_budget_available",
+        icon="mdi:battery-clock",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
     # v2.0.0 (Big-Bang) — Porsche TPMS warning aggregate (any corner
     # raising ``warning: true`` in the TIRE_PRESSURE measurement).
     # Brand-restricted via _DATA_PRESENT_REQUIRED below — non-Porsche
@@ -358,6 +369,10 @@ _DATA_PRESENT_REQUIRED: frozenset[str] = frozenset({
     # v2.2.0 Phase 7 PR #1 — Skoda-only `readiness.ignitionOn`.
     # Other brands leave field None → no phantom entity.
     "ignition_on",
+    # v2.2.0 Phase 7 PR #2 — VW EU + Audi only telematics power-
+    # budget. Other brands' readiness blocks don't ship this leaf →
+    # field stays None → no phantom entity.
+    "daily_power_budget_available",
     # v2.0.0 (Big-Bang) — Porsche-only TPMS warning (PPA TIRE_PRESSURE
     # measurement). Non-Porsche vehicles leave the field None → no phantom.
     "tire_pressure_warning",

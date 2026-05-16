@@ -286,6 +286,9 @@
       "battery_temp_max": {
         "name": "Battery Temperature (Max)"
       },
+      "departure_timer_enabled_count": {
+        "name": "Departure Timers Enabled"
+      },
       "steering_wheel_position": {
         "name": "Steering Wheel Position"
       },
@@ -416,6 +419,9 @@
       },
       "ignition_on": {
         "name": "Ignition"
+      },
+      "daily_power_budget_available": {
+        "name": "Daily Power Budget Available"
       },
       "tire_pressure_warning": {
         "name": "Tire Pressure Warning"
