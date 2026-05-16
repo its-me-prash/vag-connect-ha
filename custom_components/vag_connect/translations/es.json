@@ -289,6 +289,12 @@
       "departure_timer_enabled_count": {
         "name": "Temporizadores de salida activos"
       },
+      "fuel_tank_capacity_liters": {
+        "name": "Capacidad depósito"
+      },
+      "primary_engine_type": {
+        "name": "Tipo motor principal"
+      },
       "steering_wheel_position": {
         "name": "Posición del volante"
       },

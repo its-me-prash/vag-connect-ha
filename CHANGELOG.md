@@ -92,6 +92,29 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ### Added
 
+- **Phase 7 PR #3 — SEAT/CUPRA `engines.primary` Block** —
+  Companion zu PR #6/#18 `secondary_engine_*` fields. Wildcard
+  `engines.primary.*` war silenced seit v1.16.1 (#122 r1150gs SEAT
+  scout 2026-05-02 — "3 keys observed") aber nie geparsed.
+  - **`sensor.primary_engine_type`** — `mycar.engines.primary.
+    {fuelType,engineType}` (PETROL/DIESEL/ELECTRIC/HYBRID). Distinct
+    von den derived booleans (`is_electric`, `is_hybrid`) — das ist
+    die authoritative backend-classification.
+  - **`sensor.fuel_tank_capacity_liters`** — `mycar.engines.primary.
+    {tankCapacity,tankCapacityInLiters,tankSize}` (Liter). Mit dem
+    existing `fuel_level` (%) können users die verbleibenden Liter
+    via simple template derive — keine Spec-PDF-Lookup mehr nötig.
+    `condition="combustion"` — EV-only fahrzeuge sehen den Sensor nicht.
+  Multi-variant lookup für 3 key-Schreibweisen pro field (OLA hat
+  historisch alternative spellings shippt). Defensive: 0-capacity
+  silently rejected (EV-only ships 0 für das field aber meaningless),
+  string-capacity rejected, empty-fuelType rejected. SEAT/CUPRA OLA
+  only; other brands' parsers don't populate diese fields → None →
+  phantom-gate hides entity. 13 Tests inkl. forward-compat alt-spellings
+  + defensive zero/string/empty rejections.
+  *"Now if you'll excuse me, I have a tank of unleaded to monitor."
+  — Sheldon Cooper.*
+
 - **Phase 7 PR #2 — VW EU/Audi Tier-B Diagnostics** —
   Zwei CARIAD-BFF Felder die der parser bereits READS für adjacent
   features (timers list, readiness block) aber nie als aggregate /

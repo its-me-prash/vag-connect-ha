@@ -307,6 +307,12 @@
       "departure_timer_enabled_count": {
         "name": "Departure Timers Enabled"
       },
+      "fuel_tank_capacity_liters": {
+        "name": "Fuel Tank Capacity"
+      },
+      "primary_engine_type": {
+        "name": "Primary Engine Type"
+      },
       "steering_wheel_position": {
         "name": "Steering Wheel Position"
       },

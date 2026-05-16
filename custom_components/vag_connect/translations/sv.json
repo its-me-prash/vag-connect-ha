@@ -289,6 +289,12 @@
       "departure_timer_enabled_count": {
         "name": "Aktiva avresetimer"
       },
+      "fuel_tank_capacity_liters": {
+        "name": "Tankvolym"
+      },
+      "primary_engine_type": {
+        "name": "Primary Engine Type"
+      },
       "steering_wheel_position": {
         "name": "Ratt-position"
       },

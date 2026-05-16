@@ -879,6 +879,25 @@ SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
         state_class=SensorStateClass.MEASUREMENT,
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
+    # v2.2.0 Phase 7 PR #3 — SEAT/CUPRA `engines.primary` block.
+    # Companion to PR #6/#18 secondary_engine_* fields.
+    VagSensorDescription(
+        key="primary_engine_type",
+        translation_key="primary_engine_type",
+        data_key="primary_engine_type",
+        icon="mdi:engine",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    VagSensorDescription(
+        key="fuel_tank_capacity_liters",
+        translation_key="fuel_tank_capacity_liters",
+        data_key="fuel_tank_capacity_liters",
+        native_unit_of_measurement="L",
+        icon="mdi:gas-station",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        suggested_display_precision=0,
+        condition="combustion",
+    ),
     # v2.2.0 Phase 2 PR #11/20 — derived integer days until expiry.
     # Closes the subscription-feature triangle (timestamp + active +
     # days). Negative when expired. Automation-friendly: threshold
@@ -1030,6 +1049,10 @@ _DATA_PRESENT_REQUIRED: frozenset[str] = frozenset({
     # departureTimers block). Other brands' parsers don't populate
     # this aggregate → field stays None → no phantom entity.
     "departure_timer_enabled_count",
+    # v2.2.0 Phase 7 PR #3 — SEAT/CUPRA only (OLA mycar.engines.primary).
+    # Other brands don't ship this block → fields stay None → no phantom.
+    "primary_engine_type",
+    "fuel_tank_capacity_liters",
     "next_charging_timer_id",
     "next_charging_timer_target_soc_reachable",
     "capabilities_count",
