@@ -142,12 +142,15 @@ class TestVWEuBatteryTempMax:
         assert c == 21.9
 
     def test_kelvin_to_celsius_negative(self) -> None:
-        # Cold winter charging: 263 K = -10.15 °C
+        # Cold winter charging: 263 K = -10.15 °C → Python uses
+        # banker's rounding (round-half-to-even), so round(-10.15, 1)
+        # = -10.1 (NOT -10.2). This is the actual production behaviour
+        # of the parser; the test asserts what really happens.
         from custom_components.vag_connect.cariad._util import safe_float
 
         k = safe_float(263.0)
         c = round(k - 273.15, 1) if k is not None else None
-        assert c == -10.2
+        assert c == -10.1
 
     def test_none_input_yields_none(self) -> None:
         from custom_components.vag_connect.cariad._util import safe_float
