@@ -50,6 +50,18 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 > rollback. v3.0.0 reserved for genuine breaking changes (ConfigEntry
 > restructure, EU Data Act activation, Pydantic dataclass-removal).
 
+### Added
+
+- **`safe_get(data, "a.b[0].c", default=None)` — defensive dot-path nested accessor** —
+  neuer Helper in `cariad/_util.py` ersetzt unsichere `resp['a']['b'][0]['c']`
+  Patterns die bei MY26 Schema-Rotationen crashen (backend flippt silent
+  zwischen dict/list/None). Drei unsichere Patterns in `vw_eu.py` Access-Block
+  refactored. Schließt die Bug-Klasse die VW HA #922, pycupra #76, audi #686
+  hit. Path-Syntax: `"a.b.c"`, `"a.b[0].c"`, `"doors[2].lock"`. Negative
+  Indizes supported (`"l[-1]"`). Returns default für ANY of: missing key,
+  wrong type, list-index out of range, None mid-traversal. **Never raises.**
+  *"D'oh!" — Homer, never again.*
+
 ### Fixed
 
 - **Universal Consent-Screen Wall Detection (Auth0 + Legacy paths)** —
