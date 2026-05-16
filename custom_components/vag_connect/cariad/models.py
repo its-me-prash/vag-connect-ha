@@ -420,6 +420,26 @@ class VehicleData:
     # both via separate API blocks since 2024 firmware.
     secondary_engine_range_km: int | None = None
 
+    # v2.2.0 (Skoda Scout #220 — Daniel Walter 2026-05-16) — Skoda mysmob
+    # ``driving-range.secondaryEngineRange`` expanded from 1-key (distanceInKm)
+    # to 4-key shape mid-May 2026. The extra keys document WHICH engine
+    # backs the secondary range (PETROL / DIESEL on PHEV variants) and the
+    # CURRENT FUEL LEVEL %. Both surface as separate sensors so power-users
+    # can build automations on engine-type-aware logic.
+    # From ``driving-range.secondaryEngineRange.engineType`` (string enum).
+    secondary_engine_type: str | None = None
+    # From ``driving-range.secondaryEngineRange.currentFuelLevelInPercent``
+    # (int 0-100) — companion to ``current_fuel_level_pct`` for the primary
+    # engine but scoped to the secondary (PHEV ICE) tank.
+    secondary_engine_fuel_level_pct: int | None = None
+
+    # v2.2.0 (Skoda Scout #220 — Daniel Walter 2026-05-16) — Skoda mysmob
+    # ``air-conditioning.airConditioningWithoutExternalPower`` boolean.
+    # True when climatisation can run from the HV battery alone (without
+    # being plugged into a charger). Critical for PHEV/BEV pre-conditioning
+    # automations where the user wants to "warm up only if not plugged in".
+    air_conditioning_without_external_power: bool | None = None
+
     # Audi/VW EU charging rate in km/h (parity with Skoda + CUPRA/SEAT
     # which have ``charging_rate_kmh`` since v1.10.0). From
     # ``charging.chargingStatus.value.chargeRate_kmph``. Reused field

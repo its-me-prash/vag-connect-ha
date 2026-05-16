@@ -587,6 +587,15 @@ class SkodaClient(CariadBaseClient):
             wh_en = v(ac, "windowHeatingEnabled")
             if isinstance(wh_en, bool):
                 d.window_heating_enabled = wh_en
+            # v2.2.0 (scout #220 — Daniel Walter 2026-05-16) — Skoda mysmob
+            # exposes a new boolean ``airConditioningWithoutExternalPower``
+            # on the air-conditioning endpoint indicating whether climate
+            # can run from the HV battery alone (vs. requiring a charger
+            # plugged in). Boolean — defensive isinstance guard so a
+            # string/null variant on older firmware doesn't trip it.
+            ac_no_ext = v(ac, "airConditioningWithoutExternalPower")
+            if isinstance(ac_no_ext, bool):
+                d.air_conditioning_without_external_power = ac_no_ext
 
             # v1.17.7 (#129 rocksandclouds + #130 Chr1sDub + #133
             # christianmhz — three converging Skoda Scout-Reports
@@ -670,6 +679,19 @@ class SkodaClient(CariadBaseClient):
             # both via separate API blocks since 2024 firmware.
             sec_eng = v(driving_range, "secondaryEngineRange", "distanceInKm")
             d.secondary_engine_range_km = safe_int(sec_eng)
+            # v2.2.0 (Skoda Scout #220 — Daniel Walter 2026-05-16):
+            # ``secondaryEngineRange`` expanded from 1-key (distanceInKm)
+            # to 4-key shape mid-May 2026. The extra companion fields
+            # surface as separate sensors so automations can branch on
+            # engine-type / fuel-level. Defensive ``isinstance`` guards
+            # because pre-expansion firmwares emit None / missing.
+            sec_eng_type = v(driving_range, "secondaryEngineRange", "engineType")
+            if isinstance(sec_eng_type, str) and sec_eng_type:
+                d.secondary_engine_type = sec_eng_type
+            sec_eng_fuel = v(
+                driving_range, "secondaryEngineRange", "currentFuelLevelInPercent"
+            )
+            d.secondary_engine_fuel_level_pct = safe_int(sec_eng_fuel)
 
         d.is_electric = d.has_battery and not d.has_combustion
         d.is_hybrid = d.has_battery and d.has_combustion

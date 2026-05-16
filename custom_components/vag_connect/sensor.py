@@ -794,6 +794,27 @@ SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
         condition="combustion",
         suggested_display_precision=0,
     ),
+    # v2.2.0 (Skoda Scout #220 — Daniel Walter 2026-05-16) — companion
+    # fields that shipped when ``secondaryEngineRange`` expanded from
+    # 1-key (distanceInKm) to 4-key shape.
+    VagSensorDescription(
+        key="secondary_engine_type",
+        translation_key="secondary_engine_type",
+        data_key="secondary_engine_type",
+        icon="mdi:engine",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        condition="combustion",
+    ),
+    VagSensorDescription(
+        key="secondary_engine_fuel_level_pct",
+        translation_key="secondary_engine_fuel_level_pct",
+        data_key="secondary_engine_fuel_level_pct",
+        native_unit_of_measurement="%",
+        state_class=SensorStateClass.MEASUREMENT,
+        icon="mdi:fuel",
+        condition="combustion",
+        suggested_display_precision=0,
+    ),
     VagSensorDescription(
         key="next_charging_timer_id",
         translation_key="next_charging_timer_id",
@@ -915,6 +936,11 @@ _DATA_PRESENT_REQUIRED: frozenset[str] = frozenset({
     # next_charging_timer_* + capabilities_count). Other vehicles leave
     # the field None → no phantom entity created.
     "secondary_engine_range_km",
+    # v2.2.0 (scout #220) — Skoda PHEV-only secondaryEngineRange
+    # companion fields (engineType / fuel-level %). Stay None on
+    # ICE-only and EV-only vehicles → no phantom entity.
+    "secondary_engine_type",
+    "secondary_engine_fuel_level_pct",
     "next_charging_timer_id",
     "next_charging_timer_target_soc_reachable",
     "capabilities_count",

@@ -69,6 +69,23 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
   `datetime → ISO 8601`, `timedelta → float seconds`, `set → sorted list`,
   `bytes → utf-8 oder hex`, `dataclass → dict (recursive)`. **Never raises.**
 
+- **Skoda Scout-Report #220 (Daniel Walter 2026-05-16) — 2 new fields wired** —
+  zwei neue Felder im Skoda mysmob Backend, beide live integriert:
+  (1) **`air-conditioning.airConditioningWithoutExternalPower`** (bool) →
+  neue `binary_sensor.air_conditioning_without_external_power` Entity.
+  Zeigt an, ob die Klimatisierung allein aus dem HV-Akku laufen kann
+  (ohne Ladegerät). Kritisch für PHEV/BEV Vorklimatisierungs-Auto-
+  matisierungen die "nur vorheizen wenn nicht eingesteckt" wollen.
+  (2) **`driving-range.secondaryEngineRange`** expanded from 1-key
+  (`distanceInKm`) auf 4-key shape mid-May 2026 — Companion-Felder
+  `engineType` (PETROL/DIESEL) + `currentFuelLevelInPercent` (sekundärer
+  Tankfüllstand). Neu: `sensor.secondary_engine_type` +
+  `sensor.secondary_engine_fuel_level_pct`, beide phantom-protected
+  (Non-Skoda-PHEV-Brands bleiben None → keine geisterhaften Entities).
+  EXPECTED_KEYS in `_unexpected_keys.py` erweitert um Wildcard-Reg
+  `secondaryEngineRange.*` (zukünftige Felder ohne Whack-a-mole).
+  Translation-keys in allen 8 Sprachen + `strings.json`.
+
 - **MY/Platform Quirk-Suppression Layer (`cariad/_my_quirks.py`)** —
   zweite Filter-Schicht orthogonal zu `_capabilities.py` Phase 3. Während
   Phase 3 Capabilities filtert die das Backend **nicht** als verfügbar
