@@ -357,6 +357,39 @@ class IDKAuth:
                 else:
                     raise TwoFactorRequiredError()
 
+            # v2.2.0 — Detect Marketing-Consent / T&C interstitial.
+            # 2026 trend across all VAG brands (pycupra #83, Audi PR #731,
+            # evcc #29760, myskoda #976): the IDP randomly inserts a
+            # consent screen into the OAuth redirect chain. Pre-v2.2.0
+            # this surfaced as a generic ``AuthenticationError("no app://
+            # redirect")`` which gave the user no clue what was wrong.
+            # We detect six known consent-URL fragments and raise the
+            # dedicated ``MarketingConsentError`` so the Repairs flow
+            # surfaces an actionable deep-link to the brand portal where
+            # the user can answer the prompt and resume.
+            #
+            # Big-Bang-Theory-grade pedantry on the URL patterns:
+            # - consent/marketing: legacy signin-service path
+            # - /u/consent: Auth0 Universal Login consent template
+            # - cupraid.vwgroup.io: CUPRA portal-redirect for SEAT/Cupra
+            # - skoda-id.vwgroup.io / skodaid.vwgroup.io: Skoda variants
+            # - signin-service/v1/terms-and-conditions: T&C prompt
+            consent_markers = (
+                "consent/marketing",
+                "/u/consent",
+                "cupraid.vwgroup.io",
+                "skoda-id.vwgroup.io",
+                "skodaid.vwgroup.io",
+                "terms-and-conditions",
+            )
+            if any(marker in ref for marker in consent_markers):
+                _LOGGER.warning(
+                    "IDK Auth0: consent/T&C wall detected at %s — raising "
+                    "MarketingConsentError for repair-flow surface",
+                    ref[:120],
+                )
+                raise MarketingConsentError()
+
             try:
                 async with self._session.get(
                     ref,
@@ -857,9 +890,28 @@ class IDKAuth:
                     _LOGGER.debug("IDK: captured user_id from redirect: %s", uid[:8])
             if location.startswith(prefix):
                 return location
+            # v2.2.0 — extend consent-detection to cover all 6 known
+            # consent/T&C wall variants. Pre-v2.2.0 only handled 2;
+            # the other 4 (CUPRA portal, Skoda portal variants, Auth0
+            # Universal Login template) leaked through as generic
+            # "no app:// redirect" errors. Cross-references: pycupra
+            # #83, Audi PR #731, evcc #29760, myskoda #976. Symmetric
+            # with the Auth0 flow detection above (line ~360).
             if "terms-and-conditions" in location:
                 raise TermsAndConditionsError()
-            if "consent/marketing" in location:
+            _consent_markers = (
+                "consent/marketing",
+                "/u/consent",
+                "cupraid.vwgroup.io",
+                "skoda-id.vwgroup.io",
+                "skodaid.vwgroup.io",
+            )
+            if any(marker in location for marker in _consent_markers):
+                _LOGGER.warning(
+                    "IDK legacy: consent/T&C wall detected at %s — "
+                    "raising MarketingConsentError",
+                    location[:120],
+                )
                 raise MarketingConsentError()
             _LOGGER.debug("IDK legacy: following redirect → %s", location[:80])
             async with self._session.get(
