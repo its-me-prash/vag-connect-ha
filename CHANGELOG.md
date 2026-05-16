@@ -52,6 +52,29 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ### Added
 
+- **Pydantic v2 Dual-Write Validation Foundation (Phase 5b PR #19/20)** —
+  Read-only "dual-write" pattern — baut die validation layer in v2.2.0
+  damit v3.0.0 die legacy dataclass parsing path mit confidence cutten
+  kann. Neu: `cariad/_pydantic_validate.py` (defensive helper, **NEVER
+  raises** — auf Pydantic-not-importable / schema-mismatch / wrong-type
+  returns None silently, caller-side existing dataclass parse läuft
+  unverändert) + `cariad/_pydantic_models.py` mit erstem Modell
+  `BatteryStatusValue` (deckt `charging.batteryStatus.value` ab —
+  stabilstes Block seit 2023). **`extra="allow"`** — Cariad rollt
+  monatlich neue Sibling-Keys, strict validation = false-alarm-fatigue
+  (cross-platform consensus pycupra+audi+myskoda). Erstes dual-write
+  call-site: `vw_eu.py` post-parse, validate-only, log-at-DEBUG bei
+  mismatch (NOT warning — non-spammy während wir Models tunen).
+  Telemetrie über ~7 Tage → wenn clean: model locked-in für weitere
+  blocks. **Failsafe**: caller-side `d.battery_soc` aus dem existing
+  dataclass parse bleibt canonical; Pydantic ist diagnostic-only.
+  Module sind defensive-importable (try/except um pydantic-import) —
+  dev contributors ohne HA Core können parser-tests laufen lassen.
+  18 Tests inkl. happy-path mit Pydantic + skipif fallback + module-
+  import-safety regression-shield.
+  *"In two years, we will all look back on this dataclass code and say
+  'D'oh — why didn't we use Pydantic from the start?'" — Homer Simpson.*
+
 - **Push-Bus Internal Abstraction Refactor (Phase 5a PR #18/20)** —
   Internal-only refactor — kein user-facing behaviour change. Extrahiert
   die duplizierten `_advance_backoff` + `_reset_backoff` methods +

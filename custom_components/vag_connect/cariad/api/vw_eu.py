@@ -981,6 +981,25 @@ class VWEUClient(CariadBaseClient):
         # range here would clobber the per-engine logic for hybrids where
         # the battery range and the engine block disagree.
 
+        # v2.2.0 Phase 5b PR #19/20 — Pydantic dual-write validation
+        # foundation. Read-only — the canonical ``d.battery_soc`` value
+        # above is unaffected. This call validates the raw block against
+        # the first Pydantic v2 model in the codebase. On mismatch:
+        # logs at DEBUG (NOT WARNING — non-spammy while we tune the
+        # models), returns None. Caller (us) ignores the return value.
+        #
+        # Purpose: build dual-write telemetry so v3.0.0 can cut over to
+        # Pydantic as the canonical source with confidence. NEVER raises.
+        from .._pydantic_models import BatteryStatusValue  # noqa: PLC0415
+        from .._pydantic_validate import validate_response  # noqa: PLC0415
+
+        battery_raw = v(raw, "charging", "batteryStatus", "value")
+        validate_response(
+            battery_raw,
+            BatteryStatusValue,
+            context="vw_eu/charging.batteryStatus.value",
+        )
+
         plug_state = v(raw, "charging", "plugStatus", "value", "plugConnectionState")
         d.plug_state = plug_state
         # v2.0.1 (#131 follow-up) — defensive parsing.
