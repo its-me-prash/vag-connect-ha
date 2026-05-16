@@ -52,6 +52,20 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ### Added
 
+- **SEAT/CUPRA `subscription_active` binary_sensor (Phase 2 PR #9/20)** —
+  Companion zu PR #8 `subscription_expiry_at`. Computed tri-state
+  boolean True/False/None aus dem earliest expiry across services.
+  Perfekt für HA-Automatisierungen wie *"if binary_sensor.subscription_active
+  == off → notify"*. **Tri-state semantics preserved**: None ≠ False, so
+  perpetuelle Entitlements (lifetime-subs auf older Born MY24 firmware,
+  dealer-bundled packages) **lösen keine false "expired" alarms aus**.
+  Defensiv: malformed Timestamps fallen zurück auf None statt zu crashen.
+  Computed inline im SEAT/CUPRA parser nach der expiry-aggregation —
+  zero extra API calls. 14 Tests inkl. Tri-state-Logik + Defensive-Parsing
+  + 8-Sprachen-Coverage.
+  *"That subscription? Oh, it's outstanding. Just like Howard's mom's
+  lasagna." — Sheldon Cooper.*
+
 - **SEAT/CUPRA Connect-Subscription Expiry Sensor (Phase 2 PR #8/20)** —
   Long-standing User-Request: zeigt jetzt **wann das Connect-Abonnement
   ausläuft** bevor Lock/Unlock + Climate-Start stop working. Neue

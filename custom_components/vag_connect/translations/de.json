@@ -399,6 +399,9 @@
       "air_conditioning_without_external_power": {
         "name": "Klima ohne externe Stromversorgung"
       },
+      "subscription_active": {
+        "name": "Abonnement aktiv"
+      },
       "tire_pressure_warning": {
         "name": "Reifendruck-Warnung"
       },

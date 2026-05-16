@@ -455,6 +455,18 @@ class VehicleData:
     # request "When does my Connect subscription run out?".
     subscription_expiry_at: str | None = None
 
+    # v2.2.0 Phase 2 PR #9/20 — Companion bool to ``subscription_expiry_at``.
+    # Computed at parse-time from the same SEAT/CUPRA ``mycar.services``
+    # aggregation but normalised to a simple True/False:
+    #   - True  → at least one service has expiry in the future
+    #   - False → earliest expiry is now-or-past (subscription LAPSED)
+    #   - None  → no expiry info at all (perpetual OR brand without block)
+    # Surfaces as ``binary_sensor.subscription_active``. Use case:
+    # ``automation: if binary_sensor.subscription_active == off → notify``.
+    # Tri-state semantics preserved on purpose — None ≠ False so users
+    # with perpetual entitlements don't get false "expired" alarms.
+    subscription_active: bool | None = None
+
     # Audi/VW EU charging rate in km/h (parity with Skoda + CUPRA/SEAT
     # which have ``charging_rate_kmh`` since v1.10.0). From
     # ``charging.chargingStatus.value.chargeRate_kmph``. Reused field

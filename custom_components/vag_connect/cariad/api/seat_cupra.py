@@ -232,6 +232,32 @@ class SeatCupraClient(CariadBaseClient):
                         )
                 if earliest is not None:
                     d.subscription_expiry_at = earliest
+                    # v2.2.0 Phase 2 PR #9/20 — companion boolean.
+                    # Tri-state-preserving: only flip to True/False
+                    # when we successfully parse a timestamp; on parse
+                    # failure leave at None (don't false-alarm a user
+                    # with perpetual entitlements just because our
+                    # datetime parse choked on an unusual format).
+                    try:
+                        from datetime import datetime, timezone  # noqa: PLC0415
+
+                        # Normalise trailing ``Z`` to ``+00:00`` for
+                        # ``fromisoformat`` (Python 3.11+ accepts ``Z``
+                        # natively but we keep this for older HA users).
+                        parsed = datetime.fromisoformat(
+                            earliest.replace("Z", "+00:00")
+                        )
+                        if parsed.tzinfo is None:
+                            parsed = parsed.replace(tzinfo=timezone.utc)
+                        d.subscription_active = (
+                            parsed > datetime.now(tz=timezone.utc)
+                        )
+                    except (ValueError, TypeError) as exc:
+                        _LOGGER.debug(
+                            "subscription_active: could not parse expiry "
+                            "%s — leaving as None (raw_exc=%s)",
+                            earliest, exc,
+                        )
 
         # ── Ranges ───────────────────────────────────────────────────────────
         if isinstance(ranges, dict):

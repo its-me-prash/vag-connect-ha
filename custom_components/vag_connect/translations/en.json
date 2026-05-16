@@ -399,6 +399,9 @@
       "air_conditioning_without_external_power": {
         "name": "AC Without External Power"
       },
+      "subscription_active": {
+        "name": "Subscription Active"
+      },
       "tire_pressure_warning": {
         "name": "Tire Pressure Warning"
       },
