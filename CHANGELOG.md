@@ -52,6 +52,22 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ### Added
 
+- **`subscription_days_remaining` derived sensor (Phase 2 PR #11/20 — Phase 2 closer)** —
+  Schließt das Subscription-Feature-Dreieck: timestamp (PR #8) + bool
+  (PR #9) + **int days remaining (this PR)**. **Automation-friendly**:
+  Threshold-Trigger wie `if state(...) < 30 → notify` sind trivial
+  gegen einen int-Sensor, viel einfacher als gegen ein TIMESTAMP zu
+  templaten. Negative Werte wenn expired (`-3` = "expired 3 days ago"),
+  so doubles der gleiche Sensor als "wie lange ist's her" Alarm.
+  Berechnet inline neben PR #9 active-bool (zero overhead, single
+  datetime parse). Brand coverage identisch zu PR #8+#10: SEAT, CUPRA,
+  VW EU, Audi populiert; Skoda, Porsche, VW NA bleiben None.
+  Floor-division via `timedelta.days` — Partial-days inflaten nicht.
+  13 Tests inkl. Arithmetik (far-future, near-future, past, far-past,
+  partial-day-floored) + defensives Parsing + Sensor-Registration.
+  Phase 2 = ✅ COMPLETE (5 PRs: #7 Email-2FA + #8-#11 Subscription-Triangle).
+  *"Bazinga! Now THAT'S what I call a renewable resource." — Sheldon Cooper.*
+
 - **VW EU / Audi subscription parity (Phase 2 PR #10/20)** —
   Cross-brand parity zu PR #8 + #9: VW EU + Audi (CARIAD-BFF) parsen
   jetzt subscription_expiry_at + subscription_active aus dem

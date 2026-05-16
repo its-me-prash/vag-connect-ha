@@ -836,6 +836,20 @@ SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
         icon="mdi:calendar-clock",
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
+    # v2.2.0 Phase 2 PR #11/20 — derived integer days until expiry.
+    # Closes the subscription-feature triangle (timestamp + active +
+    # days). Negative when expired. Automation-friendly: threshold
+    # triggers like ``if state(...) < 30 → notify`` are trivial against
+    # an int sensor (much easier than templating against a TIMESTAMP).
+    VagSensorDescription(
+        key="subscription_days_remaining",
+        translation_key="subscription_days_remaining",
+        data_key="subscription_days_remaining",
+        native_unit_of_measurement="d",
+        state_class=SensorStateClass.MEASUREMENT,
+        icon="mdi:calendar-end",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
     VagSensorDescription(
         key="next_charging_timer_target_soc_reachable",
         translation_key="next_charging_timer_target_soc_reachable",
@@ -960,6 +974,10 @@ _DATA_PRESENT_REQUIRED: frozenset[str] = frozenset({
     # capabilitiesStatus.value[*].expirationDate``. Skoda + Porsche +
     # VW NA leave field None → no phantom entity.
     "subscription_expiry_at",
+    # v2.2.0 Phase 2 PR #11/20 — derived days-remaining int sensor.
+    # Computed from the same expiry-aggregation as PR #8/#10, so same
+    # brand-coverage matrix (None on Skoda/Porsche/VW NA).
+    "subscription_days_remaining",
     "next_charging_timer_id",
     "next_charging_timer_target_soc_reachable",
     "capabilities_count",

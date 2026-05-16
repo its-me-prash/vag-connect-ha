@@ -298,6 +298,9 @@
       "subscription_expiry_at": {
         "name": "Subscription Expires"
       },
+      "subscription_days_remaining": {
+        "name": "Subscription Days Remaining"
+      },
       "next_charging_timer_id": {
         "name": "Next Charging Timer ID"
       },

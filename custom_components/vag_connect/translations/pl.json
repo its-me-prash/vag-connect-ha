@@ -280,6 +280,9 @@
       "subscription_expiry_at": {
         "name": "Subskrypcja wygasa"
       },
+      "subscription_days_remaining": {
+        "name": "Pozostałe dni subskrypcji"
+      },
       "next_charging_timer_id": {
         "name": "Next Charging Timer ID"
       },

@@ -1353,9 +1353,15 @@ class VWEUClient(CariadBaseClient):
                         cap_expiry_dt = cap_expiry_dt.replace(
                             tzinfo=timezone.utc
                         )
-                    d.subscription_active = (
-                        cap_expiry_dt > datetime.now(tz=timezone.utc)
-                    )
+                    now_utc = datetime.now(tz=timezone.utc)
+                    d.subscription_active = cap_expiry_dt > now_utc
+                    # v2.2.0 Phase 2 PR #11/20 — derived integer days
+                    # remaining. Negative when expired (e.g. -3 means
+                    # "expired 3 days ago"). Floor-divide via
+                    # ``timedelta.days`` so partial days don't inflate.
+                    d.subscription_days_remaining = (
+                        cap_expiry_dt - now_utc
+                    ).days
                 except (ValueError, TypeError):
                     # Leave subscription_active at None — don't false-
                     # alarm perpetual users on a parse blip.
