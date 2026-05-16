@@ -52,6 +52,22 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ### Added
 
+- **CUPRA/SEAT FCM Circuit-Breaker Wiring (Phase 3 PR #13/20)** —
+  Wired die circuit-breaker hooks (PR #12 foundation) in den CUPRA/SEAT
+  FCM push manager an 5 Hook-Sites:
+  (1) `start()` short-circuits wenn state == TRIPPED;
+  (2) `start()` deps-check failure → `_record_failure("missing-dep")`;
+  (3) `_run_loop()` connect-exception → `_record_failure("connect-loop")`;
+  (4) Post-backoff trip check → exit outer loop;
+  (5) `_connect_and_listen()` success → `_record_success()` (resets).
+  **Identische Wiring-Shape wie Skoda MQTT** (PR #12) — parity test
+  vergleicht Hook-Counts zwischen beiden brands. Beide brands haben
+  jetzt die exact gleiche fail-safe behavior. Audi/VW FCM wired in
+  PR #14. 11 Tests inkl. source-level wiring verification +
+  mixin-inheritance + brand-parity regression-shield.
+  *"That, my dear Penny, is what we call defensive programming."
+  — Sheldon Cooper.*
+
 - **Push-Bus 3-strike Circuit-Breaker Foundation (Phase 3 PR #12/20)** —
   Phase 3 opener. Foundational layer für die kommenden MQTT/FCM Live-
   Activations (#13, #14): nach **3 konsekutiven Connect-Failures**
