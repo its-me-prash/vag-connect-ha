@@ -217,7 +217,7 @@ class TestBackoffStateMachine:
         )
 
     def test_initial_backoff_is_5s(self):
-        from custom_components.vag_connect.cariad.push.skoda_mqtt import _INITIAL_BACKOFF_S
+        from custom_components.vag_connect.cariad.push.base import PUSH_INITIAL_BACKOFF_S as _INITIAL_BACKOFF_S
         m = self._new_manager()
         assert m._backoff_seconds == _INITIAL_BACKOFF_S
         assert _INITIAL_BACKOFF_S == 5.0
@@ -229,7 +229,7 @@ class TestBackoffStateMachine:
         assert m._backoff_seconds > initial
 
     def test_advance_backoff_capped_at_max(self):
-        from custom_components.vag_connect.cariad.push.skoda_mqtt import _MAX_BACKOFF_S
+        from custom_components.vag_connect.cariad.push.base import PUSH_MAX_BACKOFF_S as _MAX_BACKOFF_S
         m = self._new_manager()
         # Advance many times
         for _ in range(50):
@@ -238,7 +238,7 @@ class TestBackoffStateMachine:
         assert m._backoff_seconds <= _MAX_BACKOFF_S * 1.15
 
     def test_reset_backoff_returns_to_initial(self):
-        from custom_components.vag_connect.cariad.push.skoda_mqtt import _INITIAL_BACKOFF_S
+        from custom_components.vag_connect.cariad.push.base import PUSH_INITIAL_BACKOFF_S as _INITIAL_BACKOFF_S
         m = self._new_manager()
         m._advance_backoff()
         m._advance_backoff()
@@ -247,7 +247,7 @@ class TestBackoffStateMachine:
         assert m._consecutive_fast_retries == 0
 
     def test_jitter_keeps_backoff_above_initial(self):
-        from custom_components.vag_connect.cariad.push.skoda_mqtt import _INITIAL_BACKOFF_S
+        from custom_components.vag_connect.cariad.push.base import PUSH_INITIAL_BACKOFF_S as _INITIAL_BACKOFF_S
         m = self._new_manager()
         # Even with negative jitter, backoff should never drop below initial
         for _ in range(100):

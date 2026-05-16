@@ -205,9 +205,7 @@ class TestCupraSeatBackoffStateMachine:
         )
 
     def test_initial_backoff_is_5s(self):
-        from custom_components.vag_connect.cariad.push.cupra_seat_fcm import (
-            _INITIAL_BACKOFF_S,
-        )
+        from custom_components.vag_connect.cariad.push.base import PUSH_INITIAL_BACKOFF_S as _INITIAL_BACKOFF_S
         m = self._new_manager()
         assert m._backoff_seconds == _INITIAL_BACKOFF_S
         assert _INITIAL_BACKOFF_S == 5.0
@@ -219,18 +217,14 @@ class TestCupraSeatBackoffStateMachine:
         assert m._backoff_seconds > initial
 
     def test_advance_backoff_capped_at_max(self):
-        from custom_components.vag_connect.cariad.push.cupra_seat_fcm import (
-            _MAX_BACKOFF_S,
-        )
+        from custom_components.vag_connect.cariad.push.base import PUSH_MAX_BACKOFF_S as _MAX_BACKOFF_S
         m = self._new_manager()
         for _ in range(50):
             m._advance_backoff()
         assert m._backoff_seconds <= _MAX_BACKOFF_S * 1.15
 
     def test_reset_backoff_returns_to_initial(self):
-        from custom_components.vag_connect.cariad.push.cupra_seat_fcm import (
-            _INITIAL_BACKOFF_S,
-        )
+        from custom_components.vag_connect.cariad.push.base import PUSH_INITIAL_BACKOFF_S as _INITIAL_BACKOFF_S
         m = self._new_manager()
         m._advance_backoff()
         m._advance_backoff()
