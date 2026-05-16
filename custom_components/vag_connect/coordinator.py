@@ -488,6 +488,7 @@ class VagConnectCoordinator(DataUpdateCoordinator):
         from .cariad import CariadClientFactory  # noqa: PLC0415
         from .cariad.exceptions import (  # noqa: PLC0415
             AuthenticationError,
+            EmailTwoFactorRequiredError,
             TermsAndConditionsError,
             MarketingConsentError,
             TwoFactorRequiredError,
@@ -595,6 +596,11 @@ class VagConnectCoordinator(DataUpdateCoordinator):
             raise ValueError("terms_and_conditions") from err
         except MarketingConsentError as err:
             raise ValueError("marketing_consent") from err
+        # v2.2.0 PR #7/20 (#183 follow-on) — Email-OTP subclass MUST be
+        # caught BEFORE the generic TwoFactorRequiredError parent (Python
+        # exception-handler order is first-match).
+        except EmailTwoFactorRequiredError as err:
+            raise ValueError("email_two_factor_required") from err
         except TwoFactorRequiredError as err:
             raise ValueError("two_factor_required") from err
         except RateLimitError as err:

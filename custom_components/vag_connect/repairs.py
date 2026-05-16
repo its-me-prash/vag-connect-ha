@@ -39,6 +39,8 @@ _LOGGER = logging.getLogger(__name__)
 _FIXABLE_REASONS: dict[str, str] = {
     "invalid_credentials":   "reauth",
     "two_factor_required":   "reauth",
+    # v2.2.0 PR #7/20 (#183 follow-on) — Email-OTP discriminated reason.
+    "email_two_factor_required": "reauth",
     "terms_and_conditions":  "reauth",
     "marketing_consent":     "reauth",
 }
@@ -90,6 +92,12 @@ def raise_issue_auth_required(
             ir.IssueSeverity.WARNING,
             "two_factor_required",
         ),
+        # v2.2.0 PR #7/20 (#183 follow-on) — distinct copy from generic
+        # 2FA so Email-OTP users know to check inbox (not app).
+        "email_two_factor_required": (
+            ir.IssueSeverity.WARNING,
+            "email_two_factor_required",
+        ),
         "terms_and_conditions": (
             ir.IssueSeverity.ERROR,
             "terms_and_conditions",
@@ -135,7 +143,8 @@ def raise_issue_auth_required(
 
 def clear_auth_issues(hass: HomeAssistant, entry_id: str) -> None:
     """Alle Auth-Issues für diesen Entry löschen (nach erfolgreichem Login)."""
-    for reason in ["two_factor_required", "terms_and_conditions",
+    for reason in ["two_factor_required", "email_two_factor_required",
+                   "terms_and_conditions",
                    "marketing_consent", "too_many_requests",
                    "invalid_credentials", "auth_failed"]:
         ir.async_delete_issue(hass, DOMAIN, f"{entry_id}_{reason}")

@@ -58,6 +58,7 @@
       "terms_and_conditions": "Hay que aceptar los términos. Inicia sesión en la aplicación.",
       "marketing_consent": "Nuevo consentimiento requerido. App → Perfil → Consentimientos.",
       "two_factor_required": "Se requiere autenticación de dos factores. Inicia sesión manualmente.",
+      "email_two_factor_required": "Se requiere 2FA por email. Revisa tu bandeja de entrada (y spam) para un código de 6 dígitos, luego inicia sesión manualmente en la app.",
       "too_many_requests": "Cuenta suspendida temporalmente. Espera 15 minutos.",
       "invalid_credentials": "Correo electrónico o contraseña incorrectos."
     },
@@ -533,6 +534,10 @@
     "two_factor_required": {
       "title": "Autenticación de dos factores — {brand}",
       "description": "1. Abre la app **{brand}**\n2. Inicia sesión manualmente\n3. Confirma el código de correo\n4. Reinicia Home Assistant"
+    },
+    "email_two_factor_required": {
+      "title": "2FA por email — revisa tu bandeja ({brand})",
+      "description": "Tu cuenta de {brand} ({username}) requiere un **código de verificación por email**.\n\n**Solución única:**\n1. **Revisa tu email** (y spam) — código de 6 dígitos de VAG IDP\n2. Abre la app de **{brand}**\n3. Inicia sesión manualmente e ingresa el código\n4. Reinicia Home Assistant"
     },
     "terms_and_conditions": {
       "title": "Aceptar términos — {brand}",

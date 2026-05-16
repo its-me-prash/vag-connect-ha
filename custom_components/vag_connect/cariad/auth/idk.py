@@ -25,6 +25,7 @@ from aiohttp import ClientSession, ClientTimeout, InvalidURL
 
 from ..exceptions import (
     AuthenticationError,
+    EmailTwoFactorRequiredError,
     MarketingConsentError,
     TermsAndConditionsError,
     TwoFactorRequiredError,
@@ -339,9 +340,17 @@ class IDKAuth:
                     _LOGGER.debug("IDK Auth0: captured user_id from redirect: %s", uid[:8])
             if ref.startswith(prefix):
                 break
-            # Detect MFA
-            if "/u/mfa" in ref or "/u/email-challenge" in ref:
-                _LOGGER.debug("IDK Auth0: MFA challenge at %s", ref[:80])
+            # Detect MFA — v2.2.0 (#183 follow-on) discriminates Email-OTP
+            # from authenticator-app TOTP so the Repair-issue surfaces the
+            # right message (check inbox vs. open authenticator).
+            is_email_2fa = "/u/email-challenge" in ref
+            is_mfa = is_email_2fa or "/u/mfa" in ref
+            if is_mfa:
+                _LOGGER.debug(
+                    "IDK Auth0: %s challenge at %s",
+                    "Email-OTP" if is_email_2fa else "TOTP",
+                    ref[:80],
+                )
                 if mfa_code:
                     mfa_state = parse_qs(urlparse(ref).query).get("state", [auth0_state])[0]
                     async with self._session.post(
@@ -355,6 +364,8 @@ class IDKAuth:
                         ref = _make_absolute(_IDK_BASE, raw) if raw else ""
                     continue
                 else:
+                    if is_email_2fa:
+                        raise EmailTwoFactorRequiredError()
                     raise TwoFactorRequiredError()
 
             # v2.2.0 — Detect Marketing-Consent / T&C interstitial.
@@ -614,7 +625,14 @@ class IDKAuth:
         if pw_status == 200:
             if "terms-and-conditions" in pw_body.lower():
                 raise TermsAndConditionsError()
-            if "two-factor" in pw_body.lower() or "2fa" in pw_body.lower():
+            # v2.2.0 (#183 follow-on) — discriminate Email-OTP 2FA from
+            # generic / TOTP 2FA. Body markers observed on legacy signin-
+            # service: "email-otp", "email-code", "send-email-code" all
+            # indicate the IDP wants the user to check inbox for a code.
+            pw_body_lc = pw_body.lower()
+            if any(m in pw_body_lc for m in ("email-otp", "email-code", "send-email-code")):
+                raise EmailTwoFactorRequiredError()
+            if "two-factor" in pw_body_lc or "2fa" in pw_body_lc:
                 raise TwoFactorRequiredError()
             raise AuthenticationError(
                 "Unexpected 200 after password POST — wrong credentials?"
@@ -849,11 +867,18 @@ class IDKAuth:
         ) as resp:
             if resp.status == 200:
                 body = await resp.text()
-                if "terms-and-conditions" in body.lower():
+                body_lc = body.lower()
+                if "terms-and-conditions" in body_lc:
                     raise TermsAndConditionsError()
-                if "marketing" in body.lower() and "consent" in body.lower():
+                if "marketing" in body_lc and "consent" in body_lc:
                     raise MarketingConsentError()
-                if "two-factor" in body.lower() or "2fa" in body.lower():
+                # v2.2.0 (#183 follow-on) — Email-OTP discrimination
+                # (must come BEFORE the generic 2FA check; Email-OTP
+                # bodies also contain "two-factor" boilerplate from the
+                # IDP template).
+                if any(m in body_lc for m in ("email-otp", "email-code", "send-email-code")):
+                    raise EmailTwoFactorRequiredError()
+                if "two-factor" in body_lc or "2fa" in body_lc:
                     raise TwoFactorRequiredError()
                 raise AuthenticationError("Unexpected non-redirect after password submission.")
             if resp.status == 429:

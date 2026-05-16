@@ -58,6 +58,7 @@
       "terms_and_conditions": "Warunki użytkowania muszą być zaakceptowane. Zaloguj się w aplikacji.",
       "marketing_consent": "Wymagana nowa zgoda. Aplikacja → Profil → Zgody.",
       "two_factor_required": "Wymagane uwierzytelnianie dwuskładnikowe. Zaloguj się ręcznie w aplikacji.",
+      "email_two_factor_required": "Wymagane 2FA przez e-mail. Sprawdź skrzynkę (i spam) w poszukiwaniu 6-cyfrowego kodu, następnie zaloguj się ręcznie w aplikacji.",
       "too_many_requests": "Konto tymczasowo zablokowane. Poczekaj 15 minut.",
       "invalid_credentials": "Nieprawidłowy e-mail lub hasło."
     },
@@ -533,6 +534,10 @@
     "two_factor_required": {
       "title": "Wymagane uwierzytelnianie dwuskładnikowe — {brand}",
       "description": "1. Otwórz aplikację **{brand}**\n2. Zaloguj się ręcznie\n3. Potwierdź kod e-mail\n4. Uruchom ponownie Home Assistant"
+    },
+    "email_two_factor_required": {
+      "title": "2FA przez e-mail — sprawdź skrzynkę ({brand})",
+      "description": "Twoje konto {brand} ({username}) wymaga **kodu weryfikacyjnego e-mail**.\n\n**Jednorazowa naprawa:**\n1. **Sprawdź e-mail** (i spam) — 6-cyfrowy kod od VAG IDP\n2. Otwórz aplikację **{brand}**\n3. Zaloguj się ręcznie i wprowadź kod\n4. Uruchom ponownie Home Assistant"
     },
     "terms_and_conditions": {
       "title": "Akceptacja warunków — {brand}",

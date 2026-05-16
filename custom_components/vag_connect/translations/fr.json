@@ -58,6 +58,7 @@
       "terms_and_conditions": "Conditions d'utilisation à accepter. Connectez-vous dans l'application.",
       "marketing_consent": "Nouveau consentement RGPD requis. Application → Profil → Consentements.",
       "two_factor_required": "Double authentification requise. Connectez-vous manuellement dans l'application.",
+      "email_two_factor_required": "Authentification 2FA par e-mail requise. Vérifiez votre boîte de réception (et spam) pour un code à 6 chiffres, puis connectez-vous manuellement dans l'application.",
       "too_many_requests": "Compte suspendu temporairement. Attendez 15 minutes.",
       "invalid_credentials": "Adresse e-mail ou mot de passe incorrect."
     },
@@ -533,6 +534,10 @@
     "two_factor_required": {
       "title": "Double authentification requise — {brand}",
       "description": "Votre compte {brand} ({username}) nécessite un code de vérification par e-mail.\n\n1. Ouvrez l'application **{brand}**\n2. Connectez-vous manuellement\n3. Confirmez le code reçu par e-mail\n4. Redémarrez Home Assistant"
+    },
+    "email_two_factor_required": {
+      "title": "2FA par e-mail — vérifiez votre boîte ({brand})",
+      "description": "Votre compte {brand} ({username}) nécessite un **code de vérification par e-mail**.\n\n**Solution unique :**\n1. **Vérifiez votre e-mail** (et spam) — code à 6 chiffres de VAG IDP\n2. Ouvrez l'application **{brand}**\n3. Connectez-vous manuellement et entrez le code\n4. Redémarrez Home Assistant"
     },
     "terms_and_conditions": {
       "title": "Accepter les conditions — {brand}",

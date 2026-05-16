@@ -58,6 +58,7 @@
       "terms_and_conditions": "Nutzungsbedingungen müssen akzeptiert werden. Einmal in der App anmelden und bestätigen.",
       "marketing_consent": "Neue Datenschutzzustimmung erforderlich. App öffnen: Profil → Einwilligungen.",
       "two_factor_required": "Zwei-Faktor-Bestätigung nötig. Einmal manuell in der App anmelden und den Code per E-Mail bestätigen.",
+      "email_two_factor_required": "E-Mail-2FA nötig. Postfach (und Spam) auf 6-stelligen Code von VAG IDP prüfen, dann einmal manuell in der Marken-App anmelden.",
       "too_many_requests": "Account vorübergehend gesperrt (zu viele Anmeldeversuche). Bitte 15 Minuten warten.",
       "invalid_credentials": "E-Mail-Adresse oder Passwort falsch."
     },
@@ -533,6 +534,10 @@
     "two_factor_required": {
       "title": "Zwei-Faktor-Anmeldung erforderlich — {brand}",
       "description": "Dein {brand}-Konto ({username}) verlangt eine Bestätigung per E-Mail-Code.\n\n**Einmalige Lösung:**\n1. Öffne die **{brand}-App** auf deinem Handy\n2. Melde dich dort manuell an\n3. Bestätige den Code, der per E-Mail kommt\n4. Starte Home Assistant neu\n\nNach diesem einmaligen Schritt speichert die Integration das Login-Token — du musst das nicht wiederholen."
+    },
+    "email_two_factor_required": {
+      "title": "E-Mail-2FA — Postfach prüfen ({brand})",
+      "description": "Dein {brand}-Konto ({username}) erfordert einen **E-Mail-Bestätigungscode**.\n\n**Einmalige Behebung:**\n1. **Postfach prüfen** (und Spam-Ordner) — 6-stelliger Code von VAG IDP\n2. **{brand}-App** auf dem Smartphone öffnen\n3. Manuell anmelden und Code eingeben\n4. Home Assistant neu starten\n\nNach diesem einmaligen Schritt speichert die Integration den Login-Token — du musst es nicht wiederholen."
     },
     "terms_and_conditions": {
       "title": "Nutzungsbedingungen akzeptieren — {brand}",

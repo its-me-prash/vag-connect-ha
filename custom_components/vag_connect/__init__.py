@@ -65,6 +65,11 @@ _SETUP_ERRORS: dict[str, str] = {
     "two_factor_required": (
         "2FA required. Sign in manually in the app once and confirm the code."
     ),
+    # v2.2.0 PR #7/20 (#183 follow-on) — Email-OTP discriminated copy.
+    "email_two_factor_required": (
+        "Email 2FA required. Check your inbox (and spam) for a 6-digit code "
+        "from VAG IDP, then sign in manually in the brand app once."
+    ),
     "invalid_credentials": (
         "Invalid credentials. Check email and password in the app."
     ),
