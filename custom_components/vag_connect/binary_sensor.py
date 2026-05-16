@@ -340,9 +340,11 @@ _DATA_PRESENT_REQUIRED: frozenset[str] = frozenset({
     # v2.2.0 (scout #220) — Skoda-only AC-without-external-power.
     # Other brands leave field None → no phantom entity.
     "air_conditioning_without_external_power",
-    # v2.2.0 PR #9/20 — SEAT/CUPRA-only subscription_active companion
-    # to PR #8 subscription_expiry_at. Field stays None on other brands
-    # AND on perpetual entitlements → no false-positive entity.
+    # v2.2.0 PR #9/20 + PR #10/20 — subscription_active companion to
+    # subscription_expiry_at. SEAT/CUPRA from ``mycar.services``;
+    # VW EU + Audi (PR #10) from CARIAD-BFF ``userCapabilities``.
+    # Field stays None on Skoda/Porsche/VW NA AND on perpetual
+    # entitlements → tri-state semantics prevent false-positives.
     "subscription_active",
     # v2.0.0 (Big-Bang) — Porsche-only TPMS warning (PPA TIRE_PRESSURE
     # measurement). Non-Porsche vehicles leave the field None → no phantom.
