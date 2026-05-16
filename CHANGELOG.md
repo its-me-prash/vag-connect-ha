@@ -52,6 +52,28 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ### Added
 
+- **Push-Bus 3-strike Circuit-Breaker Foundation (Phase 3 PR #12/20)** —
+  Phase 3 opener. Foundational layer für die kommenden MQTT/FCM Live-
+  Activations (#13, #14): nach **3 konsekutiven Connect-Failures**
+  trippt der Manager in den neuen `TRIPPED` Zustand, stoppt das
+  Spinning des reconnect-loops, und entweder:
+  (1) Auto-Reset nach **1h** (lazy property-getter Transition — kein
+  Hintergrund-Timer nötig) ODER (2) Operator ruft `reset_circuit_breaker()`
+  manuell. **3 strikes** ist bewusst gewählt: einzelne transient
+  failures (DNS-hiccup, broker rolling-restart) sind alltäglich und
+  sollten nicht trippen; 3 in a row indicates strukturelles Problem
+  (creds rotated, deps removed, IDP migrated) das nicht selbstheilend
+  durch tight-retry geht. Mixin-Pattern: subclasses rufen
+  `_record_failure(reason)` / `_record_success()` an ihren Connect-
+  Failure-Sites — die strike-counting + trip-arithmetic erbt
+  automatisch von `PushManager`. Skoda MQTT wired:
+  3 Hook-Points (missing-dep, connect-loop-exception, success-path).
+  CUPRA/SEAT + Audi/VW FCM-Manager bekommen Wiring in PR #13/#14.
+  16 Tests inkl. Strike-Counting + Manual-Reset + Lazy-Auto-Reset
+  + Tuning-Constants als public-contract-lock.
+  *"What is the optimal number of strikes before you give up on a
+  faulty appliance? Three. The answer is always three." — Sheldon Cooper.*
+
 - **`subscription_days_remaining` derived sensor (Phase 2 PR #11/20 — Phase 2 closer)** —
   Schließt das Subscription-Feature-Dreieck: timestamp (PR #8) + bool
   (PR #9) + **int days remaining (this PR)**. **Automation-friendly**:

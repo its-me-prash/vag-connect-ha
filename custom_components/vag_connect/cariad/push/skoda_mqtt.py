@@ -147,8 +147,23 @@ class SkodaPushManager(PushManager):
         self._consecutive_fast_retries: int = 0
 
     async def start(self) -> None:
-        """Spawn the MQTT receive loop. Idempotent."""
+        """Spawn the MQTT receive loop. Idempotent.
+
+        v2.2.0 PR #12/20: respects the circuit-breaker. If the breaker
+        is tripped (3 consecutive start failures), returns immediately
+        without retrying. Caller can poll ``state`` for the TRIPPED
+        signal and surface it via Repair-Issue.
+        """
         if self._state in (PushManagerState.CONNECTED, PushManagerState.STARTING):
+            return
+        # v2.2.0 PR #12/20 — short-circuit if breaker tripped.
+        # Reading ``self.state`` (not ``self._state``) honours the
+        # auto-reset transition baked into the property getter.
+        if self.state == PushManagerState.TRIPPED:
+            _LOGGER.warning(
+                "Skoda push: circuit-breaker TRIPPED — declining start. "
+                "Wait for auto-reset (1h) or call reset_circuit_breaker().",
+            )
             return
         if not self._vins:
             _LOGGER.info(
@@ -171,6 +186,11 @@ class SkodaPushManager(PushManager):
                 err,
             )
             self._state = PushManagerState.UNAVAILABLE
+            # v2.2.0 PR #12/20: missing deps count as a strike. After
+            # 3 attempts to start without the deps being installed, the
+            # breaker trips and we stop spamming the log on each
+            # coordinator-start retry.
+            self._record_failure(f"missing-dep: {err}")
             return
         self._loop_task = asyncio.create_task(
             self._run_loop(),
@@ -227,6 +247,11 @@ class SkodaPushManager(PushManager):
                     self._backoff_seconds,
                 )
                 self._state = PushManagerState.RECONNECTING
+                # v2.2.0 PR #12/20 — record this strike. If we hit 3
+                # consecutive failures the breaker trips and the next
+                # iteration of the outer loop will exit (we check
+                # is_tripped after the backoff sleep below).
+                self._record_failure(f"connect-loop: {type(err).__name__}")
                 # Sleep with cancellation support
                 try:
                     await asyncio.wait_for(
@@ -238,6 +263,18 @@ class SkodaPushManager(PushManager):
                 except asyncio.TimeoutError:
                     pass
                 self._advance_backoff()
+                # v2.2.0 PR #12/20 — if the breaker tripped during
+                # the failure-counting above, exit the outer loop.
+                # Reading ``self.state`` honours the auto-reset
+                # property-getter transition.
+                if self.state == PushManagerState.TRIPPED:
+                    _LOGGER.error(
+                        "Skoda push: circuit-breaker tripped — exiting "
+                        "reconnect loop. Next start() call will short-"
+                        "circuit until auto-reset (1h) or manual "
+                        "reset_circuit_breaker().",
+                    )
+                    break
 
     async def _connect_and_listen(self) -> None:
         """One connect + receive cycle. Raises on disconnect.
@@ -255,6 +292,9 @@ class SkodaPushManager(PushManager):
         # PR #566 — broker auth uses the OAuth token directly).
         token = await self._access_token_provider()  # noqa: F841 — used in real impl
         self._state = PushManagerState.CONNECTED
+        # v2.2.0 PR #12/20 — successful connect resets the breaker.
+        # Idempotent: no-op when strike_count is already 0.
+        self._record_success()
         _LOGGER.info(
             "Skoda push: foundation stub — live activation pending. "
             "Topics that WOULD be subscribed: %s",
