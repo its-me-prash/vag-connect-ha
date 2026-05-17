@@ -115,11 +115,35 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 > phantom-protected). Tier-B (wildcards + alarm/siren) deferred
 > until tester scout-dumps liefern die unknown leaf-shapes.
 
-## [Unreleased]
-
-> (Empty)
+## [Unreleased] — v2.2.2
 
 ### Added
+
+- **`climate_timer_enabled_count` cross-brand expansion to VW EU/Audi
+  (Closes #248)** — Skoda hatte das field seit Phase 7 PR #4 (scout
+  silenced-but-unwired audit). VW EU/Audi `climatisationTimers.
+  climatisationTimersStatus.value.timers[*]` mirrors das departureTimers-
+  pattern aus Phase 7 PR #2 aber war nie geparsed. Dieser PR wires
+  die parser hook für VW EU/Audi mit defensive guards (list-check
+  + isinstance dict + is True comparison).
+  
+  **Cross-brand coverage matrix**: `climate_timer_enabled_count`
+  vorher 1 brand (Skoda) → jetzt **3 brands** (Skoda + VW EU + Audi).
+  
+  **Background von #248 (arvcer scout-report 2026-05-17)**: alle 4
+  reported fields waren bereits silenced+parsed in main seit
+  v1.17.5/v1.19.3. 3 von 4 fields populating dataclass-fields
+  (`next_charging_timer_id`, `next_charging_timer_target_soc_reachable`,
+  `secondary_engine_type`). Das 4. (`climatisationTimers.
+  climatisationTimersStatus.value` — silenced container `{2 keys}`)
+  ist jetzt aktiv geparsed via dieser cross-brand expansion. Defensive:
+  assumption ist mirror of departureTimers shape; wenn actual leaves
+  differ, list-check guard hält das field None (phantom-gate honest).
+  10 Tests inkl. aggregation-defensiveness + cross-brand parity
+  regression-shield. **Closes #248**.
+  *"Two timers? Well, that's twice the timer." — Sheldon Cooper.*
+
+## [2.2.1] — 2026-05-17 — Phase 8 "alles parsen statt silencen" + Cross-Brand Expansion (continued)
 
 - **Phase 8 PR #5 — `car_type` cross-brand derivation helper** —
   **Different pattern als PR #1-#4.** Statt parser-hooks pro backend
