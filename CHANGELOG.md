@@ -85,10 +85,22 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 > - Coverage stayed >74% throughout (gate at 65%)
 > - Cross-brand parity tests catch any future drift
 
+## [2.2.0] — 2026-05-17 — "Legen — wait for it — dary" (Final)
+
+> v2.2.0 final ships **byte-additive** to v2.2.0-rc1 — just one manifest
+> version-string bump plus the 5 Phase-7 patches that landed during the
+> rc1 beta window. Phase 7 is **pure additive**: 11 new diagnostic
+> entities (all brand-restricted + phantom-protected — zero risk to
+> existing users) plus 38 new scout-silencing entries closing #245
+> (systemic Cariad-BFF per-block `.error` container rollout).
+>
+> Phase 7 sweep — scout-audit cross-references `_unexpected_keys.py`
+> against actual parser-reads to identify silenced-but-unwired fields.
+> 4 entity-batches + 1 pre-release silencing patch.
+
 ## [Unreleased]
 
-> Post-v2.2.0-rc1. Phase 7 sweep — expose silenced-but-unwired scout fields
-> as HA entities. First batch of quick wins; more in subsequent PRs.
+> (Empty — next entries land here after v2.2.0 graduation.)
 
 ### Added
 
