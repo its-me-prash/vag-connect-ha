@@ -1,0 +1,146 @@
+# Bubble Card — VAG Connect vehicle pop-up panel
+#
+# Opens when the corresponding button in the horizontal stack is
+# clicked (via #vehicle_audi_q4 hash link).
+# Contains: battery / range / charging-state / climate / lock / temps.
+#
+# Replace `audi_q4` with your vehicle's entity_id prefix.
+
+type: 'custom:bubble-card'
+card_type: pop-up
+hash: '#vehicle_audi_q4'
+name: 'Audi Q4 e-tron'
+icon: mdi:car-electric
+button_type: state
+entity: sensor.audi_q4_charging_state
+state: charging_state          # surfaces "CHARGING" / "IDLE" etc. in the title
+sub_button:
+  - name: Power
+    icon: mdi:power
+    entity: button.audi_q4_wake
+    show_state: false
+    tap_action:
+      action: call-service
+      service: button.press
+      target:
+        entity_id: button.audi_q4_wake
+  - name: Close
+    icon: mdi:close
+    tap_action:
+      action: close_popup
+
+cards:
+
+  # ── Row 1: battery + range ──────────────────────────────────────
+  - type: horizontal-stack
+    cards:
+      - type: 'custom:bubble-card'
+        card_type: button
+        button_type: state
+        entity: sensor.audi_q4_battery_soc
+        name: Battery
+        icon: mdi:battery
+        show_state: true
+        styles: |
+          .bubble-icon {
+            color: rgb(var(--rgb-{{ "green" if states("sensor.audi_q4_battery_soc")|int(0) > 50 else ("amber" if states("sensor.audi_q4_battery_soc")|int(0) > 20 else "red") }})) !important;
+          }
+      - type: 'custom:bubble-card'
+        card_type: button
+        button_type: state
+        entity: sensor.audi_q4_electric_range_km
+        name: Range
+        icon: mdi:map-marker-distance
+        show_state: true
+
+  # ── Row 2: charging power + plug state ──────────────────────────
+  - type: horizontal-stack
+    cards:
+      - type: 'custom:bubble-card'
+        card_type: button
+        button_type: state
+        entity: sensor.audi_q4_charging_power_kw
+        name: Charging
+        icon: mdi:ev-station
+        show_state: true
+      - type: 'custom:bubble-card'
+        card_type: button
+        button_type: state
+        entity: binary_sensor.audi_q4_plug_connected
+        name: Plug
+        icon: mdi:power-plug
+        show_state: true
+
+  # ── Row 3: charging session (start/stop buttons) ────────────────
+  - type: 'custom:bubble-card'
+    card_type: button
+    button_type: switch
+    entity: switch.audi_q4_charging
+    name: Start / stop charging
+    icon: mdi:battery-charging
+
+  # ── Row 4: climate ──────────────────────────────────────────────
+  - type: 'custom:bubble-card'
+    card_type: button
+    button_type: switch
+    entity: switch.audi_q4_climatisation
+    name: Climate control
+    icon: mdi:air-conditioner
+
+  # ── Row 5: lock + parking ───────────────────────────────────────
+  - type: horizontal-stack
+    cards:
+      - type: 'custom:bubble-card'
+        card_type: button
+        button_type: state
+        entity: lock.audi_q4_central_locking
+        name: Lock
+        icon: mdi:car-key
+        show_state: true
+        tap_action:
+          action: more-info
+      - type: 'custom:bubble-card'
+        card_type: button
+        button_type: state
+        entity: device_tracker.audi_q4
+        name: Position
+        icon: mdi:map-marker
+        tap_action:
+          action: more-info
+
+  # ── Row 6: temperatures (optional — uncomment if vehicle has these) ──
+  # - type: horizontal-stack
+  #   cards:
+  #     - type: 'custom:bubble-card'
+  #       card_type: button
+  #       button_type: state
+  #       entity: sensor.audi_q4_outside_temp
+  #       name: Outside
+  #       icon: mdi:thermometer
+  #       show_state: true
+  #     - type: 'custom:bubble-card'
+  #       card_type: button
+  #       button_type: state
+  #       entity: sensor.audi_q4_battery_temp
+  #       name: HV Battery
+  #       icon: mdi:battery-heart-variant
+  #       show_state: true
+
+  # ── Row 7: subscription status (Phase 2 v2.2.0+ — diagnostic) ────
+  # Only meaningful for SEAT/CUPRA + VW EU/Audi — uncomment if relevant.
+  # - type: horizontal-stack
+  #   cards:
+  #     - type: 'custom:bubble-card'
+  #       card_type: button
+  #       button_type: state
+  #       entity: binary_sensor.audi_q4_subscription_active
+  #       name: Connect sub
+  #       icon: mdi:check-decagram
+  #       show_state: true
+  #     - type: 'custom:bubble-card'
+  #       card_type: button
+  #       button_type: state
+  #       entity: sensor.audi_q4_subscription_days_remaining
+  #       name: Days left
+  #       icon: mdi:calendar-end
+  #       show_state: true

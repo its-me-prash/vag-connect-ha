@@ -1,0 +1,302 @@
+# ─────────────────────────────────────────────────────────────────────
+# Bubble Card — Complete VAG Connect dashboard for a single vehicle
+# ─────────────────────────────────────────────────────────────────────
+#
+# Drop the WHOLE FILE into a Lovelace view via "Raw configuration
+# editor" (or per-section into cards via the UI editor).
+#
+# Replace `audi_q4` with your vehicle's entity_id prefix.
+# Replace `Audi Q4 e-tron` with your vehicle's display name.
+#
+# Prerequisite: Bubble Card installed via HACS (Frontend).
+# See README.md in this folder for setup details.
+#
+# ─────────────────────────────────────────────────────────────────────
+
+title: My Garage
+views:
+  - title: Vehicles
+    path: vehicles
+    type: sections
+    sections:
+
+      # ─────────────────────────────────────────────────────────────
+      # Section 1 — Top button stack (vehicle selector)
+      # ─────────────────────────────────────────────────────────────
+      - type: grid
+        cards:
+          - type: 'custom:bubble-card'
+            card_type: horizontal-buttons-stack
+            1_link: '#vehicle_audi_q4'
+            1_name: 'Audi Q4 e-tron'
+            1_icon: mdi:car-electric
+            1_entity: sensor.audi_q4_charging_state
+            1_pin: true
+
+      # ─────────────────────────────────────────────────────────────
+      # Section 2 — Main vehicle pop-up
+      # ─────────────────────────────────────────────────────────────
+      - type: grid
+        cards:
+          - type: 'custom:bubble-card'
+            card_type: pop-up
+            hash: '#vehicle_audi_q4'
+            name: 'Audi Q4 e-tron'
+            icon: mdi:car-electric
+            button_type: state
+            entity: sensor.audi_q4_charging_state
+            sub_button:
+              - name: Charging
+                icon: mdi:ev-station
+                tap_action:
+                  action: navigate
+                  navigation_path: '#audi_q4_charging'
+              - name: Climate
+                icon: mdi:air-conditioner
+                tap_action:
+                  action: navigate
+                  navigation_path: '#audi_q4_climate'
+              - name: Security
+                icon: mdi:lock
+                tap_action:
+                  action: navigate
+                  navigation_path: '#audi_q4_security'
+              - name: Close
+                icon: mdi:close
+                tap_action:
+                  action: close_popup
+            cards:
+              # Battery + range
+              - type: horizontal-stack
+                cards:
+                  - type: 'custom:bubble-card'
+                    card_type: button
+                    button_type: state
+                    entity: sensor.audi_q4_battery_soc
+                    name: Battery
+                    icon: mdi:battery
+                    show_state: true
+                  - type: 'custom:bubble-card'
+                    card_type: button
+                    button_type: state
+                    entity: sensor.audi_q4_electric_range_km
+                    name: Range
+                    icon: mdi:map-marker-distance
+                    show_state: true
+              # Charging power + plug
+              - type: horizontal-stack
+                cards:
+                  - type: 'custom:bubble-card'
+                    card_type: button
+                    button_type: state
+                    entity: sensor.audi_q4_charging_power_kw
+                    name: Charging
+                    icon: mdi:lightning-bolt
+                    show_state: true
+                  - type: 'custom:bubble-card'
+                    card_type: button
+                    button_type: state
+                    entity: binary_sensor.audi_q4_plug_connected
+                    name: Plug
+                    icon: mdi:power-plug
+                    show_state: true
+              # Quick actions
+              - type: 'custom:bubble-card'
+                card_type: button
+                button_type: switch
+                entity: switch.audi_q4_charging
+                name: Start / stop charging
+                icon: mdi:battery-charging
+              - type: 'custom:bubble-card'
+                card_type: button
+                button_type: switch
+                entity: switch.audi_q4_climatisation
+                name: Start / stop climate
+                icon: mdi:air-conditioner
+              - type: 'custom:bubble-card'
+                card_type: button
+                button_type: state
+                entity: lock.audi_q4_central_locking
+                name: Central locking
+                icon: mdi:car-key
+                show_state: true
+                tap_action:
+                  action: toggle
+
+      # ─────────────────────────────────────────────────────────────
+      # Section 3 — Charging sub-pop-up (full detail)
+      # ─────────────────────────────────────────────────────────────
+      - type: grid
+        cards:
+          - type: 'custom:bubble-card'
+            card_type: pop-up
+            hash: '#audi_q4_charging'
+            name: 'Charging — Audi Q4 e-tron'
+            icon: mdi:ev-station
+            button_type: state
+            entity: sensor.audi_q4_charging_state
+            cards:
+              - type: horizontal-stack
+                cards:
+                  - type: 'custom:bubble-card'
+                    card_type: button
+                    button_type: state
+                    entity: sensor.audi_q4_charging_state
+                    name: State
+                    icon: mdi:state-machine
+                    show_state: true
+                  - type: 'custom:bubble-card'
+                    card_type: button
+                    button_type: state
+                    entity: sensor.audi_q4_charging_power_kw
+                    name: Power
+                    icon: mdi:lightning-bolt
+                    show_state: true
+              - type: horizontal-stack
+                cards:
+                  - type: 'custom:bubble-card'
+                    card_type: button
+                    button_type: state
+                    entity: sensor.audi_q4_battery_soc
+                    name: Current SoC
+                    icon: mdi:battery
+                    show_state: true
+                  - type: 'custom:bubble-card'
+                    card_type: button
+                    button_type: state
+                    entity: number.audi_q4_target_soc
+                    name: Target SoC
+                    icon: mdi:battery-charging-100
+                    show_state: true
+                    tap_action:
+                      action: more-info
+              - type: 'custom:bubble-card'
+                card_type: button
+                button_type: state
+                entity: sensor.audi_q4_charge_complete_eta
+                name: Complete at
+                icon: mdi:clock-end
+                show_state: true
+              - type: 'custom:bubble-card'
+                card_type: button
+                button_type: switch
+                entity: switch.audi_q4_charging
+                name: Start / stop charging
+                icon: mdi:battery-charging
+
+      # ─────────────────────────────────────────────────────────────
+      # Section 4 — Climate sub-pop-up
+      # ─────────────────────────────────────────────────────────────
+      - type: grid
+        cards:
+          - type: 'custom:bubble-card'
+            card_type: pop-up
+            hash: '#audi_q4_climate'
+            name: 'Climate — Audi Q4 e-tron'
+            icon: mdi:air-conditioner
+            button_type: state
+            entity: sensor.audi_q4_climatisation_state
+            cards:
+              - type: horizontal-stack
+                cards:
+                  - type: 'custom:bubble-card'
+                    card_type: button
+                    button_type: state
+                    entity: sensor.audi_q4_climatisation_state
+                    name: State
+                    icon: mdi:state-machine
+                    show_state: true
+                  - type: 'custom:bubble-card'
+                    card_type: button
+                    button_type: state
+                    entity: climate.audi_q4
+                    name: Target
+                    icon: mdi:thermostat
+                    show_state: true
+                    tap_action:
+                      action: more-info
+              - type: horizontal-stack
+                cards:
+                  - type: 'custom:bubble-card'
+                    card_type: button
+                    button_type: state
+                    entity: sensor.audi_q4_outside_temp
+                    name: Outside
+                    icon: mdi:thermometer
+                    show_state: true
+                  - type: 'custom:bubble-card'
+                    card_type: button
+                    button_type: state
+                    entity: sensor.audi_q4_climate_ready_at
+                    name: Cabin ready
+                    icon: mdi:clock-end
+                    show_state: true
+              - type: 'custom:bubble-card'
+                card_type: button
+                button_type: switch
+                entity: switch.audi_q4_climatisation
+                name: Start / stop climate
+                icon: mdi:air-conditioner
+              - type: horizontal-stack
+                cards:
+                  - type: 'custom:bubble-card'
+                    card_type: button
+                    button_type: switch
+                    entity: switch.audi_q4_window_heating_front
+                    name: Front defrost
+                    icon: mdi:car-defrost-front
+                  - type: 'custom:bubble-card'
+                    card_type: button
+                    button_type: switch
+                    entity: switch.audi_q4_window_heating_back
+                    name: Rear defrost
+                    icon: mdi:car-defrost-rear
+
+      # ─────────────────────────────────────────────────────────────
+      # Section 5 — Security sub-pop-up
+      # ─────────────────────────────────────────────────────────────
+      - type: grid
+        cards:
+          - type: 'custom:bubble-card'
+            card_type: pop-up
+            hash: '#audi_q4_security'
+            name: 'Security — Audi Q4 e-tron'
+            icon: mdi:lock
+            button_type: state
+            entity: lock.audi_q4_central_locking
+            cards:
+              - type: 'custom:bubble-card'
+                card_type: button
+                button_type: state
+                entity: lock.audi_q4_central_locking
+                name: Central locking
+                icon: mdi:car-key
+                show_state: true
+                tap_action:
+                  action: toggle
+              - type: horizontal-stack
+                cards:
+                  - type: 'custom:bubble-card'
+                    card_type: button
+                    button_type: state
+                    entity: binary_sensor.audi_q4_door_front_left
+                    name: FL door
+                    icon: mdi:car-door
+                    show_state: true
+                  - type: 'custom:bubble-card'
+                    card_type: button
+                    button_type: state
+                    entity: binary_sensor.audi_q4_door_front_right
+                    name: FR door
+                    icon: mdi:car-door
+                    show_state: true
+              - type: 'custom:bubble-card'
+                card_type: button
+                button_type: state
+                entity: sensor.audi_q4_parking_address
+                name: Parked at
+                icon: mdi:map-marker
+                show_state: true
+                tap_action:
+                  action: navigate
+                  navigation_path: /map

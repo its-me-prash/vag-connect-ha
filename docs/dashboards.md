@@ -123,7 +123,43 @@ stay here on the integration repo.
 
 ---
 
-## 🧱 Useful 3rd-party cards with VAG Connect
+## 🫧 Ready-made Bubble Card templates (recommended starter)
+
+If you want the **fastest path to a beautiful VAG Connect dashboard**
+without writing YAML from scratch, install
+[**Bubble Card**](https://github.com/Clooos/Bubble-Card) via HACS
+and drop in our pre-built templates:
+
+📁 [`docs/lovelace/bubble-card/`](lovelace/bubble-card/)
+
+What's in the folder:
+
+| File | Purpose |
+|------|---------|
+| `README.md` | Setup guide + multi-vehicle instructions |
+| `01-vehicle-button-stack.yaml` | Horizontal vehicle selector at top |
+| `02-vehicle-popup.yaml` | Main pop-up: battery / range / charging / climate / lock |
+| `03-charging-controls.yaml` | Detailed charging settings + target SoC |
+| `04-climate-controls.yaml` | Climate, defrost, departure timers |
+| `05-door-status.yaml` | Lock state, per-door + trunk + hood + alarm |
+| `99-full-dashboard.yaml` | Complete single-vehicle dashboard combining all of the above |
+
+**Quick start (under 5 minutes):**
+
+1. Install Bubble Card (HACS → Frontend → "Bubble Card")
+2. Open [`99-full-dashboard.yaml`](lovelace/bubble-card/99-full-dashboard.yaml)
+3. Copy → paste into your dashboard's Raw configuration editor
+4. Search-replace `audi_q4` with your vehicle's entity prefix
+5. Done
+
+Bubble Card gives you the glass-morphism / gradient aesthetic shown
+in the upstream [card gallery](https://github.com/Clooos/Bubble-Card#screenshots).
+Our templates configure all buttons, pop-ups and quick-actions
+that match how VAG Connect exposes vehicle state.
+
+---
+
+## 🧱 Other 3rd-party cards that work with VAG Connect
 
 The integration exposes `extra_state_attributes.image_url` on the
 device-tracker + image entities, so generic vehicle cards pick it
