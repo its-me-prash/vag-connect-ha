@@ -34,7 +34,8 @@ Drop these snippets into your dashboard and get:
 | File | Purpose |
 |------|---------|
 | [`01-vehicle-button-stack.yaml`](01-vehicle-button-stack.yaml) | Horizontal button-stack at top — one button per vehicle |
-| [`02-vehicle-popup.yaml`](02-vehicle-popup.yaml) | Pop-up panel with battery / range / charging / climate state |
+| [`02-vehicle-popup.yaml`](02-vehicle-popup.yaml) | Pop-up panel with battery / range / charging / climate state (EV) |
+| [`02b-vehicle-popup-diesel.yaml`](02b-vehicle-popup-diesel.yaml) | **Diesel variant** — fuel / AdBlue / remote engine / service intervals (Audi S6 TDI example) |
 | [`03-charging-controls.yaml`](03-charging-controls.yaml) | Charging start/stop, target SoC slider, charge mode select |
 | [`04-climate-controls.yaml`](04-climate-controls.yaml) | Climate start/stop, target temp, departure timers |
 | [`05-door-status.yaml`](05-door-status.yaml) | Lock state, per-door open status, parking position |
