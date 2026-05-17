@@ -1087,6 +1087,51 @@ class VWEUClient(CariadBaseClient):
                 d.has_battery = True
                 d.has_combustion = True
 
+        # v2.2.1 Phase 8 PR #2 — cross-brand engine-metadata expansion.
+        # The variables ``ms_primary`` / ``ms_secondary`` / ``car_type``
+        # are already read above for drivetrain-flag derivation. Now ALSO
+        # populate the explicit fields that Skoda (PR #6/#220, PR #1
+        # today) and CUPRA/SEAT (PR #3/#18) already use — same dataclass
+        # fields, just expanded brand coverage. Audi inherits via
+        # ``AudiClient(VWEUClient)`` automatically.
+        #
+        # Priority order for the type fields: fuelStatus block (richer
+        # backend metadata) → measurements fallback (always populated).
+        primary_eng = primary_engine or ms_primary
+        if isinstance(primary_eng, str) and primary_eng:
+            d.primary_engine_type = primary_eng
+        secondary_eng = secondary_engine or ms_secondary
+        if isinstance(secondary_eng, str) and secondary_eng:
+            d.secondary_engine_type = secondary_eng
+        if isinstance(car_type, str) and car_type:
+            d.car_type = car_type
+
+        # v2.2.1 Phase 8 PR #2 — secondary engine fuel level %.
+        # Skoda has this from `secondaryEngineRange.currentFuelLevelInPercent`
+        # (PR #6), CUPRA/SEAT from `engines.secondary.fuelLevel_pct`
+        # (PR #18). VW EU/Audi publishes it INSIDE the per-engine block
+        # under `currentFuelLevel_pct` when the engine is combustion-type.
+        # Iterate both engine blocks looking for the combustion side.
+        for engine_path in (
+            ("fuelStatus", "rangeStatus", "value", "primaryEngine"),
+            ("fuelStatus", "rangeStatus", "value", "secondaryEngine"),
+        ):
+            engine_block = v(raw, *engine_path)
+            if not isinstance(engine_block, dict):
+                continue
+            etype = (engine_block.get("type") or "").lower()
+            if etype not in combustion_types:
+                continue
+            # Only assign for the SECONDARY position (which on PHEV is
+            # the combustion side per Cariad convention since 2024). For
+            # ICE-only vehicles, secondary engine doesn't exist —
+            # `secondary_engine_fuel_level_pct` stays None correctly.
+            if engine_path[-1] == "secondaryEngine":
+                sec_fuel = safe_int(engine_block.get("currentFuelLevel_pct"))
+                if sec_fuel is not None:
+                    d.secondary_engine_fuel_level_pct = sec_fuel
+                break
+
         d.is_electric = d.has_battery and not d.has_combustion
         d.is_hybrid = d.has_battery and d.has_combustion
 

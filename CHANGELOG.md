@@ -112,6 +112,37 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ### Added
 
+- **Phase 8 PR #2 — VW EU/Audi engine-metadata cross-brand expansion** —
+  **Pure cross-brand expansion PR** — zero neue entities, zero neue
+  translations, zero neue phantom-gates. Wires VW EU/Audi parser-hooks
+  für 4 existing dataclass-fields die andere brands schon populate.
+  Direkter Beweis für die "1 user reportet auf 1 brand → eventually
+  alle brands profitieren" Strategy:
+
+  | Field | Originally wired | This PR adds |
+  |---|---|---|
+  | `primary_engine_type` | CUPRA/SEAT (PR #3), Skoda (PR #1 heute) | VW EU + Audi (inherits) |
+  | `secondary_engine_type` | Skoda (PR #6 Scout #220), CUPRA/SEAT (PR #18 Scout #232) | VW EU + Audi |
+  | `car_type` | Skoda (PR #1 heute) | VW EU + Audi |
+  | `secondary_engine_fuel_level_pct` | Skoda (PR #6), CUPRA/SEAT (PR #18) | VW EU + Audi |
+
+  **Konkret**: Daniel Walter's Skoda Scout #220 (2026-05-16) → Skoda
+  PHEV-User bekamen `secondary_engine_*` sensoren. Matthias0304's
+  CUPRA Scout #232 (gleicher Tag) → CUPRA/SEAT PHEV-User auch.
+  **Diese PR**: VW EU + Audi PHEV-User (Passat GTE, Golf GTE, A3
+  e-tron etc.) bekommen die gleichen Sensoren **ohne dass sie je
+  einen Scout-Report posten mussten** — das ist der Avalanche-Effekt
+  den die strategy enables.
+
+  Implementation: die variablen `ms_secondary`, `ms_primary`,
+  `car_type`, plus die per-engine-block-walk waren bereits im vw_eu.py
+  parser für drivetrain-flag-derivation. Diese PR fügt explizite
+  Assignments zu den dataclass-fields hinzu. Priority order:
+  `fuelStatus` (richer) → `measurements` (fallback). 15+ Tests inkl.
+  brand-coverage-matrix regression-shields, PHEV-vs-EV-only walk
+  semantics, defensive non-string/non-dict guards.
+  *"It's an avalanche! Everybody dies! Bazinga!" — Sheldon Cooper.*
+
 - **Phase 8 PR #1 — Skoda 5-field "alles parsen" batch** —
   Erste batch der neuen strategy. 5 Skoda mysmob fields die seit
   v1.x silenced waren ohne parser-hook:
