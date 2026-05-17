@@ -168,6 +168,7 @@ Pour que la position GPS, le statut véhicule et le préchauffage fonctionnent, 
 
 - 🗺️ Roadmap : [`docs/ROADMAP.md`](docs/ROADMAP.md) — priorisation P0/P1/P2/P3 complète de tous les issues ouverts
 - 📜 Tech Changelog : [`docs/CHANGELOG_TECHNICAL.md`](docs/CHANGELOG_TECHNICAL.md) — par release : mappings de champs + décisions d'architecture + refs sources externes
+- 🎨 Guide Dashboards + carte Lovelace BETA : [`docs/dashboards.md`](docs/dashboards.md) — "Ajouter au tableau de bord" troubleshooting + carte Lovelace dédiée (BETA)
 - 🤝 Session Handoff (pour contributeurs & outils IA) : [`docs/SESSION_HANDOFF.md`](docs/SESSION_HANDOFF.md)
 - 🔒 Règles de confidentialité & gestion des données : section [`CONTRIBUTING.md`](CONTRIBUTING.md) (post-#53 third-party review)
 - 📋 FAQ Subscription / Service Plus / diagnostic `missing-capability` : section FAQ de [`CONTRIBUTING.md`](CONTRIBUTING.md)

@@ -168,6 +168,7 @@ För att GPS-position, fordonsstatus och kupévärmare ska fungera måste **"Del
 
 - 🗺️ Roadmap: [`docs/ROADMAP.md`](docs/ROADMAP.md) — komplett P0/P1/P2/P3-prioritering av alla öppna issues
 - 📜 Tech Changelog: [`docs/CHANGELOG_TECHNICAL.md`](docs/CHANGELOG_TECHNICAL.md) — per release: field-mappings + arkitekturbeslut + externa source-refs
+- 🎨 Dashboards-guide + Lovelace-kort BETA: [`docs/dashboards.md`](docs/dashboards.md) — "Lägg till på instrumentpanel" felsökning + dedikerat Lovelace-kort (BETA)
 - 🤝 Session Handoff (för bidragsgivare och AI-verktyg): [`docs/SESSION_HANDOFF.md`](docs/SESSION_HANDOFF.md)
 - 🔒 Integritets- och datahanteringsregler: sektion [`CONTRIBUTING.md`](CONTRIBUTING.md) (post-#53 third-party review)
 - 📋 FAQ Subscription / Service Plus / `missing-capability` diagnos: FAQ-sektion i [`CONTRIBUTING.md`](CONTRIBUTING.md)

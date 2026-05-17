@@ -214,8 +214,9 @@ Mehr Beispiele in [`docs/FAQ.md#lovelace-examples`](docs/FAQ.md).
 | **Was wenn Tank-% bei Golf 7 GTE fehlt?** | v1.25.0 hat MBB VSR Phase 2 read-side fallback. Siehe [Golf 7 GTE Tank-Guide](docs/GOLF_7_GTE_TANK_GUIDE.md). |
 | **Token bleibt nach HACS-Update?** | ✅ ja, seit v1.19.2 — Token-Persistence via HA `Store` (kein Re-Login mehr nach Updates). |
 | **Wie melde ich Bugs?** | HA → Integration → 🔧 Reparieren → Bug-Report. Diagnostics werden anonymisiert (VINs gemaskt, GPS gerundet, Tokens gestrippt). |
+| **„Zu Dashboard hinzufügen" zeigt mein Dashboard / meine Ansicht nicht?** | Häufigste Ursache: dein Dashboard ist im **YAML-Modus** (nur Storage-Mode-Dashboards erscheinen im Picker). Oder die Ansicht existiert noch nicht. Full guide + dedizierte VAG-Connect Lovelace-Karte (BETA): [`docs/dashboards.md`](docs/dashboards.md). |
 
-Vollständige FAQ in [`docs/FAQ.md`](docs/FAQ.md).
+Vollständige FAQ in [`docs/FAQ.md`](docs/FAQ.md). Dashboard-Troubleshooting + dedizierte Lovelace-Karte (BETA): [`docs/dashboards.md`](docs/dashboards.md).
 
 ---
 

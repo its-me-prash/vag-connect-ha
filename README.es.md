@@ -168,6 +168,7 @@ Para que la posición GPS, el estado del vehículo y la calefacción estacionari
 
 - 🗺️ Roadmap: [`docs/ROADMAP.md`](docs/ROADMAP.md) — priorización P0/P1/P2/P3 completa de todos los issues abiertos
 - 📜 Tech Changelog: [`docs/CHANGELOG_TECHNICAL.md`](docs/CHANGELOG_TECHNICAL.md) — por release: mapeos de campos + decisiones de arquitectura + refs a fuentes externas
+- 🎨 Guía Dashboards + tarjeta Lovelace BETA: [`docs/dashboards.md`](docs/dashboards.md) — solución de problemas "Añadir al panel" + tarjeta Lovelace dedicada (BETA)
 - 🤝 Session Handoff (para colaboradores y herramientas IA): [`docs/SESSION_HANDOFF.md`](docs/SESSION_HANDOFF.md)
 - 🔒 Reglas de privacidad y manejo de datos: sección [`CONTRIBUTING.md`](CONTRIBUTING.md) (post-#53 third-party review)
 - 📋 FAQ Subscription / Service Plus / diagnóstico `missing-capability`: sección FAQ de [`CONTRIBUTING.md`](CONTRIBUTING.md)
