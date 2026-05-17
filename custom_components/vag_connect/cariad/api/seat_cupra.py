@@ -775,6 +775,15 @@ class SeatCupraClient(CariadBaseClient):
         d.is_electric = d.has_battery and not d.has_combustion
         d.is_hybrid = d.has_battery and d.has_combustion
 
+        # v2.2.1 Phase 8 PR #5 — cross-brand car_type derivation.
+        # CUPRA/SEAT OLA doesn't ship a direct `carType` field —
+        # derive from has_battery + has_combustion + primary_engine_type.
+        # Never overwrites a directly-read value (would be no-op if
+        # OLA ever ships the field — defensive forward-compat).
+        from .._util import derive_car_type_if_missing  # noqa: PLC0415
+
+        derive_car_type_if_missing(d)
+
         # ── carCapturedTimestamp → connection_state (v1.8.12 Multi-Brand) ────
         # OLA backend returns ``carCapturedTimestamp`` on multiple
         # sub-responses (verified live in

@@ -227,6 +227,14 @@ class PorscheClient:
                     for c in ("frontLeft", "frontRight", "rearLeft", "rearRight")
                 )
 
+        # v2.2.1 Phase 8 PR #5 — cross-brand car_type derivation.
+        # Porsche PPA doesn't ship a direct `carType` enum — derive
+        # from has_battery + has_combustion (already set above from
+        # `VEHICLE.engine` BEV/PHEV/COMBUSTION). Never overwrites.
+        from .._util import derive_car_type_if_missing  # noqa: PLC0415
+
+        derive_car_type_if_missing(d)
+
         return d
 
     async def get_capabilities(self, vin: str) -> dict[str, Any]:  # noqa: ARG002

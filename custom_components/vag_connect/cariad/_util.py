@@ -423,3 +423,52 @@ def compute_connection_state(
     if age_s < _CONNECTION_STANDBY_THRESHOLD_S:
         return "standby", latest_ts
     return "offline", latest_ts
+
+
+# v2.2.1 Phase 8 PR #5 — cross-brand `car_type` derivation helper.
+#
+# Skoda (Phase 8 PR #1) and VW EU/Audi (Phase 8 PR #2) read `car_type`
+# directly from the backend (`driving-range.carType` / `measurements.
+# fuelLevelStatus.value.carType`). CUPRA/SEAT, Porsche, VW NA don't
+# expose a direct field — but we can DERIVE it from the existing
+# parsed data (`has_battery`, `has_combustion`, `primary_engine_type`).
+#
+# Derivation rules (order matters):
+#   1. has_battery + has_combustion → "hybrid"
+#   2. has_battery only → "electric"
+#   3. has_combustion only → derive from primary_engine_type:
+#      "DIESEL" / "diesel" → "diesel"
+#      "PETROL" / "GASOLINE" / "gasoline" → "gasoline"
+#      anything else → leave None (don't guess)
+#   4. neither flag set → leave None (insufficient signal)
+#
+# Defensive: NEVER overwrites a directly-read value. Only assigns
+# when `d.car_type` is currently None. This way Skoda/VW EU/Audi
+# users keep their authoritative backend value; CUPRA/SEAT/Porsche/
+# VW NA users get the derived value.
+def derive_car_type_if_missing(d: Any) -> None:
+    """Cross-brand `car_type` derivation. Assigns ``d.car_type`` only
+    when currently None; never overwrites a directly-read value.
+
+    Safe to call at the end of any brand parser — pure-function on
+    already-populated dataclass fields, never raises.
+    """
+    if getattr(d, "car_type", None) is not None:
+        return  # already set by direct backend read — don't overwrite
+    has_bat = bool(getattr(d, "has_battery", False))
+    has_comb = bool(getattr(d, "has_combustion", False))
+    if has_bat and has_comb:
+        d.car_type = "hybrid"
+        return
+    if has_bat:
+        d.car_type = "electric"
+        return
+    if has_comb:
+        pet = (getattr(d, "primary_engine_type", None) or "").lower()
+        if "diesel" in pet:
+            d.car_type = "diesel"
+        elif "petrol" in pet or "gasoline" in pet:
+            d.car_type = "gasoline"
+        # else: don't guess (could be CNG/LPG/H2 etc — wait for
+        # explicit backend field or scout report)
+    # neither flag set: insufficient signal, leave None

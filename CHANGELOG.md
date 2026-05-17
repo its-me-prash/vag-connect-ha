@@ -112,6 +112,35 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ### Added
 
+- **Phase 8 PR #5 — `car_type` cross-brand derivation helper** —
+  **Different pattern als PR #1-#4.** Statt parser-hooks pro backend
+  zu erweitern, addet diese PR einen single derivation-helper der
+  am Ende jedes brand parsers fires. Füllt `d.car_type` für backends
+  die kein direct field shippen (CUPRA/SEAT OLA, Porsche PPA, VW NA
+  Kombi). Hybrid + electric + diesel + gasoline ableitbar aus
+  `has_battery` + `has_combustion` + `primary_engine_type`.
+
+  **Critical contract**: NEVER overwrites a directly-read value.
+  Skoda + VW EU/Audi (haben direct backend field) bleiben unverändert;
+  CUPRA/SEAT/Porsche/VW NA bekommen den derived value. Wired in
+  ALLEN 5 brand parsers als end-of-parse fallback (no-op wenn
+  direct read schon succeeded, populiert wenn nicht).
+
+  **Cross-brand coverage matrix nach diesem PR**:
+  - `car_type`: vorher 3 brands (Skoda + VW EU + Audi) → jetzt
+    **alle 6 brands** (alle Cariad + OLA + PPA + Kombi)
+  - **6/6 brand coverage** für ein previously-unwired field —
+    pure derivation, zero backend changes nötig
+
+  Derivation rules: hybrid > electric > diesel > gasoline; unknown
+  engine type (CNG/LPG/H2) → bleibt None (don't guess). 22 Tests
+  inkl. never-overwrite contract + end-to-end real-world scenarios
+  (Cupra Born EV, Formentor PHEV, Porsche Taycan/Cayenne diesel +
+  e-Hybrid, VW NA ID.4).
+  *"Statistically speaking, given enough booleans, even a chimpanzee
+  could derive whether the car is electric, hybrid, or combustion."
+  — Sheldon Cooper.*
+
 - **Phase 8 PR #4 — VW EU/Audi `primary_engine_fuel_level_pct` mirror** —
   Pure cross-brand expansion. Skoda hatte das field seit Phase 8 PR #1
   heute (von `driving-range.primaryEngineRange.currentFuelLevelInPercent`).
