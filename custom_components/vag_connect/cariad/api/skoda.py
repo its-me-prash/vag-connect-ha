@@ -895,6 +895,17 @@ class SkodaClient(CariadBaseClient):
             if isinstance(cls, str) and cls:
                 d.driving_score_class = cls
 
+        # v2.2.1 Phase 8 PR #5 — cross-brand car_type derivation fallback.
+        # Skoda already reads `driving-range.carType` directly (Phase 8
+        # PR #1), so this is a NO-OP for Skoda users with the standard
+        # response shape. The helper only fires if the direct read
+        # returned None (e.g. older firmware or rotated schema) — gives
+        # those Skoda users a derived car_type from has_battery +
+        # has_combustion + primary_engine_type.
+        from .._util import derive_car_type_if_missing  # noqa: PLC0415
+
+        derive_car_type_if_missing(d)
+
         return d
 
     # ── Static info enrichment (v1.20.0 Bundle 2 Phase A) ───────────────────

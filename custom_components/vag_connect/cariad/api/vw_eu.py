@@ -1608,4 +1608,14 @@ class VWEUClient(CariadBaseClient):
                 if isinstance(addr_block.get("city"), str):
                     d.parking_city = addr_block["city"]
 
+        # v2.2.1 Phase 8 PR #5 — cross-brand car_type derivation
+        # fallback. VW EU already reads `carType` directly from
+        # `fuelStatus` or `measurements` (Phase 8 PR #2), so this is
+        # a NO-OP when the backend ships the field. Fires only on
+        # rotated/missing-field firmware to give those users a
+        # derived value. Audi inherits this automatically.
+        from .._util import derive_car_type_if_missing  # noqa: PLC0415
+
+        derive_car_type_if_missing(d)
+
         return d
