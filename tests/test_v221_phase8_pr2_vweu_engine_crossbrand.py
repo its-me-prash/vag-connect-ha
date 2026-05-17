@@ -101,8 +101,11 @@ class TestVWEUParserCrossBrand:
         assert "d.car_type = car_type" in src
 
     def test_vw_eu_assigns_secondary_fuel_level(self) -> None:
+        # Loose-coupling: just verify the dataclass field is assigned
+        # SOMEWHERE in the parser, not tied to a specific local variable
+        # name (PR #4 refactored the walker variable to `fuel_pct`).
         src = self._source()
-        assert "d.secondary_engine_fuel_level_pct = sec_fuel" in src
+        assert "d.secondary_engine_fuel_level_pct =" in src
 
     def test_priority_order_documented(self) -> None:
         # The comment must explain WHY fuelStatus has priority over
