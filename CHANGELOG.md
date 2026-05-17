@@ -119,6 +119,26 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ### Added
 
+- **Bubble Card ready-made templates für VAG Connect (`docs/lovelace/bubble-card/`)** —
+  Community-Feedback (FB-Gruppe 2026-05-17): User wollte schöneres
+  Dashboard ohne YAML-Frickelei. [**Bubble Card**](https://github.com/Clooos/Bubble-Card)
+  hat die perfekte glass-morphism / gradient aesthetic. **6 pre-built
+  YAML snippets** im neuen `docs/lovelace/bubble-card/` folder:
+  - `01-vehicle-button-stack.yaml` — top horizontal vehicle selector
+  - `02-vehicle-popup.yaml` — main pop-up (battery/range/charging/
+    climate/lock)
+  - `03-charging-controls.yaml` — detailed charging + target SoC
+  - `04-climate-controls.yaml` — climate, defrost, departure timers
+  - `05-door-status.yaml` — lock + per-door + trunk + hood + alarm
+  - `99-full-dashboard.yaml` — complete single-vehicle dashboard
+    combining all of the above
+  Plus README.md mit setup-guide + multi-vehicle pattern. Alle 6
+  YAML-files validated mit `yaml.safe_load` — drop-in ready.
+  **Quick start (<5min)**: install Bubble Card via HACS → copy
+  `99-full-dashboard.yaml` in raw-config editor → search-replace
+  `audi_q4` mit deinem prefix → fertig. Cross-link from
+  `docs/dashboards.md` als "recommended starter".
+
 - **`docs/dashboards.md` — dedicated dashboard troubleshooting + Lovelace
   card guide** — community Q&A came up (FB group): user trying to add
   VAG Connect entities to existing dashboard view via "Add to Dashboard"

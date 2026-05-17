@@ -1,0 +1,132 @@
+# Bubble Card — VAG Connect detailed charging controls
+#
+# Drop into a sub-popup or sub-view for power users who want
+# fine-grained charging control. Replace `audi_q4` with your prefix.
+
+type: 'custom:bubble-card'
+card_type: pop-up
+hash: '#audi_q4_charging'
+name: 'Charging — Audi Q4 e-tron'
+icon: mdi:ev-station
+button_type: state
+entity: sensor.audi_q4_charging_state
+
+cards:
+
+  # ── Current charging state header ───────────────────────────────
+  - type: horizontal-stack
+    cards:
+      - type: 'custom:bubble-card'
+        card_type: button
+        button_type: state
+        entity: sensor.audi_q4_charging_state
+        name: State
+        icon: mdi:state-machine
+        show_state: true
+      - type: 'custom:bubble-card'
+        card_type: button
+        button_type: state
+        entity: sensor.audi_q4_charging_power_kw
+        name: Power
+        icon: mdi:lightning-bolt
+        show_state: true
+
+  # ── Battery SoC + Target SoC ────────────────────────────────────
+  - type: horizontal-stack
+    cards:
+      - type: 'custom:bubble-card'
+        card_type: button
+        button_type: state
+        entity: sensor.audi_q4_battery_soc
+        name: Current SoC
+        icon: mdi:battery
+        show_state: true
+      - type: 'custom:bubble-card'
+        card_type: button
+        button_type: state
+        entity: number.audi_q4_target_soc
+        name: Target SoC
+        icon: mdi:battery-charging-100
+        show_state: true
+        tap_action:
+          action: more-info        # opens slider for adjustment
+
+  # ── Charge complete ETA + remaining time ────────────────────────
+  - type: horizontal-stack
+    cards:
+      - type: 'custom:bubble-card'
+        card_type: button
+        button_type: state
+        entity: sensor.audi_q4_charge_complete_eta
+        name: Complete at
+        icon: mdi:clock-end
+        show_state: true
+      - type: 'custom:bubble-card'
+        card_type: button
+        button_type: state
+        entity: sensor.audi_q4_charging_rate_kmh
+        name: Rate
+        icon: mdi:speedometer
+        show_state: true
+
+  # ── Charge mode select (where supported) ────────────────────────
+  # Skoda + VW EU + Audi expose `select.audi_q4_charge_mode` if the
+  # backend allows mode switching. Uncomment if your vehicle ships it.
+  # - type: 'custom:bubble-card'
+  #   card_type: select
+  #   entity: select.audi_q4_charge_mode
+  #   name: Charge mode
+  #   icon: mdi:tune
+
+  # ── Plug state + auto-unlock setting ────────────────────────────
+  - type: horizontal-stack
+    cards:
+      - type: 'custom:bubble-card'
+        card_type: button
+        button_type: state
+        entity: binary_sensor.audi_q4_plug_connected
+        name: Plug
+        icon: mdi:power-plug
+        show_state: true
+      - type: 'custom:bubble-card'
+        card_type: button
+        button_type: state
+        entity: binary_sensor.audi_q4_auto_unlock_when_charged
+        name: Auto-unlock
+        icon: mdi:lock-open
+        show_state: true
+
+  # ── Max charge current (AC) — Number entity for adjustment ──────
+  - type: 'custom:bubble-card'
+    card_type: button
+    button_type: state
+    entity: number.audi_q4_max_charge_current_ac
+    name: Max AC current
+    icon: mdi:current-ac
+    show_state: true
+    tap_action:
+      action: more-info
+
+  # ── Start/stop charging command buttons ─────────────────────────
+  - type: 'custom:bubble-card'
+    card_type: button
+    button_type: switch
+    entity: switch.audi_q4_charging
+    name: Start / stop charging
+    icon: mdi:battery-charging
+
+  # ── Phase 7 v2.2.0 diagnostics (optional) ───────────────────────
+  # - type: horizontal-stack
+  #   cards:
+  #     - type: 'custom:bubble-card'
+  #       card_type: button
+  #       button_type: state
+  #       entity: sensor.audi_q4_battery_temp
+  #       name: Battery temp
+  #       icon: mdi:battery-heart-variant
+  #     - type: 'custom:bubble-card'
+  #       card_type: button
+  #       button_type: state
+  #       entity: sensor.audi_q4_battery_temp_max
+  #       name: Battery max
+  #       icon: mdi:thermometer-high

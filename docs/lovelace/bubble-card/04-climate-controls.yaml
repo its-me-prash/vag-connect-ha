@@ -1,0 +1,130 @@
+# Bubble Card — VAG Connect climate controls
+#
+# Replace `audi_q4` with your vehicle's entity_id prefix.
+
+type: 'custom:bubble-card'
+card_type: pop-up
+hash: '#audi_q4_climate'
+name: 'Climate — Audi Q4 e-tron'
+icon: mdi:air-conditioner
+button_type: state
+entity: sensor.audi_q4_climatisation_state
+
+cards:
+
+  # ── Climate state + target temperature ──────────────────────────
+  - type: horizontal-stack
+    cards:
+      - type: 'custom:bubble-card'
+        card_type: button
+        button_type: state
+        entity: sensor.audi_q4_climatisation_state
+        name: State
+        icon: mdi:state-machine
+        show_state: true
+      - type: 'custom:bubble-card'
+        card_type: button
+        button_type: state
+        entity: climate.audi_q4
+        name: Target
+        icon: mdi:thermostat
+        show_state: true
+        tap_action:
+          action: more-info        # opens climate card with full controls
+
+  # ── Cabin / outside temperatures ────────────────────────────────
+  - type: horizontal-stack
+    cards:
+      - type: 'custom:bubble-card'
+        card_type: button
+        button_type: state
+        entity: sensor.audi_q4_outside_temp
+        name: Outside
+        icon: mdi:thermometer
+        show_state: true
+      - type: 'custom:bubble-card'
+        card_type: button
+        button_type: state
+        entity: sensor.audi_q4_target_temperature
+        name: Target temp
+        icon: mdi:thermometer-lines
+        show_state: true
+
+  # ── Climate-ready-at (Skoda PHEV + others) ──────────────────────
+  - type: 'custom:bubble-card'
+    card_type: button
+    button_type: state
+    entity: sensor.audi_q4_climate_ready_at
+    name: Cabin ready at
+    icon: mdi:clock-end
+    show_state: true
+
+  # ── Start / stop climate ────────────────────────────────────────
+  - type: 'custom:bubble-card'
+    card_type: button
+    button_type: switch
+    entity: switch.audi_q4_climatisation
+    name: Start / stop climate
+    icon: mdi:air-conditioner
+
+  # ── Window heating (front + back) ───────────────────────────────
+  - type: horizontal-stack
+    cards:
+      - type: 'custom:bubble-card'
+        card_type: button
+        button_type: switch
+        entity: switch.audi_q4_window_heating_front
+        name: Front defrost
+        icon: mdi:car-defrost-front
+      - type: 'custom:bubble-card'
+        card_type: button
+        button_type: switch
+        entity: switch.audi_q4_window_heating_back
+        name: Rear defrost
+        icon: mdi:car-defrost-rear
+
+  # ── Auxiliary heater (Webasto) — Skoda + SEAT/CUPRA + Audi PHEV ──
+  # Uncomment if your vehicle has the optional Webasto / aux heater.
+  # - type: 'custom:bubble-card'
+  #   card_type: button
+  #   button_type: switch
+  #   entity: switch.audi_q4_auxiliary_heating
+  #   name: Aux heater
+  #   icon: mdi:radiator
+
+  # ── Departure timers — count + first-enabled summary ────────────
+  - type: horizontal-stack
+    cards:
+      - type: 'custom:bubble-card'
+        card_type: button
+        button_type: state
+        entity: sensor.audi_q4_departure_timer_enabled_count
+        name: Active timers
+        icon: mdi:counter
+        show_state: true
+      - type: 'custom:bubble-card'
+        card_type: button
+        button_type: state
+        entity: time.audi_q4_departure_timer_1
+        name: Next departure
+        icon: mdi:clock-time-eight
+        show_state: true
+        tap_action:
+          action: more-info
+
+  # ── Climate timer count (Skoda + VW EU/Audi v2.2.2+) ────────────
+  # - type: 'custom:bubble-card'
+  #   card_type: button
+  #   button_type: state
+  #   entity: sensor.audi_q4_climate_timer_enabled_count
+  #   name: Climate timers
+  #   icon: mdi:timer-cog
+  #   show_state: true
+
+  # ── Climate-at-unlock setting (v1.26.0+) ────────────────────────
+  # - type: 'custom:bubble-card'
+  #   card_type: button
+  #   button_type: state
+  #   entity: binary_sensor.audi_q4_climate_at_unlock
+  #   name: Climate on unlock
+  #   icon: mdi:car-electric

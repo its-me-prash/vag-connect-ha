@@ -1,0 +1,32 @@
+# Bubble Card — VAG Connect vehicle button stack
+# Replace `audi_q4` with your vehicle's entity_id prefix.
+# Add a new card-block per additional vehicle.
+
+type: 'custom:bubble-card'
+card_type: horizontal-buttons-stack
+1_link: '#vehicle_audi_q4'
+1_name: 'Audi Q4 e-tron'
+1_icon: mdi:car-electric
+1_entity: sensor.audi_q4_charging_state
+1_pin: true
+# Auto-set color based on charging state — blue when CHARGING, accent otherwise
+styles: |
+  ha-card {
+    background: transparent !important;
+  }
+
+# ─────────────────────────────────────────────────────────────────────
+# Multi-vehicle: uncomment + duplicate the indexed properties below
+# for each additional vehicle. Bubble Card supports up to 10 buttons
+# in a single horizontal stack (1_… through 10_…).
+# ─────────────────────────────────────────────────────────────────────
+
+# 2_link: '#vehicle_skoda_enyaq'
+# 2_name: 'Škoda Enyaq'
+# 2_icon: mdi:car-electric
+# 2_entity: sensor.skoda_enyaq_charging_state
+#
+# 3_link: '#vehicle_cupra_born'
+# 3_name: 'Cupra Born'
+# 3_icon: mdi:car-electric
+# 3_entity: sensor.cupra_born_charging_state
