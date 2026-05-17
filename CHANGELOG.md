@@ -112,6 +112,27 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ### Added
 
+- **Phase 8 PR #4 — VW EU/Audi `primary_engine_fuel_level_pct` mirror** —
+  Pure cross-brand expansion. Skoda hatte das field seit Phase 8 PR #1
+  heute (von `driving-range.primaryEngineRange.currentFuelLevelInPercent`).
+  Dieser PR refactored den existing engine-walker aus PR #2 um BOTH
+  primary AND secondary engine blocks zu handlen — position-based
+  assignment statt nur-secondary.
+  - **ICE-only Golf (primary=gasoline)** → `primary_engine_fuel_level_pct` populated
+  - **Modern Passat GTE (primary=electric, secondary=gasoline)** →
+    `secondary_engine_fuel_level_pct` populated (PR #2 behaviour preserved)
+  - **Legacy Golf 7 GTE 2015 (primary=gasoline, secondary=electric)** →
+    `primary_engine_fuel_level_pct` populated (position correctness)
+  - **Pure EV (no combustion)** → both fields stay None
+  Walker consolidiert die parser logic — eine schleife macht beide
+  jobs basierend auf position + combustion-type check. Audi inherits
+  via VWEUClient automatisch. **Cross-brand coverage matrix nach PR**:
+  `primary_engine_fuel_level_pct` = Skoda + VW EU + Audi (3 brands).
+  10 Tests inkl. PHEV/ICE/EV/Legacy-Golf semantics + error-container
+  safety + cross-brand matrix regression.
+  *"Now we have one walker doing the job of two. Just like Penny on
+  date night with two text conversations." — Sheldon Cooper.*
+
 - **Phase 8 PR #3 — Porsche electric/combustion range split** —
   Pure cross-brand parity expansion — Porsche joins die brand-coverage
   von `electric_range_km` + `combustion_range_km` die Skoda, VW EU,

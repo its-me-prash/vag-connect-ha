@@ -1106,12 +1106,19 @@ class VWEUClient(CariadBaseClient):
         if isinstance(car_type, str) and car_type:
             d.car_type = car_type
 
-        # v2.2.1 Phase 8 PR #2 — secondary engine fuel level %.
-        # Skoda has this from `secondaryEngineRange.currentFuelLevelInPercent`
-        # (PR #6), CUPRA/SEAT from `engines.secondary.fuelLevel_pct`
-        # (PR #18). VW EU/Audi publishes it INSIDE the per-engine block
-        # under `currentFuelLevel_pct` when the engine is combustion-type.
-        # Iterate both engine blocks looking for the combustion side.
+        # v2.2.1 Phase 8 PR #2/#4 — per-engine-block fuel level walk.
+        # Walks both engine blocks and assigns:
+        # - `secondary_engine_fuel_level_pct` from the combustion side
+        #   of a PHEV (PR #2 original — Skoda parity).
+        # - `primary_engine_fuel_level_pct` from the combustion side
+        #   when it's the primary engine position (PR #4 cross-brand —
+        #   Skoda already has this from driving-range path; this gives
+        #   ICE-only VW/Audi the same field).
+        #
+        # The primary/secondary assignment is by POSITION in the
+        # engine block, not by drivetrain. Modern PHEVs put electric
+        # as primary + combustion as secondary; older Golf GTE 2015
+        # firmware flipped it; ICE-only cars only have primary.
         for engine_path in (
             ("fuelStatus", "rangeStatus", "value", "primaryEngine"),
             ("fuelStatus", "rangeStatus", "value", "secondaryEngine"),
@@ -1122,15 +1129,14 @@ class VWEUClient(CariadBaseClient):
             etype = (engine_block.get("type") or "").lower()
             if etype not in combustion_types:
                 continue
-            # Only assign for the SECONDARY position (which on PHEV is
-            # the combustion side per Cariad convention since 2024). For
-            # ICE-only vehicles, secondary engine doesn't exist —
-            # `secondary_engine_fuel_level_pct` stays None correctly.
-            if engine_path[-1] == "secondaryEngine":
-                sec_fuel = safe_int(engine_block.get("currentFuelLevel_pct"))
-                if sec_fuel is not None:
-                    d.secondary_engine_fuel_level_pct = sec_fuel
-                break
+            fuel_pct = safe_int(engine_block.get("currentFuelLevel_pct"))
+            if fuel_pct is None:
+                continue
+            position = engine_path[-1]
+            if position == "primaryEngine":
+                d.primary_engine_fuel_level_pct = fuel_pct
+            elif position == "secondaryEngine":
+                d.secondary_engine_fuel_level_pct = fuel_pct
 
         d.is_electric = d.has_battery and not d.has_combustion
         d.is_hybrid = d.has_battery and d.has_combustion
