@@ -119,6 +119,21 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ### Added
 
+- **`docs/dashboards.md` — dedicated dashboard troubleshooting + Lovelace
+  card guide** — community Q&A came up (FB group): user trying to add
+  VAG Connect entities to existing dashboard view via "Add to Dashboard"
+  hit classic HA YAML-vs-Storage confusion. Multi-week recurring question
+  → dedicated docs page deserves it. Covers: 3-cause troubleshooting für
+  "Add to Dashboard" picker-not-showing-view (YAML-mode dashboards / view
+  not created yet / Sections-layout quirks), workarounds für jede cause,
+  dedizierte VAG Connect Lovelace-Karte status (BETA — currently has
+  Mercedes-style background being redesigned), 3rd-party card empfehlungen,
+  entity-ID discovery, **per-version feature matrix für v2.2.0 + v2.2.1
+  entity additions**. Plus FAQ.md neue section + FAQ-table-row in DE/EN
+  READMEs + dashboards.md link in allen 6 anderen language READMEs (fr,
+  es, nl, pl, cs, sv). 8 README files + FAQ + new dashboards.md =
+  pure-docs PR, no code changes.
+
 - **`climate_timer_enabled_count` cross-brand expansion to VW EU/Audi
   (Closes #248)** — Skoda hatte das field seit Phase 7 PR #4 (scout
   silenced-but-unwired audit). VW EU/Audi `climatisationTimers.

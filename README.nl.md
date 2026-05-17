@@ -168,6 +168,7 @@ Voor GPS-positie, voertuigstatus en standkachel moet **"Locatie delen"** ingesch
 
 - 🗺️ Roadmap: [`docs/ROADMAP.md`](docs/ROADMAP.md) — volledige P0/P1/P2/P3 prioritisering van alle openstaande issues
 - 📜 Tech Changelog: [`docs/CHANGELOG_TECHNICAL.md`](docs/CHANGELOG_TECHNICAL.md) — per release: field-mappings + architectuur-beslissingen + externe source-refs
+- 🎨 Dashboards-gids + Lovelace-kaart BETA: [`docs/dashboards.md`](docs/dashboards.md) — "Toevoegen aan dashboard" troubleshooting + dedicated Lovelace-kaart (BETA)
 - 🤝 Session Handoff (voor bijdragers & AI-tools): [`docs/SESSION_HANDOFF.md`](docs/SESSION_HANDOFF.md)
 - 🔒 Privacy & data handling regels: [`CONTRIBUTING.md`](CONTRIBUTING.md) sectie (post-#53 third-party review)
 - 📋 FAQ Subscription / Service Plus / `missing-capability` diagnose: [`CONTRIBUTING.md`](CONTRIBUTING.md) FAQ-sectie

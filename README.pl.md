@@ -168,6 +168,7 @@ Aby pozycja GPS, status pojazdu i ogrzewanie postojowe działały, **"Udostępni
 
 - 🗺️ Roadmap: [`docs/ROADMAP.md`](docs/ROADMAP.md) — pełna priorytyzacja P0/P1/P2/P3 wszystkich otwartych issues
 - 📜 Tech Changelog: [`docs/CHANGELOG_TECHNICAL.md`](docs/CHANGELOG_TECHNICAL.md) — per release: mapowania pól + decyzje architektoniczne + refy do zewnętrznych źródeł
+- 🎨 Przewodnik Dashboards + karta Lovelace BETA: [`docs/dashboards.md`](docs/dashboards.md) — rozwiązywanie problemów "Dodaj do panelu" + dedykowana karta Lovelace (BETA)
 - 🤝 Session Handoff (dla współtwórców i narzędzi AI): [`docs/SESSION_HANDOFF.md`](docs/SESSION_HANDOFF.md)
 - 🔒 Zasady prywatności i obsługi danych: sekcja [`CONTRIBUTING.md`](CONTRIBUTING.md) (post-#53 third-party review)
 - 📋 FAQ Subscription / Service Plus / diagnoza `missing-capability`: sekcja FAQ w [`CONTRIBUTING.md`](CONTRIBUTING.md)

@@ -337,8 +337,36 @@ Static data wird 24h gecached — kein Quota-Burn pro Poll.
 
 ---
 
+## 🎨 Dashboards — "Add to Dashboard" doesn't show my view
+
+Most-common HA UI stumble — you're not doing anything wrong, the
+picker just hides certain dashboards. Three usual causes:
+
+1. **Dashboard is in YAML-mode** (most common): the `Add to
+   Dashboard` flow only writes to **Storage-mode** dashboards.
+   Check *Settings → Dashboards* — column "Mode" shows YAML vs
+   Storage. YAML dashboards need manual `entities: - sensor.foo`
+   edits in the YAML file.
+2. **View doesn't exist yet**: HA only lists already-created
+   views. Create an empty view first (Dashboard → pencil → "+
+   Add View" → save), then retry.
+3. **HA 2024+ "Sections" layout view**: occasionally rejects the
+   quick-add workflow. Workaround: go into the view, edit-mode,
+   "+ Add Card" → pick the entity manually.
+
+Quickest workaround if nothing helps: navigate to the view, edit
+mode, "+ Add Card" → "Entities" → filter `vag_connect` or your
+VIN-last-6 to find your sensors.
+
+Full guide + dedicated VAG Connect Lovelace card (BETA — in
+testing, currently still has a Mercedes-style background that's
+being redesigned): [`docs/dashboards.md`](dashboards.md).
+
+---
+
 ## 📚 Where to find more details
 
+- **Dashboard troubleshooting + Lovelace cards:** `docs/dashboards.md`
 - **Per-brand technical detail:** `docs/CHANGELOG_TECHNICAL.md`
 - **Future roadmap + planned releases:** `docs/ROADMAP.md`
 - **Pre-implementation research:** `docs/research/`

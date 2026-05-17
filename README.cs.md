@@ -168,6 +168,7 @@ Aby GPS poloha, stav vozidla a topení fungovaly, musí být **"Sdílet mou polo
 
 - 🗺️ Roadmap: [`docs/ROADMAP.md`](docs/ROADMAP.md) — kompletní P0/P1/P2/P3 priorizace všech otevřených issues
 - 📜 Tech Changelog: [`docs/CHANGELOG_TECHNICAL.md`](docs/CHANGELOG_TECHNICAL.md) — per release: field-mappings + architektonické rozhodnutí + externí source-refs
+- 🎨 Průvodce Dashboards + Lovelace karta BETA: [`docs/dashboards.md`](docs/dashboards.md) — řešení problémů s „Přidat na panel" + dedikovaná Lovelace karta (BETA)
 - 🤝 Session Handoff (pro přispěvatele a AI nástroje): [`docs/SESSION_HANDOFF.md`](docs/SESSION_HANDOFF.md)
 - 🔒 Pravidla soukromí a zacházení s daty: sekce [`CONTRIBUTING.md`](CONTRIBUTING.md) (post-#53 third-party review)
 - 📋 FAQ Subscription / Service Plus / diagnóza `missing-capability`: FAQ sekce v [`CONTRIBUTING.md`](CONTRIBUTING.md)
