@@ -119,7 +119,29 @@ class PorscheClient:
             m = {item["key"]: item.get("value", {}) for item in (measurements if isinstance(measurements, list) else [])}
 
             d.battery_soc   = v(m, "BATTERY_LEVEL", "percent")
-            d.range_km      = v(m, "E_RANGE", "distance") or v(m, "FUEL_LEVEL", "distanceToEmpty")
+            # v2.2.1 Phase 8 PR #3 — split electric / combustion range
+            # for Porsche cross-brand parity. Before this PR Porsche
+            # only populated the aggregate `range_km` (or-fallback);
+            # Skoda, VW EU, Audi, CUPRA, SEAT all expose per-source
+            # split since v1.10.0+. Now Porsche EV (Taycan, Macan EV,
+            # 911 Cayenne EV) + PHEV (Cayenne E-Hybrid, Panamera
+            # E-Hybrid) join the parity.
+            #
+            # PPA measurement keys (verified per pcommit/iccarus +
+            # porsche-connect-cli traces):
+            # - E_RANGE.distance → battery-only range in km
+            # - FUEL_LEVEL.distanceToEmpty → combustion-only range in km
+            #
+            # The existing aggregate range_km keeps its or-fallback
+            # for back-compat (Porsche users on this sensor today
+            # see no change).
+            electric_range = v(m, "E_RANGE", "distance")
+            combustion_range = v(m, "FUEL_LEVEL", "distanceToEmpty")
+            if isinstance(electric_range, (int, float)):
+                d.electric_range_km = int(electric_range)
+            if isinstance(combustion_range, (int, float)):
+                d.combustion_range_km = int(combustion_range)
+            d.range_km      = electric_range or combustion_range
             d.fuel_level    = v(m, "FUEL_LEVEL", "percent")
             d.odometer_km   = v(m, "MILEAGE", "mileage")
 
