@@ -98,17 +98,26 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 > against actual parser-reads to identify silenced-but-unwired fields.
 > 4 entity-batches + 1 pre-release silencing patch.
 
-## [Unreleased] — v2.2.1 (Phase 8 "alles parsen statt silencen")
+## [2.2.1] — 2026-05-17 — Phase 8 "alles parsen statt silencen" + Cross-Brand Expansion
 
 > **Strategic shift (2026-05-17 post-v2.2.0):** Statt scout-fields zu
 > silencen wenn der walker sie reportet, wird jeder Field mit klarem
-> semantischen Wert als HA-entity geparsed. *"Wenn ein field es wert
-> ist silenced zu werden, ist es wert geparsed zu werden."* — User-
-> Direktive nach v2.2.0 stable release.
+> semantischen Wert als HA-entity geparsed UND auf alle applicable
+> brands cross-checked. *"Wenn ein field es wert ist silenced zu
+> werden, ist es wert geparsed zu werden. Und wenn 1 user es auf
+> 1 brand reportet, profitieren alle brands wo das equivalent
+> existiert."* — User-Direktive nach v2.2.0 stable release.
 >
-> Phase 8 ist die direkte Konsequenz dieses Shifts: reverse-audit der
-> EXPECTED_KEYS table zeigt 11+ silenced-but-unwired fields mit clear
-> business value. Diese werden in Batches als entities gewired.
+> **Phase 8 tier-A complete**: 5 PRs merged auf top of v2.2.0.
+> 11 new diagnostic entities + 4 cross-brand expansions + **erstes
+> 6/6 brand coverage** durch derivation-helper-pattern. Zero
+> behaviour changes für existing users (pure-additive, alle
+> phantom-protected). Tier-B (wildcards + alarm/siren) deferred
+> until tester scout-dumps liefern die unknown leaf-shapes.
+
+## [Unreleased]
+
+> (Empty)
 
 ### Added
 
@@ -248,10 +257,6 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
   variants. 20+ Tests inkl. cross-brand-reuse regression-shield.
   *"Why have a key on the keyring if you never use it?"
   — Lisa Simpson.*
-
-## [Unreleased-Below-2.2.1]
-
-> (Empty)
 
 ### Added
 
