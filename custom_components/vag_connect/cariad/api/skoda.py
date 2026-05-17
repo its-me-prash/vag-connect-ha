@@ -733,6 +733,31 @@ class SkodaClient(CariadBaseClient):
                 driving_range, "primaryEngineRange", "currentSoCInPercent"
             )
             d.primary_engine_soc_pct = safe_int(primary_soc)
+            # v2.2.1 Phase 8 PR #1 — alles-parsen strategy:
+            # primaryEngineRange.{engineType, currentFuelLevelInPercent}
+            # cross-brand reuse. engineType maps into existing
+            # `primary_engine_type` from PR #3 Phase 7 (CUPRA/SEAT) —
+            # zero-new-entity expanded coverage. fuelLevelInPercent is
+            # a new Skoda-only field (primary tank %), distinct vom
+            # existing `fuel_level` (measurements path) und mit dem
+            # bestehenden `secondary_engine_fuel_level_pct` als
+            # cross-brand sibling.
+            primary_eng_type = v(
+                driving_range, "primaryEngineRange", "engineType"
+            )
+            if isinstance(primary_eng_type, str) and primary_eng_type:
+                d.primary_engine_type = primary_eng_type
+            primary_fuel = v(
+                driving_range, "primaryEngineRange", "currentFuelLevelInPercent"
+            )
+            d.primary_engine_fuel_level_pct = safe_int(primary_fuel)
+            # v2.2.1 Phase 8 PR #1 — carType (string enum diesel /
+            # gasoline / electric / hybrid). Authoritative backend
+            # classification der primary engine, distinct von den
+            # derived booleans (is_electric / is_hybrid / has_combustion).
+            car_type = v(driving_range, "carType")
+            if isinstance(car_type, str) and car_type:
+                d.car_type = car_type
 
         d.is_electric = d.has_battery and not d.has_combustion
         d.is_hybrid = d.has_battery and d.has_combustion
@@ -749,6 +774,12 @@ class SkodaClient(CariadBaseClient):
             # alongside the existing DATE-converted sensors.
             d.service_due_in_days = safe_int(d.service_due_at)
             d.oil_service_due_in_days = safe_int(d.oil_service_at)
+            # v2.2.1 Phase 8 PR #1 — maintenanceReport.capturedAt
+            # diagnostic timestamp. Useful für "ist mein service-due
+            # data stale?" Fragen. ISO 8601 pass-through.
+            mr_captured = v(report, "capturedAt")
+            if isinstance(mr_captured, str) and mr_captured:
+                d.maintenance_report_captured_at = mr_captured
             # v1.17.7 (#130 Chr1sDub + #133 christianmhz, 2026-05-04) —
             # Skoda mysmob now exposes the user's preferred-workshop
             # registration on the maintenance endpoint. Surfaced as
@@ -787,6 +818,13 @@ class SkodaClient(CariadBaseClient):
             ignition = v(readiness, "ignitionOn")
             if isinstance(ignition, bool):
                 d.ignition_on = ignition
+            # v2.2.1 Phase 8 PR #1 — Skoda-only 12V battery protection
+            # threshold. Companion zu VW EU/Audi `daily_power_budget_
+            # available` (Phase 7 PR #2). Skoda mysmob signaliert über
+            # diesen boolean wenn der modem in low-power mode geht.
+            bplim = v(readiness, "batteryProtectionLimitOn")
+            if isinstance(bplim, bool):
+                d.battery_protection_limit_on = bplim
 
         # ── carCapturedTimestamp → connection_state (v1.8.12 refactor) ────
         # v1.8.11 introduced this logic Skoda-only; v1.8.12 extracted the

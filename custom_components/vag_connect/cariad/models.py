@@ -634,6 +634,47 @@ class VehicleData:
     # automations without needing a zone helper.
     vehicle_at_saved_location: bool | None = None
 
+    # v2.2.1 Phase 8 PR #1 — "alles parsen statt silencen" Strategy-shift.
+    # User-Direktive (2026-05-17): Statt fields zu silencen wenn der
+    # scout sie reportet, parse them ALL ins data model. Wenn ein
+    # field es wert ist silenced zu werden, ist es wert geparsed zu
+    # werden. Diese batch: 5 Skoda fields die seit v1.x silenced sind
+    # ohne parser hook.
+
+    # Skoda mysmob `readiness.batteryProtectionLimitOn` (bool). 12V
+    # starter battery protection threshold reached — modem rationiert
+    # wake-ups um die batterie zu schonen. Distinct vom existing
+    # `daily_power_budget_available` (VW EU/Audi PR #2 Phase 7) —
+    # das ist die Skoda-side äquivalent. Useful für "warn 12V check"
+    # automations.
+    battery_protection_limit_on: bool | None = None
+
+    # Skoda mysmob `driving-range.carType` (string enum: diesel /
+    # gasoline / electric / hybrid). Authoritative backend
+    # classification der primary engine. Cross-brand companion zu
+    # `primary_engine_type` (CUPRA/SEAT) und distinct von den
+    # derived booleans (`is_electric`, `is_hybrid`).
+    car_type: str | None = None
+
+    # Skoda mysmob `driving-range.primaryEngineRange.engineType`
+    # (string PETROL/DIESEL/...). Cross-brand reuse: maps in den
+    # existing `primary_engine_type` field aus PR #3 Phase 7 (CUPRA/
+    # SEAT) — zero new entity, just expanded brand coverage.
+
+    # Skoda mysmob `driving-range.primaryEngineRange.
+    # currentFuelLevelInPercent` (int 0-100). Cross-brand companion
+    # zu `secondary_engine_fuel_level_pct`. Primary fuel tank level
+    # für combustion vehicles. Distinct vom existing `fuel_level`
+    # (% from measurements.fuelLevelStatus) — Skoda mysmob ships
+    # both paths on PHEVs; user can compare for diagnostic.
+    primary_engine_fuel_level_pct: int | None = None
+
+    # Skoda mysmob `maintenance.maintenanceReport.capturedAt` (ISO
+    # 8601 string). Timestamp when the maintenance report was last
+    # refreshed by the backend. Diagnostic — useful for "is my
+    # service-due data stale?" questions.
+    maintenance_report_captured_at: str | None = None
+
     # v2.2.0 Phase 2 PR #8/20 — Connect-subscription expiry timestamp.
     # SEAT/CUPRA OLA ``mycar.services`` block exposes a per-service
     # entitlement map. Each entry typically carries either an

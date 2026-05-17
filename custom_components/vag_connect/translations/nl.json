@@ -295,6 +295,15 @@
       "climate_running_requests_count": {
         "name": "Klimaatverzoeken in behandeling"
       },
+      "maintenance_report_captured_at": {
+        "name": "Onderhoudsrapport bijgewerkt"
+      },
+      "primary_engine_fuel_level_pct": {
+        "name": "Brandstofniveau (primair)"
+      },
+      "car_type": {
+        "name": "Voertuigtype"
+      },
       "climate_timer_enabled_count": {
         "name": "Klimaattimers ingeschakeld"
       },
@@ -437,6 +446,9 @@
       },
       "vehicle_at_saved_location": {
         "name": "Op opgeslagen locatie"
+      },
+      "battery_protection_limit_on": {
+        "name": "12V-accubeveiliging"
       },
       "tire_pressure_warning": {
         "name": "Bandenspanning-Waarschuwing"

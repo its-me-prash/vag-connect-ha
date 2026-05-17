@@ -295,6 +295,15 @@
       "climate_running_requests_count": {
         "name": "Klima-Anfragen offen"
       },
+      "maintenance_report_captured_at": {
+        "name": "Wartungs-Report aktualisiert"
+      },
+      "primary_engine_fuel_level_pct": {
+        "name": "Tankfüllstand (primär)"
+      },
+      "car_type": {
+        "name": "Fahrzeugtyp"
+      },
       "climate_timer_enabled_count": {
         "name": "Klima-Timer aktiviert"
       },
@@ -437,6 +446,9 @@
       },
       "vehicle_at_saved_location": {
         "name": "An gespeichertem Ort"
+      },
+      "battery_protection_limit_on": {
+        "name": "12V-Batterie-Schutz"
       },
       "tire_pressure_warning": {
         "name": "Reifendruck-Warnung"

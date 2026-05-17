@@ -295,6 +295,15 @@
       "climate_running_requests_count": {
         "name": "Requêtes climat en attente"
       },
+      "maintenance_report_captured_at": {
+        "name": "Rapport entretien mis à jour"
+      },
+      "primary_engine_fuel_level_pct": {
+        "name": "Niveau carburant (principal)"
+      },
+      "car_type": {
+        "name": "Type de véhicule"
+      },
       "climate_timer_enabled_count": {
         "name": "Minuteries climat actives"
       },
@@ -437,6 +446,9 @@
       },
       "vehicle_at_saved_location": {
         "name": "Au lieu enregistré"
+      },
+      "battery_protection_limit_on": {
+        "name": "Protection batterie 12V"
       },
       "tire_pressure_warning": {
         "name": "Alerte Pression Pneus"

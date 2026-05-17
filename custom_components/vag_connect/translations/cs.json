@@ -295,6 +295,15 @@
       "climate_running_requests_count": {
         "name": "Čekající klima-požadavky"
       },
+      "maintenance_report_captured_at": {
+        "name": "Servisní zpráva aktualizována"
+      },
+      "primary_engine_fuel_level_pct": {
+        "name": "Hladina paliva (primární)"
+      },
+      "car_type": {
+        "name": "Typ vozidla"
+      },
       "climate_timer_enabled_count": {
         "name": "Aktivované klima-časovače"
       },
@@ -437,6 +446,9 @@
       },
       "vehicle_at_saved_location": {
         "name": "Na uloženém místě"
+      },
+      "battery_protection_limit_on": {
+        "name": "Ochrana 12V baterie"
       },
       "tire_pressure_warning": {
         "name": "Varování Tlaku Pneumatik"

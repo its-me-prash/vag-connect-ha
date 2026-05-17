@@ -295,6 +295,15 @@
       "climate_running_requests_count": {
         "name": "Solicitudes climatización pendientes"
       },
+      "maintenance_report_captured_at": {
+        "name": "Informe mantenimiento actualizado"
+      },
+      "primary_engine_fuel_level_pct": {
+        "name": "Nivel combustible (principal)"
+      },
+      "car_type": {
+        "name": "Tipo de vehículo"
+      },
       "climate_timer_enabled_count": {
         "name": "Temporizadores climatización activos"
       },
@@ -437,6 +446,9 @@
       },
       "vehicle_at_saved_location": {
         "name": "En ubicación guardada"
+      },
+      "battery_protection_limit_on": {
+        "name": "Protección batería 12V"
       },
       "tire_pressure_warning": {
         "name": "Aviso de Presión de Neumáticos"

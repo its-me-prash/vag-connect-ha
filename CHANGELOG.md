@@ -98,9 +98,54 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 > against actual parser-reads to identify silenced-but-unwired fields.
 > 4 entity-batches + 1 pre-release silencing patch.
 
-## [Unreleased]
+## [Unreleased] — v2.2.1 (Phase 8 "alles parsen statt silencen")
 
-> (Empty — next entries land here after v2.2.0 graduation.)
+> **Strategic shift (2026-05-17 post-v2.2.0):** Statt scout-fields zu
+> silencen wenn der walker sie reportet, wird jeder Field mit klarem
+> semantischen Wert als HA-entity geparsed. *"Wenn ein field es wert
+> ist silenced zu werden, ist es wert geparsed zu werden."* — User-
+> Direktive nach v2.2.0 stable release.
+>
+> Phase 8 ist die direkte Konsequenz dieses Shifts: reverse-audit der
+> EXPECTED_KEYS table zeigt 11+ silenced-but-unwired fields mit clear
+> business value. Diese werden in Batches als entities gewired.
+
+### Added
+
+- **Phase 8 PR #1 — Skoda 5-field "alles parsen" batch** —
+  Erste batch der neuen strategy. 5 Skoda mysmob fields die seit
+  v1.x silenced waren ohne parser-hook:
+  - **`binary_sensor.battery_protection_limit_on`** (Skoda) —
+    `readiness.batteryProtectionLimitOn`. Companion zu VW EU/Audi
+    `daily_power_budget_available` (Phase 7 PR #2). Beide signalen
+    den modem rationiert wake-ups um 12V zu schonen.
+  - **`sensor.car_type`** (Skoda) — `driving-range.carType` (enum
+    diesel / gasoline / electric / hybrid). Authoritative backend
+    classification der primary engine, distinct vom derived
+    `is_electric`/`is_hybrid`.
+  - **`sensor.primary_engine_type`** (Skoda — cross-brand reuse) —
+    `driving-range.primaryEngineRange.engineType`. **Zero new entity**:
+    maps in das existing field aus Phase 7 PR #3 (CUPRA/SEAT) —
+    expanded brand coverage über reuse pattern. Skoda joins CUPRA/SEAT
+    auf dem gleichen sensor.
+  - **`sensor.primary_engine_fuel_level_pct`** (Skoda) —
+    `driving-range.primaryEngineRange.currentFuelLevelInPercent`.
+    Cross-brand sibling zu `secondary_engine_fuel_level_pct`.
+    Primary fuel tank % für combustion-vehicles. Distinct vom
+    existing `fuel_level` (measurements-path).
+  - **`sensor.maintenance_report_captured_at`** (Skoda) —
+    `maintenance.maintenanceReport.capturedAt` ISO 8601 timestamp.
+    `device_class=TIMESTAMP`. Useful für "ist mein service-due data
+    stale?" Fragen.
+  All Skoda-only; phantom-protected via `_DATA_PRESENT_REQUIRED`.
+  Defensiv: isinstance guards für bool / string / int / float
+  variants. 20+ Tests inkl. cross-brand-reuse regression-shield.
+  *"Why have a key on the keyring if you never use it?"
+  — Lisa Simpson.*
+
+## [Unreleased-Below-2.2.1]
+
+> (Empty)
 
 ### Added
 

@@ -295,6 +295,15 @@
       "climate_running_requests_count": {
         "name": "Väntande klimatförfrågningar"
       },
+      "maintenance_report_captured_at": {
+        "name": "Serviceapport uppdaterad"
+      },
+      "primary_engine_fuel_level_pct": {
+        "name": "Bränslenivå (primär)"
+      },
+      "car_type": {
+        "name": "Fordonstyp"
+      },
       "climate_timer_enabled_count": {
         "name": "Aktiva klimattimer"
       },
@@ -437,6 +446,9 @@
       },
       "vehicle_at_saved_location": {
         "name": "Vid sparad plats"
+      },
+      "battery_protection_limit_on": {
+        "name": "12V-batteriskydd"
       },
       "tire_pressure_warning": {
         "name": "Däcktryck Varning"
