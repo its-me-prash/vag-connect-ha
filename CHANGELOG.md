@@ -112,6 +112,31 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ### Added
 
+- **Phase 8 PR #3 — Porsche electric/combustion range split** —
+  Pure cross-brand parity expansion — Porsche joins die brand-coverage
+  von `electric_range_km` + `combustion_range_km` die Skoda, VW EU,
+  Audi, CUPRA, SEAT alle seit v1.10.0+ haben. **Zero new entities**,
+  zero new translations.
+  - **Before:** Porsche populated nur aggregate `range_km` via
+    or-fallback (`E_RANGE.distance OR FUEL_LEVEL.distanceToEmpty`)
+  - **After:** explicit `electric_range_km` (Taycan, Macan EV, 911
+    Cayenne EV) + `combustion_range_km` (Cayenne ICE) + beides für
+    PHEV (Cayenne E-Hybrid, Panamera E-Hybrid). Aggregate `range_km`
+    keeps current or-fallback für back-compat — Porsche users sehen
+    KEIN regression auf dem existing sensor.
+  Defensive: `isinstance(int, float)` guards, float→int truncation,
+  empty-measurements safe. 12 Tests inkl. brand-coverage matrix
+  regression-shield (mindestens 4 brand-parsers referenzieren
+  electric_range_km nach diesem PR).
+  *"You see, I have made a small modification to your existing
+  range sensor. It is now THREE sensors. Better." — Sheldon Cooper.*
+
+  **Phase 8 PR #2 (Alarm/Siren cross-brand) DEFERRED:** Skoda mysmob,
+  CUPRA/SEAT OLA, Porsche PPA, VW NA Kombi parsers haben ZERO existing
+  alarm/theft references. Path-Speculation ohne tester scout-dump
+  von einem User mit armed-alarm wäre Guessing — gemerkt für post-
+  tester onboarding queue.
+
 - **Phase 8 PR #2 — VW EU/Audi engine-metadata cross-brand expansion** —
   **Pure cross-brand expansion PR** — zero neue entities, zero neue
   translations, zero neue phantom-gates. Wires VW EU/Audi parser-hooks
