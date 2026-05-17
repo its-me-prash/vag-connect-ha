@@ -1566,6 +1566,26 @@ class VWEUClient(CariadBaseClient):
                 1 for t in timers if t.get("enabled") is True
             )
 
+        # v2.2.2 cross-brand expansion (#248 arvcer scout — climatisation
+        # Timers reported as silenced-but-unwired). Mirror of departure
+        # timers shape: `climatisationTimers.climatisationTimersStatus.
+        # value.timers[*]`. Populates `d.climate_timer_enabled_count`
+        # which Skoda already has from Phase 7 PR #4. VW EU/Audi parity.
+        # Defensive: shape unverified per scout reporting `{2 keys}`
+        # — assumption is mirror of departureTimers (timers + carCaptured
+        # Timestamp). If the actual leaves differ on production, the
+        # list-check guard keeps the field None (no false-positive
+        # zero count) — phantom-gate stays honest.
+        clim_timers: list[dict[str, Any]] = v(
+            raw, "climatisationTimers", "climatisationTimersStatus",
+            "value", "timers",
+        ) or []
+        if clim_timers:
+            d.climate_timer_enabled_count = sum(
+                1 for t in clim_timers
+                if isinstance(t, dict) and t.get("enabled") is True
+            )
+
         # ── Parking position ──────────────────────────────────────────────────
         # v1.27.1 hotfix: Cariad-BFF ``/vehicle/v1/vehicles/{vin}/parkingposition``
         # returns ``{"data": {"lat": ..., "lon": ..., "carCapturedTimestamp": ...}}``.
