@@ -92,6 +92,35 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ### Added
 
+- **Phase 7 PR #5 — VW EU Scout #245 silencing (Pre-Release Patch)** —
+  **MUST land vor v2.2.0 final.** Issue #245 reportet 18 neue Felder
+  auf VW EU `selectivestatus` — aber es ist **kein 18-random-fields-
+  pattern**, sondern ein **systemic Cariad-BFF rollout**: jeder
+  `<block>.{xxxStatus}` bekommt jetzt einen `.error` container
+  (6 keys — `message` / `errorTimeStamp` / `info` / `code` / `group`
+  / `retry`) wenn das sub-status fails. Same Bad-Gateway-error-wrapper
+  convention wie `charging.chargeMode.error` (#96 + v1.12.0) plus
+  `automation.*.error` (v1.12.1 #105) — nur jetzt auf **17 statt 3
+  sub-blocks** ausgerollt.
+  
+  Without dieser silencing layer würde jeder production-user dessen
+  backend das error-container feature rolled-out hat **18 scout
+  warnings per coordinator-update** sehen → log-spam → frustrated
+  users. Pre-release patch silenced alle 17 `.error` containers
+  inkl. `.error.*` wildcards für die 6 standard-children, PLUS
+  `measurements.tirePressureStatus` (1-key container + value
+  wrapper + wildcards für future tire-pressure leaves).
+  
+  No new entities — error-containers sind diagnostic backend state
+  bereits covered by der existing `connection_state` pipeline
+  (interprets stale timestamps correctly). 116 Tests (17 error
+  paths × parametrised + 17 paths × 6 child keys = 102 + 3
+  tirePressureStatus + 6 legacy-regression + 2 wildcard-not-
+  over-silencing + 4 brand-isolation). Closes #245.
+  *"There's an error. There's an error. There's an error... I think
+  the backend is having a bad day." — Sheldon Cooper, reading the
+  scout warnings.*
+
 - **Phase 7 PR #4 — Skoda Tier-B Trio aus Scout-Audit** —
   Drei Skoda mysmob Felder silenced seit v1.12.2 (#107 tritanium73
   2026-05-01) aber nie geparsed:
