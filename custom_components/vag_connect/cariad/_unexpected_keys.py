@@ -595,6 +595,59 @@ EXPECTED_KEYS: dict[str, dict[str, set[str]]] = {
             "automation.climatisationTimer.value.*",
             "automation.chargingProfiles.value",
             "automation.chargingProfiles.value.*",
+            # v2.2.0 Phase 7 PR #5 (#245 Scout 2026-05-11/12/13) —
+            # Systemic Cariad-BFF rollout: jeder ``<block>.{xxxStatus}``
+            # bekommt jetzt einen ``.error`` container (6 keys —
+            # message/errorTimeStamp/info/code/group/retry) wenn das
+            # sub-status fails. Dieselbe Bad-Gateway-error-wrapper-
+            # convention wie ``charging.chargeMode.error`` (#96 +
+            # v1.12.0) plus ``automation.*.error`` (v1.12.1 #105) —
+            # nur jetzt auf 17 statt 3 sub-blocks ausgerollt. Defensive
+            # blanket-silencing inkl. ``.error.*`` wildcards für die
+            # 6-key standard children — keep silencer compact +
+            # future-proof.
+            "access.accessStatus.error",
+            "access.accessStatus.error.*",
+            "fuelStatus.rangeStatus.error",  # parent already silenced above
+            # fuelStatus.rangeStatus.error.* schon silenced (line ~585)
+            "measurements.rangeStatus.error",
+            "measurements.rangeStatus.error.*",
+            "measurements.odometerStatus.error",
+            "measurements.odometerStatus.error.*",
+            "measurements.temperatureBatteryStatus.error",
+            "measurements.temperatureBatteryStatus.error.*",
+            "measurements.fuelLevelStatus.error",
+            "measurements.fuelLevelStatus.error.*",
+            "measurements.temperatureOutsideStatus.error",
+            "measurements.temperatureOutsideStatus.error.*",
+            "vehicleLights.lightsStatus.error",
+            "vehicleLights.lightsStatus.error.*",
+            "charging.batteryStatus.error",
+            "charging.batteryStatus.error.*",
+            "charging.chargingStatus.error",
+            "charging.chargingStatus.error.*",
+            "charging.chargingSettings.error",
+            "charging.chargingSettings.error.*",
+            "charging.plugStatus.error",
+            "charging.plugStatus.error.*",
+            "climatisation.climatisationSettings.error",
+            "climatisation.climatisationSettings.error.*",
+            "climatisation.climatisationStatus.error",
+            "climatisation.climatisationStatus.error.*",
+            "climatisation.windowHeatingStatus.error",
+            "climatisation.windowHeatingStatus.error.*",
+            "vehicleHealthInspection.maintenanceStatus.error",
+            "vehicleHealthInspection.maintenanceStatus.error.*",
+            "departureProfiles.departureProfilesStatus.error",
+            "departureProfiles.departureProfilesStatus.error.*",
+            # v2.2.0 Phase 7 PR #5 (#245 Scout) — `measurements.
+            # tirePressureStatus` 1-key container shipped alongside
+            # the error rollout. Wildcard covers current + future
+            # children (likely `.value.tires[*]` per Cariad convention).
+            "measurements.tirePressureStatus",
+            "measurements.tirePressureStatus.*",
+            "measurements.tirePressureStatus.value",
+            "measurements.tirePressureStatus.value.*",
             # Top-level batteryChargingCare + climatisationTimers job
             # names — present in our selectivestatus query since v1.9.x
             # but never registered in EXPECTED_KEYS catalog.
