@@ -918,6 +918,33 @@ SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
         state_class=SensorStateClass.MEASUREMENT,
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
+    # v2.2.1 Phase 8 PR #1 — "alles parsen" strategy. 3 new Skoda
+    # sensors aus dem reverse-audit. All defensive + phantom-protected.
+    VagSensorDescription(
+        key="car_type",
+        translation_key="car_type",
+        data_key="car_type",
+        icon="mdi:car-info",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    VagSensorDescription(
+        key="primary_engine_fuel_level_pct",
+        translation_key="primary_engine_fuel_level_pct",
+        data_key="primary_engine_fuel_level_pct",
+        native_unit_of_measurement="%",
+        state_class=SensorStateClass.MEASUREMENT,
+        icon="mdi:fuel",
+        condition="combustion",
+        suggested_display_precision=0,
+    ),
+    VagSensorDescription(
+        key="maintenance_report_captured_at",
+        translation_key="maintenance_report_captured_at",
+        data_key="maintenance_report_captured_at",
+        device_class=SensorDeviceClass.TIMESTAMP,
+        icon="mdi:calendar-refresh",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
     # v2.2.0 Phase 2 PR #11/20 — derived integer days until expiry.
     # Closes the subscription-feature triangle (timestamp + active +
     # days). Negative when expired. Automation-friendly: threshold
@@ -1078,6 +1105,10 @@ _DATA_PRESENT_REQUIRED: frozenset[str] = frozenset({
     # fields stay None → no phantom entity.
     "climate_timer_enabled_count",
     "climate_running_requests_count",
+    # v2.2.1 Phase 8 PR #1 — Skoda-only "alles parsen" batch.
+    "car_type",
+    "primary_engine_fuel_level_pct",
+    "maintenance_report_captured_at",
     "next_charging_timer_id",
     "next_charging_timer_target_soc_reachable",
     "capabilities_count",

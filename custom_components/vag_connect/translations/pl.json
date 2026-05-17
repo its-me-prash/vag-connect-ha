@@ -295,6 +295,15 @@
       "climate_running_requests_count": {
         "name": "Oczekujące żądania klimatyzacji"
       },
+      "maintenance_report_captured_at": {
+        "name": "Raport serwisowy zaktualizowany"
+      },
+      "primary_engine_fuel_level_pct": {
+        "name": "Poziom paliwa (główny)"
+      },
+      "car_type": {
+        "name": "Typ pojazdu"
+      },
       "climate_timer_enabled_count": {
         "name": "Aktywne timery klimatyzacji"
       },
@@ -437,6 +446,9 @@
       },
       "vehicle_at_saved_location": {
         "name": "W zapisanej lokalizacji"
+      },
+      "battery_protection_limit_on": {
+        "name": "Ochrona akumulatora 12V"
       },
       "tire_pressure_warning": {
         "name": "Ostrzeżenie Ciśnienia Opon"

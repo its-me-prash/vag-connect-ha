@@ -286,6 +286,16 @@ _NEW_BINARY: tuple[VagBinarySensorDescription, ...] = (
         icon="mdi:home-map-marker",
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
+    # v2.2.1 Phase 8 PR #1 — Skoda 12V battery protection threshold.
+    # Companion to VW EU/Audi `daily_power_budget_available`
+    # (Phase 7 PR #2) — both signal modem rationing wake-ups.
+    VagBinarySensorDescription(
+        key="battery_protection_limit_on",
+        translation_key="battery_protection_limit_on",
+        data_key="battery_protection_limit_on",
+        icon="mdi:battery-alert",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
     # v2.0.0 (Big-Bang) — Porsche TPMS warning aggregate (any corner
     # raising ``warning: true`` in the TIRE_PRESSURE measurement).
     # Brand-restricted via _DATA_PRESENT_REQUIRED below — non-Porsche
@@ -388,6 +398,10 @@ _DATA_PRESENT_REQUIRED: frozenset[str] = frozenset({
     # Other brands' charging endpoints don't ship this leaf →
     # field stays None → no phantom entity.
     "vehicle_at_saved_location",
+    # v2.2.1 Phase 8 PR #1 — Skoda-only 12V protection threshold.
+    # Other brands' readiness blocks don't ship this leaf →
+    # field stays None → no phantom entity.
+    "battery_protection_limit_on",
     # v2.0.0 (Big-Bang) — Porsche-only TPMS warning (PPA TIRE_PRESSURE
     # measurement). Non-Porsche vehicles leave the field None → no phantom.
     "tire_pressure_warning",
