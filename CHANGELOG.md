@@ -92,6 +92,33 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ### Added
 
+- **Phase 7 PR #4 — Skoda Tier-B Trio aus Scout-Audit** —
+  Drei Skoda mysmob Felder silenced seit v1.12.2 (#107 tritanium73
+  2026-05-01) aber nie geparsed:
+  - **`sensor.climate_timer_enabled_count`** — Skoda parity zu PR #2
+    `departure_timer_enabled_count` (VW EU/Audi). Aggregate count
+    (0-3) of currently-enabled climate timers. Empty list → field
+    stays None (NOT 0) — phantom-gate honoring critical für non-
+    Skoda brands.
+  - **`sensor.climate_running_requests_count`** — count of in-flight
+    climatisation requests waiting on the modem to acknowledge. >0
+    means a command is still pending. Diagnostic für die "start_
+    climatisation appears to do nothing" failure mode. Distinct
+    semantics von timer count: empty list = 0 (meaningful "no
+    pending"), missing = None (not Skoda).
+  - **`binary_sensor.vehicle_at_saved_location`** — whether the car's
+    GPS matches a user-saved home/work location (Skoda navigation
+    POIs). Enables "auto-charge only at home" automations ohne
+    HA zone helper.
+  All defensive: `isinstance` guards reject non-bool / non-list /
+  malformed entries; "truthy" string variants not counted (only
+  literal `True`); non-dict timer entries silently skipped. Skoda-
+  only; other brands phantom-gated. 18 Tests inkl. parametrised
+  field-existence + 3 separate parser-mirror groups + 4 entity-
+  registration + 17 translation coverage.
+  *"Knock knock knock Penny. Knock knock knock Penny. Knock knock
+  knock running-requests-count." — Sheldon Cooper.*
+
 - **Phase 7 PR #3 — SEAT/CUPRA `engines.primary` Block** —
   Companion zu PR #6/#18 `secondary_engine_*` fields. Wildcard
   `engines.primary.*` war silenced seit v1.16.1 (#122 r1150gs SEAT

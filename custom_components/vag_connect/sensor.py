@@ -898,6 +898,26 @@ SENSOR_DESCRIPTIONS: tuple[VagSensorDescription, ...] = (
         suggested_display_precision=0,
         condition="combustion",
     ),
+    # v2.2.0 Phase 7 PR #4 — Skoda tier-B from scout-audit.
+    # Climate-timer count (parity to VW EU/Audi PR #2 departure
+    # timer count) + running-requests count (diagnostic for
+    # "start_climatisation does nothing" failure mode).
+    VagSensorDescription(
+        key="climate_timer_enabled_count",
+        translation_key="climate_timer_enabled_count",
+        data_key="climate_timer_enabled_count",
+        icon="mdi:counter",
+        state_class=SensorStateClass.MEASUREMENT,
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    VagSensorDescription(
+        key="climate_running_requests_count",
+        translation_key="climate_running_requests_count",
+        data_key="climate_running_requests_count",
+        icon="mdi:progress-clock",
+        state_class=SensorStateClass.MEASUREMENT,
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
     # v2.2.0 Phase 2 PR #11/20 — derived integer days until expiry.
     # Closes the subscription-feature triangle (timestamp + active +
     # days). Negative when expired. Automation-friendly: threshold
@@ -1053,6 +1073,11 @@ _DATA_PRESENT_REQUIRED: frozenset[str] = frozenset({
     # Other brands don't ship this block → fields stay None → no phantom.
     "primary_engine_type",
     "fuel_tank_capacity_liters",
+    # v2.2.0 Phase 7 PR #4 — Skoda-only AC tier-B aggregates.
+    # Other brands' AC blocks don't ship timers/runningRequests →
+    # fields stay None → no phantom entity.
+    "climate_timer_enabled_count",
+    "climate_running_requests_count",
     "next_charging_timer_id",
     "next_charging_timer_target_soc_reachable",
     "capabilities_count",

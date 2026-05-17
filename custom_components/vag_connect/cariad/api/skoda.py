@@ -501,6 +501,14 @@ class SkodaClient(CariadBaseClient):
         # and we receive it 5 minutes later via polling, our derived ETA
         # is 5 minutes off. The absolute timestamp doesn't drift.
         if isinstance(charging, dict):
+            # v2.2.0 Phase 7 PR #4 — isVehicleInSavedLocation (top-level
+            # boolean on the charging endpoint). Whether the car's
+            # current GPS matches a user-saved home/work location.
+            # Defensive: only flip when backend returns a real bool —
+            # string "true" / int 1 silently rejected.
+            saved_loc = v(charging, "isVehicleInSavedLocation")
+            if isinstance(saved_loc, bool):
+                d.vehicle_at_saved_location = saved_loc
             c = charging.get("status", {})
             d.battery_soc = v(c, "battery", "stateOfChargeInPercent")
             d.charging_state = v(c, "state")
@@ -603,6 +611,24 @@ class SkodaClient(CariadBaseClient):
             swp = v(ac, "steeringWheelPosition")
             if isinstance(swp, str) and swp:
                 d.steering_wheel_position = swp
+            # v2.2.0 Phase 7 PR #4 — Skoda tier-B from scout-audit.
+            # Climate timers list — count of currently-enabled entries.
+            # Parity to VW EU/Audi `departure_timer_enabled_count`
+            # (PR #2). Only set when timers block is actually present
+            # (not just empty) so phantom-gate fires on non-Skoda.
+            timers_list = v(ac, "timers")
+            if isinstance(timers_list, list) and timers_list:
+                d.climate_timer_enabled_count = sum(
+                    1 for t in timers_list
+                    if isinstance(t, dict) and t.get("enabled") is True
+                )
+            # v2.2.0 Phase 7 PR #4 — running climate requests count.
+            # >0 means a command is still pending modem ack. Diagnostic
+            # for "start_climatisation does nothing" mode. Only set
+            # when list is present so other brands stay None.
+            running = v(ac, "runningRequests")
+            if isinstance(running, list):
+                d.climate_running_requests_count = len(running)
 
             # v1.17.7 (#129 rocksandclouds + #130 Chr1sDub + #133
             # christianmhz — three converging Skoda Scout-Reports

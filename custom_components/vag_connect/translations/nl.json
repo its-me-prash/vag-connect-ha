@@ -292,6 +292,12 @@
       "fuel_tank_capacity_liters": {
         "name": "Tankinhoud"
       },
+      "climate_running_requests_count": {
+        "name": "Klimaatverzoeken in behandeling"
+      },
+      "climate_timer_enabled_count": {
+        "name": "Klimaattimers ingeschakeld"
+      },
       "primary_engine_type": {
         "name": "Primary Engine Type"
       },
@@ -428,6 +434,9 @@
       },
       "daily_power_budget_available": {
         "name": "Dagelijks energiebudget beschikbaar"
+      },
+      "vehicle_at_saved_location": {
+        "name": "Op opgeslagen locatie"
       },
       "tire_pressure_warning": {
         "name": "Bandenspanning-Waarschuwing"

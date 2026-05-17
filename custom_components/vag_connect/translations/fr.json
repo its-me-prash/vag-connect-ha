@@ -292,6 +292,12 @@
       "fuel_tank_capacity_liters": {
         "name": "Capacité réservoir"
       },
+      "climate_running_requests_count": {
+        "name": "Requêtes climat en attente"
+      },
+      "climate_timer_enabled_count": {
+        "name": "Minuteries climat actives"
+      },
       "primary_engine_type": {
         "name": "Type moteur principal"
       },
@@ -428,6 +434,9 @@
       },
       "daily_power_budget_available": {
         "name": "Budget énergétique journalier disponible"
+      },
+      "vehicle_at_saved_location": {
+        "name": "Au lieu enregistré"
       },
       "tire_pressure_warning": {
         "name": "Alerte Pression Pneus"

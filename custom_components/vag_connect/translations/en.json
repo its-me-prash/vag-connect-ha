@@ -292,6 +292,12 @@
       "fuel_tank_capacity_liters": {
         "name": "Fuel Tank Capacity"
       },
+      "climate_running_requests_count": {
+        "name": "Climate Requests Pending"
+      },
+      "climate_timer_enabled_count": {
+        "name": "Climate Timers Enabled"
+      },
       "primary_engine_type": {
         "name": "Primary Engine Type"
       },
@@ -428,6 +434,9 @@
       },
       "daily_power_budget_available": {
         "name": "Daily Power Budget Available"
+      },
+      "vehicle_at_saved_location": {
+        "name": "At Saved Location"
       },
       "tire_pressure_warning": {
         "name": "Tire Pressure Warning"

@@ -292,6 +292,12 @@
       "fuel_tank_capacity_liters": {
         "name": "Pojemność baku"
       },
+      "climate_running_requests_count": {
+        "name": "Oczekujące żądania klimatyzacji"
+      },
+      "climate_timer_enabled_count": {
+        "name": "Aktywne timery klimatyzacji"
+      },
       "primary_engine_type": {
         "name": "Typ silnika głównego"
       },
@@ -428,6 +434,9 @@
       },
       "daily_power_budget_available": {
         "name": "Dzienny budżet energii dostępny"
+      },
+      "vehicle_at_saved_location": {
+        "name": "W zapisanej lokalizacji"
       },
       "tire_pressure_warning": {
         "name": "Ostrzeżenie Ciśnienia Opon"
