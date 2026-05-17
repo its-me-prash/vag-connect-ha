@@ -275,6 +275,17 @@ _NEW_BINARY: tuple[VagBinarySensorDescription, ...] = (
         icon="mdi:battery-clock",
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
+    # v2.2.0 Phase 7 PR #4 — Skoda mysmob isVehicleInSavedLocation.
+    # Whether the car's GPS matches a user-saved home/work location.
+    # Enables "auto-charge only at home" automations without a zone
+    # helper. Skoda-only today; other brands stay None.
+    VagBinarySensorDescription(
+        key="vehicle_at_saved_location",
+        translation_key="vehicle_at_saved_location",
+        data_key="vehicle_at_saved_location",
+        icon="mdi:home-map-marker",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
     # v2.0.0 (Big-Bang) — Porsche TPMS warning aggregate (any corner
     # raising ``warning: true`` in the TIRE_PRESSURE measurement).
     # Brand-restricted via _DATA_PRESENT_REQUIRED below — non-Porsche
@@ -373,6 +384,10 @@ _DATA_PRESENT_REQUIRED: frozenset[str] = frozenset({
     # budget. Other brands' readiness blocks don't ship this leaf →
     # field stays None → no phantom entity.
     "daily_power_budget_available",
+    # v2.2.0 Phase 7 PR #4 — Skoda-only isVehicleInSavedLocation.
+    # Other brands' charging endpoints don't ship this leaf →
+    # field stays None → no phantom entity.
+    "vehicle_at_saved_location",
     # v2.0.0 (Big-Bang) — Porsche-only TPMS warning (PPA TIRE_PRESSURE
     # measurement). Non-Porsche vehicles leave the field None → no phantom.
     "tire_pressure_warning",

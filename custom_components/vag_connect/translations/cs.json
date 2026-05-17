@@ -292,6 +292,12 @@
       "fuel_tank_capacity_liters": {
         "name": "Objem nádrže"
       },
+      "climate_running_requests_count": {
+        "name": "Čekající klima-požadavky"
+      },
+      "climate_timer_enabled_count": {
+        "name": "Aktivované klima-časovače"
+      },
       "primary_engine_type": {
         "name": "Typ primárního motoru"
       },
@@ -428,6 +434,9 @@
       },
       "daily_power_budget_available": {
         "name": "Denní rozpočet energie dostupný"
+      },
+      "vehicle_at_saved_location": {
+        "name": "Na uloženém místě"
       },
       "tire_pressure_warning": {
         "name": "Varování Tlaku Pneumatik"

@@ -292,6 +292,12 @@
       "fuel_tank_capacity_liters": {
         "name": "Tankvolym"
       },
+      "climate_running_requests_count": {
+        "name": "Väntande klimatförfrågningar"
+      },
+      "climate_timer_enabled_count": {
+        "name": "Aktiva klimattimer"
+      },
       "primary_engine_type": {
         "name": "Primary Engine Type"
       },
@@ -428,6 +434,9 @@
       },
       "daily_power_budget_available": {
         "name": "Daglig energibudget tillgänglig"
+      },
+      "vehicle_at_saved_location": {
+        "name": "Vid sparad plats"
       },
       "tire_pressure_warning": {
         "name": "Däcktryck Varning"

@@ -611,6 +611,29 @@ class VehicleData:
     # the vehicle spec PDF.
     fuel_tank_capacity_liters: int | None = None
 
+    # v2.2.0 Phase 7 PR #4 — Skoda tier-B trio from scout-audit.
+    # Three Skoda mysmob fields that have been silenced since
+    # v1.12.2 (#107 tritanium73 2026-05-01) but never parsed.
+
+    # Skoda mysmob `air-conditioning.timers` (list). Count of
+    # currently-enabled climate timers (0-3) — Skoda parity to the
+    # VW EU/Audi `departure_timer_enabled_count` from PR #2. Saves
+    # users templating-effort. Field stays None when timers block
+    # is absent (so phantom gate fires on non-Skoda brands).
+    climate_timer_enabled_count: int | None = None
+
+    # Skoda mysmob `air-conditioning.runningRequests` (list). Count
+    # of in-flight climatisation requests waiting on the modem to
+    # acknowledge. >0 means a command is still pending — useful
+    # diagnostic when start_climatisation appears to do nothing.
+    climate_running_requests_count: int | None = None
+
+    # Skoda mysmob `charging.isVehicleInSavedLocation` (bool). Whether
+    # the car's current GPS matches one of the user's saved "home"
+    # / "work" locations. Enables "auto-charge only at home"
+    # automations without needing a zone helper.
+    vehicle_at_saved_location: bool | None = None
+
     # v2.2.0 Phase 2 PR #8/20 — Connect-subscription expiry timestamp.
     # SEAT/CUPRA OLA ``mycar.services`` block exposes a per-service
     # entitlement map. Each entry typically carries either an
