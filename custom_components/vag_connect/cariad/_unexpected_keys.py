@@ -448,6 +448,13 @@ EXPECTED_KEYS: dict[str, dict[str, set[str]]] = {
             "charging.chargingStatus", "charging.chargingStatus.value",
             "charging.chargingStatus.value.chargingState",
             "charging.chargingStatus.value.chargePower_kW",
+            # v2.2.2 (Scout #260, j4x5mgq94b-commits, Audi 2026-05-17) —
+            # ``chargeRate_kmph`` was parsed since v1.10.0
+            # (``vw_eu.py`` → ``d.charging_rate_kmh`` → ``sensor.charging_speed``)
+            # but never registered in EXPECTED_KEYS, so the Scout fired
+            # on it as "unexpected". Classic silencer-lagging-behind-parser
+            # gap. Audi inherits via ``EXPECTED_KEYS["audi"] = ...``.
+            "charging.chargingStatus.value.chargeRate_kmph",
             "charging.chargingStatus.value.chargeMode",
             "charging.chargingStatus.value.chargeType",
             "charging.chargingStatus.value.remainingChargingTimeToComplete_min",

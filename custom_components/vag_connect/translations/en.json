@@ -221,7 +221,7 @@
         "name": "Active Charging Profile"
       },
       "active_charging_profile_target_soc_pct": {
-        "name": "Active Profile — Target SoC"
+        "name": "Active Profile — Target Charge"
       },
       "next_charging_time": {
         "name": "Next Charging Time"
@@ -230,7 +230,7 @@
         "name": "Charging Profiles Count"
       },
       "battery_care_target_soc_pct": {
-        "name": "Battery Care — Target SoC"
+        "name": "Battery Care — Target Charge"
       },
       "driving_score": {
         "name": "Driving Score"
@@ -314,13 +314,13 @@
         "name": "Steering Wheel Position"
       },
       "primary_engine_soc_pct": {
-        "name": "Primary Engine SoC"
+        "name": "12V Battery Charge"
       },
       "next_charging_timer_id": {
-        "name": "Next Charging Timer ID"
+        "name": "Next Timer (ID)"
       },
       "next_charging_timer_target_soc_reachable": {
-        "name": "Next Charging Timer Target SoC Reachable"
+        "name": "Next Timer — Target Charge Reachable"
       },
       "capabilities_count": {
         "name": "Capabilities Count"

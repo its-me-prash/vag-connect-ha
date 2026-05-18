@@ -221,7 +221,7 @@
         "name": "Aktivní Profil Nabíjení"
       },
       "active_charging_profile_target_soc_pct": {
-        "name": "Aktivní Profil — Cílový SoC"
+        "name": "Aktivní Profil — Cílové Nabití"
       },
       "next_charging_time": {
         "name": "Další Nabíjení"
@@ -230,7 +230,7 @@
         "name": "Počet Profilů"
       },
       "battery_care_target_soc_pct": {
-        "name": "Péče o Baterii — Cílový SoC"
+        "name": "Péče o Baterii — Cílové Nabití"
       },
       "driving_score": {
         "name": "Skóre Jízdy"
@@ -314,13 +314,13 @@
         "name": "Pozice volantu"
       },
       "primary_engine_soc_pct": {
-        "name": "12V baterie SoC"
+        "name": "Nabití baterie 12V"
       },
       "next_charging_timer_id": {
-        "name": "Next Charging Timer ID"
+        "name": "Další časovač (ID)"
       },
       "next_charging_timer_target_soc_reachable": {
-        "name": "Next Charging Timer Target SoC Reachable"
+        "name": "Další časovač — Cílové nabití dosažitelné"
       },
       "capabilities_count": {
         "name": "Capabilities Count"
@@ -512,7 +512,7 @@
         "name": "Teplota klimatizace"
       },
       "min_soc": {
-        "name": "Minimální SoC (PHEV)"
+        "name": "Minimální nabití (PHEV)"
       },
       "max_charge_current": {
         "name": "Max. nabíjecí proud"

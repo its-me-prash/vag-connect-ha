@@ -221,7 +221,7 @@
         "name": "Profil de Charge Actif"
       },
       "active_charging_profile_target_soc_pct": {
-        "name": "Profil Actif — SoC Cible"
+        "name": "Profil Actif — Charge Cible"
       },
       "next_charging_time": {
         "name": "Prochaine Charge"
@@ -230,7 +230,7 @@
         "name": "Nombre de Profils"
       },
       "battery_care_target_soc_pct": {
-        "name": "Soin Batterie — SoC Cible"
+        "name": "Soin Batterie — Charge Cible"
       },
       "driving_score": {
         "name": "Score de Conduite"
@@ -314,13 +314,13 @@
         "name": "Position du volant"
       },
       "primary_engine_soc_pct": {
-        "name": "SoC moteur principal"
+        "name": "Charge batterie 12V"
       },
       "next_charging_timer_id": {
-        "name": "Next Charging Timer ID"
+        "name": "Prochain timer (ID)"
       },
       "next_charging_timer_target_soc_reachable": {
-        "name": "Next Charging Timer Target SoC Reachable"
+        "name": "Prochain timer — Charge cible atteignable"
       },
       "capabilities_count": {
         "name": "Capabilities Count"
@@ -512,7 +512,7 @@
         "name": "Température de climatisation"
       },
       "min_soc": {
-        "name": "SoC minimum (PHEV)"
+        "name": "Charge minimum (PHEV)"
       },
       "max_charge_current": {
         "name": "Courant de charge max."
