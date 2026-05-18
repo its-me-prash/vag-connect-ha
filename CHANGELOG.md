@@ -117,6 +117,52 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 
 ## [Unreleased] — v2.2.2
 
+### Fixed
+
+- **Scout #260 silencer-fix + cross-language entity-name laien-cleanup**
+  (Audi, `charging.chargingStatus.value.chargeRate_kmph`, reporter
+  `j4x5mgq94b-commits` 2026-05-17). Field WAR seit v1.10.0 geparsed
+  (`vw_eu.py:916` → `d.charging_rate_kmh` → `sensor.charging_speed`
+  / DE `sensor.ladegeschwindigkeit`) — aber der **dotted path** war nie
+  in `EXPECTED_KEYS` für CARIAD-BFF `selectivestatus` registriert,
+  weshalb der Scout fälschlich gefired hat. Klassischer "silencer hat
+  parser nicht eingeholt" gap (same class as #248). **One-line fix**
+  in `_unexpected_keys.py:456` — Audi erbt automatisch via
+  `EXPECTED_KEYS["audi"] = EXPECTED_KEYS["volkswagen"]`.
+
+  **Bei der Gelegenheit: cross-language entity-name laien-cleanup**
+  (community-feedback "alle umgangssprachen benutzen damit nicht-tech
+  menschen auch verstehen"). Audit aller 9 i18n-files (strings.json +
+  8 translations) ergab:
+
+  | Was | Vorher | Nachher |
+  |---|---|---|
+  | DE `charging_rate_kmh` | `Ladegeschwindigkeit (km/h)` | `Ladegeschwindigkeit` |
+  | DE `battery_temp_max` | `HV-Batterie Temperatur (Max)` | `Akku-Temperatur (max)` |
+  | All-langs `active_charging_profile_target_soc_pct` | `... Target SoC` / `Ziel-SoC` / `SoC Cible` etc. | `... Target Charge` / `Ladeziel` / `Charge Cible` etc. |
+  | All-langs `battery_care_target_soc_pct` | same SoC pattern | same laien-friendly Charge/Ladeziel pattern |
+  | All-langs `primary_engine_soc_pct` | `Primary Engine SoC` / `12V-Batterie SoC` / `SoC moteur principal` etc. | `12V Battery Charge` / `12V-Batterie Ladestand` / `Charge batterie 12V` etc. |
+  | All-langs `min_soc` | `SoC minimum (PHEV)` in fr/es/nl/sv/cs | `Charge minimum (PHEV)` / `Minimální nabití` / `Minsta laddning` etc. |
+  | 6 langs `next_charging_timer_id` | **Raw English** "Next Charging Timer ID" untranslated | translated to native form (`Nächster Lade-Timer (ID)`, `Prochain timer (ID)`, `Próximo temporizador (ID)`, `Volgende timer (ID)`, `Następny timer (ID)`, `Další časovač (ID)`, `Nästa timer (ID)`) |
+  | 6 langs `next_charging_timer_target_soc_reachable` | **Raw English** "Next Charging Timer Target SoC Reachable" untranslated | translated to native form in all 8 langs |
+
+  **Why DE `(km/h)` was wrong**: entity is `SensorDeviceClass.SPEED`,
+  HA auto-converts km/h ↔ mph based on user's unit-system. Hardcoded
+  suffix lied to mph-locale users (would show "Ladegeschwindigkeit
+  (km/h): 31 mph" — name says km/h, value is mph).
+
+  **Why `SoC` matters**: State-of-Charge is EV-engineering jargon. A
+  non-technical user looking at a 12V starter battery sensor labeled
+  "12V-Batterie SoC" doesn't know what SoC means — but everyone
+  understands "12V-Batterie Ladestand" (charge level).
+
+  **Regression-shield** (`test_v222_260_silencer_translations.py`,
+  28 tests): asserts silencer-path present for VW + Audi-inheritance
+  honored; pinned no-SoC / no-HV-Batterie / no-`(km/h)`-DE-suffix /
+  no-untranslated-English-in-non-EN; cross-language entity-key
+  parity (en.json is the canonical superset); strings.json + en.json
+  agreement on all touched keys. **Closes #260**.
+
 ### Added
 
 - **Bubble Card ready-made templates für VAG Connect (`docs/lovelace/bubble-card/`)** —

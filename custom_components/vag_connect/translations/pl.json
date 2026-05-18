@@ -221,7 +221,7 @@
         "name": "Aktywny Profil Ładowania"
       },
       "active_charging_profile_target_soc_pct": {
-        "name": "Aktywny Profil — Docelowy SoC"
+        "name": "Aktywny Profil — Docelowe Naładowanie"
       },
       "next_charging_time": {
         "name": "Następne Ładowanie"
@@ -230,7 +230,7 @@
         "name": "Liczba Profili"
       },
       "battery_care_target_soc_pct": {
-        "name": "Ochrona Baterii — Docelowy SoC"
+        "name": "Ochrona Baterii — Docelowe Naładowanie"
       },
       "driving_score": {
         "name": "Wynik Jazdy"
@@ -314,13 +314,13 @@
         "name": "Położenie kierownicy"
       },
       "primary_engine_soc_pct": {
-        "name": "SoC silnika głównego"
+        "name": "Naładowanie akumulatora 12V"
       },
       "next_charging_timer_id": {
-        "name": "Next Charging Timer ID"
+        "name": "Następny timer (ID)"
       },
       "next_charging_timer_target_soc_reachable": {
-        "name": "Next Charging Timer Target SoC Reachable"
+        "name": "Następny timer — Docelowe naładowanie osiągalne"
       },
       "capabilities_count": {
         "name": "Capabilities Count"

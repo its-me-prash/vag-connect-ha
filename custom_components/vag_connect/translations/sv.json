@@ -221,7 +221,7 @@
         "name": "Aktiv Laddningsprofil"
       },
       "active_charging_profile_target_soc_pct": {
-        "name": "Aktiv Profil — Mål-SoC"
+        "name": "Aktiv Profil — Mål-laddning"
       },
       "next_charging_time": {
         "name": "Nästa Laddning"
@@ -230,7 +230,7 @@
         "name": "Antal Profiler"
       },
       "battery_care_target_soc_pct": {
-        "name": "Batteri-Vård — Mål-SoC"
+        "name": "Batteri-Vård — Mål-laddning"
       },
       "driving_score": {
         "name": "Körpoäng"
@@ -314,13 +314,13 @@
         "name": "Ratt-position"
       },
       "primary_engine_soc_pct": {
-        "name": "Primary Engine SoC"
+        "name": "12V-batteri laddning"
       },
       "next_charging_timer_id": {
-        "name": "Next Charging Timer ID"
+        "name": "Nästa timer (ID)"
       },
       "next_charging_timer_target_soc_reachable": {
-        "name": "Next Charging Timer Target SoC Reachable"
+        "name": "Nästa timer — Mål-laddning nåbar"
       },
       "capabilities_count": {
         "name": "Capabilities Count"
@@ -512,7 +512,7 @@
         "name": "Klimatiseringstemperatur"
       },
       "min_soc": {
-        "name": "Minimum SoC (PHEV)"
+        "name": "Minsta laddning (PHEV)"
       },
       "max_charge_current": {
         "name": "Max laddström"

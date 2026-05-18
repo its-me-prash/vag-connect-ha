@@ -131,7 +131,7 @@
         "name": "Ladeleistung"
       },
       "charging_rate_kmh": {
-        "name": "Ladegeschwindigkeit (km/h)"
+        "name": "Ladegeschwindigkeit"
       },
       "charge_complete_eta": {
         "name": "Laden fertig um"
@@ -230,7 +230,7 @@
         "name": "Aktives Ladeprofil"
       },
       "active_charging_profile_target_soc_pct": {
-        "name": "Aktives Profil — Ziel-SoC"
+        "name": "Aktives Profil — Ladeziel"
       },
       "next_charging_time": {
         "name": "Nächste Ladezeit"
@@ -239,7 +239,7 @@
         "name": "Anzahl Ladeprofile"
       },
       "battery_care_target_soc_pct": {
-        "name": "Batterie-Schutz — Ziel-SoC"
+        "name": "Batterie-Schutz — Ladeziel"
       },
       "driving_score": {
         "name": "Fahrwertung"
@@ -284,7 +284,7 @@
         "name": "Abonnement Restlaufzeit"
       },
       "battery_temp_max": {
-        "name": "HV-Batterie Temperatur (Max)"
+        "name": "Akku-Temperatur (max)"
       },
       "departure_timer_enabled_count": {
         "name": "Abfahrtstimer aktiviert"
@@ -314,13 +314,13 @@
         "name": "Lenkradposition"
       },
       "primary_engine_soc_pct": {
-        "name": "12V-Batterie SoC"
+        "name": "12V-Batterie Ladestand"
       },
       "next_charging_timer_id": {
-        "name": "Nächster Lade-Timer ID"
+        "name": "Nächster Lade-Timer (ID)"
       },
       "next_charging_timer_target_soc_reachable": {
-        "name": "Nächster Lade-Timer Ziel-SoC erreichbar"
+        "name": "Nächster Lade-Timer — Ladeziel erreichbar"
       },
       "capabilities_count": {
         "name": "Fähigkeiten-Anzahl"

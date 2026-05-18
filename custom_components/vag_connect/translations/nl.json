@@ -221,7 +221,7 @@
         "name": "Actief Laadprofiel"
       },
       "active_charging_profile_target_soc_pct": {
-        "name": "Actief Profiel — Doel-SoC"
+        "name": "Actief Profiel — Doel-lading"
       },
       "next_charging_time": {
         "name": "Volgende Laadtijd"
@@ -230,7 +230,7 @@
         "name": "Aantal Laadprofielen"
       },
       "battery_care_target_soc_pct": {
-        "name": "Batterij-Zorg — Doel-SoC"
+        "name": "Batterij-Zorg — Doel-lading"
       },
       "driving_score": {
         "name": "Rijscore"
@@ -314,13 +314,13 @@
         "name": "Stuurpositie"
       },
       "primary_engine_soc_pct": {
-        "name": "Primary Engine SoC"
+        "name": "12V-accu lading"
       },
       "next_charging_timer_id": {
-        "name": "Next Charging Timer ID"
+        "name": "Volgende timer (ID)"
       },
       "next_charging_timer_target_soc_reachable": {
-        "name": "Next Charging Timer Target SoC Reachable"
+        "name": "Volgende timer — Doel-lading haalbaar"
       },
       "capabilities_count": {
         "name": "Capabilities Count"
@@ -512,7 +512,7 @@
         "name": "Klimaattemperatuur"
       },
       "min_soc": {
-        "name": "Minimum SoC (PHEV)"
+        "name": "Minimum lading (PHEV)"
       },
       "max_charge_current": {
         "name": "Max. laadstroom"
