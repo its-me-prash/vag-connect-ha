@@ -115,7 +115,21 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
 > phantom-protected). Tier-B (wildcards + alarm/siren) deferred
 > until tester scout-dumps liefern die unknown leaf-shapes.
 
-## [Unreleased] — v2.2.2
+## [Unreleased]
+
+_(nothing pending — v2.2.2 just shipped; new entries land here)_
+
+## [2.2.2] — 2026-05-18 — "Silencer Catch-up + Laien-friendly Names + Diesel Dashboards"
+
+> **PATCH-Release**: 5 follow-up PRs nach v2.2.1 stable.
+> 1 Scout-closure (#260), 1 cross-brand parser-expansion (#256, closes
+> #248), 3 docs-PRs (#257 dashboards.md + FAQ in 8 langs, #258 6
+> Bubble-Card-templates, #259 Audi S6 TDI diesel popup variant), plus
+> cross-language entity-name laien-cleanup (`SoC` → "Ladestand"/"Charge"
+> equivalent in 8 langs, DE `(km/h)` mph-bug fix, `HV-Batterie` → `Akku`,
+> 6 langs hatten raw English untranslated für 2 entities — gefixt).
+>
+> Keine Breaking Changes. HACS pre-release & stable channels.
 
 ### Fixed
 
