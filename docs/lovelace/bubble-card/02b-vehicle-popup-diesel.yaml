@@ -1,0 +1,247 @@
+# Bubble Card — VAG Connect vehicle pop-up panel (DIESEL variant)
+#
+# Tailored example: Audi S6 (3.0 V6 TDI). Diesel-specific elements:
+#   - fuel_level (litres %) instead of battery_soc
+#   - adblue_range_km surfaced as its own row (DEF/AdBlue tank)
+#   - Audi ICE remote engine start/stop (Cariad-BFF /vehicle/v1/engine)
+#   - service_km + oil_service_km (maintenance, more relevant on diesel)
+#   - NO charging block (no battery), NO secondary engine
+#
+# Works for any Audi/VW diesel that uses the Cariad-BFF backend
+# (S6 TDI, Q7 TDI, A6 TDI, Touareg, etc.). Skoda diesel users can
+# reuse with prefix swap.
+#
+# Replace `audi_s6` with your vehicle's entity_id prefix.
+
+type: 'custom:bubble-card'
+card_type: pop-up
+hash: '#vehicle_audi_s6'
+name: 'Audi S6 TDI'
+icon: mdi:car-sports             # diesel performance car icon
+button_type: state
+entity: sensor.audi_s6_car_type   # shows "diesel" since v2.2.1 derivation
+sub_button:
+  - name: Wake
+    icon: mdi:power
+    show_state: false
+    tap_action:
+      action: call-service
+      service: button.press
+      target:
+        entity_id: button.audi_s6_wake
+  - name: Refresh
+    icon: mdi:refresh
+    show_state: false
+    tap_action:
+      action: call-service
+      service: button.press
+      target:
+        entity_id: button.audi_s6_refresh
+  - name: Close
+    icon: mdi:close
+    tap_action:
+      action: close_popup
+
+cards:
+
+  # ── Row 1: fuel level + total range ──────────────────────────────
+  - type: horizontal-stack
+    cards:
+      - type: 'custom:bubble-card'
+        card_type: button
+        button_type: state
+        entity: sensor.audi_s6_fuel_level
+        name: Tank
+        icon: mdi:fuel
+        show_state: true
+        styles: |
+          .bubble-icon {
+            color: rgb(var(--rgb-{{ "green" if states("sensor.audi_s6_fuel_level")|int(0) > 50 else ("amber" if states("sensor.audi_s6_fuel_level")|int(0) > 20 else "red") }})) !important;
+          }
+      - type: 'custom:bubble-card'
+        card_type: button
+        button_type: state
+        entity: sensor.audi_s6_combustion_range_km
+        name: Range
+        icon: mdi:map-marker-distance
+        show_state: true
+
+  # ── Row 2: AdBlue (DEF) + odometer ───────────────────────────────
+  - type: horizontal-stack
+    cards:
+      - type: 'custom:bubble-card'
+        card_type: button
+        button_type: state
+        entity: sensor.audi_s6_adblue_range_km
+        name: AdBlue
+        icon: mdi:water-pump          # DEF tank
+        show_state: true
+        styles: |
+          .bubble-icon {
+            color: rgb(var(--rgb-{{ "green" if states("sensor.audi_s6_adblue_range_km")|int(0) > 2000 else ("amber" if states("sensor.audi_s6_adblue_range_km")|int(0) > 500 else "red") }})) !important;
+          }
+      - type: 'custom:bubble-card'
+        card_type: button
+        button_type: state
+        entity: sensor.audi_s6_odometer_km
+        name: Odometer
+        icon: mdi:counter
+        show_state: true
+
+  # ── Row 3: Audi ICE Remote Engine Start (S-PIN required) ─────────
+  # Two-step Audi flow: button.audi_s6_engine_start fires with S-PIN
+  # from the integration config. Works only on supported diesels
+  # (S6/A6/Q7 with Audi ICE remote-start subscription).
+  - type: 'custom:bubble-card'
+    card_type: button
+    button_type: state
+    entity: switch.audi_s6_engine          # toggles start/stop
+    name: Remote engine
+    icon: mdi:engine
+    show_state: true
+    styles: |
+      .bubble-icon {
+        color: rgb(var(--rgb-{{ "green" if is_state("switch.audi_s6_engine", "on") else "grey" }})) !important;
+      }
+
+  # ── Row 4: climate (diesel cars also support remote climate) ─────
+  - type: horizontal-stack
+    cards:
+      - type: 'custom:bubble-card'
+        card_type: button
+        button_type: switch
+        entity: switch.audi_s6_climatisation
+        name: Climate
+        icon: mdi:air-conditioner
+      - type: 'custom:bubble-card'
+        card_type: button
+        button_type: state
+        entity: climate.audi_s6
+        name: Target temp
+        icon: mdi:thermostat
+        show_state: true
+        tap_action:
+          action: more-info
+
+  # ── Row 5: outside temp + (optional) auxiliary heater ────────────
+  - type: horizontal-stack
+    cards:
+      - type: 'custom:bubble-card'
+        card_type: button
+        button_type: state
+        entity: sensor.audi_s6_outside_temp
+        name: Outside
+        icon: mdi:thermometer
+        show_state: true
+      # Audi S6 TDI optional aux heater (Webasto / Standheizung).
+      # Uncomment if your car ships it; otherwise the entity stays
+      # None and the gate would hide it anyway.
+      # - type: 'custom:bubble-card'
+      #   card_type: button
+      #   button_type: switch
+      #   entity: switch.audi_s6_auxiliary_heating
+      #   name: Standheizung
+      #   icon: mdi:radiator
+
+  # ── Row 6: lock + parking ────────────────────────────────────────
+  - type: horizontal-stack
+    cards:
+      - type: 'custom:bubble-card'
+        card_type: button
+        button_type: state
+        entity: lock.audi_s6_central_locking
+        name: Lock
+        icon: mdi:car-key
+        show_state: true
+        tap_action:
+          action: toggle
+      - type: 'custom:bubble-card'
+        card_type: button
+        button_type: state
+        entity: device_tracker.audi_s6
+        name: Position
+        icon: mdi:map-marker
+        tap_action:
+          action: more-info
+
+  # ── Row 7: service due (more relevant for diesel: oil intervals) ─
+  - type: horizontal-stack
+    cards:
+      - type: 'custom:bubble-card'
+        card_type: button
+        button_type: state
+        entity: sensor.audi_s6_service_km
+        name: Service in
+        icon: mdi:wrench-clock
+        show_state: true
+      - type: 'custom:bubble-card'
+        card_type: button
+        button_type: state
+        entity: sensor.audi_s6_oil_service_km
+        name: Oil in
+        icon: mdi:oil
+        show_state: true
+
+  # ── Row 8: anti-theft alarm (Cariad-BFF Audi feature) ────────────
+  # Phantom-gated — only appears if your S6 has the anti-theft subscription.
+  - type: horizontal-stack
+    cards:
+      - type: 'custom:bubble-card'
+        card_type: button
+        button_type: state
+        entity: binary_sensor.audi_s6_alarm_active
+        name: Alarm
+        icon: mdi:alarm-light
+        show_state: true
+      - type: 'custom:bubble-card'
+        card_type: button
+        button_type: state
+        entity: binary_sensor.audi_s6_siren_active
+        name: Siren
+        icon: mdi:bell-ring
+        show_state: true
+
+  # ── Row 9: subscription status (v2.2.0+) ─────────────────────────
+  # Audi Connect Plus / myAudi sub — earliest-expiring capability date.
+  # Useful for diesel S6 because Connect Plus is the gateway to remote-
+  # engine-start, climate-pre-cond and security alarm features.
+  - type: horizontal-stack
+    cards:
+      - type: 'custom:bubble-card'
+        card_type: button
+        button_type: state
+        entity: binary_sensor.audi_s6_subscription_active
+        name: Connect Plus
+        icon: mdi:check-decagram
+        show_state: true
+      - type: 'custom:bubble-card'
+        card_type: button
+        button_type: state
+        entity: sensor.audi_s6_subscription_days_remaining
+        name: Days left
+        icon: mdi:calendar-end
+        show_state: true
+
+  # ── Row 10: diagnostic (12V + signal) ────────────────────────────
+  # 12V batt voltage is a real concern on diesels with long park
+  # periods — useful early-warning.
+  - type: horizontal-stack
+    cards:
+      - type: 'custom:bubble-card'
+        card_type: button
+        button_type: state
+        entity: sensor.audi_s6_voltage_12v
+        name: 12V
+        icon: mdi:car-battery
+        show_state: true
+        styles: |
+          .bubble-icon {
+            color: rgb(var(--rgb-{{ "green" if states("sensor.audi_s6_voltage_12v")|float(0) > 12.0 else ("amber" if states("sensor.audi_s6_voltage_12v")|float(0) > 11.5 else "red") }})) !important;
+          }
+      - type: 'custom:bubble-card'
+        card_type: button
+        button_type: state
+        entity: binary_sensor.audi_s6_daily_power_budget_available
+        name: Modem budget
+        icon: mdi:battery-clock
+        show_state: true

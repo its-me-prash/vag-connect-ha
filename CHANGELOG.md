@@ -139,6 +139,27 @@ Versionierung: [Semantic Versioning 2.0.0](https://semver.org/lang/de/)
   `audi_q4` mit deinem prefix → fertig. Cross-link from
   `docs/dashboards.md` als "recommended starter".
 
+- **Bubble Card diesel variant `02b-vehicle-popup-diesel.yaml` (Audi
+  S6 TDI tailored)** — der initial 6-file template-bundle war
+  EV-zentriert (Audi Q4 e-tron als example: `battery_soc`, charging
+  controls, electric range). Diesel-Fahrer haben aber andere
+  primary-entities: `fuel_level` statt `battery_soc`, kein
+  charging-block, dafür `adblue_range_km` (DEF/AdBlue tank),
+  `service_km` + `oil_service_km` (Service-Intervalle für Diesel
+  besonders relevant), und auf Audi-Seite **ICE Remote Engine Start**
+  (`switch.audi_s6_engine` via Cariad-BFF `/vehicle/v1/engine` mit
+  S-PIN). Neue YAML mit 10 horizontal-stack rows: tank+range,
+  AdBlue+odometer (mit threshold-color-coding), remote engine,
+  climate+target-temp, outside-temp+aux-heater (kommentiert für
+  Webasto/Standheizung opt-in), lock+position, service+oil-service,
+  alarm+siren (Cariad-BFF anti-theft), Connect-Plus-subscription,
+  12V-Voltage+modem-power-budget (diagnostics — 12V monitoring auf
+  Diesel mit langen Park-Zeiten besonders wertvoll als early-warning).
+  README.md updated mit neuem table-row (diesel-variant labeled).
+  Validated mit `yaml.safe_load`. Funktioniert für jeden Audi/VW
+  Diesel mit Cariad-BFF backend (S6/A6/Q7 TDI, Touareg etc.) —
+  Skoda-Diesel-User reusen mit prefix-swap.
+
 - **`docs/dashboards.md` — dedicated dashboard troubleshooting + Lovelace
   card guide** — community Q&A came up (FB group): user trying to add
   VAG Connect entities to existing dashboard view via "Add to Dashboard"
